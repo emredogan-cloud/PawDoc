@@ -5,10 +5,16 @@
 #
 #     docker compose up ai-service
 #
-# and get the FastAPI service in a container identical to production.
+# and get the FastAPI service in a container identical to production —
+# **without first copying .env.example**. The compose file ships with
+# placeholder defaults sufficient to boot the service in Phase 0
+# (no upstream provider calls are made yet).
 #
-# Default: builds from ./ai-service/Dockerfile (uses your local source).
-# For prod-image testing: docker compose --profile prod-image up
+# When a developer adds real values to ai-service/.env (Phase 1+), those
+# override the placeholders below. The env_file is marked optional so its
+# absence on a fresh clone is not an error.
+#
+# Requires Docker Compose v2.24+ for the `env_file` extended syntax.
 
 services:
   ai-service:
@@ -20,14 +26,40 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
+    # Optional — present on devs who have configured local secrets,
+    # absent on a fresh clone. Both must work.
     env_file:
-      - ./ai-service/.env
+      - path: ./ai-service/.env
+        required: false
     environment:
-      APP_ENV: local
-      LOG_LEVEL: DEBUG
-      PORT: "8080"
+      # ---- Runtime (always set; safe local defaults) -----------------------
+      APP_ENV: ${APP_ENV:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
+      PORT: ${PORT:-8080}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:*}
+      # ---- Upstream credentials (NO defaults — never invent placeholders
+      #      that look like real secrets). Pydantic Settings treats absent
+      #      values as None, which is acceptable in Phase 0. Phase 1 will
+      #      require these — supply them via ai-service/.env or Doppler.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY-}
+      GOOGLE_AI_API_KEY: ${GOOGLE_AI_API_KEY-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY-}
+      SUPABASE_URL: ${SUPABASE_URL-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY-}
+      R2_BUCKET: ${R2_BUCKET-}
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL-}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN-}
+      SENTRY_DSN: ${SENTRY_DSN-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-local}
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health').read()"]
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8080/health').read()"
       interval: 10s
       timeout: 3s
       retries: 5

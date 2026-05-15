@@ -22,7 +22,10 @@ enabled = false
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 16
+# Pg major version — set to what the Supabase CLI ships. The roadmap §3 names
+# PostgreSQL 16; current Supabase projects use 17 (a strict superset). Either
+# is acceptable for PawDoc's workload (pgvector + JSONB + RLS all supported).
+major_version = 17
 
 [db.pooler]
 enabled = true
@@ -47,17 +50,19 @@ port = 54324
 enabled = true
 file_size_limit = "50MiB"
 
-# CORS for Storage to allow our dev origins.
-[storage.image_transformation]
-enabled = true
+# Image transformation API is a Supabase Pro plan feature; disabled locally.
+# Uncomment when the prod project is on Pro and the feature is needed.
+# [storage.image_transformation]
+# enabled = true
 
 [auth]
 enabled = true
 site_url = "http://127.0.0.1:3000"
 additional_redirect_urls = ["http://127.0.0.1:54323", "io.pawdoc.app://callback"]
 jwt_expiry = 3600
-refresh_token_rotation_enabled = true
-security_refresh_token_reuse_interval = 10
+# Field names per Supabase CLI v2.x config schema.
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
 enable_signup = true
 enable_anonymous_sign_ins = false
 
@@ -77,7 +82,8 @@ enabled = false
 
 [edge_runtime]
 enabled = true
-policy = "oneshot"
+# `per_worker` is the CLI's default and enables hot reload during dev.
+policy = "per_worker"
 inspector_port = 8083
 
 # Functions are deployed via `supabase functions deploy <name>`.
