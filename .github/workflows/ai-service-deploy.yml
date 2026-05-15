@@ -1,0 +1,64 @@
+name: ai-service-deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ai-service/**"
+      - ".github/workflows/ai-service-deploy.yml"
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "Fly.io app name"
+        required: true
+        default: "pawdoc-ai-dev"
+        type: choice
+        options:
+          - pawdoc-ai-dev
+          - pawdoc-ai-prod
+
+# Only one deploy at a time per app.
+concurrency:
+  group: ai-service-deploy-${{ inputs.app || 'pawdoc-ai-dev' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: ai-service
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  TARGET_APP: ${{ inputs.app || 'pawdoc-ai-dev' }}
+
+jobs:
+  deploy:
+    name: Deploy to Fly.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Set this repo var to "true" once FLY_API_TOKEN secret + Fly apps exist.
+    if: ${{ vars.AI_SERVICE_DEPLOY_ENABLED == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy
+        run: flyctl deploy --remote-only --app "$TARGET_APP" --strategy rolling
+
+      - name: Health check
+        run: |
+          # Fly will route traffic only after passing its own check; we double
+          # check from outside to fail loud if DNS or routing is off.
+          for i in {1..20}; do
+            if curl -fsS "https://$TARGET_APP.fly.dev/health" > /dev/null; then
+              echo "Deploy verified."
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::Health check failed after deploy."
+          exit 1

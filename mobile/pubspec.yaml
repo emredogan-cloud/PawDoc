@@ -1,0 +1,57 @@
+name: pawdoc
+description: "PawDoc — AI-native pet health triage app."
+# Do NOT publish to pub.dev — this is a private application package.
+publish_to: "none"
+
+version: 0.1.0+1
+
+environment:
+  # Pin to the Flutter 3.41 / Dart 3.11 SDK channel. Raise here when the team
+  # bumps the toolchain — CI uses this constraint to select its SDK.
+  sdk: ^3.11.5
+  flutter: ">=3.41.0"
+
+# =============================================================================
+# Runtime dependencies
+# =============================================================================
+# Phase 0 keeps this list short. Feature-specific packages (image, video,
+# RevenueCat, Sentry, etc.) land in Phase 1 alongside the code that uses them.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management: compile-safe, async-first, testable.
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Routing: type-safe, deep-link friendly.
+  go_router: ^14.6.2
+
+  # Material 3 iconography.
+  cupertino_icons: ^1.0.8
+
+  # Auth + DB client. Configured in Phase 0; used in Phase 1.
+  supabase_flutter: ^2.8.2
+
+  # Structured logging.
+  logging: ^1.3.0
+
+# =============================================================================
+# Dev / build dependencies
+# =============================================================================
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Riverpod codegen toolchain (used in Phase 1+).
+  build_runner: ^2.4.13
+  riverpod_generator: ^2.6.3
+  custom_lint: ^0.7.0
+  riverpod_lint: ^2.6.3
+
+# =============================================================================
+# Flutter section
+# =============================================================================
+flutter:
+  uses-material-design: true

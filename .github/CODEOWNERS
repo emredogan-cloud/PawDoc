@@ -1,0 +1,18 @@
+# PawDoc code owners.
+#
+# Solo-founder phase: a single owner reviews everything. Replace with team
+# handles when collaborators join. Path-specific entries take precedence over
+# the catch-all at the bottom.
+
+# === Catch-all ===
+*                              @pawdoc-founder
+
+# === Service-specific ===
+/mobile/                       @pawdoc-founder
+/ai-service/                   @pawdoc-founder
+/supabase/                     @pawdoc-founder
+
+# === Cross-cutting ===
+/.github/                      @pawdoc-founder
+/docs/                         @pawdoc-founder
+/roadmaps/                     @pawdoc-founder

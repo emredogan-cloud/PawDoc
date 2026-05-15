@@ -1,0 +1,45 @@
+# Pre-commit hooks for PawDoc.
+#
+# Install: pip install pre-commit && pre-commit install
+# Run on all files: pre-commit run --all-files
+#
+# Keep this fast (<10s). CI runs the heavier scans.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.5
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^ai-service/.*\.py$
+      - id: ruff-format
+        files: ^ai-service/.*\.py$
+
+  - repo: local
+    hooks:
+      - id: dart-format
+        name: dart format
+        entry: bash -c 'cd mobile && dart format --output=none --set-exit-if-changed .'
+        language: system
+        files: ^mobile/.*\.dart$
+        pass_filenames: false

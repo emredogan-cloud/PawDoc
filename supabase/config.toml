@@ -1,0 +1,84 @@
+# Supabase local-development configuration.
+#
+# This file is consumed by `supabase start` to spin up Postgres, Auth, Storage,
+# and Studio on the developer's machine. It is the single source of truth for
+# local Supabase behaviour; CI uses the same file.
+#
+# In production, the dev/prod projects are configured through the Supabase
+# Dashboard and `supabase link`-ed — this file does NOT govern remote projects.
+
+project_id = "pawdoc"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[api.tls]
+enabled = false
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 16
+
+[db.pooler]
+enabled = true
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+# CORS for Storage to allow our dev origins.
+[storage.image_transformation]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = ["http://127.0.0.1:54323", "io.pawdoc.app://callback"]
+jwt_expiry = 3600
+refresh_token_rotation_enabled = true
+security_refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+secure_password_change = true
+
+[auth.external.apple]
+enabled = false
+# client_id = "" — populated when Apple Sign In is configured (Phase 1)
+
+[auth.external.google]
+enabled = false
+# client_id = "" — populated when Google Sign In is configured (Phase 1)
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+inspector_port = 8083
+
+# Functions are deployed via `supabase functions deploy <name>`.
+# Phase 1 will register: analyze, auth-webhook, revenuecat-webhook, reminders-cron

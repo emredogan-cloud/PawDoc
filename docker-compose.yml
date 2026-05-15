@@ -1,0 +1,34 @@
+# docker-compose.yml — local-only orchestration for the AI service.
+#
+# Supabase has its own local stack started via `supabase start`; we don't model
+# it here to avoid duplication. This file exists so a developer can do:
+#
+#     docker compose up ai-service
+#
+# and get the FastAPI service in a container identical to production.
+#
+# Default: builds from ./ai-service/Dockerfile (uses your local source).
+# For prod-image testing: docker compose --profile prod-image up
+
+services:
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    image: pawdoc-ai:dev
+    container_name: pawdoc-ai
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./ai-service/.env
+    environment:
+      APP_ENV: local
+      LOG_LEVEL: DEBUG
+      PORT: "8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health').read()"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s

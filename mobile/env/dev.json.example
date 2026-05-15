@@ -1,0 +1,11 @@
+{
+  "_comment": "Copy to env/dev.json (gitignored) and fill in real values from Doppler. Pass via: flutter run --dart-define-from-file=env/dev.json",
+
+  "APP_ENV": "dev",
+  "SUPABASE_URL": "https://your-project.supabase.co",
+  "SUPABASE_ANON_KEY": "eyJ...",
+  "AI_SERVICE_URL": "https://pawdoc-ai-dev.fly.dev",
+  "SENTRY_DSN": "https://...@sentry.io/...",
+  "POSTHOG_API_KEY": "phc_...",
+  "POSTHOG_HOST": "https://eu.posthog.com"
+}

@@ -1,0 +1,89 @@
+name: mobile-release
+
+# Triggered by a version tag (`v*`) or manual dispatch.
+# Activates only when App Store Connect + Play Console secrets are populated
+# (Phase 2). Until then the job conditionally skips itself.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      track:
+        description: "Distribution track"
+        required: true
+        default: "internal"
+        type: choice
+        options:
+          - internal
+          - beta
+          - production
+
+concurrency:
+  group: mobile-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: mobile
+
+env:
+  FLUTTER_VERSION: "3.41.9"
+
+jobs:
+  ios:
+    name: iOS — TestFlight (placeholder)
+    runs-on: macos-14
+    timeout-minutes: 60
+    if: ${{ vars.MOBILE_RELEASE_ENABLED == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      # The actual Fastlane lanes land in Phase 2 alongside Apple Developer
+      # enrollment + Match config. This file documents the seam.
+      - name: Build iOS (placeholder)
+        run: |
+          echo "TODO Phase 2: fastlane ios beta"
+          # bundle exec fastlane ios beta
+
+  android:
+    name: Android — Play Internal (placeholder)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ vars.MOBILE_RELEASE_ENABLED == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: Build Android (placeholder)
+        run: |
+          echo "TODO Phase 2: fastlane android beta"
+          # bundle exec fastlane android beta

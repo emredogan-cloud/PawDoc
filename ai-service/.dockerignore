@@ -1,0 +1,25 @@
+# Build context exclusion list — keep the image tight and reproducible.
+.git/
+.github/
+.venv/
+.env
+.env.*
+!.env.example
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+coverage.xml
+.coverage
+.coverage.*
+tests/
+docs/
+*.md
+!README.md
+Dockerfile
+.dockerignore
+docker-compose.yml
+fly.toml

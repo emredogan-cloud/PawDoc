@@ -1,0 +1,64 @@
+# =============================================================================
+# PawDoc — top-level .gitignore
+# =============================================================================
+# Each subproject (mobile/, ai-service/, supabase/) has its own .gitignore for
+# tool-specific outputs. This file blocks the cross-cutting things: secrets,
+# editor noise, and OS detritus.
+# =============================================================================
+
+# ---- Secrets ----------------------------------------------------------------
+# Never commit real env files. `.env.example` files MUST be committed.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Mobile env injection files
+mobile/env/*.json
+!mobile/env/*.json.example
+
+# Doppler local config
+.doppler.yaml
+
+# Cloud / signing credentials
+*.pem
+*.p8
+*.p12
+*.jks
+*.keystore
+**/secrets/**
+*service_account*.json
+google-services.json
+GoogleService-Info.plist
+*Firebase*.plist
+.fastlane/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+
+# ---- OS / Editor ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.iml
+.cursorignore
+
+# ---- Misc -------------------------------------------------------------------
+*.log
+*.tmp
+*.bak
+node_modules/
+coverage/
+.cache/
+
+# ---- AI agent workspace -----------------------------------------------------
+# Claude Code / AI-agent local state — never PawDoc-relevant.
+.claude/

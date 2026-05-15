@@ -1,0 +1,87 @@
+name: supabase-ci
+
+on:
+  pull_request:
+    paths:
+      - "supabase/**"
+      - ".github/workflows/supabase-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/supabase-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  edge-functions:
+    name: Deno format + lint + check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: deno fmt check
+        working-directory: supabase/functions
+        run: deno fmt --check
+
+      - name: deno lint
+        working-directory: supabase/functions
+        run: deno lint
+
+      - name: deno check (type-check all .ts)
+        working-directory: supabase/functions
+        run: |
+          if compgen -G "**/*.ts" > /dev/null; then
+            find . -name "*.ts" -not -path "*/node_modules/*" -print0 | xargs -0 deno check
+          else
+            echo "No .ts files yet (Phase 1+)."
+          fi
+
+  migrations:
+    name: Migration naming + RLS lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate migration filenames
+        run: |
+          shopt -s nullglob
+          fail=0
+          for f in supabase/migrations/*.sql; do
+            name=$(basename "$f")
+            if ! [[ "$name" =~ ^[0-9]{14}_[a-z0-9_]+\.sql$ ]]; then
+              echo "::error file=$f::Migration must be named YYYYMMDDHHMMSS_<slug>.sql"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - name: Lint migrations for RLS hygiene
+        run: |
+          shopt -s nullglob
+          fail=0
+          for f in supabase/migrations/*.sql; do
+            # Find tables created in this migration.
+            tables=$(grep -oiE 'CREATE TABLE (IF NOT EXISTS )?[a-z_][a-z0-9_]*' "$f" \
+              | sed -E 's/CREATE TABLE (IF NOT EXISTS )?//I' || true)
+            for t in $tables; do
+              if ! grep -qiE "ALTER TABLE\s+$t\s+ENABLE ROW LEVEL SECURITY" "$f"; then
+                echo "::error file=$f::Table '$t' created without ENABLE ROW LEVEL SECURITY in same migration."
+                fail=1
+              fi
+            done
+          done
+          exit $fail

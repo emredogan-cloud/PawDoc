@@ -1,0 +1,8 @@
+# Supabase CLI working dirs — all transient.
+.branches/
+.temp/
+
+# Environment files — Doppler-managed, never committed.
+.env
+.env.*
+!.env.example

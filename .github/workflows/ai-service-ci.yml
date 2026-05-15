@@ -1,0 +1,108 @@
+name: ai-service-ci
+
+on:
+  pull_request:
+    paths:
+      - "ai-service/**"
+      - ".github/workflows/ai-service-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ai-service/**"
+      - ".github/workflows/ai-service-ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ai-service-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: ai-service
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  quality:
+    name: Format + Lint + Type + Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.18"
+          enable-cache: true
+          cache-dependency-glob: "ai-service/uv.lock"
+
+      - name: Sync dependencies
+        run: uv sync --frozen --all-extras || uv sync --all-extras
+
+      - name: ruff format check
+        run: uv run ruff format --check .
+
+      - name: ruff lint
+        run: uv run ruff check .
+
+      - name: mypy
+        run: uv run mypy app
+
+      - name: pytest
+        run: uv run pytest
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-service-coverage
+          path: ai-service/coverage.xml
+          retention-days: 7
+          if-no-files-found: ignore
+
+  docker-build:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ai-service
+          push: false
+          load: true
+          tags: pawdoc-ai:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke-test container
+        run: |
+          docker run --rm -d --name ai-ci -p 8080:8080 pawdoc-ai:ci
+          # Wait for healthcheck. 30s ceiling.
+          for i in {1..15}; do
+            if curl -fsS http://localhost:8080/health > /dev/null; then
+              echo "health ok"
+              docker stop ai-ci
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "health check failed"
+          docker logs ai-ci
+          docker stop ai-ci || true
+          exit 1

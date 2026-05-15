@@ -1,0 +1,40 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+
+  - package-ecosystem: pip
+    directory: "/ai-service"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(ai)"
+    groups:
+      runtime:
+        applies-to: version-updates
+        patterns: ["fastapi", "uvicorn*", "pydantic*", "httpx", "structlog"]
+      dev:
+        applies-to: version-updates
+        patterns: ["ruff", "mypy", "pytest*"]
+
+  - package-ecosystem: pub
+    directory: "/mobile"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(mobile)"
+
+  - package-ecosystem: docker
+    directory: "/ai-service"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps(docker)"

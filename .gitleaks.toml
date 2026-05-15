@@ -1,0 +1,48 @@
+# Gitleaks configuration for PawDoc.
+# Inherits the default ruleset and adds project-specific patterns.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "pawdoc-anthropic-key"
+description = "Anthropic API key"
+regex = '''sk-ant-[A-Za-z0-9_-]{32,}'''
+keywords = ["sk-ant-"]
+
+[[rules]]
+id = "pawdoc-google-ai-key"
+description = "Google AI Studio key"
+regex = '''AIza[0-9A-Za-z_-]{35}'''
+keywords = ["AIza"]
+
+[[rules]]
+id = "pawdoc-supabase-service-key"
+description = "Supabase service role key (JWT)"
+regex = '''eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}'''
+keywords = ["eyJ"]
+
+[[rules]]
+id = "pawdoc-fly-token"
+description = "Fly.io API token"
+regex = '''fo1_[A-Za-z0-9_-]{30,}'''
+keywords = ["fo1_"]
+
+[allowlist]
+description = "Allow example values and documentation"
+paths = [
+    '''\.env\.example$''',
+    '''\.env\.[a-z]+\.example$''',
+    '''.*\.json\.example$''',
+    '''docs/.*\.md$''',
+    '''reports/.*\.md$''',
+    '''roadmaps/.*\.md$''',
+    '''README\.md$''',
+    '''\.gitleaks\.toml$''',
+]
+regexes = [
+    '''AIza[0-9A-Za-z_-]{35}__EXAMPLE__''',
+    '''sk-ant-EXAMPLE''',
+    '''your-.*-here''',
+    '''<.*>''',
+]
