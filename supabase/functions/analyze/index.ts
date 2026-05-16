@@ -165,6 +165,45 @@ async function persistAnalysis(args: {
   return data.id;
 }
 
+/**
+ * Refund a free-tier quota slot on AI / persist failure.
+ *
+ * Best-effort: we never let a refund failure mask the original error.
+ * Idempotent: the RPC's UNIQUE on request_id ensures retries don't
+ * double-refund. Subscribers + emergency-override paths short-circuit
+ * (they never consumed quota to begin with).
+ */
+async function refundIfQuotaConsumed(
+  userId: string,
+  requestId: string,
+  reason: "ai_failure" | "persist_failure" | "timeout",
+  emergencyMatched: boolean,
+): Promise<void> {
+  if (emergencyMatched) return;
+  try {
+    const { error } = await supabaseAdmin().rpc("refund_free_analysis", {
+      p_user_id: userId,
+      p_request_id: requestId,
+      p_reason: reason,
+    });
+    if (error) {
+      log.error("quota_refund_rpc_error", {
+        request_id: requestId,
+        reason,
+        code: error.code,
+      });
+      return;
+    }
+    log.info("quota_refunded", { request_id: requestId, reason });
+  } catch (err) {
+    log.error("quota_refund_failed", {
+      request_id: requestId,
+      reason,
+      error: (err as Error).message,
+    });
+  }
+}
+
 const handler = withErrorHandler(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return preflight(req.headers.get("Origin"));
@@ -264,7 +303,13 @@ const handler = withErrorHandler(async (req: Request): Promise<Response> => {
   };
   log.info("ai_service_call_start", { fn: "analyze", request_id: requestId });
   const t0 = performance.now();
-  const result = await callAiService(aiRequest);
+  let result: AiServiceResult;
+  try {
+    result = await callAiService(aiRequest);
+  } catch (err) {
+    await refundIfQuotaConsumed(user.id, requestId, "ai_failure", emergency.matched);
+    throw err;
+  }
   log.info("ai_service_call_end", {
     fn: "analyze",
     request_id: requestId,
@@ -274,14 +319,20 @@ const handler = withErrorHandler(async (req: Request): Promise<Response> => {
   });
 
   // Step 11 — persist (append-only by RLS; we use the service role).
-  const analysisId = await persistAnalysis({
-    user_id: user.id,
-    pet_id: payload.petId,
-    input_type: payload.inputType,
-    input_storage_key: payload.inputStorageKey ?? null,
-    text_description: payload.textDescription ?? null,
-    result,
-  });
+  let analysisId: string;
+  try {
+    analysisId = await persistAnalysis({
+      user_id: user.id,
+      pet_id: payload.petId,
+      input_type: payload.inputType,
+      input_storage_key: payload.inputStorageKey ?? null,
+      text_description: payload.textDescription ?? null,
+      result,
+    });
+  } catch (err) {
+    await refundIfQuotaConsumed(user.id, requestId, "persist_failure", emergency.matched);
+    throw err;
+  }
   log.info("analysis_persisted", {
     fn: "analyze",
     request_id: requestId,

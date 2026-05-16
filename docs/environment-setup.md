@@ -122,9 +122,9 @@ flyctl auth token         # copy this → store in Doppler as FLY_API_TOKEN
 - Google AI Studio: https://aistudio.google.com → API Keys → create → `GOOGLE_AI_API_KEY` in Doppler
 - OpenAI (for embedding only, Phase 3+): https://platform.openai.com → API keys → `OPENAI_API_KEY` in Doppler
 
-Set a hard budget on Anthropic + Google AI (Anthropic Console → Settings → Spend Limits). Recommendation:
-- Anthropic: $50/month soft, $200/month hard during Phase 1.
-- Google AI: $50/month soft.
+Set a hard budget on Anthropic + Google AI (Anthropic Console → Settings → Spend Limits). The operational runbook ([`operational-runbook.md`](operational-runbook.md) §1) lists the per-phase thresholds and the alert wiring; the short version for Phase 1:
+- Anthropic: **$50/month soft, $200/month hard**.
+- Google AI: **$50/month soft, $150/month hard** (set via Cloud Billing budget on the linked project, with "Cap spending at limit" enabled).
 
 ### 9. Sentry
 
@@ -217,6 +217,85 @@ gh variable set AI_SERVICE_DEPLOY_ENABLED --body true
 
 ---
 
+## 14. Apple Sign-In (Production Wiring)
+
+The mobile app supports two auth paths — email OTP (always on) and
+Apple Sign-In (gated by `APPLE_SIGN_IN_ENABLED`). Before flipping the
+prod build's flag to `true`, the four pieces below must all be in
+place. If any are missing, the app handles it gracefully (the user
+sees "Apple Sign-In is not configured for this build" and falls back
+to email) — but App Store review will reject a binary that ships an
+Apple Sign-In button that does nothing.
+
+### 14.1 Apple Developer Console — enable the capability
+
+1. Go to https://developer.apple.com/account → Certificates, IDs &
+   Profiles.
+2. Identifiers → select `com.pawdoc.pawdoc` (the iOS app ID).
+3. Tick **Sign In with Apple**. Save.
+4. (Optional, for the Android web fallback) Create a **Services ID**:
+   Identifiers → + → Services IDs → `com.pawdoc.web`.
+   - Enable **Sign In with Apple**, configure the primary App ID
+     above, add the Supabase callback under "Return URLs":
+     `https://<project-ref>.supabase.co/auth/v1/callback`.
+5. Keys → + → tick **Sign In with Apple** → register and **download**
+   the `.p8` private key. The key file is shown **once** — store the
+   contents in Doppler as `APPLE_SIGN_IN_PRIVATE_KEY` (multi-line PEM
+   block).
+
+### 14.2 Supabase Dashboard — configure the OAuth provider
+
+1. Project Settings → Authentication → Providers → **Apple**.
+2. Toggle "Enable Apple provider" on.
+3. Fill in:
+   - **Services ID** = `com.pawdoc.web` (the one from 14.1.4)
+   - **Team ID** = your Apple Developer Team ID (top-right of the
+     Apple Developer site)
+   - **Key ID** = the 10-character ID of the `.p8` key created in
+     14.1.5
+   - **Private key** = paste the **contents** of the `.p8` file
+4. Site URL — confirm `io.pawdoc.app://callback` is listed under
+   "Redirect URLs" in Authentication → URL Configuration.
+
+### 14.3 Doppler — flip the flag
+
+In Doppler's `prod` config, set:
+```
+APPLE_SIGN_IN_ENABLED=true
+```
+(Do **not** set this in `dev` until you've also done 14.1 + 14.2 for
+the dev Supabase project. It's safe to leave dev as `false`.)
+
+### 14.4 Verify
+
+On a sandbox iOS device or simulator with `flutter run`:
+1. Sign-out, then tap **Continue with Apple** on the auth screen.
+2. Complete the Face ID / Touch ID confirmation.
+3. The app should land on the home screen with the new Apple-linked
+   session.
+
+If it errors out with "Apple Sign-In is not configured for this
+build" *despite* 14.1-14.3 being done, check the Supabase project's
+**Logs → Auth Logs** — the most common failure is a malformed private
+key (missing `\n` between header and body, accidentally pasting the
+`-----BEGIN PRIVATE KEY-----` lines twice, etc.).
+
+### 14.5 What the binary does when this isn't wired
+
+| Missing piece | Symptom | App behaviour |
+|---|---|---|
+| `APPLE_SIGN_IN_ENABLED=false` | (dev default) | Button hidden entirely |
+| Capability not on Apple Developer | iOS shows Apple sheet → error | Maps to `unknown` → "Something went wrong" |
+| Provider disabled in Supabase | iOS sheet succeeds, Supabase returns 400 | Maps to `notConfigured` → "Apple Sign-In is not configured for this build" |
+| `.p8` private key invalid | Same as above (400 from Supabase) | `notConfigured` → fallback copy |
+
+The mobile error mapping lives in
+`mobile/lib/shared/services/apple_signin_service.dart`. Test coverage
+in `mobile/test/apple_signin_service_test.dart` exercises the
+status-code → user-message translation for each of these.
+
+---
+
 ## Verification Checklist
 
 When all the above is done:
@@ -228,3 +307,4 @@ When all the above is done:
 - [ ] GitHub branch protection on `main` is on
 - [ ] Gitleaks workflow runs and passes on the latest commit
 - [ ] Better Uptime monitors are configured
+- [ ] Apple Sign-In configured (§14) before flipping the prod flag

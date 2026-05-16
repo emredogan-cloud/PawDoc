@@ -13,6 +13,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../shared/models/pet.dart';
+import '../../shared/services/analytics_events.dart';
+import '../../shared/services/analytics_service.dart';
 import '../../shared/services/logger.dart';
 
 @immutable
@@ -59,6 +61,17 @@ class OnboardingDraft {
   final double? weightKg;
   final String? breed;
   final String? notes;
+
+  /// True when no field has been filled in. Used by the controller to
+  /// fire `onboarding_started` exactly once per draft.
+  bool get isEmpty =>
+      name == null &&
+      species == null &&
+      birthDate == null &&
+      sex == null &&
+      weightKg == null &&
+      breed == null &&
+      notes == null;
 
   OnboardingDraft copyWith({
     String? name,
@@ -108,12 +121,20 @@ class OnboardingDraft {
 }
 
 class OnboardingController extends StateNotifier<OnboardingDraft> {
-  OnboardingController(this._prefs) : super(_initial(_prefs));
+  OnboardingController(this._prefs, this._analytics)
+    : super(_initial(_prefs)) {
+    // If we restored a draft, the user is mid-flow; no need to emit
+    // onboarding_started again. The `_startedEmitted` flag stays true so
+    // subsequent updates don't re-fire.
+    _startedEmitted = !state.isEmpty;
+  }
 
   static const _kDraftKey = 'pawdoc.onboarding.draft.v1';
 
   final SharedPreferences _prefs;
+  final AnalyticsService _analytics;
   Timer? _saveTimer;
+  bool _startedEmitted = false;
   static final _log = AppLogger.of('onboarding.controller');
 
   static OnboardingDraft _initial(SharedPreferences prefs) {
@@ -129,6 +150,10 @@ class OnboardingController extends StateNotifier<OnboardingDraft> {
 
   void update(OnboardingDraft next) {
     state = next;
+    if (!_startedEmitted && !next.isEmpty) {
+      _startedEmitted = true;
+      unawaited(_analytics.track(const OnboardingStartedEvent()));
+    }
     _scheduleSave();
   }
 
@@ -142,8 +167,13 @@ class OnboardingController extends StateNotifier<OnboardingDraft> {
   }
 
   Future<void> clear() async {
+    final wasInProgress = !state.isEmpty;
     state = OnboardingDraft.empty();
+    _startedEmitted = false;
     await _prefs.remove(_kDraftKey);
+    if (wasInProgress) {
+      unawaited(_analytics.track(const OnboardingCompletedEvent()));
+    }
   }
 
   @override
@@ -170,5 +200,5 @@ final onboardingControllerProvider =
           'onboardingControllerProvider read before sharedPreferencesProvider resolved.',
         );
       }
-      return OnboardingController(prefs);
+      return OnboardingController(prefs, ref.watch(analyticsServiceProvider));
     });

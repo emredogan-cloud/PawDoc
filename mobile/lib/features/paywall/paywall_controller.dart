@@ -7,11 +7,15 @@
 /// where they came from and let the server-side webhook propagate.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../../shared/providers/auth_provider.dart';
+import '../../shared/services/analytics_events.dart';
+import '../../shared/services/analytics_service.dart';
 import '../../shared/services/logger.dart';
 import '../../shared/services/revenuecat_service.dart';
 
@@ -49,15 +53,20 @@ class PaywallFailed extends PaywallState {
 }
 
 class PaywallController extends StateNotifier<PaywallState> {
-  PaywallController({required RevenueCatService rc, required AuthStatus auth})
-    : _rc = rc,
-      _auth = auth,
-      super(const PaywallLoading()) {
+  PaywallController({
+    required RevenueCatService rc,
+    required AuthStatus auth,
+    required AnalyticsService analytics,
+  }) : _rc = rc,
+       _auth = auth,
+       _analytics = analytics,
+       super(const PaywallLoading()) {
     _load();
   }
 
   final RevenueCatService _rc;
   final AuthStatus _auth;
+  final AnalyticsService _analytics;
   static final _log = AppLogger.of('paywall.controller');
 
   // Convention: a single offering named `pawdoc_premium` is what we wire
@@ -105,6 +114,9 @@ class PaywallController extends StateNotifier<PaywallState> {
       return;
     }
     state = PaywallReady(offering: chosen);
+    unawaited(
+      _analytics.track(PaywallSeenEvent(offeringId: chosen.identifier)),
+    );
   }
 
   Future<void> purchase(Package package) async {
@@ -115,6 +127,11 @@ class PaywallController extends StateNotifier<PaywallState> {
     switch (outcome.kind) {
       case PurchaseOutcomeKind.success:
         state = const PaywallSucceeded();
+        unawaited(
+          _analytics.track(
+            SubscriptionStartedEvent(packageId: package.identifier),
+          ),
+        );
       case PurchaseOutcomeKind.userCancelled:
         // Restore to ready state; user just stepped back.
         await _load();
@@ -128,6 +145,7 @@ class PaywallController extends StateNotifier<PaywallState> {
     final outcome = await _rc.restore();
     if (outcome.kind == PurchaseOutcomeKind.success) {
       state = const PaywallSucceeded();
+      unawaited(_analytics.track(const RestorePurchaseEvent()));
     } else {
       state = PaywallFailed(outcome.kind);
       await Future<void>.delayed(const Duration(seconds: 1));
@@ -143,5 +161,6 @@ final paywallControllerProvider =
       (ref) => PaywallController(
         rc: ref.watch(revenueCatServiceProvider),
         auth: ref.watch(authStateProvider),
+        analytics: ref.watch(analyticsServiceProvider),
       ),
     );

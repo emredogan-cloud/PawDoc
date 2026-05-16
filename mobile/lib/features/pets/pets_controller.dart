@@ -10,6 +10,8 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
 import '../../shared/models/pet.dart';
 import '../../shared/providers/auth_provider.dart';
+import '../../shared/services/analytics_events.dart';
+import '../../shared/services/analytics_service.dart';
 import '../../shared/services/logger.dart';
 import '../../shared/services/supabase_client.dart';
 
@@ -35,12 +37,14 @@ class PetsError extends PetsState {
 }
 
 class PetsController extends StateNotifier<PetsState> {
-  PetsController(this._client, this._authStatus) : super(const PetsLoading()) {
+  PetsController(this._client, this._authStatus, this._analytics)
+    : super(const PetsLoading()) {
     _refresh();
   }
 
   final SupabaseClient _client;
   final AuthStatus _authStatus;
+  final AnalyticsService _analytics;
   static final _log = AppLogger.of('pets.controller');
 
   Future<void> _refresh() async {
@@ -83,6 +87,9 @@ class PetsController extends StateNotifier<PetsState> {
           .single();
       final pet = Pet.fromJson(row);
       _log.info('pet_created', pet.id);
+      unawaited(
+        _analytics.track(PetCreatedEvent(species: pet.species.apiValue)),
+      );
       // Optimistically update local state — saves a round trip back.
       final current = state;
       final next = <Pet>[if (current is PetsReady) ...current.pets, pet];
@@ -129,6 +136,7 @@ final petsControllerProvider = StateNotifierProvider<PetsController, PetsState>(
     return PetsController(
       ref.watch(supabaseClientProvider),
       ref.watch(authStateProvider),
+      ref.watch(analyticsServiceProvider),
     );
   },
 );

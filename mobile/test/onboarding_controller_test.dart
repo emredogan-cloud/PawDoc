@@ -4,6 +4,7 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pawdoc/features/onboarding/onboarding_controller.dart';
 import 'package:pawdoc/shared/models/pet.dart';
+import 'package:pawdoc/shared/services/analytics_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -79,21 +80,21 @@ void main() {
   group('OnboardingController', () {
     test('starts empty when no draft saved', () async {
       final prefs = await SharedPreferences.getInstance();
-      final ctrl = OnboardingController(prefs);
+      final ctrl = OnboardingController(prefs, RecordingAnalyticsService());
       expect(ctrl.state, equals(OnboardingDraft.empty()));
     });
 
     test('persists updates across instances', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      final ctrl1 = OnboardingController(prefs);
+      final ctrl1 = OnboardingController(prefs, RecordingAnalyticsService());
       ctrl1.update(
         const OnboardingDraft(species: PetSpecies.dog, name: 'Luna'),
       );
       // Force the debounced save to flush.
       await Future<void>.delayed(const Duration(milliseconds: 400));
 
-      final ctrl2 = OnboardingController(prefs);
+      final ctrl2 = OnboardingController(prefs, RecordingAnalyticsService());
       expect(ctrl2.state.species, PetSpecies.dog);
       expect(ctrl2.state.name, 'Luna');
     });
@@ -101,13 +102,13 @@ void main() {
     test('clear wipes the saved draft', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      final ctrl = OnboardingController(prefs);
+      final ctrl = OnboardingController(prefs, RecordingAnalyticsService());
       ctrl.update(const OnboardingDraft(species: PetSpecies.cat, name: 'Kit'));
       await Future<void>.delayed(const Duration(milliseconds: 400));
       await ctrl.clear();
       expect(ctrl.state, equals(OnboardingDraft.empty()));
 
-      final ctrl2 = OnboardingController(prefs);
+      final ctrl2 = OnboardingController(prefs, RecordingAnalyticsService());
       expect(ctrl2.state, equals(OnboardingDraft.empty()));
     });
   });

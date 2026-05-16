@@ -36,6 +36,8 @@ class AppConfig {
     this.revenueCatPublicKeyAndroid = '',
     this.oneSignalAppId = '',
     this.appleSignInEnabled = false,
+    this.tosUrl = 'https://pawdoc.app/terms',
+    this.privacyUrl = 'https://pawdoc.app/privacy',
     this.appVersion = '0.1.0',
     this.buildNumber = 'local',
   });
@@ -70,6 +72,14 @@ class AppConfig {
         'APPLE_SIGN_IN_ENABLED',
         defaultValue: false,
       ),
+      tosUrl: const String.fromEnvironment(
+        'TOS_URL',
+        defaultValue: 'https://pawdoc.app/terms',
+      ),
+      privacyUrl: const String.fromEnvironment(
+        'PRIVACY_URL',
+        defaultValue: 'https://pawdoc.app/privacy',
+      ),
       appVersion: const String.fromEnvironment(
         'APP_VERSION',
         defaultValue: '0.1.0',
@@ -92,6 +102,8 @@ class AppConfig {
   final String revenueCatPublicKeyAndroid;
   final String oneSignalAppId;
   final bool appleSignInEnabled;
+  final String tosUrl;
+  final String privacyUrl;
   final String appVersion;
   final String buildNumber;
 

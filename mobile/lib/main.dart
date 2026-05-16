@@ -21,6 +21,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app.dart';
 import 'app/config.dart';
 import 'shared/providers/auth_provider.dart';
+import 'shared/services/analytics_service.dart';
 import 'shared/services/app_lifecycle_observer.dart';
 import 'shared/services/logger.dart';
 import 'shared/services/onesignal_service.dart';
@@ -35,6 +36,12 @@ Future<void> main() async {
   AppLogger.configure(config);
   for (final w in warnings) {
     AppLogger.of('main').warning('config_warning: $w');
+  }
+  if (config.isProduction && config.appleSignInEnabled) {
+    AppLogger.of('main').info(
+      'apple_sign_in_enabled_prod: Supabase Apple OAuth provider must be '
+      'configured in the dashboard — see docs/environment-setup.md §14.',
+    );
   }
 
   if (!config.hasSupabase) {
@@ -93,10 +100,12 @@ class _BootstrapperState extends ConsumerState<_Bootstrapper> {
       await rc.initialize();
       final os = ref.read(oneSignalServiceProvider);
       await os.initialize();
+      final analytics = ref.read(analyticsServiceProvider);
+      await analytics.initialize();
 
-      // Re-identify with RC/OneSignal on every auth state change so the
-      // mobile install is consistently tied to the current user — even
-      // across sign-in / sign-out cycles.
+      // Re-identify with RC/OneSignal/PostHog on every auth state change
+      // so the mobile install is consistently tied to the current user —
+      // even across sign-in / sign-out cycles.
       _authSub = ref.listenManual<AuthStatus>(authStateProvider, (
         prev,
         next,
@@ -104,9 +113,11 @@ class _BootstrapperState extends ConsumerState<_Bootstrapper> {
         if (next is Authenticated) {
           await rc.identify(next.user.id);
           await os.linkUser(next.user.id);
+          await analytics.identify(next.user.id);
         } else if (next is Unauthenticated) {
           await rc.logOut();
           await os.logout();
+          await analytics.resetIdentity();
         }
       }, fireImmediately: true);
     });

@@ -11,7 +11,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../app/config.dart';
+import '../../shared/services/logger.dart';
 import 'paywall_controller.dart';
 
 class PaywallScreen extends ConsumerWidget {
@@ -54,6 +57,8 @@ class PaywallScreen extends ConsumerWidget {
             _ReadyBody(
               offering: offering,
               notice: notice,
+              tosUrl: ref.watch(appConfigProvider).tosUrl,
+              privacyUrl: ref.watch(appConfigProvider).privacyUrl,
               onPurchase: (pkg) =>
                   ref.read(paywallControllerProvider.notifier).purchase(pkg),
               onRestore: () =>
@@ -71,6 +76,8 @@ class PaywallScreen extends ConsumerWidget {
 class _ReadyBody extends StatefulWidget {
   const _ReadyBody({
     required this.offering,
+    required this.tosUrl,
+    required this.privacyUrl,
     required this.onPurchase,
     required this.onRestore,
     required this.onMaybeLater,
@@ -79,6 +86,8 @@ class _ReadyBody extends StatefulWidget {
   });
 
   final Offering offering;
+  final String tosUrl;
+  final String privacyUrl;
   final String? notice;
   final void Function(Package package) onPurchase;
   final VoidCallback onRestore;
@@ -171,14 +180,62 @@ class _ReadyBodyState extends State<_ReadyBody> {
           const SizedBox(height: 12),
           Text(
             'Your subscription renews automatically and can be cancelled '
-            'in your App Store / Play Store settings. Privacy Policy and '
-            'Terms of Service are available at pawdoc.app.',
+            'in your App Store / Play Store settings.',
             style: widget.theme.textTheme.bodySmall?.copyWith(
               color: widget.theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          const SizedBox(height: 4),
+          _LegalLinks(
+            tosUrl: widget.tosUrl,
+            privacyUrl: widget.privacyUrl,
+            theme: widget.theme,
+          ),
         ],
       ),
+    );
+  }
+}
+
+/// Apple Guideline 3.1.2 / Google Play subscription disclosure: both
+/// the ToS and Privacy Policy must be one tap away from the paywall.
+class _LegalLinks extends StatelessWidget {
+  const _LegalLinks({
+    required this.tosUrl,
+    required this.privacyUrl,
+    required this.theme,
+  });
+
+  final String tosUrl;
+  final String privacyUrl;
+  final ThemeData theme;
+
+  static final _log = AppLogger.of('paywall.legal_links');
+
+  Future<void> _open(String url) async {
+    final uri = Uri.parse(url);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok) {
+      _log.warning('legal_link_launch_failed: $url');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        TextButton(
+          onPressed: () => _open(tosUrl),
+          child: const Text('Terms of Service'),
+        ),
+        Text('·', style: theme.textTheme.bodySmall),
+        TextButton(
+          onPressed: () => _open(privacyUrl),
+          child: const Text('Privacy Policy'),
+        ),
+      ],
     );
   }
 }

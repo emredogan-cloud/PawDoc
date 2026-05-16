@@ -18,6 +18,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/models/analysis_result.dart';
 import '../../shared/models/pet.dart';
 import '../../shared/providers/auth_provider.dart';
+import '../../shared/services/analytics_events.dart';
+import '../../shared/services/analytics_service.dart';
 import '../../shared/services/analyze_service.dart';
 import '../../shared/services/image_service.dart';
 import '../../shared/services/logger.dart';
@@ -62,16 +64,19 @@ class AnalysisController extends StateNotifier<AnalysisState> {
     required StorageService storageService,
     required AnalyzeService analyzeService,
     required AuthStatus authStatus,
+    required AnalyticsService analyticsService,
   }) : _images = imageService,
        _storage = storageService,
        _analyze = analyzeService,
        _auth = authStatus,
+       _analytics = analyticsService,
        super(const AnalysisIdle());
 
   final ImageService _images;
   final StorageService _storage;
   final AnalyzeService _analyze;
   final AuthStatus _auth;
+  final AnalyticsService _analytics;
 
   static final _log = AppLogger.of('analysis.controller');
 
@@ -128,36 +133,78 @@ class AnalysisController extends StateNotifier<AnalysisState> {
     }
 
     _submitting = true;
+    final inputType = image != null ? 'photo' : 'text';
+    final analyzeStart = DateTime.now();
     try {
       String? storageKey;
       if (image != null) {
         state = const AnalysisUploading();
+        unawaited(
+          _analytics.track(UploadStartedEvent(inputType: inputType)),
+        );
+        final uploadStart = DateTime.now();
         storageKey = await _storage.uploadPetImage(
           userId: userId,
           image: image,
         );
+        unawaited(
+          _analytics.track(
+            UploadCompletedEvent(
+              durationMs: DateTime.now().difference(uploadStart).inMilliseconds,
+            ),
+          ),
+        );
       }
 
       state = const AnalysisAnalysing();
+      unawaited(
+        _analytics.track(AnalysisRequestedEvent(inputType: inputType)),
+      );
       final result = await _analyze.submit(
         pet: pet,
-        inputType: image != null ? 'photo' : 'text',
+        inputType: inputType,
         inputStorageKey: storageKey,
         textDescription: text,
       );
       state = AnalysisSuccess(result);
       _log.info('analyze_done', result.triageLevel.name);
+      final latencyMs = DateTime.now()
+          .difference(analyzeStart)
+          .inMilliseconds;
+      unawaited(
+        _analytics.track(
+          AnalysisCompletedEvent(
+            triageLevel: result.triageLevel.name.toUpperCase(),
+            tierUsed: result.tierUsed,
+            latencyMs: latencyMs,
+          ),
+        ),
+      );
+      if (result.triageLevel.name.toUpperCase() == 'EMERGENCY') {
+        unawaited(_analytics.track(const EmergencyResultSeenEvent()));
+      }
     } on StorageUploadFailure catch (e) {
       _log.warning('upload_failed', e.message);
       state = AnalysisFailedState(AnalyzeFailureKind.validation, e.message);
+      unawaited(
+        _analytics.track(
+          AnalysisFailedEvent(kind: AnalyzeFailureKind.validation.name),
+        ),
+      );
     } on AnalyzeFailure catch (e) {
       _log.warning('analyze_failed', e.kind.name);
       state = AnalysisFailedState(e.kind, e.detail ?? e.kind.userMessage);
+      unawaited(_analytics.track(AnalysisFailedEvent(kind: e.kind.name)));
     } on Object catch (e, s) {
       _log.severe('analyze_unexpected', e, s);
       state = AnalysisFailedState(
         AnalyzeFailureKind.unknown,
         AnalyzeFailureKind.unknown.userMessage,
+      );
+      unawaited(
+        _analytics.track(
+          AnalysisFailedEvent(kind: AnalyzeFailureKind.unknown.name),
+        ),
       );
     } finally {
       _submitting = false;
@@ -183,6 +230,7 @@ final analysisControllerProvider =
         storageService: ref.watch(storageServiceProvider),
         analyzeService: ref.watch(analyzeServiceProvider),
         authStatus: ref.watch(authStateProvider),
+        analyticsService: ref.watch(analyticsServiceProvider),
       );
       ref.onDispose(controller.reset);
       return controller;

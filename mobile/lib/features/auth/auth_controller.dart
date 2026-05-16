@@ -9,10 +9,14 @@
 /// Supabase exception text.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../shared/services/analytics_events.dart';
+import '../../shared/services/analytics_service.dart';
 import '../../shared/services/logger.dart';
 import '../../shared/services/supabase_client.dart';
 
@@ -46,10 +50,18 @@ class AuthFailed extends AuthScreenState {
 }
 
 class AuthController extends StateNotifier<AuthScreenState> {
-  AuthController(this._client) : super(const AuthIdle());
+  AuthController(this._client, this._analytics) : super(const AuthIdle());
 
   final SupabaseClient _client;
+  final AnalyticsService _analytics;
   static final _log = AppLogger.of('auth.controller');
+
+  /// Emit the `auth_completed` event. Public so the Apple Sign-In flow
+  /// (which lives outside this state notifier) can also notify analytics
+  /// without coupling to its own controller.
+  void notifyAuthCompleted(AuthMethod method) {
+    unawaited(_analytics.track(AuthCompletedEvent(method: method)));
+  }
 
   Future<void> sendOtp(String email) async {
     final trimmed = email.trim().toLowerCase();
@@ -88,6 +100,7 @@ class AuthController extends StateNotifier<AuthScreenState> {
         type: OtpType.email,
       );
       _log.info('otp_verified');
+      notifyAuthCompleted(AuthMethod.emailOtp);
       // Successful verify triggers the auth stream → AuthStatus turns to
       // Authenticated → router redirects. We leave state at verifying so
       // the spinner stays up until the redirect actually happens.
@@ -139,5 +152,8 @@ class AuthController extends StateNotifier<AuthScreenState> {
 
 final authControllerProvider =
     StateNotifierProvider<AuthController, AuthScreenState>(
-      (ref) => AuthController(ref.watch(supabaseClientProvider)),
+      (ref) => AuthController(
+        ref.watch(supabaseClientProvider),
+        ref.watch(analyticsServiceProvider),
+      ),
     );

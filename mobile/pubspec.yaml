@@ -74,6 +74,16 @@ dependencies:
   # SHA-256 nonce for Apple Sign-In; small dep already pulled in transitively.
   crypto: ^3.0.6
 
+  # ---- Sprint A2 additions --------------------------------------------
+  # Open external URLs (ToS, Privacy, "find an emergency vet"). Promoted
+  # from transitive dep to explicit so we control the version.
+  url_launcher: ^6.3.1
+
+  # Product analytics. Self-hostable; we run EU PostHog Cloud in prod.
+  # Centralised through lib/shared/services/analytics_service.dart —
+  # widgets must NEVER import this package directly.
+  posthog_flutter: ^4.10.1
+
 # =============================================================================
 # Dev / build dependencies
 # =============================================================================

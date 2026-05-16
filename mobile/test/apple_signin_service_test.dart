@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pawdoc/shared/services/apple_signin_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   group('AppleSignInError.userMessage', () {
@@ -56,6 +57,43 @@ void main() {
       expect(RegExp(r'^[0-9a-f]{64}$').hasMatch(hex), isTrue);
       // Same input → same output.
       expect(hex, AppleSignInServiceImpl.sha256Hex(raw));
+    });
+  });
+
+  group('Supabase AuthException mapping', () {
+    test('400 "provider is not enabled" → notConfigured', () {
+      final err = debugMapAuthException(
+        const AuthException('Provider is not enabled', statusCode: '400'),
+      );
+      expect(err, AppleSignInError.notConfigured);
+    });
+
+    test('400 "Unsupported provider" → notConfigured', () {
+      final err = debugMapAuthException(
+        const AuthException('Unsupported provider: apple', statusCode: '400'),
+      );
+      expect(err, AppleSignInError.notConfigured);
+    });
+
+    test('400 generic → invalidResponse', () {
+      final err = debugMapAuthException(
+        const AuthException('Bad nonce', statusCode: '400'),
+      );
+      expect(err, AppleSignInError.invalidResponse);
+    });
+
+    test('422 → invalidResponse', () {
+      final err = debugMapAuthException(
+        const AuthException('Token expired', statusCode: '422'),
+      );
+      expect(err, AppleSignInError.invalidResponse);
+    });
+
+    test('5xx / no statusCode → network', () {
+      final err = debugMapAuthException(
+        const AuthException('Internal Server Error', statusCode: '500'),
+      );
+      expect(err, AppleSignInError.network);
     });
   });
 }

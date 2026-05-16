@@ -21,6 +21,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
 
+import '../../app/config.dart';
 import 'logger.dart';
 import 'supabase_client.dart';
 
@@ -141,11 +142,8 @@ class AppleSignInServiceImpl implements AppleSignInService {
       _log.info('apple_sign_in_success');
       return const AppleSignInOutcome(success: true);
     } on AuthException catch (e) {
-      _log.warning('apple_supabase_failed', e.message);
-      return const AppleSignInOutcome(
-        success: false,
-        error: AppleSignInError.invalidResponse,
-      );
+      _log.warning('apple_supabase_failed', '${e.statusCode} ${e.message}');
+      return AppleSignInOutcome(success: false, error: _mapAuthException(e));
     } on Object catch (e, s) {
       _log.severe('apple_sign_in_supabase_unexpected', e, s);
       return const AppleSignInOutcome(
@@ -153,6 +151,28 @@ class AppleSignInServiceImpl implements AppleSignInService {
         error: AppleSignInError.network,
       );
     }
+  }
+
+  /// Supabase's `signInWithIdToken` returns 400 with a "provider is not
+  /// enabled" / "Unsupported provider" message when the Apple OAuth
+  /// provider has not been turned on for the project. That's an
+  /// operator misconfiguration, not a user error — surface it as
+  /// `notConfigured` so the UI suggests the email path instead of
+  /// asking the user to retry.
+  static AppleSignInError _mapAuthException(AuthException e) {
+    final msg = e.message.toLowerCase();
+    final looksLikeProviderDisabled =
+        msg.contains('provider') &&
+        (msg.contains('not enabled') ||
+            msg.contains('disabled') ||
+            msg.contains('unsupported'));
+    if (e.statusCode == '400' && looksLikeProviderDisabled) {
+      return AppleSignInError.notConfigured;
+    }
+    if (e.statusCode == '422' || e.statusCode == '400') {
+      return AppleSignInError.invalidResponse;
+    }
+    return AppleSignInError.network;
   }
 
   // ---- Test seams -------------------------------------------------------
@@ -178,13 +198,20 @@ class AppleSignInServiceImpl implements AppleSignInService {
 }
 
 /// Provider — returns a stub on non-iOS/disabled so consumers can call
-/// `.isSupported` without platform checks.
+/// `.isSupported` without platform checks. Routes the enabled flag
+/// through `AppConfig` so tests can override the value via the
+/// `appConfigProvider`.
 final appleSignInServiceProvider = Provider<AppleSignInService>((ref) {
+  final config = ref.watch(appConfigProvider);
   return AppleSignInServiceImpl(
     client: ref.watch(supabaseClientProvider),
-    enabled: const bool.fromEnvironment(
-      'APPLE_SIGN_IN_ENABLED',
-      defaultValue: false,
-    ),
+    enabled: config.appleSignInEnabled,
   );
 });
+
+/// Internal helper exposed for tests of [AppleSignInServiceImpl]'s
+/// Supabase-error mapping logic. Keeps the gnarly statusCode + message
+/// heuristics testable without a real `SupabaseClient`.
+@visibleForTesting
+AppleSignInError debugMapAuthException(AuthException e) =>
+    AppleSignInServiceImpl._mapAuthException(e);

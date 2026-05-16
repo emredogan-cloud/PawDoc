@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../shared/services/analytics_events.dart';
 import '../../shared/services/apple_signin_service.dart';
 import 'auth_controller.dart';
 
@@ -137,7 +138,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             final messenger = ScaffoldMessenger.of(context);
                             final svc = ref.read(appleSignInServiceProvider);
                             final outcome = await svc.signIn();
-                            if (!outcome.success && outcome.error != null) {
+                            if (outcome.success) {
+                              ref
+                                  .read(authControllerProvider.notifier)
+                                  .notifyAuthCompleted(AuthMethod.apple);
+                            } else if (outcome.error != null) {
                               // userCancelled has an empty message — skip.
                               if (outcome.error!.userMessage.isNotEmpty) {
                                 messenger.showSnackBar(

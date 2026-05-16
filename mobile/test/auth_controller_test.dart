@@ -8,6 +8,7 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pawdoc/features/auth/auth_controller.dart';
+import 'package:pawdoc/shared/services/analytics_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class _MockClient extends Mock implements SupabaseClient {}
@@ -28,7 +29,7 @@ void main() {
     client = _MockClient();
     auth = _MockAuth();
     when(() => client.auth).thenReturn(auth);
-    controller = AuthController(client);
+    controller = AuthController(client, RecordingAnalyticsService());
   });
 
   group('sendOtp', () {

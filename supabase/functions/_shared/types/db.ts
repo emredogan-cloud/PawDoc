@@ -1,15 +1,3 @@
-// =============================================================================
-// AUTO-GENERATED — DO NOT EDIT
-// =============================================================================
-// Regenerate with:
-//   supabase start  # if not already running
-//   supabase gen types typescript --local > supabase/functions/_shared/types/db.ts
-//
-// CI does not regenerate this. The committed copy is the contract used by
-// edge functions; if migrations change the schema, regenerate and commit.
-// =============================================================================
-// deno-fmt-ignore-file
-
 export type Json =
   | string
   | number
@@ -149,6 +137,38 @@ export type Database = {
             columns: ["analysis_id"]
             isOneToOne: false
             referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_refunds: {
+        Row: {
+          id: string
+          reason: string
+          refunded_at: string
+          request_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          reason: string
+          refunded_at?: string
+          request_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          reason?: string
+          refunded_at?: string
+          request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_refunds_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -379,6 +399,10 @@ export type Database = {
     Functions: {
       attempt_consume_free_analysis: {
         Args: { p_monthly_limit?: number; p_user_id: string }
+        Returns: boolean
+      }
+      refund_free_analysis: {
+        Args: { p_reason: string; p_request_id: string; p_user_id: string }
         Returns: boolean
       }
     }

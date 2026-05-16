@@ -13,6 +13,8 @@
   "REVENUECAT_PUBLIC_KEY_ANDROID": "goog_...",
   "ONESIGNAL_APP_ID": "...",
   "APPLE_SIGN_IN_ENABLED": "false",
+  "TOS_URL": "https://pawdoc.app/terms",
+  "PRIVACY_URL": "https://pawdoc.app/privacy",
   "APP_VERSION": "0.1.0",
   "APP_BUILD": "local"
 }
