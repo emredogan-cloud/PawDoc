@@ -36,6 +36,26 @@ dependencies:
   # Structured logging.
   logging: ^1.3.0
 
+  # ---- Phase 1C additions -----------------------------------------------
+  # Local key-value store for the onboarding draft + simple settings.
+  shared_preferences: ^2.3.4
+
+  # Camera + gallery picker, with native permission handling.
+  image_picker: ^1.1.2
+
+  # On-device JPEG re-encoding to keep uploads under the 2 MB budget.
+  flutter_image_compress: ^2.3.0
+
+  # Real-time online/offline status; used to gate analyze submissions.
+  connectivity_plus: ^6.1.1
+
+  # Locale-aware date formatting (DOB → age computation).
+  intl: ^0.19.0
+
+  # HTTP client for direct calls to Supabase Edge Functions when we need
+  # raw headers (X-Request-ID) that the supabase_flutter SDK abstracts.
+  http: ^1.2.2
+
 # =============================================================================
 # Dev / build dependencies
 # =============================================================================
@@ -49,6 +69,9 @@ dev_dependencies:
   riverpod_generator: ^2.6.3
   custom_lint: ^0.7.0
   riverpod_lint: ^2.6.3
+
+  # Mocks for provider + service tests.
+  mocktail: ^1.0.4
 
 # =============================================================================
 # Flutter section

@@ -1,28 +1,22 @@
 /// Supabase client provider.
 ///
-/// Phase 0 defines the seam; Phase 1 wires real auth + storage + DB usage.
-/// The provider intentionally throws if the app starts without
-/// `SUPABASE_ANON_KEY` configured — fail loud, not silently.
+/// Phase 1C: returns the singleton from `Supabase.initialize(...)` set up in
+/// `main.dart`. That singleton owns session persistence, secure storage of
+/// the JWT, and the auth event stream — none of which we want to
+/// duplicate.
+///
+/// Tests override this provider with a mock client so they don't need to
+/// initialise the real SDK.
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../app/config.dart';
-
-/// Eagerly-initialized Supabase client.
-///
-/// Use via:
-///   final supabase = ref.read(supabaseClientProvider);
-///
-/// During tests, override this provider with a mock.
+/// Read via `ref.watch(supabaseClientProvider)`. The mobile is built around
+/// this seam — every Supabase call goes through it.
 final supabaseClientProvider = Provider<SupabaseClient>((ref) {
-  final config = ref.watch(appConfigProvider);
-  if (!config.hasSupabase) {
-    throw StateError(
-      'Supabase anon key missing. Run with --dart-define-from-file=env/dev.json '
-      'and populate SUPABASE_ANON_KEY.',
-    );
-  }
-  return SupabaseClient(config.supabaseUrl, config.supabaseAnonKey);
+  // `Supabase.initialize` MUST have been called in main.dart before the
+  // first read. If it hasn't, the SDK throws a clear "not initialized"
+  // error which propagates here.
+  return Supabase.instance.client;
 });

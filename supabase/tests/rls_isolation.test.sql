@@ -23,13 +23,19 @@ SELECT plan(48);
 -- Fixtures: two users + their owned rows.
 -- ---------------------------------------------------------------------------
 -- Use deterministic UUIDs so assertions can reference them by literal.
-INSERT INTO auth.users (id) VALUES
-  ('11111111-1111-1111-1111-111111111111'),
-  ('22222222-2222-2222-2222-222222222222');
+-- Note: the Phase 1C `on_auth_user_created` trigger now creates the matching
+-- public.users row automatically when we INSERT INTO auth.users. We pass
+-- the email in the auth row so the trigger has the value to mirror; then
+-- the explicit INSERT below is upserted-via-conflict in case the trigger
+-- hasn't run yet (defensive — it always has).
+INSERT INTO auth.users (id, email) VALUES
+  ('11111111-1111-1111-1111-111111111111', 'alice@example.test'),
+  ('22222222-2222-2222-2222-222222222222', 'bob@example.test');
 
 INSERT INTO public.users (id, email) VALUES
   ('11111111-1111-1111-1111-111111111111', 'alice@example.test'),
-  ('22222222-2222-2222-2222-222222222222', 'bob@example.test');
+  ('22222222-2222-2222-2222-222222222222', 'bob@example.test')
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.pets (id, user_id, name, species) VALUES
   ('aaaa1111-aaaa-1111-aaaa-111111111111', '11111111-1111-1111-1111-111111111111', 'Alice-Dog',   'dog'),
