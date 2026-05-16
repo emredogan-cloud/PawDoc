@@ -70,7 +70,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S105", "S106", "S311"]  # test fixtures allowed to use simple secrets
+"tests/*" = ["S105", "S106", "S311"]                    # test fixtures allowed to use simple secrets
+"app/routers/*" = ["B008"]                              # FastAPI Depends() in defaults is the idiom
+"app/services/orchestrator.py" = ["PLR0911"]            # tier-routing has natural early returns
 
 [tool.ruff.format]
 quote-style = "double"

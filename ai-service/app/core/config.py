@@ -89,6 +89,32 @@ class Settings(BaseSettings):
     sentry_environment: str = Field(default="local", alias="SENTRY_ENVIRONMENT")
     sentry_release: str = Field(default="0.1.0+local", alias="SENTRY_RELEASE")
 
+    # ---- AI orchestration (Phase 1B) ---------------------------------------
+    # Shared secret between the edge function and this service. Only the
+    # edge function should call /analyze; anything else (including a
+    # leaked supabase JWT) must be rejected.
+    internal_api_token: SecretStr | None = Field(default=None, alias="INTERNAL_API_TOKEN")
+
+    # Model versions — bump cautiously; output schema is verified by the
+    # parser but token costs and latency profile change between versions.
+    gemini_model: str = Field(default="gemini-2.0-flash", alias="GEMINI_MODEL")
+    claude_model: str = Field(default="claude-sonnet-4-5-20250929", alias="CLAUDE_MODEL")
+
+    # Provider timeouts in seconds. The AI service's overall request
+    # timeout is roughly 2 * gemini + 2 * claude + cross-verify + slack.
+    gemini_timeout_s: float = Field(default=20.0, ge=1.0, alias="GEMINI_TIMEOUT_S")
+    claude_timeout_s: float = Field(default=30.0, ge=1.0, alias="CLAUDE_TIMEOUT_S")
+
+    # Tier 2 confidence cutoff per roadmap §3. Below this we escalate.
+    tier2_confidence_floor: float = Field(
+        default=0.85, ge=0.0, le=1.0, alias="TIER2_CONFIDENCE_FLOOR"
+    )
+    # Below this we override the model and return graceful "insufficient
+    # information" — anti-hallucination safety floor.
+    insufficient_confidence_floor: float = Field(
+        default=0.60, ge=0.0, le=1.0, alias="INSUFFICIENT_CONFIDENCE_FLOOR"
+    )
+
     @property
     def is_local(self) -> bool:
         return self.app_env is AppEnv.LOCAL
