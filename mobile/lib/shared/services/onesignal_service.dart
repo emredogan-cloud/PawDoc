@@ -69,6 +69,16 @@ class OneSignalServiceImpl implements OneSignalService {
     try {
       // OneSignal's initialize() is fire-and-forget in the Flutter SDK;
       // we don't have a meaningful Future to await on.
+      //
+      // IMPORTANT (App Store privacy): OneSignal v5+ defaults to NOT
+      // accessing IDFA. We deliberately do NOT call any of the SDK's
+      // IDFA-enabling helpers (OneSignal.setRequiresPrivacyConsent or
+      // an explicit IDFA opt-in). Because of this:
+      //   - We do NOT add NSUserTrackingUsageDescription to Info.plist
+      //   - We do NOT call AppTrackingTransparency.requestTrackingAuth
+      //   - Our PrivacyInfo.xcprivacy declares NSPrivacyTracking = false
+      // See docs/reports/sprint-a1-compliance-plan.md §4 for the
+      // full audit. If the SDK is upgraded, re-verify this contract.
       // ignore: unawaited_futures
       OneSignal.initialize(appId);
       _initialized = true;

@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../shared/models/pet.dart';
 import '../../shared/services/analyze_service.dart';
+import '../../shared/widgets/disclaimer.dart';
 import 'analysis_controller.dart';
 
 class AnalysisCaptureScreen extends ConsumerStatefulWidget {
@@ -120,15 +121,7 @@ class _AnalysisCaptureScreenState extends ConsumerState<AnalysisCaptureScreen> {
                 child: const Text('Analyze'),
               ),
               const SizedBox(height: 16),
-              Text(
-                'PawDoc provides triage guidance, not a veterinary '
-                'diagnosis. Always consult a licensed veterinarian for '
-                'medical decisions.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+              const DisclaimerCaption(),
             ],
           ),
         ),

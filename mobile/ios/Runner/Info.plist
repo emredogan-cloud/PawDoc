@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>PawDoc uses your camera so you can take a photo of your pet and get instant triage guidance from the AI.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PawDoc lets you pick an existing photo of your pet so the AI can give you triage guidance without having to take a new picture.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../shared/models/analysis_result.dart';
+import '../../shared/widgets/disclaimer.dart';
 import '../../shared/widgets/triage_badge.dart';
 import 'analysis_controller.dart';
 
@@ -90,8 +91,7 @@ class AnalysisResultScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Text(
                   result.disclaimerText.isEmpty
-                      ? 'PawDoc provides triage guidance, not a veterinary '
-                            'diagnosis. Always consult a licensed veterinarian.'
+                      ? kCanonicalDisclaimer
                       : result.disclaimerText,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: Colors.white.withValues(alpha: 0.8),

@@ -99,8 +99,11 @@ def emergency_response_text(keyword: str | None) -> str:
 
 
 def emergency_recommended_actions() -> list[str]:
+    # App Store review safety: avoid "treatment" framing (medical-device
+    # trigger). The intent — stop trying to handle it yourself, go to a
+    # vet — is preserved.
     return [
-        "Stop any further at-home treatment.",
+        "Stop any at-home remedies or interventions.",
         "Contact your nearest 24h veterinary emergency clinic right now.",
         "If your pet is not breathing or is unresponsive, perform CPR while en route.",
         "Bring any suspected toxic substance packaging or photographs to the clinic.",
