@@ -156,12 +156,26 @@ class AnalysisController extends StateNotifier<AnalysisState> {
       _cachedStorageKey = null;
       _writeState(AnalysisPreparing(picked));
     } on ImagePickFailure catch (e) {
-      _log.warning('image_pick_failed', e.message);
-      _writeState(
-        AnalysisFailedState(AnalyzeFailureKind.validation, e.message),
-      );
+      _log.warning('image_pick_failed', '${e.kind.name}: ${e.message}');
+      final kind = _mapImagePickFailure(e.kind);
+      _writeState(AnalysisFailedState(kind, e.message));
+      unawaited(_analytics.track(AnalysisFailedEvent(kind: kind.name)));
     }
   }
+
+  /// Image-pick failures from [ImageServiceImpl] are split into typed
+  /// `AnalyzeFailureKind` buckets so analytics + UX can branch.
+  AnalyzeFailureKind _mapImagePickFailure(ImagePickFailureKind kind) =>
+      switch (kind) {
+        ImagePickFailureKind.empty ||
+        ImagePickFailureKind.unsupportedFormat ||
+        ImagePickFailureKind.tooSmall ||
+        ImagePickFailureKind.tooLarge ||
+        ImagePickFailureKind.oversized =>
+          AnalyzeFailureKind.unsupportedImage,
+        ImagePickFailureKind.permissionDenied => AnalyzeFailureKind.validation,
+        ImagePickFailureKind.unknown => AnalyzeFailureKind.validation,
+      };
 
   void clearImage() {
     _pendingImage = null;

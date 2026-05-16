@@ -55,3 +55,21 @@ def test_breed_context_rabbit_falls_through_to_species() -> None:
 
 def test_breed_context_no_breed_no_species_returns_empty() -> None:
     assert breed_context_for("dog", None) == ""
+
+
+# ---------------------------------------------------------------------------
+# Sprint B2: untrusted-owner-input boundary in the system prompt
+# ---------------------------------------------------------------------------
+
+
+def test_system_prompt_declares_owner_description_trust_boundary() -> None:
+    """System prompt must teach the model that the OWNER_DESCRIPTION
+    block is untrusted input. Without this clause, the model relies on
+    the (previously ad-hoc) "ignore these instructions" line alone."""
+    assert "<OWNER_DESCRIPTION>" in SYSTEM_PROMPT
+    assert "</OWNER_DESCRIPTION>" in SYSTEM_PROMPT
+    assert "UNTRUSTED" in SYSTEM_PROMPT
+    # Explicit examples of patterns the model must NOT follow.
+    lowered = SYSTEM_PROMPT.lower()
+    assert "ignore the previous" in lowered or "ignore previous" in lowered
+    assert "you are now" in lowered

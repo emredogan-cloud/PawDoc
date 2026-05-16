@@ -19,6 +19,7 @@ import 'package:pawdoc/features/analysis/analysis_controller.dart';
 import 'package:pawdoc/shared/models/analysis_result.dart';
 import 'package:pawdoc/shared/models/pet.dart';
 import 'package:pawdoc/shared/providers/auth_provider.dart';
+import 'package:pawdoc/shared/services/analytics_events.dart';
 import 'package:pawdoc/shared/services/analytics_service.dart';
 import 'package:pawdoc/shared/services/analyze_service.dart';
 import 'package:pawdoc/shared/services/connectivity_service.dart';
@@ -29,10 +30,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class _FakeImageService implements ImageService {
   _FakeImageService(this.image);
   PickedImage? image;
+  ImagePickFailure? throwOnNext;
   @override
-  Future<PickedImage?> captureFromCamera() async => image;
+  Future<PickedImage?> captureFromCamera() async {
+    if (throwOnNext != null) {
+      final t = throwOnNext!;
+      throwOnNext = null;
+      throw t;
+    }
+    return image;
+  }
+
   @override
-  Future<PickedImage?> pickFromGallery() async => image;
+  Future<PickedImage?> pickFromGallery() => captureFromCamera();
 }
 
 class _MockStorageService implements StorageService {
@@ -393,6 +403,80 @@ void main() {
       ctrl.notifyResumedAfterLongIdle();
       expect(ctrl.state, isA<AnalysisIdle>());
     });
+  });
+
+  group('image moderation (Sprint B2)', () {
+    test(
+      'unsupportedFormat image-pick maps to unsupportedImage + analytics',
+      () async {
+        final h = _Harness();
+        final ctrl = h.build();
+        addTearDown(ctrl.dispose);
+
+        h.images.throwOnNext = const ImagePickFailure(
+          "That file type isn't supported. Use a JPG, PNG, HEIC, or WEBP.",
+          kind: ImagePickFailureKind.unsupportedFormat,
+        );
+        await ctrl.pickImage(fromCamera: true);
+
+        expect(ctrl.state, isA<AnalysisFailedState>());
+        expect(
+          (ctrl.state as AnalysisFailedState).kind,
+          AnalyzeFailureKind.unsupportedImage,
+        );
+        // Storage and analyze are never touched on a hygiene reject.
+        expect(h.storage.uploadCount, 0);
+        expect(h.analyze.submitCount, 0);
+        // Analytics carries the typed kind, never the raw error message.
+        expect(
+          h.analytics.trackedEvents
+              .whereType<AnalysisFailedEvent>()
+              .single
+              .properties['kind'],
+          'unsupportedImage',
+        );
+      },
+    );
+
+    test(
+      'tooSmall dimensions map to unsupportedImage',
+      () async {
+        final h = _Harness();
+        final ctrl = h.build();
+        addTearDown(ctrl.dispose);
+
+        h.images.throwOnNext = const ImagePickFailure(
+          'That image is too small. Try a clearer photo (at least 200×200 pixels).',
+          kind: ImagePickFailureKind.tooSmall,
+        );
+        await ctrl.pickImage(fromCamera: true);
+
+        expect(
+          (ctrl.state as AnalysisFailedState).kind,
+          AnalyzeFailureKind.unsupportedImage,
+        );
+      },
+    );
+
+    test(
+      'permissionDenied stays in validation (not unsupportedImage)',
+      () async {
+        final h = _Harness();
+        final ctrl = h.build();
+        addTearDown(ctrl.dispose);
+
+        h.images.throwOnNext = const ImagePickFailure(
+          'Permission denied. Allow camera/photos access in Settings.',
+          kind: ImagePickFailureKind.permissionDenied,
+        );
+        await ctrl.pickImage(fromCamera: true);
+
+        expect(
+          (ctrl.state as AnalysisFailedState).kind,
+          AnalyzeFailureKind.validation,
+        );
+      },
+    );
   });
 
   group('analyze failure mapping', () {

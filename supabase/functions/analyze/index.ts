@@ -47,6 +47,16 @@ import {
 const INPUT_TYPES = ["photo", "video", "text"] as const;
 type InputType = (typeof INPUT_TYPES)[number];
 
+// Sprint B2 abuse hardening:
+//   - Hard cap on owner-supplied text so a 50 KB prompt-injection
+//     payload can't burn tokens upstream.
+//   - Storage-key shape gate before we let the AI service mint a URL
+//     for it. Rejects `../` traversal, absolute paths, and the empty
+//     filename suffix that some manual cURL clients send.
+const TEXT_DESCRIPTION_MAX_CHARS = 2000;
+const STORAGE_KEY_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[A-Za-z0-9._-]{1,128}$/i;
+
 interface AnalyzeRequest {
   petId: string;
   inputType: InputType;
@@ -54,12 +64,40 @@ interface AnalyzeRequest {
   textDescription?: string;
 }
 
+/**
+ * Strip ASCII control characters that have no business inside a
+ * symptom description. Whitespace (`\t`, `\n`, `\r`) is preserved
+ * because owners legitimately paste multi-line notes; everything else
+ * in the `\x00-\x1F` / `\x7F` ranges is removed. This also kills the
+ * NUL-byte trick that smuggles around naive `String.length` checks.
+ */
+function sanitizeTextDescription(raw: string): string {
+  // deno-lint-ignore no-control-regex
+  return raw.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+}
+
 function parseAnalyzeRequest(body: unknown): AnalyzeRequest {
   const obj = asObject(body);
   const petId = asUuid(obj.pet_id, "pet_id");
   const inputType = asOneOf(obj.input_type, INPUT_TYPES, "input_type");
   const inputStorageKey = asOptional(obj.input_storage_key, asString, "input_storage_key");
-  const textDescription = asOptional(obj.text_description, asString, "text_description");
+  const rawText = asOptional(obj.text_description, asString, "text_description");
+
+  let textDescription: string | undefined;
+  if (rawText !== undefined) {
+    const cleaned = sanitizeTextDescription(rawText).trim();
+    if (cleaned.length === 0) {
+      // Treat whitespace-only text as "no text supplied" so the
+      // input_type=text branch below rejects cleanly.
+      textDescription = undefined;
+    } else if (cleaned.length > TEXT_DESCRIPTION_MAX_CHARS) {
+      throw Errors.validation(
+        `text_description must be ${TEXT_DESCRIPTION_MAX_CHARS} characters or fewer.`,
+      );
+    } else {
+      textDescription = cleaned;
+    }
+  }
 
   if (inputType === "text" && !textDescription) {
     throw Errors.validation("text_description is required when input_type='text'.");
@@ -67,6 +105,11 @@ function parseAnalyzeRequest(body: unknown): AnalyzeRequest {
   if ((inputType === "photo" || inputType === "video") && !inputStorageKey) {
     throw Errors.validation(
       "input_storage_key is required when input_type='photo' or 'video'.",
+    );
+  }
+  if (inputStorageKey !== undefined && !STORAGE_KEY_PATTERN.test(inputStorageKey)) {
+    throw Errors.validation(
+      "input_storage_key has an invalid shape.",
     );
   }
   return { petId, inputType, inputStorageKey, textDescription };

@@ -41,6 +41,7 @@ enum AnalyzeFailureKind {
   quotaExceeded,
   rateLimited,
   validation,
+  unsupportedImage,
   upstreamUnavailable,
   unknown;
 
@@ -63,6 +64,8 @@ enum AnalyzeFailureKind {
       "You've reached today's daily limit. Try again tomorrow.",
     AnalyzeFailureKind.validation =>
       "We couldn't process that request. Please try again.",
+    AnalyzeFailureKind.unsupportedImage =>
+      "That image isn't something we can analyze. Try a clear photo of your pet.",
     AnalyzeFailureKind.upstreamUnavailable =>
       'Our AI service is unavailable right now. Try again in a minute.',
     AnalyzeFailureKind.unknown => 'Something went wrong. Try again shortly.',
