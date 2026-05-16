@@ -21,8 +21,8 @@ dependencies:
     sdk: flutter
 
   # State management: compile-safe, async-first, testable.
-  flutter_riverpod: ^2.6.1
-  riverpod_annotation: ^2.6.1
+  flutter_riverpod: ^3.1.0
+  riverpod_annotation: ^4.0.0
 
   # Routing: type-safe, deep-link friendly.
   go_router: ^14.6.2
@@ -65,10 +65,10 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
   # Riverpod codegen toolchain (used in Phase 1+).
-  build_runner: ^2.4.13
-  riverpod_generator: ^2.6.3
-  custom_lint: ^0.7.0
-  riverpod_lint: ^2.6.3
+  build_runner: ^2.15.0
+  riverpod_generator: ^4.0.0+1
+  custom_lint: ^0.8.1
+  riverpod_lint: ^3.1.0
 
   # Mocks for provider + service tests.
   mocktail: ^1.0.4
