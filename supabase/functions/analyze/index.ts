@@ -301,6 +301,7 @@ const handler = withErrorHandler(async (req: Request): Promise<Response> => {
       request_id: requestId,
       allowed: rl.allowed,
       remaining: rl.remaining,
+      mode: rl.mode,
     });
     if (!rl.allowed) {
       throw Errors.rateLimited(

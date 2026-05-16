@@ -143,6 +143,7 @@ void main() {
         'tooSmall',
         'tooLarge',
         'oversized',
+        'compressionFailed',
         'unknown',
       });
     });

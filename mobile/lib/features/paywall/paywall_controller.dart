@@ -18,6 +18,7 @@ import '../../shared/services/analytics_events.dart';
 import '../../shared/services/analytics_service.dart';
 import '../../shared/services/logger.dart';
 import '../../shared/services/revenuecat_service.dart';
+import '../../shared/services/sentry_service.dart';
 
 @immutable
 sealed class PaywallState {
@@ -117,6 +118,13 @@ class PaywallController extends StateNotifier<PaywallState> {
     unawaited(
       _analytics.track(PaywallSeenEvent(offeringId: chosen.identifier)),
     );
+    unawaited(
+      sentryBreadcrumb(
+        'paywall_shown',
+        category: 'paywall',
+        data: {'offering_id': chosen.identifier},
+      ),
+    );
   }
 
   Future<void> purchase(Package package) async {
@@ -130,6 +138,13 @@ class PaywallController extends StateNotifier<PaywallState> {
         unawaited(
           _analytics.track(
             SubscriptionStartedEvent(packageId: package.identifier),
+          ),
+        );
+        unawaited(
+          sentryBreadcrumb(
+            'purchase_complete',
+            category: 'paywall',
+            data: {'package_id': package.identifier},
           ),
         );
       case PurchaseOutcomeKind.userCancelled:
@@ -146,6 +161,7 @@ class PaywallController extends StateNotifier<PaywallState> {
     if (outcome.kind == PurchaseOutcomeKind.success) {
       state = const PaywallSucceeded();
       unawaited(_analytics.track(const RestorePurchaseEvent()));
+      unawaited(sentryBreadcrumb('purchase_restored', category: 'paywall'));
     } else {
       state = PaywallFailed(outcome.kind);
       await Future<void>.delayed(const Duration(seconds: 1));

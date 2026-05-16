@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 import pytest
@@ -60,11 +59,18 @@ def _request_body() -> dict[str, Any]:
 
 
 @pytest.fixture
-def app_with_fake() -> tuple[FastAPI, FakeOrchestrator]:
-    """Build an app with the orchestrator + settings overridden."""
+def app_with_fake(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[FastAPI, FakeOrchestrator]:
+    """Build an app with the orchestrator + settings overridden.
+
+    Sprint B3 update: env vars are set via `monkeypatch` so they get
+    cleaned up between tests — direct `os.environ[...] =` writes
+    leaked into subsequent tests and broke the new B3 startup-validator
+    + readiness probes by leaving `INTERNAL_API_TOKEN` set process-wide.
+    """
     get_settings.cache_clear()
-    # set the token via env so the verifier finds it.
-    os.environ["INTERNAL_API_TOKEN"] = "secret-token"
+    monkeypatch.setenv("INTERNAL_API_TOKEN", "secret-token")
 
     app = create_app()
     fake = FakeOrchestrator(_result_fixture())
@@ -153,11 +159,13 @@ async def test_service_unconfigured_returns_503(monkeypatch: pytest.MonkeyPatch)
     assert resp.status_code == 503
 
 
-def test_orchestrator_dependency_constructs() -> None:
+def test_orchestrator_dependency_constructs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Sanity: get_orchestrator() builds without crashing in a happy env."""
-    os.environ["INTERNAL_API_TOKEN"] = "x"
-    os.environ["ANTHROPIC_API_KEY"] = "x"
-    os.environ["GOOGLE_AI_API_KEY"] = "x"
+    monkeypatch.setenv("INTERNAL_API_TOKEN", "x")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    monkeypatch.setenv("GOOGLE_AI_API_KEY", "x")
     get_settings.cache_clear()
     orch = get_orchestrator(get_settings())
     assert isinstance(orch, Orchestrator)

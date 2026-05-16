@@ -54,6 +54,7 @@ enum ImagePickFailureKind {
   tooSmall,
   tooLarge,
   oversized,
+  compressionFailed, // Sprint B3 (F-OPS6): OOM / native crash inside flutter_image_compress
   unknown;
 }
 
@@ -126,13 +127,44 @@ class ImageServiceImpl implements ImageService {
     var maxWidth = 2048;
     // Iteratively shrink if necessary.
     while (current.length > _kMaxBytes && quality > 40) {
-      final recompressed = await FlutterImageCompress.compressWithList(
-        originalBytes,
-        minWidth: maxWidth,
-        minHeight: maxWidth,
-        quality: quality,
-        format: CompressFormat.jpeg,
-      );
+      // Sprint B3 (F-OPS6 / R-16): flutter_image_compress runs on the
+      // platform thread on iOS but in-process on Android; on a 256 MB
+      // Android device it can OOM or return empty bytes. We wrap each
+      // call in try/catch and additionally guard against empty output.
+      // The full `compute()`-isolate rewrite stays deferred to Phase 2
+      // (P1.15); this wrapper is the safety net for the existing
+      // main-isolate path so a low-end device sees a friendly typed
+      // failure rather than a generic crash bubbling out as `.unknown`.
+      Uint8List recompressed;
+      try {
+        recompressed = await FlutterImageCompress.compressWithList(
+          originalBytes,
+          minWidth: maxWidth,
+          minHeight: maxWidth,
+          quality: quality,
+          format: CompressFormat.jpeg,
+        );
+      } on Object catch (e, s) {
+        _log.warning(
+          'image_compress_failed',
+          '$e (quality=$quality maxWidth=$maxWidth)',
+        );
+        _log.severe('image_compress_failed_stack', e, s);
+        throw const ImagePickFailure(
+          "We couldn't shrink that image. Try a different one.",
+          kind: ImagePickFailureKind.compressionFailed,
+        );
+      }
+      if (recompressed.isEmpty) {
+        _log.warning(
+          'image_compress_returned_empty',
+          'quality=$quality maxWidth=$maxWidth',
+        );
+        throw const ImagePickFailure(
+          "We couldn't shrink that image. Try a different one.",
+          kind: ImagePickFailureKind.compressionFailed,
+        );
+      }
       current = recompressed;
       // Either reduce quality or downscale on the next round.
       if (quality > 60) {

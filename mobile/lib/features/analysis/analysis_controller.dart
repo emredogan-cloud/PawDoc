@@ -38,6 +38,7 @@ import '../../shared/services/analyze_service.dart';
 import '../../shared/services/connectivity_service.dart';
 import '../../shared/services/image_service.dart';
 import '../../shared/services/logger.dart';
+import '../../shared/services/sentry_service.dart';
 import '../../shared/services/storage_service.dart';
 
 @immutable
@@ -171,7 +172,8 @@ class AnalysisController extends StateNotifier<AnalysisState> {
         ImagePickFailureKind.unsupportedFormat ||
         ImagePickFailureKind.tooSmall ||
         ImagePickFailureKind.tooLarge ||
-        ImagePickFailureKind.oversized =>
+        ImagePickFailureKind.oversized ||
+        ImagePickFailureKind.compressionFailed =>
           AnalyzeFailureKind.unsupportedImage,
         ImagePickFailureKind.permissionDenied => AnalyzeFailureKind.validation,
         ImagePickFailureKind.unknown => AnalyzeFailureKind.validation,
@@ -221,6 +223,15 @@ class AnalysisController extends StateNotifier<AnalysisState> {
     _currentAttemptId = attemptId;
     final inputType = image != null ? 'photo' : 'text';
     final analyzeStart = DateTime.now();
+    // Sprint B3 (F-OPS5): journey breadcrumb so crash reports contain
+    // what the user was doing. No PII — just the typed input kind.
+    unawaited(
+      sentryBreadcrumb(
+        'analyze_submit',
+        category: 'analyze',
+        data: {'input_type': inputType, 'attempt_id': attemptId},
+      ),
+    );
     try {
       // Offline pre-flight — fail fast before consuming any quota or
       // creating a storage object. We use the cached value (non-blocking
@@ -324,6 +335,13 @@ class AnalysisController extends StateNotifier<AnalysisState> {
           ),
         ),
       );
+      unawaited(
+        sentryBreadcrumb(
+          'analyze_failed',
+          category: 'analyze',
+          data: {'kind': AnalyzeFailureKind.uploadInterrupted.name},
+        ),
+      );
     } on StorageUploadFailure catch (e) {
       _log.warning('upload_failed', e.message);
       _writeState(
@@ -335,6 +353,13 @@ class AnalysisController extends StateNotifier<AnalysisState> {
           AnalysisFailedEvent(kind: AnalyzeFailureKind.validation.name),
         ),
       );
+      unawaited(
+        sentryBreadcrumb(
+          'analyze_failed',
+          category: 'analyze',
+          data: {'kind': AnalyzeFailureKind.validation.name},
+        ),
+      );
     } on AnalyzeFailure catch (e) {
       _log.warning('analyze_failed', e.kind.name);
       _writeState(
@@ -342,6 +367,13 @@ class AnalysisController extends StateNotifier<AnalysisState> {
         attemptId: attemptId,
       );
       unawaited(_analytics.track(AnalysisFailedEvent(kind: e.kind.name)));
+      unawaited(
+        sentryBreadcrumb(
+          'analyze_failed',
+          category: 'analyze',
+          data: {'kind': e.kind.name},
+        ),
+      );
     } on Object catch (e, s) {
       _log.severe('analyze_unexpected', e, s);
       _writeState(
@@ -354,6 +386,13 @@ class AnalysisController extends StateNotifier<AnalysisState> {
       unawaited(
         _analytics.track(
           AnalysisFailedEvent(kind: AnalyzeFailureKind.unknown.name),
+        ),
+      );
+      unawaited(
+        sentryBreadcrumb(
+          'analyze_failed',
+          category: 'analyze',
+          data: {'kind': AnalyzeFailureKind.unknown.name},
         ),
       );
       // Programmer bugs hide as `.unknown` in release. In debug we

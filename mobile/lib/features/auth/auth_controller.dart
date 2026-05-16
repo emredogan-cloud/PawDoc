@@ -18,6 +18,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/services/analytics_events.dart';
 import '../../shared/services/analytics_service.dart';
 import '../../shared/services/logger.dart';
+import '../../shared/services/sentry_service.dart';
 import '../../shared/services/supabase_client.dart';
 
 @immutable
@@ -61,6 +62,13 @@ class AuthController extends StateNotifier<AuthScreenState> {
   /// without coupling to its own controller.
   void notifyAuthCompleted(AuthMethod method) {
     unawaited(_analytics.track(AuthCompletedEvent(method: method)));
+    unawaited(
+      sentryBreadcrumb(
+        'auth_completed',
+        category: 'auth',
+        data: {'method': method.value},
+      ),
+    );
   }
 
   Future<void> sendOtp(String email) async {

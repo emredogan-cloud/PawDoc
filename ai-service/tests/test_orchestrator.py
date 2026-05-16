@@ -276,3 +276,103 @@ async def test_result_has_ai_latency_ms_set() -> None:
     result = await orchestrator.analyze(_request(text="hi"))
     assert result.ai_latency_ms >= 0
     assert result.request_id == "req_test"
+
+
+# ---------------------------------------------------------------------------
+# Sprint B3 (F-OPS7) — provider-degradation chaos coverage
+# ---------------------------------------------------------------------------
+
+
+async def test_both_providers_fail_returns_graceful_degradation() -> None:
+    """Tier 2 transport error AND Tier 3 transport error → graceful
+    fallback. This is the worst-case "the internet ate our AI providers"
+    scenario; user must still see a coherent result, not a 500."""
+
+    def gem(_n: int) -> Any:
+        return UpstreamError("gemini down")
+
+    def claude(_n: int) -> Any:
+        return UpstreamError("claude down")
+
+    orchestrator = Orchestrator(
+        settings=_settings(),
+        gemini=FakeGemini(gem),
+        claude=FakeClaude(claude),
+    )
+    result = await orchestrator.analyze(_request(text="symptoms"))
+    assert result.tier_used == 0
+    assert result.triage_level == "MONITOR"
+    assert result.model_used == "graceful_degradation"
+    assert result.confidence == 0.0
+
+
+async def test_graceful_degradation_uses_centralised_copy() -> None:
+    """The orchestrator's graceful path must use the B3 copy module —
+    a refactor that hardcodes a different string here is the App Store
+    drift this sprint set out to prevent."""
+    from app.services.copy import (
+        DEGRADATION_PRIMARY_CONCERN,
+        DEGRADATION_RECOMMENDED_ACTIONS,
+        DEGRADATION_URGENCY,
+    )
+
+    def claude(_n: int) -> Any:
+        return UpstreamError("down")
+
+    orchestrator = Orchestrator(
+        settings=_settings(),
+        gemini=FakeGemini(lambda _n: UpstreamError("down")),
+        claude=FakeClaude(claude),
+    )
+    result = await orchestrator.analyze(_request(text="x"))
+    assert result.primary_concern == DEGRADATION_PRIMARY_CONCERN
+    assert result.urgency_timeframe == DEGRADATION_URGENCY
+    assert tuple(result.recommended_actions) == DEGRADATION_RECOMMENDED_ACTIONS
+
+
+async def test_cross_verify_fails_keeps_emergency_without_disagreement_flag() -> None:
+    """If the cross-verify call ITSELF errors, we keep the EMERGENCY
+    classification rather than downgrade. Documented as H-7 in the
+    Phase 1 audit: failing closed to MONITOR on a transport hiccup
+    during the verify call would be unsafe."""
+    g_payload = _provider_payload(triage="EMERGENCY", confidence=0.95)
+    e_payload = _provider_payload(triage="EMERGENCY", confidence=0.92)
+
+    def claude(n: int) -> Any:
+        # First call (initial analysis) succeeds; second (cross-verify) errors.
+        if n == 1:
+            return e_payload
+        return UpstreamError("verify hiccup")
+
+    orchestrator = Orchestrator(
+        settings=_settings(),
+        gemini=FakeGemini(lambda _n: g_payload),
+        claude=FakeClaude(claude),
+    )
+    result = await orchestrator.analyze(_request(text="something off"))
+    assert result.tier_used == 3
+    assert result.triage_level == "EMERGENCY"
+    # The original tier-3 confidence is preserved.
+    assert result.confidence == 0.92
+    # Disagreement flag stays False — we couldn't disagree, just couldn't verify.
+    assert result.cross_verify_disagreement is False
+
+
+async def test_emergency_override_uses_centralised_copy() -> None:
+    """The pre-AI keyword override path must use copy.py constants —
+    matching the discipline applied to the graceful path."""
+    from app.services.copy import (
+        EMERGENCY_RECOMMENDED_ACTIONS,
+        EMERGENCY_URGENCY,
+    )
+
+    orchestrator = Orchestrator(
+        settings=_settings(),
+        gemini=FakeGemini(lambda _n: pytest.fail("AI must not be called")),
+        claude=FakeClaude(lambda _n: pytest.fail("AI must not be called")),
+    )
+    result = await orchestrator.analyze(_request(text="my dog is having a seizure"))
+    assert result.urgency_timeframe == EMERGENCY_URGENCY
+    assert tuple(result.recommended_actions) == EMERGENCY_RECOMMENDED_ACTIONS
+    # Headline echoes the matched keyword for operator + user clarity.
+    assert "'seizure'" in result.primary_concern

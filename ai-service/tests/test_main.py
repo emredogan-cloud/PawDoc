@@ -26,6 +26,13 @@ def test_docs_enabled_in_non_prod(env: AppEnv, monkeypatch: pytest.MonkeyPatch) 
 
 def test_docs_disabled_in_prod(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("APP_ENV", "prod")
+    # Sprint B3 added a prod-startup validator — satisfy it so this
+    # test isn't accidentally measuring the validator's behaviour.
+    monkeypatch.setenv("INTERNAL_API_TOKEN", "x")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    monkeypatch.setenv("GOOGLE_AI_API_KEY", "x")
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "x")
     get_settings.cache_clear()
     app = create_app()
     assert app.docs_url is None

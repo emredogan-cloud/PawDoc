@@ -18,7 +18,7 @@ from enum import StrEnum
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, HttpUrl, SecretStr
+from pydantic import Field, HttpUrl, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -125,6 +125,43 @@ class Settings(BaseSettings):
 
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+
+    # ------------------------------------------------------------------
+    # Sprint B3 (F-OPS2 / H-9) — prod startup validation
+    # ------------------------------------------------------------------
+    #
+    # Pydantic optional fields make Phase 0 local dev frictionless but
+    # let prod boot with missing keys — the operator finds out at the
+    # first /analyze request via a 503 or 401. Validate at process
+    # start instead: missing prod keys raise a ValueError listing
+    # every offender, which uvicorn surfaces as a clear startup crash
+    # in Fly logs.
+    #
+    # The set below is the minimum required-for-prod surface. Optional
+    # integrations (R2, Upstash, Sentry) are NOT required — Upstash
+    # fail-open mode is documented; R2 is Phase 2.
+
+    @model_validator(mode="after")
+    def _validate_prod_keys(self) -> Settings:
+        if self.app_env is not AppEnv.PROD:
+            return self
+        missing: list[str] = []
+        if self.internal_api_token is None:
+            missing.append("INTERNAL_API_TOKEN")
+        if self.anthropic_api_key is None:
+            missing.append("ANTHROPIC_API_KEY")
+        if self.google_ai_api_key is None:
+            missing.append("GOOGLE_AI_API_KEY")
+        if self.supabase_url is None:
+            missing.append("SUPABASE_URL")
+        if self.supabase_service_role_key is None:
+            missing.append("SUPABASE_SERVICE_ROLE_KEY")
+        if missing:
+            raise ValueError(
+                "Production startup refused: missing required environment "
+                f"variables: {', '.join(missing)}. Check Doppler / Fly secrets."
+            )
+        return self
 
 
 @lru_cache(maxsize=1)

@@ -27,6 +27,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.services.copy import (
+    EMERGENCY_FALLBACK_HEADLINE,
+    emergency_recommended_actions as _emergency_actions_copy,
+    emergency_response_text as _emergency_response_copy,
+)
+
 # IMPORTANT: roadmap §9 — these are the hardcoded triggers. Adding or removing
 # items here must be coordinated with the edge function mirror.
 EMERGENCY_KEYWORDS: tuple[str, ...] = (
@@ -84,27 +90,14 @@ def check_emergency_override(text: str | None) -> EmergencyMatch:
     return EmergencyMatch.none()
 
 
+# Re-exports — copy itself now lives in app.services.copy so an App Store
+# tone audit only needs to grep one file. These wrappers preserve the
+# existing public API for ``services/orchestrator.py`` and tests.
 def emergency_response_text(keyword: str | None) -> str:
-    """The user-facing primary_concern returned for an override match.
-
-    Deliberately calm and action-oriented. The mobile UI shows full
-    escalation triggers; this string is the headline.
-    """
-    if keyword:
-        return (
-            "We detected language consistent with a possible emergency "
-            f"({keyword!r}). Please seek veterinary care immediately."
-        )
-    return "We detected language consistent with a possible emergency. Seek vet care immediately."
+    """The user-facing primary_concern returned for an override match."""
+    _ = EMERGENCY_FALLBACK_HEADLINE  # type-checker sanity: import alive
+    return _emergency_response_copy(keyword)
 
 
 def emergency_recommended_actions() -> list[str]:
-    # App Store review safety: avoid "treatment" framing (medical-device
-    # trigger). The intent — stop trying to handle it yourself, go to a
-    # vet — is preserved.
-    return [
-        "Stop any at-home remedies or interventions.",
-        "Contact your nearest 24h veterinary emergency clinic right now.",
-        "If your pet is not breathing or is unresponsive, perform CPR while en route.",
-        "Bring any suspected toxic substance packaging or photographs to the clinic.",
-    ]
+    return _emergency_actions_copy()

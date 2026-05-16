@@ -17,10 +17,22 @@
 import { log } from "./logger.ts";
 import { optionalEnv } from "./env.ts";
 
+/**
+ * Operational mode of a single rate-limit check. Sprint B3 (F-OPS1)
+ * surfaces this in the structured log so an alert rule can count
+ * fail-open occurrences. The mode strings are stable identifiers —
+ * dashboards and alerts depend on them.
+ */
+export type LimiterMode =
+  | "upstash" // Upstash REST round-trip succeeded
+  | "inmemory" // local dev / no Upstash configured
+  | "upstash_failopen"; // Upstash failed (5xx / transport); call allowed
+
 export interface LimiterResult {
   readonly allowed: boolean;
   readonly remaining: number;
   readonly resetAtIso: string;
+  readonly mode: LimiterMode;
 }
 
 export interface PerUserDailyLimiter {
@@ -89,6 +101,13 @@ class UpstashLimiter implements PerUserDailyLimiter {
           status: resp.status,
           user_id: userId,
         });
+        // Dedicated counter event for alert rules. One signature for
+        // both 5xx and transport-error fail-open paths.
+        log.warn("rate_limit_failopen", {
+          user_id: userId,
+          cause: "upstash_5xx",
+          status: resp.status,
+        });
         return _failOpen(this.limit);
       }
       const body = (await resp.json()) as Array<{ result: number | string }>;
@@ -99,11 +118,16 @@ class UpstashLimiter implements PerUserDailyLimiter {
         allowed,
         remaining,
         resetAtIso: endOfUtcDay().toISOString(),
+        mode: "upstash",
       };
     } catch (err) {
       log.warn("rate_limit_upstash_error", {
         error: (err as Error).message,
         user_id: userId,
+      });
+      log.warn("rate_limit_failopen", {
+        user_id: userId,
+        cause: "upstash_transport",
       });
       return _failOpen(this.limit);
     }
@@ -117,7 +141,12 @@ class UpstashLimiter implements PerUserDailyLimiter {
  * remains intact.
  */
 function _failOpen(_limit: number): LimiterResult {
-  return { allowed: true, remaining: -1, resetAtIso: endOfUtcDay().toISOString() };
+  return {
+    allowed: true,
+    remaining: -1,
+    resetAtIso: endOfUtcDay().toISOString(),
+    mode: "upstash_failopen",
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +173,7 @@ class InMemoryLimiter implements PerUserDailyLimiter {
       allowed: entry.count <= this.limit,
       remaining: Math.max(0, this.limit - entry.count),
       resetAtIso: endOfUtcDay().toISOString(),
+      mode: "inmemory",
     });
   }
 }

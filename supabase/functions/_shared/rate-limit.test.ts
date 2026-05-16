@@ -110,3 +110,83 @@ Deno.test("Upstash limiter denies when count exceeds limit", async () => {
     Deno.env.delete("UPSTASH_REDIS_REST_TOKEN");
   }
 });
+
+// --- Sprint B3 (F-OPS1): mode tagging for dashboards / alert rules ---
+
+Deno.test("in-memory limiter tags mode='inmemory'", async () => {
+  _resetLimiterForTests();
+  Deno.env.delete("UPSTASH_REDIS_REST_URL");
+  Deno.env.delete("UPSTASH_REDIS_REST_TOKEN");
+  Deno.env.set("DAILY_LIMIT", "5");
+  const limiter = getDailyLimiter();
+  const r = await limiter.check("user_mode_a");
+  assertEquals(r.mode, "inmemory");
+});
+
+Deno.test("Upstash limiter happy path tags mode='upstash'", async () => {
+  _resetLimiterForTests();
+  Deno.env.set("UPSTASH_REDIS_REST_URL", "https://upstash.test");
+  Deno.env.set("UPSTASH_REDIS_REST_TOKEN", "tok");
+  Deno.env.set("DAILY_LIMIT", "5");
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (() =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify([{ result: 1 }, { result: 1 }]),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    )) as typeof fetch;
+  try {
+    const limiter = getDailyLimiter();
+    const r = await limiter.check("user_mode_b");
+    assertEquals(r.allowed, true);
+    assertEquals(r.mode, "upstash");
+  } finally {
+    globalThis.fetch = originalFetch;
+    Deno.env.delete("UPSTASH_REDIS_REST_URL");
+    Deno.env.delete("UPSTASH_REDIS_REST_TOKEN");
+  }
+});
+
+Deno.test("Upstash 5xx fail-open tags mode='upstash_failopen'", async () => {
+  _resetLimiterForTests();
+  Deno.env.set("UPSTASH_REDIS_REST_URL", "https://upstash.test");
+  Deno.env.set("UPSTASH_REDIS_REST_TOKEN", "tok");
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (() =>
+    Promise.resolve(
+      new Response("upstream err", { status: 503 }),
+    )) as typeof fetch;
+  try {
+    const limiter = getDailyLimiter();
+    const r = await limiter.check("user_mode_c");
+    assertEquals(r.allowed, true);
+    assertEquals(r.mode, "upstash_failopen");
+    assertEquals(r.remaining, -1);
+  } finally {
+    globalThis.fetch = originalFetch;
+    Deno.env.delete("UPSTASH_REDIS_REST_URL");
+    Deno.env.delete("UPSTASH_REDIS_REST_TOKEN");
+  }
+});
+
+Deno.test("Upstash transport error fail-open tags mode='upstash_failopen'", async () => {
+  _resetLimiterForTests();
+  Deno.env.set("UPSTASH_REDIS_REST_URL", "https://upstash.test");
+  Deno.env.set("UPSTASH_REDIS_REST_TOKEN", "tok");
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (() => Promise.reject(new Error("ECONNRESET"))) as typeof fetch;
+  try {
+    const limiter = getDailyLimiter();
+    const r = await limiter.check("user_mode_d");
+    assertEquals(r.mode, "upstash_failopen");
+    assertEquals(r.allowed, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    Deno.env.delete("UPSTASH_REDIS_REST_URL");
+    Deno.env.delete("UPSTASH_REDIS_REST_TOKEN");
+  }
+});

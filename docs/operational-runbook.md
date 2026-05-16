@@ -238,3 +238,194 @@ exercises it).
 - It does **not** cover the `pet-photos` bucket (Phase 2). Re-run
   the function with `bucket_id = 'pet-photos'` when that bucket
   exists.
+
+---
+
+## 7. Provider Outage Triage (Sprint B3)
+
+When a Sentry alert or a Better Uptime check fires, this section is
+the first-response playbook. The aim is *minutes* to mitigation,
+not perfect remediation — graceful degradation already keeps users
+seeing results.
+
+### 7.1 Anthropic (Tier 3 / Claude Sonnet) outage
+
+**Signal:** AI service logs `tier3_failed_graceful` or
+`cross_verify_failed_keeping_emergency`. Mobile users see the
+"Limited analysis" callout on the result screen — they still get a
+MONITOR result with a "see a vet within 24 hours" recommendation.
+
+**Triage:**
+1. Open [Anthropic Status](https://status.anthropic.com). Confirm
+   incident; note the ETA.
+2. Check Sentry's `tier3_failed_graceful` count over the last
+   30 min. Double-digit spikes per minute = real outage.
+3. If the dashboard shows recovery within the next 30 min: **no
+   action**. Graceful degradation is by design; users get safe
+   "see a vet" copy.
+4. If outage stretches past 30 min: post a short in-app banner via
+   PostHog feature flag (`maintenance_mode`) explaining
+   degraded mode. Mobile already handles this gracefully.
+5. Do **not** retry into Anthropic with shortened timeouts —
+   doubling traffic into a struggling provider is unhelpful.
+
+### 7.2 Gemini (Tier 2) outage
+
+**Signal:** AI service logs `tier2_failed_escalating_to_tier3` for
+every request. Cost per request increases (Tier 3 is more
+expensive); user experience is unchanged.
+
+**Triage:**
+1. Open [Google Cloud Status — Generative AI APIs](https://status.cloud.google.com).
+2. Confirm + monitor. Spend climbs ~3× while Tier 2 is unavailable
+   because Tier 3 carries 100% of traffic; correlate with the
+   spend caps in §1.
+3. If the outage runs past 1h, check the cap in §1.1 and bump if
+   needed.
+
+### 7.3 Upstash Redis (rate limiter) outage
+
+**Signal:** Edge function logs `rate_limit_failopen` repeatedly.
+The mode field on `rate_limit_check` flips from `upstash` to
+`upstash_failopen`. The free-tier DB-backed counter is still
+enforced (the hard limit); only the per-day rate limit is offline.
+
+**Triage:**
+1. Verify via the Upstash dashboard. Plan B is `upstash_failopen`
+   mode — already shipping.
+2. Alert rule: count of `rate_limit_failopen` over the last 5 min
+   > 50 means the soft limit is fully disabled. Investigate.
+3. The mobile + edge surfaces tolerate this indefinitely. Worst
+   case: a runaway user could spam analyze. The free-tier (3/mo)
+   counter still bites.
+4. If Upstash is down for > 1h and spend caps are at risk, flip
+   the `DAILY_LIMIT` env var to a tighter value temporarily and
+   redeploy — the in-memory fallback honours it.
+
+### 7.4 Supabase Storage transient
+
+**Signal:** Mobile logs `upload_failed` with a 5xx status code;
+Sprint B1's `uploadInterrupted` UX shows. Users see "Connection
+was lost while uploading. Try again — we kept your photo."
+
+**Triage:**
+1. Check Supabase status page.
+2. Verify by uploading a tiny file via the Supabase Studio Storage
+   tab.
+3. Sprint B1's storage-key cache means user retries are free —
+   no duplicate orphans.
+4. Spikes in `analyses_insert_failed` correlate with a Supabase
+   database outage; that's a wider problem and probably moves
+   to incident response §7.5.
+
+### 7.5 Supabase Database / Edge Functions
+
+**Signal:** Edge function 503s; mobile sees
+`AnalyzeFailureKind.upstreamUnavailable` ("Our AI service is
+unavailable right now"). `/health` of AI service stays green
+because we deliberately don't depend on Supabase from liveness.
+
+**Triage:**
+1. Open Supabase status + project's logs in Studio.
+2. Confirm DB-backed reads + writes are timing out.
+3. If RLS is the cause: re-run `supabase test db --local` against
+   a clone to spot a recently-deployed migration that introduced
+   a slow plan.
+4. Rollback the last migration if needed:
+   ```bash
+   supabase db remote-changes status --project-ref <prod>
+   supabase db remote-changes revert <id> --project-ref <prod>
+   ```
+
+---
+
+## 8. Healthchecks + Better Uptime
+
+### 8.1 Endpoints
+
+| Path | Probe | Notes |
+|------|-------|-------|
+| `/health` | Fly.io liveness | Process up; no upstream dependency. **Must stay this lean** — a transient Anthropic outage cannot make Fly cycle the machine. |
+| `/ready` (Sprint B3) | Better Uptime / synthetic | 200 when config-level readiness is complete; 503 when one or more required env vars are unset. Lists `missing` keys in the body. No outbound calls. |
+
+### 8.2 Better Uptime configuration
+
+In the Better Uptime dashboard:
+
+1. **AI service liveness** — HTTP check on
+   `https://pawdoc-ai-prod.fly.dev/health`, expect 200, every 60 s.
+   Page on 2 consecutive failures.
+2. **AI service readiness** — HTTP check on
+   `https://pawdoc-ai-prod.fly.dev/ready`, expect 200, every 5 min.
+   Page on 3 consecutive failures (config drift is operator-visible
+   long before it impacts users).
+3. **Supabase** — HTTP check on
+   `https://<project-ref>.supabase.co/rest/v1/`, expect 200, every
+   60 s.
+4. **Edge function smoke** — HTTP POST to a known-good
+   `/functions/v1/analyze` payload with a synthetic user JWT,
+   every 15 min. (Optional — useful but produces small AI spend.)
+
+Wire all to the founder's email + a dedicated SMS recipient for
+high-severity alerts.
+
+### 8.3 Sentry alert routing
+
+In the Sentry project settings:
+
+1. **Crash rate alert** — > 1% of sessions in the last 1h. Page
+   founder.
+2. **`rate_limit_failopen` event count** — > 50 in 5 min. Email
+   only (degradation mode, not a user-facing emergency).
+3. **`tier3_failed_graceful` event count** — > 20 in 5 min.
+   Page founder (sustained Tier 3 outage; cost shift).
+4. **`suspicious_input_pattern` event count** — > 100 in 1h.
+   Email only (abuse signal, not user-facing).
+
+---
+
+## 9. Production Startup Validation (Sprint B3)
+
+The AI service runs a Pydantic validator at boot that refuses to
+start when `app_env = prod` and any required secret is missing.
+The startup crash is intentional — better to fail loudly than
+serve 503s.
+
+**Required prod secrets** (validator will list every missing one):
+- `INTERNAL_API_TOKEN`
+- `ANTHROPIC_API_KEY`
+- `GOOGLE_AI_API_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+If a Fly deploy crashes on startup with
+`Production startup refused: missing required environment
+variables: …`, the fix is:
+
+```bash
+doppler secrets set --config prod KEY=value
+doppler secrets download --config prod --no-file --format docker \
+  | flyctl secrets import --app pawdoc-ai-prod
+flyctl deploy --app pawdoc-ai-prod
+```
+
+---
+
+## 10. Rollback Rehearsal
+
+Run quarterly. Goal: ensure `flyctl releases rollback` works under
+pressure.
+
+1. Pick a low-traffic window.
+2. Make a no-op change (whitespace edit in `app/main.py`); deploy.
+3. Confirm `flyctl releases --app pawdoc-ai-prod` shows the new
+   version.
+4. Rollback:
+   ```bash
+   flyctl releases rollback --app pawdoc-ai-prod
+   ```
+5. Verify `/health` + `/ready` return 200 against the rolled-back
+   version.
+6. Note time-to-rollback in the founder's spreadsheet.
+
+Target: < 90 s from "decision to rollback" → "/health green again."

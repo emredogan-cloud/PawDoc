@@ -35,6 +35,12 @@ from app.models.schemas import (
 )
 from app.prompts.breed_context import breed_context_for
 from app.prompts.system_prompt import PARSER_RETRY_HINT, SYSTEM_PROMPT
+from app.services.copy import (
+    DEGRADATION_PRIMARY_CONCERN,
+    DEGRADATION_URGENCY,
+    EMERGENCY_URGENCY,
+    degradation_recommended_actions,
+)
 from app.services.gemini_client import build_user_prompt
 from app.services.parser import ParseSuccess, parse_provider_output
 from app.services.safety import (
@@ -236,7 +242,7 @@ def _emergency_override_result(
         visible_symptoms=[],
         differential=[],
         recommended_actions=emergency_recommended_actions(),
-        urgency_timeframe="Immediately.",
+        urgency_timeframe=EMERGENCY_URGENCY,
         model_used="emergency_override",
         tier_used=1,
         emergency_override_applied=True,
@@ -249,18 +255,11 @@ def _graceful_degradation(request: AnalysisRequest) -> AnalysisResult:
     return AnalysisResult(
         triage_level="MONITOR",
         confidence=0.0,
-        primary_concern=(
-            "We could not analyze this request with confidence. Please consult a "
-            "veterinarian and describe the symptoms directly."
-        ),
+        primary_concern=DEGRADATION_PRIMARY_CONCERN,
         visible_symptoms=[],
         differential=[],
-        recommended_actions=[
-            "Contact your veterinarian within 24 hours.",
-            "Take a clear photo of any visible symptoms for the vet visit.",
-            "Note when symptoms started, severity, and any changes.",
-        ],
-        urgency_timeframe="Within 24 hours.",
+        recommended_actions=degradation_recommended_actions(),
+        urgency_timeframe=DEGRADATION_URGENCY,
         model_used="graceful_degradation",
         tier_used=0,
         ai_latency_ms=0,

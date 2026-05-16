@@ -17,7 +17,19 @@ def test_configure_logging_local() -> None:
 
 
 def test_configure_logging_prod_is_json() -> None:
-    settings = Settings(_env_file=None, APP_ENV=AppEnv.PROD, LOG_LEVEL="WARNING")  # type: ignore[call-arg]
+    # Sprint B3 added a prod startup validator that requires every key
+    # to be set when APP_ENV=prod. This logging test only cares about
+    # the logger level — pass the validator with stub secrets.
+    settings = Settings(  # type: ignore[call-arg]
+        _env_file=None,
+        APP_ENV=AppEnv.PROD,
+        LOG_LEVEL="WARNING",
+        INTERNAL_API_TOKEN="x",
+        ANTHROPIC_API_KEY="x",
+        GOOGLE_AI_API_KEY="x",
+        SUPABASE_URL="https://example.supabase.co",
+        SUPABASE_SERVICE_ROLE_KEY="x",
+    )
     configure_logging(settings)
     root = logging.getLogger()
     assert root.level == logging.WARNING

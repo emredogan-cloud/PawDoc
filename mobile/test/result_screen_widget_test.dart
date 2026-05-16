@@ -119,4 +119,36 @@ void main() {
       findsOneWidget,
     );
   });
+
+  // Sprint B3 (F-OPS8 / R-2): the previous test only asserted the
+  // string was in the widget tree — a future bug that wraps it in a
+  // SizedBox(height: 0) or a collapsed Visibility would still pass.
+  // Verify the rendered size is non-zero on every triage variant so
+  // App Store compliance can't silently regress.
+  for (final triage in TriageLevel.values) {
+    testWidgets(
+      'disclaimer is visibly sized on ${triage.name} screens',
+      (tester) async {
+        await tester.pumpWidget(
+          _host(AnalysisResultScreen(result: _result(triage: triage))),
+        );
+        await tester.pumpAndSettle();
+        final finder = find.textContaining(
+          'PawDoc provides triage guidance',
+        );
+        expect(finder, findsOneWidget);
+        final size = tester.getSize(finder);
+        expect(
+          size.height,
+          greaterThan(0.0),
+          reason: 'disclaimer height was 0 on ${triage.name}',
+        );
+        expect(
+          size.width,
+          greaterThan(0.0),
+          reason: 'disclaimer width was 0 on ${triage.name}',
+        );
+      },
+    );
+  }
 }
