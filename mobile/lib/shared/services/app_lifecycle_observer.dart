@@ -10,6 +10,7 @@ library;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/analysis/analysis_controller.dart';
 import '../../features/pets/pets_controller.dart';
 import '../providers/auth_provider.dart';
 import 'logger.dart';
@@ -74,6 +75,16 @@ class _AppLifecycleObserverState extends State<AppLifecycleObserver>
     // Re-bind to RevenueCat / OneSignal — both idempotent.
     container.read(revenueCatServiceProvider).identify(auth.user.id);
     container.read(oneSignalServiceProvider).linkUser(auth.user.id);
+    // If the analyze flow was wedged in a loading state across the
+    // suspend, surface a recoverable failure so the user can retry
+    // rather than staring at a stuck spinner. The provider is
+    // autoDispose, so we read it via `exists` instead of forcing it
+    // alive on resume.
+    if (container.exists(analysisControllerProvider)) {
+      container
+          .read(analysisControllerProvider.notifier)
+          .notifyResumedAfterLongIdle();
+    }
   }
 
   @override

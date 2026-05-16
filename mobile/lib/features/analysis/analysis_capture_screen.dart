@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../shared/models/pet.dart';
 import '../../shared/services/analyze_service.dart';
+import '../../shared/services/connectivity_service.dart';
 import '../../shared/widgets/disclaimer.dart';
 import 'analysis_controller.dart';
 
@@ -33,6 +34,7 @@ class _AnalysisCaptureScreenState extends ConsumerState<AnalysisCaptureScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final state = ref.watch(analysisControllerProvider);
+    final online = ref.watch(connectivityProvider).asData?.value ?? true;
 
     ref.listen<AnalysisState>(analysisControllerProvider, (_, next) {
       if (next is AnalysisSuccess) {
@@ -56,6 +58,11 @@ class _AnalysisCaptureScreenState extends ConsumerState<AnalysisCaptureScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (!online)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _OfflineBanner(theme: theme),
+                ),
               _ImageArea(state: state),
               const SizedBox(height: 16),
               Row(
@@ -113,7 +120,7 @@ class _AnalysisCaptureScreenState extends ConsumerState<AnalysisCaptureScreen> {
                   ),
                 ),
               FilledButton(
-                onPressed: _canSubmit(state)
+                onPressed: (online && _canSubmit(state))
                     ? () => ref
                           .read(analysisControllerProvider.notifier)
                           .submit(pet: widget.pet, text: _textCtrl.text)
@@ -131,9 +138,45 @@ class _AnalysisCaptureScreenState extends ConsumerState<AnalysisCaptureScreen> {
 
   bool _canSubmit(AnalysisState state) {
     if (state is AnalysisUploading || state is AnalysisAnalysing) return false;
+    // Belt-and-braces against the 1-frame double-tap window — the
+    // controller's `isBusy` flips before the state transition.
+    if (ref.read(analysisControllerProvider.notifier).isBusy) return false;
     final hasImage = state is AnalysisPreparing && state.image != null;
     final hasText = _textCtrl.text.trim().isNotEmpty;
     return hasImage || hasText;
+  }
+}
+
+class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner({required this.theme});
+  final ThemeData theme;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.cloud_off_outlined,
+            size: 18,
+            color: theme.colorScheme.onErrorContainer,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              "You're offline. Reconnect to analyze.",
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

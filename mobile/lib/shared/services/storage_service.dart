@@ -5,10 +5,20 @@
 /// storage key is what the edge function `/analyze` accepts as
 /// `input_storage_key`.
 ///
+/// Reliability (Sprint B1):
+///   - Per-call timeout (default 45 s) — well above the headroom for a
+///     2 MB upload over 3G but below the user's patience floor.
+///   - On timeout we throw [StorageUploadInterrupted], a subclass of
+///     [StorageUploadFailure], so the controller can map it to
+///     `AnalyzeFailureKind.uploadInterrupted` and reuse the cached
+///     bytes for retry.
+///
 /// Phase 2 will migrate the production bucket to Cloudflare R2; the key
 /// format stays opaque so the migration is local to this file + the
 /// edge function.
 library;
+
+import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,11 +27,23 @@ import 'image_service.dart';
 import 'logger.dart';
 import 'supabase_client.dart';
 
+const Duration kStorageUploadTimeout = Duration(seconds: 45);
+
 class StorageUploadFailure implements Exception {
   const StorageUploadFailure(this.message);
   final String message;
   @override
   String toString() => message;
+}
+
+/// Subclass for transient interruptions — timeouts, mid-upload
+/// connection loss. The controller treats these as retryable without
+/// needing to re-pick the image.
+class StorageUploadInterrupted extends StorageUploadFailure {
+  const StorageUploadInterrupted([String? message])
+    : super(
+        message ?? 'Connection was lost while uploading. Try again.',
+      );
 }
 
 abstract class StorageService {
@@ -34,8 +56,10 @@ abstract class StorageService {
 }
 
 class StorageServiceImpl implements StorageService {
-  StorageServiceImpl(this._client);
+  StorageServiceImpl(this._client, {Duration? timeout})
+    : _timeout = timeout ?? kStorageUploadTimeout;
   final SupabaseClient _client;
+  final Duration _timeout;
   static const _bucket = 'pet-uploads';
   static final _log = AppLogger.of('storage.service');
 
@@ -61,9 +85,13 @@ class StorageServiceImpl implements StorageService {
               // (which RLS would block anyway, but defence in depth).
               upsert: false,
             ),
-          );
+          )
+          .timeout(_timeout);
       _log.info('upload_complete', key);
       return key;
+    } on TimeoutException {
+      _log.warning('upload_timeout', '${_timeout.inSeconds}s → $key');
+      throw const StorageUploadInterrupted();
     } on StorageException catch (e) {
       _log.warning('upload_failed', '${e.statusCode} ${e.message}');
       throw StorageUploadFailure(_friendly(e));

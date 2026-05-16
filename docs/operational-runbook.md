@@ -161,6 +161,80 @@ buttons, every box below must be ticked:
       sandbox)
 - [ ] Apple Sign-In configured per
       [`environment-setup.md` §14](environment-setup.md)
+- [ ] Orphan-upload cleanup scheduled per §6
 - [ ] First month's projected spend < 50% of the hard cap
 
 If any box is empty, **do not submit**.
+
+---
+
+## 6. Orphan Upload Cleanup (Sprint B1)
+
+The `/analyze` flow uploads a pet image to `pet-uploads/<user>/…`
+**before** it consumes the user's free-tier slot. When the AI call
+or persist fails afterward, Sprint A2's `refund_free_analysis` RPC
+refunds the slot — but the image stays in the bucket. Without
+cleanup the bucket grows monotonically.
+
+The Sprint B1 migration adds:
+```
+public.cleanup_orphan_pet_uploads(p_older_than interval) → int
+```
+which deletes every `storage.objects` row in the `pet-uploads`
+bucket older than `p_older_than` (default 7 days) that no
+`analyses` row references. Service-role only. Returns the deletion
+count.
+
+### 6.1 Manual run (anytime)
+
+From the Supabase SQL editor logged in as service-role:
+```sql
+SELECT cleanup_orphan_pet_uploads();           -- 7-day default
+SELECT cleanup_orphan_pet_uploads(interval '14 days');  -- looser cap
+```
+Or via the CLI:
+```bash
+supabase db remote-commit --project-ref <prod-ref> \
+  --command "SELECT cleanup_orphan_pet_uploads();"
+```
+Log the count in the founder's spreadsheet alongside the monthly
+spend review (§2). Steady-state is single-digits per day; double-
+digit spikes mean the analyze pipeline is dropping more requests
+than usual — check Sentry for `analyses_insert_failed` and
+`ai_service_call_*` warnings.
+
+### 6.2 Scheduled run (production)
+
+Supabase Cloud ships `pg_cron`. Enable + schedule once:
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+SELECT cron.schedule(
+  'pawdoc-orphan-cleanup',
+  '0 4 * * *',
+  $$SELECT cleanup_orphan_pet_uploads();$$
+);
+```
+4:00 UTC daily; tweak if your peak traffic shifts. Verify with:
+```sql
+SELECT * FROM cron.job WHERE jobname = 'pawdoc-orphan-cleanup';
+SELECT * FROM cron.job_run_details
+ WHERE jobid = (SELECT jobid FROM cron.job WHERE jobname = 'pawdoc-orphan-cleanup')
+ ORDER BY start_time DESC LIMIT 7;
+```
+
+Local development deliberately omits `pg_cron` — the function is
+still callable directly for testing (`supabase test db --local`
+exercises it).
+
+### 6.3 What this does NOT do
+
+- It does **not** delete the underlying S3 / R2 blobs that
+  `storage.objects` rows point to. Supabase's storage worker
+  reconciles those eventually; if the bucket size doesn't shrink
+  within ~24h after a large cleanup, file a Supabase support
+  ticket. The cost impact of a stale blob is small compared to a
+  proliferating bucket of metadata rows.
+- It does **not** cover the `pet-photos` bucket (Phase 2). Re-run
+  the function with `bucket_id = 'pet-photos'` when that bucket
+  exists.

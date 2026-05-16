@@ -3,7 +3,15 @@
 /// We use the raw `supabase.functions.invoke` path which forwards the
 /// signed user JWT for us. The edge function expects the body fields
 /// defined in Phase 1B; the response is an [AnalysisResult].
+///
+/// Reliability (Sprint B1):
+///   - Every request is wrapped in a 30 s timeout so the user never
+///     sees an indefinite spinner on a flaky network.
+///   - Timeouts and connectivity loss are distinct failure kinds so
+///     UX can show specific copy + retry affordances.
 library;
+
+import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,11 +21,21 @@ import '../models/pet.dart';
 import 'logger.dart';
 import 'supabase_client.dart';
 
+/// Default cap on a single `/analyze` round trip. Comfortably above the
+/// p99 latency budget (~12 s with the orchestrator) but tight enough
+/// that a stuck connection bails before the user assumes the app is
+/// frozen. Test-only callers can override via `AnalyzeServiceImpl`'s
+/// constructor.
+const Duration kAnalyzeRequestTimeout = Duration(seconds: 30);
+
 /// All error shapes the edge function can return. Mobile maps each to
 /// user-friendly copy; the controller stores the [AnalyzeFailureKind] so
 /// callers can branch on type (e.g. show the paywall on `quotaExceeded`).
 enum AnalyzeFailureKind {
   network,
+  offline,
+  timeout,
+  uploadInterrupted,
   unauthorized,
   notFound,
   quotaExceeded,
@@ -28,7 +46,13 @@ enum AnalyzeFailureKind {
 
   String get userMessage => switch (this) {
     AnalyzeFailureKind.network =>
-      'No internet connection. Reconnect and try again.',
+      "We couldn't reach our server. Reconnect and try again.",
+    AnalyzeFailureKind.offline =>
+      "You're offline. Reconnect to Wi-Fi or mobile data and try again.",
+    AnalyzeFailureKind.timeout =>
+      'That took longer than expected. Try again in a moment.',
+    AnalyzeFailureKind.uploadInterrupted =>
+      'Connection was lost while uploading. Try again — we kept your photo.',
     AnalyzeFailureKind.unauthorized =>
       'Your session has expired. Please sign in again.',
     AnalyzeFailureKind.notFound =>
@@ -63,8 +87,10 @@ abstract class AnalyzeService {
 }
 
 class AnalyzeServiceImpl implements AnalyzeService {
-  AnalyzeServiceImpl(this._client);
+  AnalyzeServiceImpl(this._client, {Duration? timeout})
+    : _timeout = timeout ?? kAnalyzeRequestTimeout;
   final SupabaseClient _client;
+  final Duration _timeout;
   static final _log = AppLogger.of('analyze.service');
 
   @override
@@ -84,11 +110,12 @@ class AnalyzeServiceImpl implements AnalyzeService {
 
     final FunctionResponse response;
     try {
-      response = await _client.functions.invoke(
-        'analyze',
-        method: HttpMethod.post,
-        body: body,
-      );
+      response = await _client.functions
+          .invoke('analyze', method: HttpMethod.post, body: body)
+          .timeout(_timeout);
+    } on TimeoutException {
+      _log.warning('analyze_timeout', '${_timeout.inSeconds}s');
+      throw const AnalyzeFailure(AnalyzeFailureKind.timeout);
     } on FunctionException catch (e) {
       _log.warning('analyze_function_exception', '${e.status} ${e.details}');
       throw AnalyzeFailure(_kindFromStatus(e.status));
