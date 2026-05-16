@@ -21,6 +21,9 @@ dependencies = [
     "structlog>=24.4.0,<25.0",
     "httpx>=0.27.0,<1.0",
     "python-multipart>=0.0.9,<1.0",
+    # Phase 1D — error reporting. The [fastapi] extra wires the auto-
+    # instrumentation middleware; no manual wrapping needed.
+    "sentry-sdk[fastapi]>=2.18.0,<3.0",
 ]
 
 [project.optional-dependencies]

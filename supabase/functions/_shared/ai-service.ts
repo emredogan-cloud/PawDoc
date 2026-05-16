@@ -65,44 +65,73 @@ export async function callAiService(
   const baseUrl = requireEnv("AI_SERVICE_URL");
   const token = requireEnv("INTERNAL_API_TOKEN");
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
-  try {
-    const resp = await fetch(`${baseUrl}/analyze`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-PawDoc-Internal-Token": token,
-        "X-Request-ID": body.request_id,
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-
-    if (!resp.ok) {
-      log.error("ai_service_non_2xx", {
-        status: resp.status,
-        request_id: body.request_id,
+  // Phase 1D: one retry on TRANSPORT errors only (connect refused, DNS
+  // failure, ECONNRESET). HTTP responses — even 5xx — are NOT retried:
+  // the AI service already retries within its own request lifecycle, and
+  // retrying at the edge would double-bill provider tokens for a brief
+  // outage. Quota is consumed once, before the call; a transport failure
+  // means the request never reached the service, so retrying preserves
+  // the quota → result contract.
+  const maxAttempts = 2;
+  let lastTransportErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    try {
+      const resp = await fetch(`${baseUrl}/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-PawDoc-Internal-Token": token,
+          "X-Request-ID": body.request_id,
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
       });
-      throw Errors.upstream(`AI service returned HTTP ${resp.status}.`);
-    }
 
-    const parsed = (await resp.json()) as Record<string, unknown>;
-    return validateAiServiceResult(parsed);
-  } catch (err) {
-    if (err instanceof ApiError) throw err;
-    if (err instanceof DOMException && err.name === "AbortError") {
-      log.error("ai_service_timeout", { request_id: body.request_id });
-      throw Errors.upstream("AI service timed out.");
+      if (!resp.ok) {
+        log.error("ai_service_non_2xx", {
+          status: resp.status,
+          request_id: body.request_id,
+          attempt,
+        });
+        throw Errors.upstream(`AI service returned HTTP ${resp.status}.`);
+      }
+
+      const parsed = (await resp.json()) as Record<string, unknown>;
+      return validateAiServiceResult(parsed);
+    } catch (err) {
+      clearTimeout(timer);
+      if (err instanceof ApiError) throw err;
+      if (err instanceof DOMException && err.name === "AbortError") {
+        log.error("ai_service_timeout", {
+          request_id: body.request_id,
+          attempt,
+        });
+        // Don't retry on timeout — the upstream is likely still processing
+        // and a retry would just re-time-out.
+        throw Errors.upstream("AI service timed out.");
+      }
+      lastTransportErr = err;
+      log.warn("ai_service_transport_error", {
+        request_id: body.request_id,
+        attempt,
+        error: (err as Error).message,
+      });
+      if (attempt < maxAttempts) {
+        // brief backoff before retry
+        await new Promise((r) => setTimeout(r, 250));
+        continue;
+      }
+    } finally {
+      clearTimeout(timer);
     }
-    log.error("ai_service_unreachable", {
-      request_id: body.request_id,
-      error: (err as Error).message,
-    });
-    throw Errors.upstream("AI service unreachable.");
-  } finally {
-    clearTimeout(timer);
   }
+  log.error("ai_service_unreachable_after_retry", {
+    request_id: body.request_id,
+    error: (lastTransportErr as Error | undefined)?.message,
+  });
+  throw Errors.upstream("AI service unreachable.");
 }
 
 function validateAiServiceResult(raw: Record<string, unknown>): AiServiceResult {

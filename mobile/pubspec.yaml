@@ -56,6 +56,24 @@ dependencies:
   # raw headers (X-Request-ID) that the supabase_flutter SDK abstracts.
   http: ^1.2.2
 
+  # ---- Phase 1D additions ----------------------------------------------
+  # Subscription management — abstracts StoreKit + Play Billing + handles
+  # entitlement sync via the RevenueCat webhook.
+  purchases_flutter: ^8.4.0
+
+  # Apple Sign-In (iOS only; the Android variant uses Apple's web flow).
+  sign_in_with_apple: ^6.1.4
+
+  # Error reporting + breadcrumbs.
+  sentry_flutter: ^8.11.0
+
+  # Push notifications — Phase 1D ships SDK + registration only; campaigns
+  # arrive in Phase 3.
+  onesignal_flutter: ^5.2.7
+
+  # SHA-256 nonce for Apple Sign-In; small dep already pulled in transitively.
+  crypto: ^3.0.6
+
 # =============================================================================
 # Dev / build dependencies
 # =============================================================================

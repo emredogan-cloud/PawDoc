@@ -32,6 +32,12 @@ class AppConfig {
     required this.sentryDsn,
     required this.posthogApiKey,
     required this.posthogHost,
+    this.revenueCatPublicKeyIos = '',
+    this.revenueCatPublicKeyAndroid = '',
+    this.oneSignalAppId = '',
+    this.appleSignInEnabled = false,
+    this.appVersion = '0.1.0',
+    this.buildNumber = 'local',
   });
 
   factory AppConfig.fromEnvironment() {
@@ -53,6 +59,25 @@ class AppConfig {
         'POSTHOG_HOST',
         defaultValue: 'https://eu.posthog.com',
       ),
+      revenueCatPublicKeyIos: const String.fromEnvironment(
+        'REVENUECAT_PUBLIC_KEY_IOS',
+      ),
+      revenueCatPublicKeyAndroid: const String.fromEnvironment(
+        'REVENUECAT_PUBLIC_KEY_ANDROID',
+      ),
+      oneSignalAppId: const String.fromEnvironment('ONESIGNAL_APP_ID'),
+      appleSignInEnabled: const bool.fromEnvironment(
+        'APPLE_SIGN_IN_ENABLED',
+        defaultValue: false,
+      ),
+      appVersion: const String.fromEnvironment(
+        'APP_VERSION',
+        defaultValue: '0.1.0',
+      ),
+      buildNumber: const String.fromEnvironment(
+        'APP_BUILD',
+        defaultValue: 'local',
+      ),
     );
   }
 
@@ -63,12 +88,58 @@ class AppConfig {
   final String sentryDsn;
   final String posthogApiKey;
   final String posthogHost;
+  final String revenueCatPublicKeyIos;
+  final String revenueCatPublicKeyAndroid;
+  final String oneSignalAppId;
+  final bool appleSignInEnabled;
+  final String appVersion;
+  final String buildNumber;
 
   bool get isLocal => env == AppEnv.local;
   bool get isProduction => env == AppEnv.prod;
   bool get hasSupabase => supabaseAnonKey.isNotEmpty;
   bool get hasSentry => sentryDsn.isNotEmpty;
   bool get hasPosthog => posthogApiKey.isNotEmpty;
+  bool get hasRevenueCat =>
+      revenueCatPublicKeyIos.isNotEmpty ||
+      revenueCatPublicKeyAndroid.isNotEmpty;
+  bool get hasOneSignal => oneSignalAppId.isNotEmpty;
+
+  String get release => 'pawdoc-mobile@$appVersion+$buildNumber';
+
+  /// Validate that production builds have the critical integrations
+  /// configured. Throws [StateError] when a prod build is missing
+  /// something we cannot ship without (Sentry).
+  ///
+  /// Returns a list of *warnings* (non-fatal) for things that are merely
+  /// "soft-required" in prod (RevenueCat, OneSignal). Callers should
+  /// surface these to the developer via the structured logger.
+  List<String> validate() {
+    final warnings = <String>[];
+    if (env == AppEnv.prod) {
+      if (sentryDsn.isEmpty) {
+        throw StateError(
+          'SENTRY_DSN is required in production builds — see '
+          'docs/environment-setup.md.',
+        );
+      }
+      if (!hasRevenueCat) {
+        warnings.add(
+          'RevenueCat keys missing — paywall flow will be disabled.',
+        );
+      }
+      if (!hasOneSignal) {
+        warnings.add('OneSignal app id missing — push notifications disabled.');
+      }
+      if (!appleSignInEnabled) {
+        warnings.add(
+          'APPLE_SIGN_IN_ENABLED=false — App Store may reject submission '
+          'until enabled.',
+        );
+      }
+    }
+    return warnings;
+  }
 }
 
 /// Riverpod provider — overridden in `main.dart`. Reading this without the

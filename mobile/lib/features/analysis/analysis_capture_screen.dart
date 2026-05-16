@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../shared/models/pet.dart';
+import '../../shared/services/analyze_service.dart';
 import 'analysis_controller.dart';
 
 class AnalysisCaptureScreen extends ConsumerStatefulWidget {
@@ -37,6 +38,12 @@ class _AnalysisCaptureScreenState extends ConsumerState<AnalysisCaptureScreen> {
         context.go('/analysis/result', extra: next.result);
       } else if (next is AnalysisUploading || next is AnalysisAnalysing) {
         context.go('/analysis/loading');
+      } else if (next is AnalysisFailedState &&
+          next.kind == AnalyzeFailureKind.quotaExceeded) {
+        // Quota exhausted → paywall. The controller stays in the failed
+        // state so a back-navigation back to the capture screen still
+        // shows the error message in context.
+        context.go('/paywall');
       }
     });
 

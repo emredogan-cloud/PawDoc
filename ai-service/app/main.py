@@ -18,6 +18,7 @@ from app import __version__
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import configure_logging, get_logger
+from app.core.sentry import init_sentry
 from app.routers import analyze, health
 
 
@@ -26,6 +27,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Process-wide startup/shutdown hooks."""
     settings = get_settings()
     configure_logging(settings)
+    init_sentry(settings)
     log = get_logger("app.main")
     log.info(
         "service_starting",

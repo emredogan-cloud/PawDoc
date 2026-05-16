@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../shared/services/apple_signin_service.dart';
 import 'auth_controller.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
@@ -107,6 +108,50 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         )
                       : const Text('Send code'),
                 ),
+                if (ref.watch(appleSignInServiceProvider).isSupported) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(color: theme.colorScheme.outlineVariant),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text(
+                          'or',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(color: theme.colorScheme.outlineVariant),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: isLoading
+                        ? null
+                        : () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final svc = ref.read(appleSignInServiceProvider);
+                            final outcome = await svc.signIn();
+                            if (!outcome.success && outcome.error != null) {
+                              // userCancelled has an empty message — skip.
+                              if (outcome.error!.userMessage.isNotEmpty) {
+                                messenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(outcome.error!.userMessage),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                    icon: const Icon(Icons.apple),
+                    label: const Text('Continue with Apple'),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Text(
                   'By continuing you accept our Terms of Service and Privacy Policy.',

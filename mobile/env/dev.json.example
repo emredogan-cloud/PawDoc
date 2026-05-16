@@ -7,5 +7,12 @@
   "AI_SERVICE_URL": "https://pawdoc-ai-dev.fly.dev",
   "SENTRY_DSN": "https://...@sentry.io/...",
   "POSTHOG_API_KEY": "phc_...",
-  "POSTHOG_HOST": "https://eu.posthog.com"
+  "POSTHOG_HOST": "https://eu.posthog.com",
+
+  "REVENUECAT_PUBLIC_KEY_IOS": "appl_...",
+  "REVENUECAT_PUBLIC_KEY_ANDROID": "goog_...",
+  "ONESIGNAL_APP_ID": "...",
+  "APPLE_SIGN_IN_ENABLED": "false",
+  "APP_VERSION": "0.1.0",
+  "APP_BUILD": "local"
 }

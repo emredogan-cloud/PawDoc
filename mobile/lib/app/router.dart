@@ -19,6 +19,7 @@ import '../features/auth/verify_otp_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/onboarding/onboarding_pet_screen.dart';
 import '../features/onboarding/welcome_screen.dart';
+import '../features/paywall/paywall_screen.dart';
 import '../features/pets/pets_controller.dart';
 import '../features/settings/settings_screen.dart';
 import '../shared/models/analysis_result.dart';
@@ -37,6 +38,7 @@ class AppRoutes {
   static const String analysisNew = '/analysis/new';
   static const String analysisLoading = '/analysis/loading';
   static const String analysisResult = '/analysis/result';
+  static const String paywall = '/paywall';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -131,6 +133,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
           return AnalysisResultScreen(result: result);
         },
+      ),
+      GoRoute(
+        path: AppRoutes.paywall,
+        builder: (_, _) => const PaywallScreen(),
       ),
     ],
   );
