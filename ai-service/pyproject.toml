@@ -18,7 +18,7 @@ dependencies = [
     "uvicorn[standard]>=0.30.0,<1.0",
     "pydantic>=2.8.0,<3.0",
     "pydantic-settings>=2.4.0,<3.0",
-    "structlog>=24.4.0,<25.0",
+    "structlog>=24.4.0,<26.0",
     "httpx>=0.27.0,<1.0",
     "python-multipart>=0.0.9,<1.0",
     # Phase 1D — error reporting. The [fastapi] extra wires the auto-
