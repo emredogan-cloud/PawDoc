@@ -1,4 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      Sprint B3 / founder real-device test:
+      Permissions required for the analyze pipeline on Android 13+:
+        - INTERNET           HTTP + Supabase + AI service calls
+        - ACCESS_NETWORK_STATE   connectivity_plus offline detection
+        - CAMERA             image_picker camera capture
+      We deliberately do NOT request:
+        - READ_MEDIA_IMAGES — image_picker's photo-picker is permissionless
+          on Android 13+ via the system PhotoPicker UI.
+        - WRITE_EXTERNAL_STORAGE — never needed; we only read picked files.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- CAMERA is "optional" so the app installs on tablets without one;
+         the runtime-permission flow inside image_picker handles the rest. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
     <application
         android:label="pawdoc"
         android:name="${applicationName}"
@@ -31,15 +49,28 @@
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
-
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <!--
+      Package-visibility queries (Android 11+, API 30+).
+      Without these, intent-resolving plugins silently fail on real devices.
+    -->
     <queries>
+        <!-- Default Flutter engine: process-text targets. -->
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- url_launcher: paywall Terms/Privacy links + future deep links. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
+        </intent>
+        <!-- image_picker camera path. -->
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE"/>
         </intent>
     </queries>
 </manifest>
