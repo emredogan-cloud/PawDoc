@@ -78,11 +78,11 @@ Until both are done, the ToS/Privacy here are **unreviewed templates** and must 
 
 ## 9. Commit hash
 
-Implementation commit: `__IMPL_COMMIT__` (finalized in report-finalization commit; see `git log`).
+Implementation commit: `74134aab5ce446ece21bdb2f3f41e50c62b7aefc`.
 
 ## 10. Push confirmation
 
-`__PUSH_STATUS__`
+Pushed to `origin/phase-2.2-legal-trust`. Open PR: https://github.com/emredogan-cloud/PawDoc/pull/new/phase-2.2-legal-trust
 
 ## 11. Definition-of-Done verification
 
