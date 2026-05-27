@@ -98,11 +98,11 @@ and signs out (router redirects to sign-in). The cascade is **proven headlessly*
 
 ## 9. Commit hash
 
-Implementation commit: `__IMPL_COMMIT__` (finalized in report-finalization commit; see `git log`).
+Implementation commit: `bd9a84a38964b16899999f18c1bb036f4ddc6442`.
 
 ## 10. Push confirmation
 
-`__PUSH_STATUS__`
+Pushed to `origin/phase-2.1-production-polish`. Open PR: https://github.com/emredogan-cloud/PawDoc/pull/new/phase-2.1-production-polish
 
 ## 11. Definition-of-Done verification
 
