@@ -101,11 +101,11 @@ Runbook 19 §7 makes this a checklist gate **before** the "Release to Public" bu
 
 ## 10. Commit hash
 
-Implementation commit: `<filled post-commit>`
+Implementation commit (deliverables): `0fa4e9dec18d7c12d29d3aa165bcbdd5e91d8a52`.
 
 ## 11. Push confirmation
 
-`<filled post-push>`
+Pushed to `origin/phase-2.3-store-launch`. Open PR: https://github.com/emredogan-cloud/PawDoc/pull/new/phase-2.3-store-launch
 
 ## 12. Phase 2 completion
 
