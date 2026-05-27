@@ -23,6 +23,7 @@ from .models import (
     TriageLevel,
     parse_analysis_result,
 )
+from .moderation import AllowAllModerator, ImageModerator
 from .prompts import SYSTEM_PROMPT_V1, build_user_prompt
 from .providers import AIProvider, ProviderError
 from .safety import (
@@ -43,6 +44,7 @@ class AnalysisOutcome:
     emergency_override_applied: bool
     cross_verified: bool
     degraded: bool
+    moderation_rejected: bool
     latency_ms: int
 
 
@@ -80,10 +82,12 @@ def _insufficient_information_result(confidence: float) -> AnalysisResult:
 
 
 class AnalysisPipeline:
-    def __init__(self, tier2: AIProvider, tier3: AIProvider, cache: Cache) -> None:
+    def __init__(self, tier2: AIProvider, tier3: AIProvider, cache: Cache,
+                 moderator: ImageModerator | None = None) -> None:
         self.tier2 = tier2
         self.tier3 = tier3
         self.cache = cache
+        self.moderator = moderator or AllowAllModerator()
 
     def _call(self, provider: AIProvider, request: AnalyzeRequest) -> AnalysisResult:
         """One retry on failure (roadmap), then give up (caller degrades)."""
@@ -98,7 +102,8 @@ class AnalysisPipeline:
                 log.warning("provider %s attempt %d failed: %s", provider.name, attempt, exc)
         raise ProviderError(f"{provider.name} failed after retry: {last}")
 
-    def _outcome(self, result, tier, model, *, override=False, cross=False, degraded=False, start):
+    def _outcome(self, result, tier, model, *, override=False, cross=False, degraded=False,
+                 moderation_rejected=False, start):
         # API-level guarantee: a disclaimer is always required (cannot be removed by UI).
         result = result.model_copy(update={"disclaimer_required": True})
         return AnalysisOutcome(
@@ -108,6 +113,7 @@ class AnalysisPipeline:
             emergency_override_applied=override,
             cross_verified=cross,
             degraded=degraded,
+            moderation_rejected=moderation_rejected,
             latency_ms=int((time.monotonic() - start) * 1000),
         )
 
@@ -126,6 +132,25 @@ class AnalysisPipeline:
             return self._outcome(
                 emergency_override_result(matched), 0, "override", override=True, start=start
             )
+
+        # CR #8: moderate the image BEFORE any analysis; refuse unsafe content
+        # (the Edge Function deletes the stored R2 object on a moderation reject).
+        if request.image_url and not self.moderator.is_safe(request.image_url):
+            log.warning("image rejected by content moderation")
+            rejected = AnalysisResult(
+                triage_level=TriageLevel.MONITOR,
+                confidence=0.0,
+                primary_concern="We couldn't process this image.",
+                visible_symptoms=[],
+                differential=[],
+                recommended_actions=[
+                    "Please retake a clear photo of your pet.",
+                    "If your pet seems unwell, contact a veterinarian.",
+                ],
+                urgency_timeframe="retake and try again",
+                disclaimer_required=True,
+            )
+            return self._outcome(rejected, 0, "moderation", moderation_rejected=True, start=start)
 
         # 3. Tier 2 -> route on confidence; else Tier 3.
         try:

@@ -16,6 +16,7 @@ class Env {
       String.fromEnvironment('POSTHOG_HOST', defaultValue: 'https://us.i.posthog.com');
   static const String revenueCatPublicKey =
       String.fromEnvironment('REVENUECAT_PUBLIC_SDK_KEY');
+  static const String oneSignalAppId = String.fromEnvironment('ONESIGNAL_APP_ID');
 
   /// True only when both Supabase values are present, so the app can degrade
   /// gracefully (and tests can run) without a live backend configured.

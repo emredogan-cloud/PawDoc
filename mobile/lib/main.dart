@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'src/app.dart';
 import 'src/config/env.dart';
+import 'src/notifications/onesignal_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,6 +27,10 @@ Future<void> main() async {
     final config = PostHogConfig(Env.posthogApiKey)..host = Env.posthogHost;
     await Posthog().setup(config);
   }
+
+  // Push notifications (Phase 2.1). The permission prompt is fired later, on
+  // onboarding Screen 4 (contextual ask).
+  OneSignalService.initialize();
 
   // RevenueCat (Phase 1.4 paywall). Optional in dev/test. The app_user_id is
   // tied to the Supabase user so /revenuecat-webhook updates the right row.

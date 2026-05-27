@@ -32,6 +32,17 @@ async function presignGet(key: string): Promise<string | null> {
   return signed.url;
 }
 
+// Delete an R2 object (used when moderation rejects an upload — CR #8).
+async function deleteR2Object(key: string): Promise<void> {
+  const accountId = Deno.env.get("R2_ACCOUNT_ID");
+  const bucket = Deno.env.get("R2_BUCKET");
+  const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID");
+  const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY");
+  if (!accountId || !bucket || !accessKeyId || !secretAccessKey) return;
+  const r2 = new AwsClient({ accessKeyId, secretAccessKey, service: "s3", region: "auto" });
+  await r2.fetch(`https://${accountId}.r2.cloudflarestorage.com/${bucket}/${key}`, { method: "DELETE" });
+}
+
 // deno-lint-ignore no-explicit-any
 function petAgeYears(birthDate: any): number | null {
   if (!birthDate) return null;
@@ -143,6 +154,18 @@ Deno.serve(async (req: Request) => {
 
   const result = ai.result;
   const meta = ai.meta ?? {};
+
+  // CR #8: moderation rejected the image — delete the stored object, don't persist.
+  if (meta.moderation_rejected === true) {
+    if (body.input_storage_key) {
+      try {
+        await deleteR2Object(body.input_storage_key);
+      } catch (_err) {
+        // best effort
+      }
+    }
+    return json({ result, analysis_id: null, request_id: requestId });
+  }
 
   // Persist the analysis (service role).
   const { data: stored, error: storeErr } = await admin.from("analyses").insert({
