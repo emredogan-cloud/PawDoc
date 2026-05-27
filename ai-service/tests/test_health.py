@@ -17,8 +17,8 @@ def test_health_returns_200_ok():
     assert body == {"status": "ok", "service": SERVICE_NAME, "version": VERSION}
 
 
-def test_only_health_route_exists():
-    # Roadmap: "GET /health only" — guard against scope creep in this sub-phase.
+def test_core_routes_exist():
+    # /health from Phase 0.3; /analyze added in Phase 1.3.
     paths = {route.path for route in app.routes if getattr(route, "methods", None)}
     assert "/health" in paths
-    assert "/analyze" not in paths  # arrives in Phase 1.3
+    assert "/analyze" in paths

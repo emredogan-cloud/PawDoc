@@ -40,9 +40,9 @@ Phase 1.1** (Critical Review #16) so the bindings cannot silently drift.
 
 | Language | Location | Status |
 |----------|----------|--------|
-| Dart | `mobile/lib/src/models/analysis_result.dart` | ✅ Phase 1.1 (with round-trip tests) |
-| TypeScript | Edge Function `/analyze` | ⏳ Phase 1.3 |
-| Python (Pydantic) | AI service `/analyze` | ⏳ Phase 1.3 |
+| Dart | `mobile/lib/src/models/analysis_result.dart` | ✅ Phase 1.1 (round-trip tests) |
+| Python (Pydantic) | `ai-service/app/models.py` (`AnalysisResult` + `parse_analysis_result`) | ✅ Phase 1.3 (parser tests: valid/invalid/malformed) |
+| TypeScript | Edge Function tool schema (`ai-service/app/providers.py` `_ANALYSIS_TOOL` is the JSON Schema enforced on Claude; the Edge Function passes the result through) | ✅ Phase 1.3 |
 
-The Dart binding is the reference implementation; 1.3 mirrors it exactly and adds
-contract tests across all three (CR #16).
+All three share these exact snake_case keys. Any change requires updating each
+binding in the same PR (CR #16).
