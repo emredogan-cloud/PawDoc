@@ -79,8 +79,8 @@ ENVIRONMENT_VARS.md                            PLACES_API_KEY (server-only) + bi
 ## 7. Git branch / commit / push
 
 - Branch: `phase-3.4-vet-finder-export`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `1cef6e53df9066b8e82f9cb019354221255951be`
+- Push: pushed to `origin/phase-3.4-vet-finder-export`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-3.4-vet-finder-export
 
 ## 8. Definition-of-Done verification
 
