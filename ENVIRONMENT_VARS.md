@@ -132,6 +132,24 @@ Project + app identifiers only this phase; products/entitlements come in Phase 1
 
 ---
 
+## Phase 1.1 additions
+
+| Variable | Purpose | Req | Client-safe | How to obtain |
+|---|---|---|---|---|
+| `SUPABASE_AUTH_WEBHOOK_SECRET` 🔒 | Verify the `/auth-webhook` signature before provisioning a `users` row (CR #21) | Yes | ❌ | Supabase → Authentication → Hooks → signing secret (`v1,whsec_…`); also `supabase secrets set` for the function (runbook 13) |
+
+**Mobile build-time config (`--dart-define`, sourced from Doppler — not new secrets):**
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` (public, RLS-guarded) and `SENTRY_DSN` are compiled into the Flutter app at build time, e.g.:
+
+```bash
+flutter run \
+  --dart-define=SUPABASE_URL=$SUPABASE_URL \
+  --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+  --dart-define=SENTRY_DSN=$SENTRY_DSN
+```
+
+---
+
 ## Reserved for later phases (slots NOT created yet)
 
 Documented so the roadmap's full secret surface is visible. Each is added to Doppler **in the phase that provisions it**, with full acquisition steps appended here at that time.

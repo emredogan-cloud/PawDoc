@@ -387,6 +387,11 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# /auth-webhook is called by a Supabase Auth Hook (no end-user JWT); it
+# authenticates via the standardwebhooks signature instead (CR #21).
+[functions.auth-webhook]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
