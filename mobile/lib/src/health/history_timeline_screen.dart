@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/dates.dart';
+import '../export/health_report_service.dart';
 import '../pets/active_pet.dart';
 import '../reminders/reminders_screen.dart';
 import 'health_event_form_screen.dart';
@@ -30,6 +31,21 @@ class HealthHistoryScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('${pet.name}’s history'),
         actions: [
+          IconButton(
+            key: const Key('export_health_report'),
+            tooltip: 'Export health report',
+            icon: const Icon(Icons.ios_share),
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                await ref.read(healthReportServiceProvider).exportForPet(pet);
+              } catch (_) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Could not prepare the report. Please try again.')),
+                );
+              }
+            },
+          ),
           IconButton(
             key: const Key('open_reminders'),
             tooltip: 'Reminders',

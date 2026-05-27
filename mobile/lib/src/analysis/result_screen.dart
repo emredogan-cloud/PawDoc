@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../analytics/analytics.dart';
 import '../models/analysis_result.dart';
+import '../vet_finder/vet_finder_screen.dart';
 import 'emergency_result_screen.dart';
 
 /// Routes to the EMERGENCY screen or the standard result screen.
@@ -113,6 +114,17 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
             ),
           ],
           const SizedBox(height: 24),
+          // MONITOR offers the location-aware vet finder (EMERGENCY has its own);
+          // NORMAL offers sharing.
+          if (r.triageLevel == TriageLevel.monitor)
+            OutlinedButton.icon(
+              key: const Key('result_find_vet'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const VetFinderScreen()),
+              ),
+              icon: const Icon(Icons.local_hospital_outlined),
+              label: const Text('Find a nearby vet'),
+            ),
           if (r.triageLevel == TriageLevel.normal)
             OutlinedButton.icon(
               key: const Key('result_share'),

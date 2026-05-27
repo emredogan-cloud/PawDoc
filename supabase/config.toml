@@ -407,6 +407,11 @@ verify_jwt = true
 [functions.process-reminders]
 verify_jwt = false
 
+# /find-vets is the Places key-hiding proxy; only signed-in users may call it so
+# the Places quota can't be drained anonymously. Phase 3.4.
+[functions.find-vets]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

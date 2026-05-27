@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../analytics/analytics.dart';
 import '../models/analysis_result.dart';
+import '../vet_finder/vet_finder_screen.dart';
 
 /// EMERGENCY result: warm red, urgent copy, a vet-finder deep link, and an
 /// explicit acknowledgment gate — the user MUST acknowledge before leaving
@@ -26,9 +26,12 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
     Analytics.resultViewed('EMERGENCY');
   }
 
-  Future<void> _findVet() async {
-    final uri = Uri.parse('https://www.google.com/maps/search/emergency+vet+near+me');
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  void _findVet() {
+    // Opens the location-aware finder; it falls back to native maps if location
+    // is denied/unavailable, so this always works in an emergency.
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const VetFinderScreen(emergency: true)),
+    );
   }
 
   @override

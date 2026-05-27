@@ -52,4 +52,9 @@ class Analytics {
   // Phase 3.3 Part 2 — engagement.
   static Future<void> reminderSet(String reminderType) =>
       capture('reminder_set', {'reminder_type': reminderType});
+
+  // Phase 3.4 — vet finder & health export.
+  static Future<void> vetFinderOpened() => capture('vet_finder_opened');
+  static Future<void> vetCalled() => capture('vet_called');
+  static Future<void> healthReportExported() => capture('health_report_exported');
 }
