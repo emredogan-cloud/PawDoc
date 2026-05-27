@@ -107,11 +107,11 @@ credentials or R2 endpoint** in `mobile/lib` (a `verify-phase-1.2.sh` check grep
 
 ## 9. Commit hash
 
-Implementation commit: `__IMPL_COMMIT__` (finalized in report-finalization commit; see `git log`).
+Implementation commit: `fa848146ca2ed5ed291170afc619c7717653dfcb`.
 
 ## 10. Push confirmation
 
-`__PUSH_STATUS__`
+Pushed to `origin/phase-1.2-capture-upload`. Open PR: https://github.com/emredogan-cloud/PawDoc/pull/new/phase-1.2-capture-upload
 
 ## 11. Definition-of-Done verification
 
