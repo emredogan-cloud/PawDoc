@@ -183,6 +183,19 @@ flutter run \
 
 ---
 
+## Phase 1.4 additions
+
+**Mobile (`--dart-define`):** `REVENUECAT_PUBLIC_SDK_KEY` (publishable; pass the iOS public key for iOS builds and the Android public key for Android builds — both from Phase 0.3 RevenueCat setup).
+
+### RevenueCat webhook (server)
+| Variable | Purpose | Req | Where |
+|---|---|---|---|
+| `REVENUECAT_WEBHOOK_SECRET` 🔒 | Authorization secret `/revenuecat-webhook` verifies (CR #21) | Yes | Supabase function secret — set the SAME value as the RevenueCat webhook's Authorization header |
+
+> The app calls `Purchases.logIn(<supabase uid>)`, so RevenueCat's `app_user_id` equals the Supabase user id; the webhook updates `users` by that id. The `analyze` Edge Function now also presigns a GET URL from R2 (Phase 0.2 R2 keys) for the uploaded image.
+
+---
+
 ## Reserved for later phases (slots NOT created yet)
 
 Documented so the roadmap's full secret surface is visible. Each is added to Doppler **in the phase that provisions it**, with full acquisition steps appended here at that time.

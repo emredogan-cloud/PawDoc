@@ -6,11 +6,31 @@
 //
 // verify_jwt is left at its default (true): the app calls this authenticated.
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { AwsClient } from "https://esm.sh/aws4fetch@1.0.20";
 // deno-lint-ignore no-import-assertions
 import { evaluateFreeTier } from "../_shared/free_tier.mjs";
+// deno-lint-ignore no-import-assertions
+import { containsEmergencyKeyword } from "../_shared/emergency_keywords.mjs";
 
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
 const PREMIUM_STATUSES = new Set(["premium", "family", "trial"]);
+
+// Presign a short-lived GET URL so the AI service can read the uploaded image
+// (Phase 1.2 stored it and handed the client only the key).
+async function presignGet(key: string): Promise<string | null> {
+  const accountId = Deno.env.get("R2_ACCOUNT_ID");
+  const bucket = Deno.env.get("R2_BUCKET");
+  const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID");
+  const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY");
+  if (!accountId || !bucket || !accessKeyId || !secretAccessKey) return null;
+  const r2 = new AwsClient({ accessKeyId, secretAccessKey, service: "s3", region: "auto" });
+  const u = new URL(`https://${accountId}.r2.cloudflarestorage.com/${bucket}/${key}`);
+  u.searchParams.set("X-Amz-Expires", "120");
+  const signed = await r2.sign(new Request(u.toString(), { method: "GET" }), {
+    aws: { signQuery: true },
+  });
+  return signed.url;
+}
 
 // deno-lint-ignore no-explicit-any
 function petAgeYears(birthDate: any): number | null {
@@ -68,12 +88,16 @@ Deno.serve(async (req: Request) => {
     .select("subscription_status, free_analyses_used_this_month, free_analyses_reset_at")
     .eq("id", user.id).single();
   const isPremium = PREMIUM_STATUSES.has(profile?.subscription_status ?? "free");
+  // EMERGENCY IS NEVER PAYWALLED (trust rule): a text tripping an emergency
+  // keyword bypasses the free-tier gate entirely and is not counted against
+  // the quota. The AI service still runs the authoritative hardcoded override.
+  const isEmergencyText = containsEmergencyKeyword(text_description);
   const decision = evaluateFreeTier({
     usedThisMonth: profile?.free_analyses_used_this_month ?? 0,
     resetAt: profile?.free_analyses_reset_at,
     isPremium,
   });
-  if (!decision.allowed) {
+  if (!isEmergencyText && !decision.allowed) {
     return json({
       error: "free_limit_reached",
       message:
@@ -83,6 +107,10 @@ Deno.serve(async (req: Request) => {
   }
 
   // Call the AI service, propagating the request-id (CR #23).
+  // Presign a GET URL for the uploaded image (Phase 1.2 produced the key).
+  const imageUrl = (image_url as string | null) ??
+    (body.input_storage_key ? await presignGet(body.input_storage_key) : null);
+
   // deno-lint-ignore no-explicit-any
   let ai: any;
   try {
@@ -92,7 +120,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         input_type,
         text_description: text_description ?? null,
-        image_url: image_url ?? null,
+        image_url: imageUrl,
         low_input_quality: body.low_input_quality ?? false,
         pet: {
           species: pet.species,
@@ -134,8 +162,8 @@ Deno.serve(async (req: Request) => {
   }).select("id").single();
   if (storeErr) console.error("analyze: failed to store analysis", requestId, storeErr.message);
 
-  // Increment the free-tier counter only after a successful analysis.
-  if (!isPremium) {
+  // Increment only after a successful, NON-emergency analysis (emergencies are free).
+  if (!isPremium && !isEmergencyText) {
     await admin.from("users").update({
       free_analyses_used_this_month: decision.newUsed,
       free_analyses_reset_at: decision.resetAt,

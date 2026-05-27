@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -24,6 +25,24 @@ Future<void> main() async {
   if (Env.posthogApiKey.isNotEmpty) {
     final config = PostHogConfig(Env.posthogApiKey)..host = Env.posthogHost;
     await Posthog().setup(config);
+  }
+
+  // RevenueCat (Phase 1.4 paywall). Optional in dev/test. The app_user_id is
+  // tied to the Supabase user so /revenuecat-webhook updates the right row.
+  if (Env.revenueCatPublicKey.isNotEmpty) {
+    try {
+      await Purchases.configure(PurchasesConfiguration(Env.revenueCatPublicKey));
+      if (Env.hasSupabase) {
+        Supabase.instance.client.auth.onAuthStateChange.listen((state) async {
+          final uid = state.session?.user.id;
+          if (uid != null) {
+            try {
+              await Purchases.logIn(uid);
+            } catch (_) {}
+          }
+        });
+      }
+    } catch (_) {}
   }
 
   void startApp() => runApp(const ProviderScope(child: PawDocApp()));
