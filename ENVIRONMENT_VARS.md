@@ -87,14 +87,33 @@ Referenced by `supabase/config.toml` via `env(...)`. Set once the Apple Develope
 
 ---
 
+## Phase 0.3 additions
+
+### Fly.io (AI service compute)
+| Variable | Purpose | Req | How to obtain |
+|---|---|---|---|
+| `FLY_API_TOKEN` 🔒 | Non-interactive deploy from CI (Phase 0.4) | Yes (CI) | `fly tokens create deploy` → store in Doppler `prd` + GitHub Actions |
+
+### RevenueCat (subscription backend skeleton)
+Project + app identifiers only this phase; products/entitlements come in Phase 1.4.
+
+| Variable | Purpose | Req | Client-safe | How to obtain |
+|---|---|---|---|---|
+| `REVENUECAT_API_KEY` 🔒 | Server-side RevenueCat REST calls | Yes (1.4) | ❌ | RevenueCat → API keys → secret key |
+| `REVENUECAT_WEBHOOK_SECRET` 🔒 | Verify `/revenuecat-webhook` auth header (CR #21) | Yes (1.4) | ❌ | RevenueCat → webhook auth header value you set |
+| `REVENUECAT_PUBLIC_SDK_KEY_IOS` | RevenueCat SDK key (iOS client) | Yes (1.4) | ✅ public | RevenueCat → API keys → public SDK key (iOS) |
+| `REVENUECAT_PUBLIC_SDK_KEY_ANDROID` | RevenueCat SDK key (Android client) | Yes (1.4) | ✅ public | RevenueCat → API keys → public SDK key (Android) |
+
+**Canonical app identifier:** `app.pawdoc` (iOS bundle id + Android package; used by Flutter in 1.1 and the RevenueCat apps).
+
+---
+
 ## Reserved for later phases (slots NOT created yet)
 
 Documented so the roadmap's full secret surface is visible. Each is added to Doppler **in the phase that provisions it**, with full acquisition steps appended here at that time.
 
 | Variable | Service | Introduced | Notes |
 |---|---|---|---|
-| `FLY_API_TOKEN` 🔒 | Fly.io | 0.3 | `fly tokens create deploy` |
-| `REVENUECAT_API_KEY`, `REVENUECAT_WEBHOOK_SECRET` 🔒 | RevenueCat | 0.3 / 1.4 | Webhook secret used to verify `/revenuecat-webhook` (Critical Review #21) |
 | `SENTRY_DSN` | Sentry | 0.4 / 1.1 | Crash reporting |
 | `POSTHOG_API_KEY`, `POSTHOG_HOST` | PostHog | 0.4 | Product analytics (see Critical Review #18 re self-host vs cloud) |
 | `BETTER_UPTIME_*` | Better Uptime | 0.4 | Monitoring |
