@@ -80,8 +80,8 @@ The inactivity "we miss you" push is bounded **two ways**: `users_to_reengage(30
 ## 7. Git branch / commit / push
 
 - Branch: `phase-3.3-engagement-notifications`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `3f1b6a874357565c0b77aa256f190231e07506ff`
+- Push: pushed to `origin/phase-3.3-engagement-notifications`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-3.3-engagement-notifications
 
 ## 8. Definition-of-Done verification
 
