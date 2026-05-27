@@ -85,5 +85,26 @@ begin
 end
 $$;
 
+-- Positive control (CR #2 + Phase 3.1 manual quick-add): A CAN insert a
+-- health_event for ITS OWN pet. health_events has no user_id column — the RLS
+-- WITH CHECK derives ownership from the parent pet (pet_id -> pets.user_id).
+-- This proves the manual health-event logging actually works in production.
+insert into public.health_events (pet_id, event_type, event_date, notes)
+values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'vaccination', current_date, 'Rabies booster');
+do $$
+begin
+  if (select count(*) from public.health_events) <> 2 then
+    raise exception 'health_events WRITE: A own-pet insert blocked (sees % of its events, expected 2)',
+      (select count(*) from public.health_events);
+  end if;
+  if not exists (
+    select 1 from public.health_events
+    where pet_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' and event_type = 'vaccination'
+  ) then
+    raise exception 'health_events WRITE: A''s own health_event insert did not persist';
+  end if;
+end
+$$;
+
 reset role;
 select 'RLS ISOLATION TESTS PASSED' as result;
