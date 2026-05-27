@@ -25,7 +25,7 @@ hr; echo "Phase 0.1 — Validation Checklist"; hr
 # 1) Domain resolves through Cloudflare ---------------------------------------
 ns="$(dig NS "$DOMAIN" +short 2>/dev/null)"
 if echo "$ns" | grep -qi 'cloudflare'; then
-  pass "Domain '$DOMAIN' is delegated to Cloudflare NS:"; echo "$ns" | sed 's/^/        /'
+  pass "Domain '$DOMAIN' is delegated to Cloudflare NS:"; echo "        ${ns//$'\n'/$'\n'        }"
 else
   fail "Domain '$DOMAIN' does not resolve to Cloudflare nameservers (got: ${ns:-none})"
 fi

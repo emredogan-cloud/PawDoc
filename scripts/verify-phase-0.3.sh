@@ -33,13 +33,16 @@ else
 fi
 
 # --- LOCAL: fly.toml always-warm config --------------------------------------
-python3 - "$AISVC/fly.toml" <<'PY' && pass "fly.toml: min_machines_running=1, auto_stop=off, /health check" || fail "fly.toml always-warm config wrong"
+if python3 - "$AISVC/fly.toml" <<'PY'
 import sys, tomllib
 hs = tomllib.load(open(sys.argv[1], "rb"))["http_service"]
 assert hs["min_machines_running"] == 1, "min_machines_running must be 1"
 assert hs["auto_stop_machines"] == "off", "auto_stop_machines must be off"
 assert any(c.get("path") == "/health" for c in hs["checks"]), "missing /health check"
 PY
+then pass "fly.toml: min_machines_running=1, auto_stop=off, /health check"
+else fail "fly.toml always-warm config wrong"
+fi
 
 # --- LOCAL: fly CLI schema validation ----------------------------------------
 if command -v fly >/dev/null 2>&1; then
@@ -70,7 +73,7 @@ fi
 URL="${FLY_APP_URL:-}"
 if [ -n "$URL" ]; then
   code="$(curl -s -o /dev/null -w '%{http_code}' "$URL/health" 2>/dev/null || echo 000)"
-  [ "$code" = "200" ] && pass "deployed /health → 200 ($URL)" || fail "deployed /health → HTTP $code"
+  if [ "$code" = "200" ]; then pass "deployed /health → 200 ($URL)"; else fail "deployed /health → HTTP $code"; fi
 else
   skip "deployed /health — set FLY_APP_URL after deploy (docs/runbooks/08)"
 fi

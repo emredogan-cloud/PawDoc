@@ -25,8 +25,9 @@ if [ ${#REFS[@]} -eq 0 ]; then read -r -a REFS <<< "${SUPABASE_PROJECT_REFS:-}";
 [ ${#REFS[@]} -gt 0 ] || { echo "Provide project refs as args or via SUPABASE_PROJECT_REFS."; exit 1; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SQL_FILE="$(ls "$SCRIPT_DIR/../supabase/migrations/"*_enable_extensions.sql 2>/dev/null | head -1)"
-[ -n "${SQL_FILE:-}" ] || { echo "Could not find *_enable_extensions.sql migration."; exit 1; }
+sql_glob=( "$SCRIPT_DIR/../supabase/migrations/"*_enable_extensions.sql )
+SQL_FILE="${sql_glob[0]}"
+[ -f "$SQL_FILE" ] || { echo "Could not find *_enable_extensions.sql migration."; exit 1; }
 
 # Encode the SQL as a JSON {"query": "..."} body without relying on jq.
 BODY="$(python3 -c 'import json,sys; print(json.dumps({"query": sys.stdin.read()}))' < "$SQL_FILE")"
