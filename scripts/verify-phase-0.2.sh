@@ -20,7 +20,7 @@ hr()     { printf -- '----------------------------------------------------------
 hr; echo "Phase 0.2 — Validation Checklist"; hr
 
 # --- LOCAL: config-as-code is correct ---------------------------------------
-python3 - "$ROOT/supabase/config.toml" <<'PY' && pass "config.toml parses; email+apple+google auth enabled" || fail "config.toml invalid or providers not all enabled"
+if python3 - "$ROOT/supabase/config.toml" <<'PY'
 import sys, tomllib
 d = tomllib.load(open(sys.argv[1], "rb"))
 ext = d["auth"]["external"]
@@ -28,20 +28,27 @@ assert d["auth"]["email"]["enable_signup"] is True
 assert ext["apple"]["enabled"] is True
 assert ext["google"]["enabled"] is True
 PY
+then pass "config.toml parses; email+apple+google auth enabled"
+else fail "config.toml invalid or providers not all enabled"
+fi
 
-mig="$(ls "$ROOT"/supabase/migrations/*_enable_extensions.sql 2>/dev/null | head -1)"
-if [ -n "$mig" ] && grep -qi 'extension if not exists "uuid-ossp"' "$mig" && grep -qi 'extension if not exists vector' "$mig"; then
+mig_glob=( "$ROOT"/supabase/migrations/*_enable_extensions.sql )
+mig="${mig_glob[0]}"
+if [ -f "$mig" ] && grep -qi 'extension if not exists "uuid-ossp"' "$mig" && grep -qi 'extension if not exists vector' "$mig"; then
   pass "extensions migration present (uuid-ossp + vector)"
 else
   fail "extensions migration missing or incomplete"
 fi
 
-python3 - "$ROOT/infra/r2-cors.json" <<'PY' && pass "r2-cors.json valid; allows PUT for presigned uploads" || fail "r2-cors.json invalid or missing PUT"
+if python3 - "$ROOT/infra/r2-cors.json" <<'PY'
 import sys, json
 r = json.load(open(sys.argv[1]))["CORSRules"][0]
 assert "PUT" in r["AllowedMethods"]
 assert any("pawdoc.app" in o for o in r["AllowedOrigins"])
 PY
+then pass "r2-cors.json valid; allows PUT for presigned uploads"
+else fail "r2-cors.json invalid or missing PUT"
+fi
 
 # --- REMOTE: Supabase extensions live on each project -----------------------
 if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] && [ -n "${SUPABASE_PROJECT_REFS:-}" ]; then

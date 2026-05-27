@@ -132,13 +132,49 @@ Project + app identifiers only this phase; products/entitlements come in Phase 1
 
 ---
 
+## Phase 1.1 additions
+
+| Variable | Purpose | Req | Client-safe | How to obtain |
+|---|---|---|---|---|
+| `SUPABASE_AUTH_WEBHOOK_SECRET` 🔒 | Verify the `/auth-webhook` signature before provisioning a `users` row (CR #21) | Yes | ❌ | Supabase → Authentication → Hooks → signing secret (`v1,whsec_…`); also `supabase secrets set` for the function (runbook 13) |
+
+**Mobile build-time config (`--dart-define`, sourced from Doppler — not new secrets):**
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` (public, RLS-guarded) and `SENTRY_DSN` are compiled into the Flutter app at build time, e.g.:
+
+```bash
+flutter run \
+  --dart-define=SUPABASE_URL=$SUPABASE_URL \
+  --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+  --dart-define=SENTRY_DSN=$SENTRY_DSN
+```
+
+---
+
+## Phase 1.3 additions
+
+### Upstash Redis (AI result cache + dynamic kill-switch flag, CR #19)
+| Variable | Purpose | Req | Client-safe | How to obtain |
+|---|---|---|---|---|
+| `UPSTASH_REDIS_REST_URL` 🔒 | Result cache + kill-switch flag store | Optional | ❌ | Upstash console → Redis DB → REST URL |
+| `UPSTASH_REDIS_REST_TOKEN` 🔒 | Upstash REST auth token | Optional | ❌ | Same screen → REST token |
+
+### AI service / Edge Function wiring (config; set via Fly env + `supabase secrets set`)
+| Variable | Purpose | Req | Where |
+|---|---|---|---|
+| `AI_SERVICE_URL` | Edge Function `/analyze` → Python service base URL | Yes | Supabase function secret (e.g. `https://pawdoc-ai.fly.dev`) |
+| `AI_KILL_SWITCH` | Static kill-switch fallback (`1`/`true`) (CR #19) | Optional | Fly env on the AI service |
+| `GEMINI_MODEL` / `CLAUDE_MODEL` | Override pinned model IDs (CR #17 defaults `gemini-2.0-flash` / `claude-sonnet-4-6`) | Optional | Fly env |
+
+> `ANTHROPIC_API_KEY` + `GOOGLE_AI_API_KEY` (Phase 0.1 backbone) are consumed by the AI service (Tier 3 / Tier 2). Set them as Fly secrets on `pawdoc-ai`. The **dynamic** kill-switch (no redeploy) is the Redis key `pawdoc:ai_kill_switch` = `1`.
+
+---
+
 ## Reserved for later phases (slots NOT created yet)
 
 Documented so the roadmap's full secret surface is visible. Each is added to Doppler **in the phase that provisions it**, with full acquisition steps appended here at that time.
 
 | Variable | Service | Introduced | Notes |
 |---|---|---|---|
-| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 🔒 | Upstash | 1.3 | Result caching |
 | `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY` 🔒 | OneSignal | 2.1 | Push |
 | `GOOGLE_PLACES_API_KEY` 🔒 | Google Places | 3.4 | Vet finder (proxied; never client-side) |
 | `OPENAI_API_KEY` 🔒 | OpenAI | 5.3 | AI Health Journal (GPT-4o) |
