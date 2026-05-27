@@ -83,8 +83,8 @@ limit 5;
 ## 7. Git branch / commit / push
 
 - Branch: `phase-4.1-experimentation`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `7835b4f9cac9cbc98180a63fe57ec66b48a0fa48`
+- Push: pushed to `origin/phase-4.1-experimentation`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-4.1-experimentation
 
 ## 8. Definition-of-Done verification
 
