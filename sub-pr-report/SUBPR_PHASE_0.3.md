@@ -81,11 +81,11 @@ M  ENVIRONMENT_VARS.md
 
 ## 9. Commit hash
 
-Implementation commit: `__IMPL_COMMIT__` (finalized in report-finalization commit; see `git log`).
+Implementation commit: `b7eb344e5168e0629361ee4c6782c39346851838`.
 
 ## 10. Push confirmation
 
-`__PUSH_STATUS__`
+Pushed to `origin/phase-0.3-ai-service-shell`. Open PR: https://github.com/emredogan-cloud/PawDoc/pull/new/phase-0.3-ai-service-shell
 
 ## 11. Definition-of-Done verification
 
