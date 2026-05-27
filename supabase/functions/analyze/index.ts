@@ -101,7 +101,7 @@ Deno.serve(async (req: Request) => {
   // Free-tier evaluation (server-side; CR #10 reset).
   const { data: profile } = await admin
     .from("users")
-    .select("subscription_status, free_analyses_used_this_month, free_analyses_reset_at")
+    .select("subscription_status, free_analyses_used_this_month, free_analyses_reset_at, bonus_analyses")
     .eq("id", user.id).single();
   const isPremium = PREMIUM_STATUSES.has(profile?.subscription_status ?? "free");
   // EMERGENCY IS NEVER PAYWALLED (trust rule): a text tripping an emergency
@@ -112,6 +112,7 @@ Deno.serve(async (req: Request) => {
     usedThisMonth: profile?.free_analyses_used_this_month ?? 0,
     resetAt: profile?.free_analyses_reset_at,
     isPremium,
+    bonus: profile?.bonus_analyses ?? 0, // Phase 3.3 referral reward pool
   });
   if (!isEmergencyText && !decision.allowed) {
     return json({
@@ -261,6 +262,7 @@ Deno.serve(async (req: Request) => {
     await admin.from("users").update({
       free_analyses_used_this_month: decision.newUsed,
       free_analyses_reset_at: decision.resetAt,
+      bonus_analyses: decision.newBonus, // decremented only when a bonus credit was spent
     }).eq("id", user.id);
   }
 

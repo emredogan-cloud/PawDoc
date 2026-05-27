@@ -42,4 +42,10 @@ class Analytics {
   // Phase 3.2 video analysis.
   static Future<void> videoAnalysisSubmitted(int frameCount) =>
       capture('video_analysis_submitted', {'frame_count': frameCount});
+
+  // Phase 3.3 referral.
+  static Future<void> referralCodeSubmitted() => capture('referral_code_submitted');
+  static Future<void> referralSuccess() => capture('referral_success');
+  static Future<void> referralFraudPrevented(String reason) =>
+      capture('referral_fraud_prevented', {'reason': reason});
 }

@@ -397,6 +397,11 @@ verify_jwt = false
 [functions.revenuecat-webhook]
 verify_jwt = false
 
+# /claim-referral is called by the authenticated app; the user's JWT identifies
+# the claimer (the body's code is the only client input). Phase 3.3.
+[functions.claim-referral]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327
