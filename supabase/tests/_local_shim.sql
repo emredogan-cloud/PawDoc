@@ -30,3 +30,9 @@ begin
   end if;
 end
 $$;
+
+-- Mirror Supabase's baseline: anon/authenticated receive table DML by default
+-- (RLS then gates rows; per-migration GRANT/REVOKE then tightens columns/ops).
+-- Set as a default privilege so tables created by the migrations below inherit
+-- it, exactly as on a real project — letting tests assert the Phase 3.3 lockdowns.
+alter default privileges in schema public grant select, insert, update, delete on tables to anon, authenticated;

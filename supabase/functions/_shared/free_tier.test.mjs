@@ -40,3 +40,39 @@ test("nextMonthStartISO rolls to the first of next month (UTC)", () => {
   assert.equal(nextMonthStartISO("2026-05-27T12:00:00.000Z"), "2026-06-01T00:00:00.000Z");
   assert.equal(nextMonthStartISO("2026-12-15T00:00:00.000Z"), "2027-01-01T00:00:00.000Z");
 });
+
+// --- Phase 3.3 referral bonus pool ------------------------------------------
+test("bonus pool is consumed only AFTER the monthly allowance is exhausted", () => {
+  // Under the monthly limit -> spend monthly, leave the bonus untouched.
+  const monthly = evaluateFreeTier({ usedThisMonth: 1, resetAt: FUTURE, now: NOW, bonus: 3 });
+  assert.equal(monthly.allowed, true);
+  assert.equal(monthly.usedBonus, false);
+  assert.equal(monthly.newUsed, 2);
+  assert.equal(monthly.newBonus, 3);
+
+  // At the monthly limit -> dip into the bonus (monthly counter unchanged).
+  const fromBonus = evaluateFreeTier({ usedThisMonth: 3, resetAt: FUTURE, now: NOW, bonus: 3 });
+  assert.equal(fromBonus.allowed, true);
+  assert.equal(fromBonus.usedBonus, true);
+  assert.equal(fromBonus.newUsed, 3);
+  assert.equal(fromBonus.newBonus, 2);
+});
+
+test("with the monthly limit hit and no bonus, the analysis is blocked", () => {
+  const r = evaluateFreeTier({ usedThisMonth: 3, resetAt: FUTURE, now: NOW, bonus: 0 });
+  assert.equal(r.allowed, false);
+  assert.equal(r.newBonus, 0);
+});
+
+test("a +3 referral bonus is a one-time pool (not 3 every month)", () => {
+  // Spend all 3 bonus credits at the limit; the 4th over-limit call is blocked.
+  let bonus = 3;
+  for (let i = 0; i < 3; i++) {
+    const r = evaluateFreeTier({ usedThisMonth: 3, resetAt: FUTURE, now: NOW, bonus });
+    assert.equal(r.allowed, true);
+    assert.equal(r.usedBonus, true);
+    bonus = r.newBonus;
+  }
+  assert.equal(bonus, 0);
+  assert.equal(evaluateFreeTier({ usedThisMonth: 3, resetAt: FUTURE, now: NOW, bonus }).allowed, false);
+});
