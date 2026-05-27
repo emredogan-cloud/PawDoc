@@ -170,8 +170,11 @@ flutter run \
 | `CRON_SECRET` 🔒 | Auth for `/process-reminders` (the `x-cron-secret` header). Fails CLOSED if unset — Phase 3.3 P2 | Yes (push) | `supabase secrets set` (Edge) **and** Supabase Vault `cron_secret` (same value) |
 | `ONESIGNAL_APP_ID` | OneSignal app id for server-side push (`app_id` in the REST body) — Phase 3.3 P2 | Yes (push) | `supabase secrets set` on `process-reminders` |
 | `ONESIGNAL_REST_API_KEY` 🔒 | OneSignal REST key for server push (reminders + re-engagement) — Phase 3.3 P2 | Yes (push) | `supabase secrets set` on `process-reminders` |
+| `PLACES_API_KEY` 🔒 | Google Places (New) key for the `/find-vets` proxy. **Server-only** — never in the client — Phase 3.4 | Yes (vet finder) | `supabase secrets set` on `find-vets` |
 
 > `ANTHROPIC_API_KEY` + `GOOGLE_AI_API_KEY` (Phase 0.1 backbone) are consumed by the AI service (Tier 3 / Tier 2). Set them as Fly secrets on `pawdoc-ai`. The **dynamic** kill-switch (no redeploy) is the Redis key `pawdoc:ai_kill_switch` = `1`.
+>
+> **Phase 3.4 (vet finder):** `PLACES_API_KEY` lives ONLY in the `find-vets` Edge Function; the Flutter client sends a lat/lng (or zip/city) and gets back a clean vet list — the key never reaches the device. `find-vets` is `verify_jwt = true` (signed-in users only) so the Places quota can't be drained anonymously. Set a **billing budget alert** on the key (CR #12). Restrict the key to the Places API and (where possible) to the server.
 >
 > **Phase 3.2:** no new *secrets*. The semantic cache reuses `GOOGLE_AI_API_KEY` (embeddings) and the existing `SUPABASE_SERVICE_ROLE_KEY` (the Edge Function calls the `match_analyses` RPC, which is locked to `service_role`). Embeddings degrade gracefully when the key is absent (cache simply skipped).
 >
