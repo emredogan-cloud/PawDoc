@@ -1,0 +1,9 @@
+# PawDoc app identifiers for Fastlane. Values come from env (never hardcode IDs/keys).
+app_identifier("app.pawdoc")            # iOS bundle id (canonical — see ENVIRONMENT_VARS.md)
+apple_id(ENV["FASTLANE_APPLE_ID"])      # owning Apple ID email
+team_id(ENV["APPLE_DEVELOPER_TEAM_ID"]) # Apple Developer Team ID (from runbook 01)
+
+for_platform :android do
+  package_name("app.pawdoc")
+  json_key_file(ENV["GOOGLE_PLAY_JSON_KEY_FILE"]) # Play service-account JSON (runbook 11)
+end

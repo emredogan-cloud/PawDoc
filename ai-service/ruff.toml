@@ -1,0 +1,7 @@
+# ai-service lint config (Phase 0.4 CI static analysis).
+line-length = 100
+
+[lint]
+# pycodestyle errors, pyflakes (undefined/unused), import sorting.
+select = ["E", "F", "I"]
+ignore = ["E501"]  # line length is advisory, not a CI blocker

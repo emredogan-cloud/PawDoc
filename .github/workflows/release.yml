@@ -1,0 +1,48 @@
+name: Release (TestFlight)
+
+# Tag-triggered iOS TestFlight build via Fastlane. The DoD ("tagged commit ->
+# TestFlight within 24h") is satisfied once the Flutter iOS project exists
+# (Phase 1.1) and the signing secrets are configured (docs/runbooks/11).
+# Guarded so a premature tag does not hard-fail.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  testflight:
+    name: Fastlane beta
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Guard — iOS project present?
+        id: guard
+        run: |
+          if [ -d mobile/ios ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No mobile/ios yet (Phase 1.1+) — skipping TestFlight upload."
+          fi
+      - uses: ruby/setup-ruby@v1
+        if: steps.guard.outputs.ready == 'true'
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - uses: subosito/flutter-action@v2
+        if: steps.guard.outputs.ready == 'true'
+        with:
+          channel: stable
+      - name: Fastlane beta -> TestFlight
+        if: steps.guard.outputs.ready == 'true'
+        working-directory: mobile/ios
+        run: bundle exec fastlane beta
+        env:
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY }}

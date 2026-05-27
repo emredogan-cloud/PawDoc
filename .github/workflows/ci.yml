@@ -1,0 +1,74 @@
+name: CI
+
+# Runs on every PR (required status check for `main`) and on pushes to main.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ai-service:
+    name: AI service — ruff + pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install deps
+        run: pip install -r ai-service/requirements-dev.txt ruff
+      - name: Ruff (static analysis)
+        run: ruff check ai-service
+      - name: Pytest
+        working-directory: ai-service
+        run: pytest -q
+
+  shell-lint:
+    name: ShellCheck (scripts)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: ./scripts
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  flutter:
+    name: Flutter analyze + test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect Flutter app
+        id: detect
+        run: |
+          if [ -f mobile/pubspec.yaml ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No mobile/ app yet (added in Phase 1.1) — skipping Flutter analyze/test."
+          fi
+      - uses: subosito/flutter-action@v2
+        if: steps.detect.outputs.exists == 'true'
+        with:
+          channel: stable
+      - name: Analyze & test
+        if: steps.detect.outputs.exists == 'true'
+        working-directory: mobile
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test

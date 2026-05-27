@@ -108,17 +108,36 @@ Project + app identifiers only this phase; products/entitlements come in Phase 1
 
 ---
 
+## Phase 0.4 additions
+
+### Observability (runtime — stored in Doppler)
+| Variable | Purpose | Req | Client-safe | How to obtain |
+|---|---|---|---|---|
+| `SENTRY_DSN` | Crash/error reporting (Flutter + AI service) | Yes | ✅ (DSN is publishable) | sentry.io → project → Settings → Client Keys (DSN) |
+| `POSTHOG_API_KEY` | Product analytics ingest key | Yes | ✅ | PostHog → Project settings → API key |
+| `POSTHOG_HOST` | PostHog instance URL | Yes | ✅ | `https://us.i.posthog.com` (cloud) or self-hosted URL — CR #18 |
+| `BETTER_UPTIME_API_TOKEN` 🔒 | Programmatic monitor mgmt (optional) | No | ❌ | Better Uptime → API tokens |
+
+### CI/CD + release signing (GitHub Actions repo secrets — build-time, NOT Doppler)
+| Variable | Purpose | Req | How to obtain |
+|---|---|---|---|
+| `FLY_API_TOKEN` 🔒 | `deploy.yml` → flyctl deploy | Yes | `fly tokens create deploy` (runbook 08/10) |
+| `MATCH_PASSWORD` 🔒 | Decrypt iOS signing repo | Yes (release) | chosen at `fastlane match` (runbook 11) |
+| `MATCH_GIT_URL`, `MATCH_GIT_BASIC_AUTHORIZATION` 🔒 | Read the private certs repo in CI | Yes (release) | runbook 11 |
+| `APP_STORE_CONNECT_API_KEY_KEY_ID`, `_ISSUER_ID`, `_KEY` 🔒 | TestFlight upload auth | Yes (release) | App Store Connect API key (runbook 11) |
+| `GOOGLE_PLAY_JSON_KEY_FILE` 🔒 | Play internal-track upload | Yes (release) | Play service account JSON (runbook 11) |
+| `FASTLANE_APPLE_ID`, `APPLE_DEVELOPER_TEAM_ID` | Fastlane Appfile identity | Yes (release) | Apple Developer (runbook 01) |
+
+> Release/CI secrets live in **GitHub → Settings → Secrets and variables → Actions**, not Doppler — they are build-time, not app runtime.
+
+---
+
 ## Reserved for later phases (slots NOT created yet)
 
 Documented so the roadmap's full secret surface is visible. Each is added to Doppler **in the phase that provisions it**, with full acquisition steps appended here at that time.
 
 | Variable | Service | Introduced | Notes |
 |---|---|---|---|
-| `SENTRY_DSN` | Sentry | 0.4 / 1.1 | Crash reporting |
-| `POSTHOG_API_KEY`, `POSTHOG_HOST` | PostHog | 0.4 | Product analytics (see Critical Review #18 re self-host vs cloud) |
-| `BETTER_UPTIME_*` | Better Uptime | 0.4 | Monitoring |
-| `APP_STORE_CONNECT_API_KEY_ID`, `_ISSUER_ID`, `_KEY` (.p8) 🔒 | Apple | 0.4 | Fastlane TestFlight lane |
-| `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` 🔒 | Google Play | 0.4 | Fastlane Play lane |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` 🔒 | Upstash | 1.3 | Result caching |
 | `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY` 🔒 | OneSignal | 2.1 | Push |
 | `GOOGLE_PLACES_API_KEY` 🔒 | Google Places | 3.4 | Vet finder (proxied; never client-side) |

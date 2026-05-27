@@ -1,0 +1,7 @@
+# fastlane match — stores iOS signing certs/profiles ENCRYPTED in a PRIVATE git repo.
+# Never store certs in this app repo. MATCH_PASSWORD (decryption key) is a CI secret.
+git_url(ENV["MATCH_GIT_URL"])   # e.g. https://github.com/emredogan-cloud/pawdoc-certs (private)
+storage_mode("git")
+type("appstore")
+app_identifier(["app.pawdoc"])
+readonly(true)                  # CI never mints new certs; generate them locally once (runbook 11)
