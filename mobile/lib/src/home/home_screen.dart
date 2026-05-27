@@ -9,10 +9,18 @@ import '../analysis/analysis_service.dart';
 import '../auth/auth_controller.dart';
 import '../capture/camera_screen.dart';
 import '../core/connectivity.dart';
+import '../health/breed_insight_card.dart';
+import '../health/health_event_form_screen.dart';
+import '../health/timeline.dart';
+import '../pets/active_pet.dart';
+import '../pets/add_pet_flow.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
 import '../referral/referral_screen.dart';
 import '../text_input/symptom_text_screen.dart';
+
+/// Sentinel value for the "Add pet" entry in the pet switcher menu.
+const _addPetSentinel = '__add_pet__';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -69,14 +77,26 @@ class HomeScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _logEvent(BuildContext context, WidgetRef ref, Pet pet) async {
+    await Navigator.of(context).push<bool>(MaterialPageRoute(
+      builder: (_) => HealthEventFormScreen(petId: pet.id!, petName: pet.name),
+    ));
+    ref.invalidate(healthTimelineProvider(pet.id!));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pets = ref.watch(petsListProvider);
+    final petsAsync = ref.watch(petsListProvider);
     final profile = ref.watch(userProfileProvider);
+    final activePet = ref.watch(activePetProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('PawDoc'),
+        title: petsAsync.maybeWhen(
+          data: (list) =>
+              list.isEmpty ? const Text('PawDoc') : _PetSwitcher(pets: list, active: activePet),
+          orElse: () => const Text('PawDoc'),
+        ),
         actions: [
           IconButton(
             tooltip: 'Refer a friend',
@@ -110,6 +130,8 @@ class HomeScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(petsListProvider);
           ref.invalidate(userProfileProvider);
+          final id = activePet?.id;
+          if (id != null) ref.invalidate(healthTimelineProvider(id));
         },
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -128,7 +150,7 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            pets.when(
+            petsAsync.when(
               loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
               error: (e, _) => Text('Could not load pets: $e'),
               data: (list) {
@@ -142,9 +164,37 @@ class HomeScreen extends ConsumerWidget {
                   );
                 }
                 final isPremium = profile.maybeWhen(data: (p) => p.isPremium, orElse: () => false);
+                final pet = activePet ?? list.first;
                 return Column(
                   children: [
-                    for (final pet in list) _PetCard(pet: pet, onCheck: () => _check(context, ref, pet, isPremium)),
+                    BreedInsightCard(
+                      key: ValueKey('breed_${pet.id}'),
+                      species: pet.species,
+                      breed: pet.breed,
+                    ),
+                    const SizedBox(height: 8),
+                    _PetCard(pet: pet, onCheck: () => _check(context, ref, pet, isPremium)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            key: const Key('home_view_history'),
+                            onPressed: () => context.push('/history'),
+                            icon: const Icon(Icons.history),
+                            label: const Text('History'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            key: const Key('home_log_event'),
+                            onPressed: () => _logEvent(context, ref, pet),
+                            icon: const Icon(Icons.add_chart),
+                            label: const Text('Log event'),
+                          ),
+                        ),
+                      ],
+                    ),
                     TextButton.icon(
                       onPressed: () => context.push('/pets'),
                       icon: const Icon(Icons.pets),
@@ -156,6 +206,61 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// App-bar pet switcher. Selecting a pet updates [activePetIdProvider], which
+/// reactively re-points the breed card, the "Check" target, and the history
+/// timeline. The trailing "Add pet" item runs the tier-gated add flow.
+class _PetSwitcher extends ConsumerWidget {
+  const _PetSwitcher({required this.pets, required this.active});
+
+  final List<Pet> pets;
+  final Pet? active;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<String>(
+      key: const Key('pet_switcher'),
+      tooltip: 'Switch pet',
+      onSelected: (value) {
+        if (value == _addPetSentinel) {
+          startAddPetFlow(context, ref);
+          return;
+        }
+        ref.read(activePetIdProvider.notifier).select(value);
+      },
+      itemBuilder: (_) => [
+        for (final p in pets)
+          CheckedPopupMenuItem<String>(
+            value: p.id!,
+            checked: p.id == active?.id,
+            child: Text(p.name),
+          ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
+          value: _addPetSentinel,
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.add),
+            title: Text('Add pet'),
+          ),
+        ),
+      ],
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              active?.name ?? 'PawDoc',
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+          const Icon(Icons.arrow_drop_down),
+        ],
       ),
     );
   }

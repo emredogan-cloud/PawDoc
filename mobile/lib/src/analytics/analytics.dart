@@ -32,4 +32,10 @@ class Analytics {
   static Future<void> paywallShown() => capture('paywall_shown');
   static Future<void> trialStarted() => capture('trial_started');
   static Future<void> subscriptionConverted() => capture('subscription_converted');
+
+  // Phase 3.1 retention events.
+  static Future<void> healthEventLogged(String eventType) =>
+      capture('health_event_logged', {'event_type': eventType});
+  static Future<void> multiPetAdded(int petCount) =>
+      capture('multi_pet_added', {'pet_count': petCount});
 }

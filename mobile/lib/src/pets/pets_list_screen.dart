@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'add_pet_flow.dart';
 import 'pet.dart';
 import 'pet_form_screen.dart';
 import 'pets_repository.dart';
@@ -22,7 +23,8 @@ class PetsListScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('My pets')),
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('add_pet_fab'),
-        onPressed: () => openForm(),
+        // Tier-gated (Free/Premium = 2, Family = unlimited) + fires multi_pet_added.
+        onPressed: () => startAddPetFlow(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('Add pet'),
       ),
