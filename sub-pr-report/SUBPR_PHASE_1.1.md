@@ -75,11 +75,11 @@ ENVIRONMENT_VARS.md (M)                                 SUPABASE_AUTH_WEBHOOK_SE
 
 ## 10. Commit hash
 
-Implementation commit: `__IMPL_COMMIT__` (finalized in report-finalization commit; see `git log`).
+Implementation commit: `7326d19e706cc3e2277f379ea665b266bd346bf2`.
 
 ## 11. Push confirmation
 
-`__PUSH_STATUS__`
+Pushed to `origin/phase-1.1-app-skeleton-auth-data`. Open PR: https://github.com/emredogan-cloud/PawDoc/pull/new/phase-1.1-app-skeleton-auth-data
 
 ## 12. Definition-of-Done verification
 
