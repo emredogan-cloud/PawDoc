@@ -167,10 +167,15 @@ flutter run \
 | `GEMINI_VIDEO_MODEL` | Pinned video model (CR #17, default `gemini-2.0-flash`) — Phase 3.2 | Optional | Fly env |
 | `GEMINI_EMBEDDING_MODEL` | Pinned semantic-cache embedding model (CR #17, default `gemini-embedding-001`, requested at 1536 dims) — Phase 3.2 | Optional | Fly env |
 | `SEMANTIC_CACHE_ENABLED` | Toggle the semantic cache (`0`/`false` to disable; default on) — Phase 3.2 | Optional | Fly env (AI service) **and** `supabase secrets set` (Edge Function) |
+| `CRON_SECRET` 🔒 | Auth for `/process-reminders` (the `x-cron-secret` header). Fails CLOSED if unset — Phase 3.3 P2 | Yes (push) | `supabase secrets set` (Edge) **and** Supabase Vault `cron_secret` (same value) |
+| `ONESIGNAL_APP_ID` | OneSignal app id for server-side push (`app_id` in the REST body) — Phase 3.3 P2 | Yes (push) | `supabase secrets set` on `process-reminders` |
+| `ONESIGNAL_REST_API_KEY` 🔒 | OneSignal REST key for server push (reminders + re-engagement) — Phase 3.3 P2 | Yes (push) | `supabase secrets set` on `process-reminders` |
 
 > `ANTHROPIC_API_KEY` + `GOOGLE_AI_API_KEY` (Phase 0.1 backbone) are consumed by the AI service (Tier 3 / Tier 2). Set them as Fly secrets on `pawdoc-ai`. The **dynamic** kill-switch (no redeploy) is the Redis key `pawdoc:ai_kill_switch` = `1`.
 >
 > **Phase 3.2:** no new *secrets*. The semantic cache reuses `GOOGLE_AI_API_KEY` (embeddings) and the existing `SUPABASE_SERVICE_ROLE_KEY` (the Edge Function calls the `match_analyses` RPC, which is locked to `service_role`). Embeddings degrade gracefully when the key is absent (cache simply skipped).
+>
+> **Phase 3.3 Part 2 (push/cron):** the hourly `pg_cron` job calls `/process-reminders` via `pg_net`, reading the **project URL** + **cron secret** from **Supabase Vault** (`vault.create_secret(...)` for `project_url` and `cron_secret`) — so nothing is committed to git. `CRON_SECRET` on the Edge Function MUST equal the Vault `cron_secret`. The schedule migration (`20260527040001`) is applied on the managed project (`supabase db push`), where `pg_cron`/`pg_net`/Vault exist — it is not run by the local Docker tests.
 
 ---
 

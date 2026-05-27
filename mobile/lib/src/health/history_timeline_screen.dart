@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/dates.dart';
 import '../pets/active_pet.dart';
+import '../reminders/reminders_screen.dart';
 import 'health_event_form_screen.dart';
 import 'timeline.dart';
 
@@ -26,7 +27,19 @@ class HealthHistoryScreen extends ConsumerWidget {
     final timeline = ref.watch(healthTimelineProvider(pet.id!));
 
     return Scaffold(
-      appBar: AppBar(title: Text('${pet.name}’s history')),
+      appBar: AppBar(
+        title: Text('${pet.name}’s history'),
+        actions: [
+          IconButton(
+            key: const Key('open_reminders'),
+            tooltip: 'Reminders',
+            icon: const Icon(Icons.alarm),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const RemindersScreen()),
+            ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('log_event_fab'),
         onPressed: () async {
