@@ -1,0 +1,2 @@
+# Reserved for Claude Code hooks (PreToolUse / PostToolUse / etc.).
+# Empty for now — add hook scripts here and wire them in .claude/settings.json.
