@@ -83,11 +83,11 @@ A  roadmap/APP_EXECUTION_ROADMAP_DECOMPOSED.md (source of truth, committed to re
 
 ## 9. Commit hash
 
-Implementation commit: `__IMPL_COMMIT__` (finalized in report-finalization commit; see `git log`).
+Implementation commit: `2b2155d1b6aee65733dfec23fb2057858c583845`.
 
 ## 10. Push confirmation
 
-`__PUSH_STATUS__`
+Pushed to `origin/phase-0.1-accounts-secrets`. Open PR: https://github.com/emredogan-cloud/PawDoc/pull/new/phase-0.1-accounts-secrets
 
 ## 11. Definition-of-Done verification
 
