@@ -99,11 +99,11 @@ The trust rule also blocks the paywall during onboarding and more than once per 
 
 ## 9. Commit hash
 
-Implementation commit: `__IMPL_COMMIT__` (finalized in report-finalization commit; see `git log`).
+Implementation commit: `024fb659271503f5951574868a7785d98d0730ee`.
 
 ## 10. Push confirmation
 
-`__PUSH_STATUS__`
+Pushed to `origin/phase-1.4-result-monetization`. Open PR: https://github.com/emredogan-cloud/PawDoc/pull/new/phase-1.4-result-monetization
 
 ## 11. Definition-of-Done verification
 
