@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -17,6 +18,12 @@ Future<void> main() async {
       url: Env.supabaseUrl,
       anonKey: Env.supabaseAnonKey,
     );
+  }
+
+  // Product analytics (Phase 1.2 onboarding events). Optional in dev/test.
+  if (Env.posthogApiKey.isNotEmpty) {
+    final config = PostHogConfig(Env.posthogApiKey)..host = Env.posthogHost;
+    await Posthog().setup(config);
   }
 
   void startApp() => runApp(const ProviderScope(child: PawDocApp()));

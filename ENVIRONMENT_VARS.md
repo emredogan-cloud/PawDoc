@@ -169,6 +169,20 @@ flutter run \
 
 ---
 
+## Phase 1.2 additions
+
+### R2 upload (`generate-upload-url` Edge Function)
+| Variable | Purpose | Req | Where |
+|---|---|---|---|
+| `R2_BUCKET` 🔒 | Bucket the presigned PUT targets (`pawdoc-uploads-dev`/`-prod`) | Yes | Supabase function secret |
+
+> `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` (Phase 0.2) are consumed by `generate-upload-url` to sign URLs. **R2 write keys live ONLY in the function (CR #6) — never in the client.**
+
+**Mobile analytics (`--dart-define`):** `POSTHOG_API_KEY` (publishable project key) + `POSTHOG_HOST` are compiled into the app for the onboarding events. Example:
+`flutter run --dart-define=POSTHOG_API_KEY=phc_… --dart-define=POSTHOG_HOST=https://us.i.posthog.com`
+
+---
+
 ## Reserved for later phases (slots NOT created yet)
 
 Documented so the roadmap's full secret surface is visible. Each is added to Doppler **in the phase that provisions it**, with full acquisition steps appended here at that time.

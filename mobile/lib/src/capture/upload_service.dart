@@ -1,0 +1,50 @@
+import 'dart:typed_data';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../auth/supabase_providers.dart';
+
+class UploadResult {
+  const UploadResult({required this.storageKey});
+  final String storageKey;
+}
+
+/// Uploads bytes to Cloudflare R2 using a SHORT-LIVED PRESIGNED PUT URL minted
+/// by the `generate-upload-url` Edge Function (CR #6). R2 write credentials are
+/// NEVER embedded in the client — the function holds them server-side.
+class UploadService {
+  UploadService(this._client);
+
+  final SupabaseClient _client;
+
+  Future<UploadResult> uploadJpeg(Uint8List jpegBytes) async {
+    // 1. Ask the Edge Function for a presigned URL + the storage key it minted.
+    final res = await _client.functions.invoke(
+      'generate-upload-url',
+      body: {'content_type': 'image/jpeg', 'ext': 'jpg'},
+    );
+    final data = res.data;
+    if (data is! Map || data['url'] == null || data['key'] == null) {
+      throw Exception('Could not obtain an upload URL');
+    }
+    final url = data['url'] as String;
+    final key = data['key'] as String;
+
+    // 2. PUT the bytes straight to R2 (no credentials on the client).
+    final put = await http.put(
+      Uri.parse(url),
+      headers: const {'Content-Type': 'image/jpeg'},
+      body: jpegBytes,
+    );
+    if (put.statusCode < 200 || put.statusCode >= 300) {
+      throw Exception('Upload failed (HTTP ${put.statusCode})');
+    }
+    return UploadResult(storageKey: key);
+  }
+}
+
+final uploadServiceProvider = Provider<UploadService>((ref) {
+  return UploadService(ref.watch(supabaseClientProvider));
+});
