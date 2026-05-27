@@ -1,0 +1,116 @@
+# =============================================================================
+# PawDoc .gitignore
+# Phase 0.1 priority: ZERO secrets in git history (roadmap DoD + Phase 0.4 gate).
+# Secrets live in Doppler — NEVER commit real keys. Commit *.example files only.
+# =============================================================================
+
+# ---- Secrets & credentials (NEVER COMMIT) -----------------------------------
+.env
+.env.*
+!.env.example
+*.env
+secrets.*
+!secrets.example.*
+
+# Generic key/cert material
+*.pem
+*.key
+*.p12
+*.pfx
+*.cer
+*.der
+
+# Apple signing / App Store Connect API keys
+*.p8
+AuthKey_*.p8
+*.mobileprovision
+*.certSigningRequest
+
+# Android signing
+*.keystore
+*.jks
+keystore.properties
+key.properties
+
+# Cloud / service-account credentials
+*service-account*.json
+*serviceaccount*.json
+*-key.json
+gcloud-*.json
+google-services.json
+GoogleService-Info.plist
+
+# Tool-local credential caches
+.doppler/
+.vercel/
+.wrangler/
+.fly/
+
+# ---- Flutter / Dart (mobile/) -----------------------------------------------
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+**/doc/api/
+*.iml
+*.ipr
+*.iws
+.idea/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/ephemeral/
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/upload-keystore.jks
+
+# ---- Python (ai-service/) ---------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env.venv
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Node / TypeScript (supabase/ functions, web/) --------------------------
+node_modules/
+dist/
+.next/
+out/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- Supabase ---------------------------------------------------------------
+supabase/.branches/
+supabase/.temp/
+
+# ---- Fastlane (0.4) ---------------------------------------------------------
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/README.md
+
+# ---- OS / editor ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.shared.json
+
+# ---- Logs / coverage --------------------------------------------------------
+*.log
+coverage/
+*.lcov
+.coverage
