@@ -20,7 +20,7 @@ hr()     { printf -- '----------------------------------------------------------
 hr; echo "Phase 0.4 — CI/CD, Observability & Verification (Phase 0 exit gate)"; hr
 
 # --- LOCAL: workflows parse + CI has the required jobs -----------------------
-python3 - "$ROOT" <<'PY' && pass "3 workflows parse; ci.yml has ai-service/shell-lint/secret-scan/flutter jobs" || fail "workflow YAML invalid or CI jobs missing"
+if python3 - "$ROOT" <<'PY'
 import sys, glob, yaml
 root = sys.argv[1]
 files = sorted(glob.glob(f"{root}/.github/workflows/*.yml"))
@@ -32,6 +32,9 @@ need = {"ai-service", "shell-lint", "secret-scan", "flutter"}
 missing = need - set(ci["jobs"])
 assert not missing, f"ci.yml missing jobs: {missing}"
 PY
+then pass "3 workflows parse; ci.yml has ai-service/shell-lint/secret-scan/flutter jobs"
+else fail "workflow YAML invalid or CI jobs missing"
+fi
 
 # --- LOCAL: Fastlane scaffolding present -------------------------------------
 if [ -f "$ROOT/fastlane/Fastfile" ] && [ -f "$ROOT/fastlane/Appfile" ] && [ -f "$ROOT/fastlane/Matchfile" ]; then
@@ -42,21 +45,31 @@ fi
 
 # --- LOCAL: ai-service ruff + pytest (the CI checks, run locally) ------------
 if [ -x "$AISVC/.venv/bin/ruff" ]; then
-  "$AISVC/.venv/bin/ruff" check "$AISVC" >/dev/null 2>&1 && pass "ruff: ai-service clean" || fail "ruff issues in ai-service"
+  if "$AISVC/.venv/bin/ruff" check "$AISVC" >/dev/null 2>&1; then
+    pass "ruff: ai-service clean"
+  else
+    fail "ruff issues in ai-service"
+  fi
 else
   skip "ruff — set up ai-service/.venv (pip install -r requirements-dev.txt ruff)"
 fi
 if [ -x "$AISVC/.venv/bin/python" ]; then
-  ( cd "$AISVC" && .venv/bin/python -m pytest -q >/tmp/pawdoc_p04.log 2>&1 ) \
-    && pass "pytest: $(grep -oE '[0-9]+ passed' /tmp/pawdoc_p04.log | head -1)" \
-    || fail "pytest failed — see /tmp/pawdoc_p04.log"
+  if ( cd "$AISVC" && .venv/bin/python -m pytest -q >/tmp/pawdoc_p04.log 2>&1 ); then
+    pass "pytest: $(grep -oE '[0-9]+ passed' /tmp/pawdoc_p04.log | head -1)"
+  else
+    fail "pytest failed — see /tmp/pawdoc_p04.log"
+  fi
 else
   skip "pytest — ai-service/.venv not set up"
 fi
 
 # --- LOCAL: zero secrets (DoD) ----------------------------------------------
 if command -v gitleaks >/dev/null 2>&1; then
-  gitleaks detect --no-banner >/dev/null 2>&1 && pass "gitleaks: clean" || fail "gitleaks flagged secrets"
+  if gitleaks detect --no-banner >/dev/null 2>&1; then
+    pass "gitleaks: clean"
+  else
+    fail "gitleaks flagged secrets"
+  fi
 else
   pat='sk-ant-[A-Za-z0-9_-]{20}|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|eyJ[A-Za-z0-9_-]{12,}\.eyJ[A-Za-z0-9_-]{12,}\.'
   if git grep -nIE "$pat" -- . ':(exclude)ENVIRONMENT_VARS.md' ':(exclude)scripts/*' ':(exclude)docs/*' >/dev/null 2>&1; then

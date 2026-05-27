@@ -51,21 +51,27 @@ fi
 
 # --- Flutter analyze + test --------------------------------------------------
 if command -v flutter >/dev/null 2>&1; then
-  ( cd "$MOBILE" && flutter analyze >/tmp/pawdoc_analyze.log 2>&1 ) \
-    && pass "flutter analyze: no issues" \
-    || fail "flutter analyze failed — see /tmp/pawdoc_analyze.log"
-  ( cd "$MOBILE" && flutter test >/tmp/pawdoc_fluttertest.log 2>&1 ) \
-    && pass "flutter test: $(grep -oE 'All tests passed|[0-9]+ tests? passed' /tmp/pawdoc_fluttertest.log | tail -1)" \
-    || fail "flutter test failed — see /tmp/pawdoc_fluttertest.log"
+  if ( cd "$MOBILE" && flutter analyze >/tmp/pawdoc_analyze.log 2>&1 ); then
+    pass "flutter analyze: no issues"
+  else
+    fail "flutter analyze failed — see /tmp/pawdoc_analyze.log"
+  fi
+  if ( cd "$MOBILE" && flutter test >/tmp/pawdoc_fluttertest.log 2>&1 ); then
+    pass "flutter test: $(grep -oE 'All tests passed|[0-9]+ tests? passed' /tmp/pawdoc_fluttertest.log | tail -1)"
+  else
+    fail "flutter test failed — see /tmp/pawdoc_fluttertest.log"
+  fi
 else
   skip "flutter not installed — analyze/test not run"
 fi
 
 # --- RLS isolation (real Postgres) -------------------------------------------
 if command -v docker >/dev/null 2>&1 && docker ps >/dev/null 2>&1; then
-  "$ROOT/scripts/test-rls.sh" >/tmp/pawdoc_rls.log 2>&1 \
-    && pass "RLS isolation test passed (cross-user read/write blocked)" \
-    || fail "RLS isolation test failed — see /tmp/pawdoc_rls.log"
+  if "$ROOT/scripts/test-rls.sh" >/tmp/pawdoc_rls.log 2>&1; then
+    pass "RLS isolation test passed (cross-user read/write blocked)"
+  else
+    fail "RLS isolation test failed — see /tmp/pawdoc_rls.log"
+  fi
 else
   skip "docker unavailable — run ./scripts/test-rls.sh to verify RLS"
 fi

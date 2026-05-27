@@ -54,9 +54,11 @@ for cfg in "${CONFIGS[@]}"; do
   log "Config '$cfg': ensuring ${#SLOTS[@]} secret slots…"
   # Verify the config exists; create it if a non-default name was requested.
   if ! doppler configs get "$cfg" --project "$PROJECT" >/dev/null 2>&1; then
-    doppler configs create "$cfg" --project "$PROJECT" >/dev/null 2>&1 \
-      && ok "created config '$cfg'" \
-      || { echo "Could not find/create config '$cfg' in project '$PROJECT'."; exit 1; }
+    if doppler configs create "$cfg" --project "$PROJECT" >/dev/null 2>&1; then
+      ok "created config '$cfg'"
+    else
+      echo "Could not find/create config '$cfg' in project '$PROJECT'."; exit 1
+    fi
   fi
   for name in "${!SLOTS[@]}"; do
     existing="$(doppler secrets get "$name" --project "$PROJECT" --config "$cfg" --plain 2>/dev/null || true)"
