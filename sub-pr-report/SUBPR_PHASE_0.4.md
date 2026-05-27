@@ -82,11 +82,11 @@ M  ENVIRONMENT_VARS.md
 
 ## 9. Commit hash
 
-Implementation commit: `__IMPL_COMMIT__` (finalized in report-finalization commit; see `git log`).
+Implementation commit: `d5d7af045dd0533e0a208b760f73f5dc66e6a15f`.
 
 ## 10. Push confirmation
 
-`__PUSH_STATUS__`
+Pushed to `origin/phase-0.4-cicd-observability`. Open PR: https://github.com/emredogan-cloud/PawDoc/pull/new/phase-0.4-cicd-observability
 
 ## 11. Definition-of-Done verification (Phase 0 exit gate)
 
