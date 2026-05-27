@@ -93,8 +93,8 @@ Proven headlessly by `scripts/test-semantic-cache.sh` (ephemeral pgvector): same
 ## 7. Git branch / commit / push
 
 - Branch: `phase-3.2-video-analysis`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `1b3b55a872e6c6206cf7380edd45cbba70a28325`
+- Push: pushed to `origin/phase-3.2-video-analysis`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-3.2-video-analysis
 
 ## 8. Definition-of-Done verification
 
