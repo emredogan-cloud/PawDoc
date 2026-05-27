@@ -392,6 +392,11 @@ deno_version = 2
 [functions.auth-webhook]
 verify_jwt = false
 
+# /revenuecat-webhook is called by RevenueCat (no user JWT); it authenticates
+# via the shared Authorization secret instead (CR #21).
+[functions.revenuecat-webhook]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

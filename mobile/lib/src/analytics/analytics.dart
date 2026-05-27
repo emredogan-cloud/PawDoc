@@ -17,4 +17,19 @@ class Analytics {
       capture('onboarding_step_completed', {'step': step, 'screen': screen});
 
   static Future<void> onboardingCompleted() => capture('onboarding_completed');
+
+  // Phase 1.4 key-action events.
+  static Future<void> analysisSubmitted(String inputType) =>
+      capture('analysis_submitted', {'input_type': inputType});
+  static Future<void> analysisCompleted(String triageLevel, [int? tierUsed]) =>
+      capture('analysis_completed', {
+        'triage_level': triageLevel,
+        'tier_used': ?tierUsed,
+      });
+  static Future<void> resultViewed(String triageLevel) =>
+      capture('result_viewed', {'triage_level': triageLevel});
+  static Future<void> emergencyTriggered() => capture('emergency_triggered');
+  static Future<void> paywallShown() => capture('paywall_shown');
+  static Future<void> trialStarted() => capture('trial_started');
+  static Future<void> subscriptionConverted() => capture('subscription_converted');
 }
