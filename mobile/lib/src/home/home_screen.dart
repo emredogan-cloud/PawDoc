@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../account/delete_account_screen.dart';
 import '../account/user_profile.dart';
 import '../analysis/analysis_runner.dart';
 import '../analysis/analysis_service.dart';
 import '../auth/auth_controller.dart';
 import '../capture/camera_screen.dart';
+import '../core/connectivity.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
 import '../referral/referral_screen.dart';
@@ -89,6 +91,19 @@ class HomeScreen extends ConsumerWidget {
             icon: const Icon(Icons.logout),
             onPressed: () => ref.read(authControllerProvider).signOut(),
           ),
+          PopupMenuButton<String>(
+            key: const Key('home_overflow_menu'),
+            onSelected: (v) {
+              if (v == 'delete') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
+                );
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'delete', child: Text('Delete account')),
+            ],
+          ),
         ],
       ),
       body: RefreshIndicator(
@@ -99,6 +114,7 @@ class HomeScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            const OfflineBanner(),
             // Query counter.
             profile.when(
               loading: () => const SizedBox.shrink(),

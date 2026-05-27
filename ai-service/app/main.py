@@ -15,6 +15,7 @@ from . import config
 from .cache import make_cache
 from .logging_setup import configure_logging, get_logger, get_request_id, set_request_id
 from .models import AnalyzeRequest
+from .moderation import AllowAllModerator, GeminiModerator
 from .pipeline import AnalysisPipeline
 from .providers import ClaudeProvider, GeminiProvider
 
@@ -46,10 +47,16 @@ def get_pipeline() -> AnalysisPipeline:
     """Provider construction is cheap and key-free (SDKs are lazy-imported on
     call), so this is safe even when keys are absent — analysis then degrades
     gracefully rather than crashing. Overridden in tests with fakes."""
+    moderator = (
+        GeminiModerator(config.GOOGLE_AI_API_KEY)
+        if config.GOOGLE_AI_API_KEY
+        else AllowAllModerator()
+    )
     return AnalysisPipeline(
         tier2=GeminiProvider(config.GOOGLE_AI_API_KEY),
         tier3=ClaudeProvider(config.ANTHROPIC_API_KEY),
         cache=make_cache(),
+        moderator=moderator,
     )
 
 
@@ -64,6 +71,7 @@ def analyze(req: AnalyzeRequest, pipeline: AnalysisPipeline = Depends(get_pipeli
             "emergency_override_applied": outcome.emergency_override_applied,
             "cross_verified": outcome.cross_verified,
             "degraded": outcome.degraded,
+            "moderation_rejected": outcome.moderation_rejected,
             "latency_ms": outcome.latency_ms,
             "request_id": get_request_id(),
         },

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../analytics/analytics.dart';
+import '../notifications/onesignal_service.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
 
@@ -183,7 +184,11 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         // UI only — OneSignal permission request is wired in Phase 2.1.
         FilledButton(
           key: const Key('onb_enable_alerts'),
-          onPressed: _advance,
+          onPressed: () async {
+            // Contextual OneSignal permission prompt (Phase 2.1); syncs player_id.
+            await ref.read(oneSignalServiceProvider).requestPermissionAndSync();
+            await _advance();
+          },
           child: const Text('Enable alerts'),
         ),
         TextButton(onPressed: _advance, child: const Text('Maybe later')),

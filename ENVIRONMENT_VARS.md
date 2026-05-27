@@ -196,13 +196,21 @@ flutter run \
 
 ---
 
+## Phase 2.1 additions
+
+**Mobile (`--dart-define`):** `ONESIGNAL_APP_ID` (publishable) — push. The permission prompt fires on onboarding Screen 4; the player id is synced to `users.one_signal_player_id`.
+
+> No new server secrets this phase: account deletion (`/delete-account`, CR #9) uses the existing `SUPABASE_SERVICE_ROLE_KEY`; image moderation (CR #8) uses the existing `GOOGLE_AI_API_KEY` + R2 keys (delete-on-reject). OneSignal APNs/FCM credentials are configured in the OneSignal dashboard (runbook 17).
+
+---
+
 ## Reserved for later phases (slots NOT created yet)
 
 Documented so the roadmap's full secret surface is visible. Each is added to Doppler **in the phase that provisions it**, with full acquisition steps appended here at that time.
 
 | Variable | Service | Introduced | Notes |
 |---|---|---|---|
-| `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY` 🔒 | OneSignal | 2.1 | Push |
+| `ONESIGNAL_REST_API_KEY` 🔒 | OneSignal | 3.3 | Server-side push sending (reminders/follow-ups) |
 | `GOOGLE_PLACES_API_KEY` 🔒 | Google Places | 3.4 | Vet finder (proxied; never client-side) |
 | `OPENAI_API_KEY` 🔒 | OpenAI | 5.3 | AI Health Journal (GPT-4o) |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` 🔒 | Stripe | 7.3 | B2B usage billing |

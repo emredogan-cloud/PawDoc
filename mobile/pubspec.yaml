@@ -50,6 +50,8 @@ dependencies:
   url_launcher: ^6.3.2
   purchases_flutter: ^10.1.1
   shared_preferences: ^2.5.5
+  onesignal_flutter: ^5.5.5
+  connectivity_plus: ^7.1.1
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +63,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_native_splash: ^2.4.7
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -103,3 +107,17 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Native splash (Phase 2.1). Color-only is enough to generate now; add a logo
+# image later (`image:`) and re-run `dart run flutter_native_splash:create`.
+flutter_native_splash:
+  color: "#FFFFFF"
+  color_dark: "#121212"
+
+# App icons (Phase 2.1). Add the asset(s) then run `dart run flutter_launcher_icons`.
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#00897B"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"

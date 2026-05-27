@@ -133,3 +133,44 @@ def test_cr5_provider_failure_degrades_gracefully():
 def test_disclaimer_is_always_required():
     out = build().run(req())
     assert out.result.disclaimer_required is True
+
+
+class FakeModerator:
+    def __init__(self, safe):
+        self.safe = safe
+
+    def is_safe(self, image_url):
+        return self.safe
+
+
+def _photo_req():
+    return AnalyzeRequest(
+        input_type="photo",
+        image_url="https://r2.example/x.jpg",
+        pet=PetContext(species="dog", age_years=3.0),
+    )
+
+
+def test_cr8_unsafe_image_rejected_before_analysis():
+    t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
+    t3 = FakeProvider("claude", 3, res("NORMAL", 0.9))
+    pipeline = AnalysisPipeline(
+        tier2=t2, tier3=t3, cache=InMemoryCache(), moderator=FakeModerator(False)
+    )
+    out = pipeline.run(_photo_req())
+    assert out.moderation_rejected is True
+    assert t2.calls == 0 and t3.calls == 0  # no analysis ran
+    assert out.result.triage_level is TriageLevel.MONITOR
+
+
+def test_cr8_safe_image_proceeds_to_analysis():
+    t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
+    pipeline = AnalysisPipeline(
+        tier2=t2,
+        tier3=FakeProvider("claude", 3, res("NORMAL", 0.9)),
+        cache=InMemoryCache(),
+        moderator=FakeModerator(True),
+    )
+    out = pipeline.run(_photo_req())
+    assert out.moderation_rejected is False
+    assert t2.calls == 1

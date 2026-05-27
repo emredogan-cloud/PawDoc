@@ -10,6 +10,7 @@ import '../capture/camera_screen.dart';
 import '../home/home_screen.dart';
 import '../onboarding/onboarding_flow.dart';
 import '../pets/pets_list_screen.dart';
+import '../referral/referral_prefs.dart';
 import '../text_input/symptom_text_screen.dart';
 
 /// Bridges a Stream to a [Listenable] so go_router re-runs `redirect` whenever
@@ -51,6 +52,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/pets', builder: (context, state) => const PetsListScreen()),
       GoRoute(path: '/capture', builder: (context, state) => const CameraScreen()),
       GoRoute(path: '/symptom-text', builder: (context, state) => const SymptomTextScreen()),
+      // Referral deep link (https://pawdoc.app/r/CODE or pawdoc://r/CODE): capture
+      // the code, then fall through to the normal auth-gated flow.
+      GoRoute(
+        path: '/r/:code',
+        redirect: (context, state) async {
+          final code = state.pathParameters['code'];
+          if (code != null && code.isNotEmpty) await ReferralPrefs.capture(code);
+          return '/';
+        },
+      ),
     ],
   );
 });
