@@ -11,6 +11,9 @@ class Env {
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
   static const String sentryDsn = String.fromEnvironment('SENTRY_DSN');
+  static const String posthogApiKey = String.fromEnvironment('POSTHOG_API_KEY');
+  static const String posthogHost =
+      String.fromEnvironment('POSTHOG_HOST', defaultValue: 'https://us.i.posthog.com');
 
   /// True only when both Supabase values are present, so the app can degrade
   /// gracefully (and tests can run) without a live backend configured.

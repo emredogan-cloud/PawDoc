@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../auth/auth_controller.dart';
 import '../auth/supabase_providers.dart';
@@ -39,11 +40,30 @@ class HomeScreen extends ConsumerWidget {
                 style: Theme.of(context).textTheme.titleMedium,
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                key: const Key('home_setup_pet'),
+                onPressed: () => context.push('/onboarding'),
+                icon: const Icon(Icons.add_circle_outline),
+                label: const Text('Set up a pet'),
+              ),
               const SizedBox(height: 8),
-              Text(
-                'Pet setup and your first health check arrive in the next build.',
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
+              OutlinedButton.icon(
+                onPressed: () => context.push('/pets'),
+                icon: const Icon(Icons.pets),
+                label: const Text('My pets'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () => context.push('/capture'),
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('Take a photo'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () => context.push('/symptom-text'),
+                icon: const Icon(Icons.edit_note),
+                label: const Text('Describe symptoms'),
               ),
             ],
           ),
