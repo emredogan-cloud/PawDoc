@@ -18,28 +18,54 @@ class AIProvider(Protocol):
     name: str
     tier: int
 
-    def analyze(self, system_prompt: str, user_prompt: str, image_url: str | None = None) -> dict:
+    def analyze(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        image_url: str | None = None,
+        frame_urls: list[str] | None = None,
+    ) -> dict:
         ...
 
 
 class GeminiProvider:
-    """Tier 2 — Gemini 2.0 Flash with JSON output enforcement."""
+    """Tier 2 — Gemini 2.0 Flash with JSON output enforcement. Video (Phase 3.2)
+    routes here and uses the pinned VIDEO_MODEL (CR #17)."""
 
     name = "gemini"
     tier = 2
 
-    def __init__(self, api_key: str, model: str = config.TIER2_MODEL) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        model: str = config.TIER2_MODEL,
+        video_model: str = config.VIDEO_MODEL,
+    ) -> None:
         self._api_key = api_key
         self._model = model
+        self._video_model = video_model
 
-    def analyze(self, system_prompt: str, user_prompt: str, image_url: str | None = None) -> dict:
+    def select_model(self, frame_urls: list[str] | None) -> str:
+        """Video keyframes -> the explicitly pinned video model; otherwise the
+        standard Tier-2 model. Pinning prevents version drift (CR #17). Pure, so
+        the routing is unit-tested without invoking the SDK."""
+        return self._video_model if frame_urls else self._model
+
+    def analyze(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        image_url: str | None = None,
+        frame_urls: list[str] | None = None,
+    ) -> dict:
+        model = self.select_model(frame_urls)
         try:
             from google import genai  # lazy
             from google.genai import types
 
             client = genai.Client(api_key=self._api_key)
             resp = client.models.generate_content(
-                model=self._model,
+                model=model,
                 contents=f"{system_prompt}\n\n{user_prompt}",
                 config=types.GenerateContentConfig(
                     temperature=config.ANALYSIS_TEMPERATURE,
@@ -63,7 +89,13 @@ class ClaudeProvider:
         self._api_key = api_key
         self._model = model
 
-    def analyze(self, system_prompt: str, user_prompt: str, image_url: str | None = None) -> dict:
+    def analyze(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        image_url: str | None = None,
+        frame_urls: list[str] | None = None,
+    ) -> dict:
         try:
             import anthropic  # lazy
 

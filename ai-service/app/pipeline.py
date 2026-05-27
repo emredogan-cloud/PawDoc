@@ -95,7 +95,9 @@ class AnalysisPipeline:
         last: Exception | None = None
         for attempt in (1, 2):
             try:
-                raw = provider.analyze(SYSTEM_PROMPT_V1, user_prompt, request.image_url)
+                raw = provider.analyze(
+                    SYSTEM_PROMPT_V1, user_prompt, request.image_url, request.frame_urls
+                )
                 return parse_analysis_result(raw)
             except (ProviderError, AnalysisParseError) as exc:
                 last = exc

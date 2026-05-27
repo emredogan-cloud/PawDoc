@@ -38,4 +38,8 @@ class Analytics {
       capture('health_event_logged', {'event_type': eventType});
   static Future<void> multiPetAdded(int petCount) =>
       capture('multi_pet_added', {'pet_count': petCount});
+
+  // Phase 3.2 video analysis.
+  static Future<void> videoAnalysisSubmitted(int frameCount) =>
+      capture('video_analysis_submitted', {'frame_count': frameCount});
 }

@@ -24,6 +24,7 @@ class AnalysisRunnerScreen extends ConsumerStatefulWidget {
     required this.inputType,
     this.textDescription,
     this.imageStorageKey,
+    this.frameStorageKeys,
     this.isPremium = false,
   });
 
@@ -32,6 +33,7 @@ class AnalysisRunnerScreen extends ConsumerStatefulWidget {
   final String inputType;
   final String? textDescription;
   final String? imageStorageKey;
+  final List<String>? frameStorageKeys; // Phase 3.2 video keyframes
   final bool isPremium;
 
   @override
@@ -46,6 +48,9 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
   void initState() {
     super.initState();
     Analytics.analysisSubmitted(widget.inputType);
+    if (widget.inputType == 'video') {
+      Analytics.videoAnalysisSubmitted(widget.frameStorageKeys?.length ?? 0);
+    }
     _run();
   }
 
@@ -57,6 +62,7 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
             inputType: widget.inputType,
             textDescription: widget.textDescription,
             imageStorageKey: widget.imageStorageKey,
+            frameStorageKeys: widget.frameStorageKeys,
           );
       if (!mounted) return;
       setState(() {

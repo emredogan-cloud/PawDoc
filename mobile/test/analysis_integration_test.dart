@@ -19,6 +19,7 @@ class FakeAnalysisService implements AnalysisService {
     required String inputType,
     String? textDescription,
     String? imageStorageKey,
+    List<String>? frameStorageKeys,
   }) async =>
       AnalysisOutcome(result: _result, analysisId: 'fake-id');
 }

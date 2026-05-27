@@ -164,8 +164,13 @@ flutter run \
 | `AI_SERVICE_URL` | Edge Function `/analyze` → Python service base URL | Yes | Supabase function secret (e.g. `https://pawdoc-ai.fly.dev`) |
 | `AI_KILL_SWITCH` | Static kill-switch fallback (`1`/`true`) (CR #19) | Optional | Fly env on the AI service |
 | `GEMINI_MODEL` / `CLAUDE_MODEL` | Override pinned model IDs (CR #17 defaults `gemini-2.0-flash` / `claude-sonnet-4-6`) | Optional | Fly env |
+| `GEMINI_VIDEO_MODEL` | Pinned video model (CR #17, default `gemini-2.0-flash`) — Phase 3.2 | Optional | Fly env |
+| `GEMINI_EMBEDDING_MODEL` | Pinned semantic-cache embedding model (CR #17, default `gemini-embedding-001`, requested at 1536 dims) — Phase 3.2 | Optional | Fly env |
+| `SEMANTIC_CACHE_ENABLED` | Toggle the semantic cache (`0`/`false` to disable; default on) — Phase 3.2 | Optional | Fly env (AI service) **and** `supabase secrets set` (Edge Function) |
 
 > `ANTHROPIC_API_KEY` + `GOOGLE_AI_API_KEY` (Phase 0.1 backbone) are consumed by the AI service (Tier 3 / Tier 2). Set them as Fly secrets on `pawdoc-ai`. The **dynamic** kill-switch (no redeploy) is the Redis key `pawdoc:ai_kill_switch` = `1`.
+>
+> **Phase 3.2:** no new *secrets*. The semantic cache reuses `GOOGLE_AI_API_KEY` (embeddings) and the existing `SUPABASE_SERVICE_ROLE_KEY` (the Edge Function calls the `match_analyses` RPC, which is locked to `service_role`). Embeddings degrade gracefully when the key is absent (cache simply skipped).
 
 ---
 
