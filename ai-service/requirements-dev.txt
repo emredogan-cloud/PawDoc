@@ -1,0 +1,4 @@
+# Test/dev deps (not installed in the production image).
+-r requirements.txt
+pytest>=8.0
+httpx>=0.27   # required by fastapi.testclient.TestClient

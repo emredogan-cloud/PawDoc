@@ -53,12 +53,58 @@ These slots are created in Doppler in Phase 0.1; real values are minted in 0.2/0
 
 ---
 
-## Tooling / CI credentials (Phase 0.1)
+## Tooling / CI credentials (Phase 0.1–0.2)
 
 | Variable | Purpose | Req | Where it lives | How to obtain |
 |---|---|---|---|---|
 | `DOPPLER_TOKEN` 🔒 | Service token so CI/Fly read secrets non-interactively | Yes (CI) | GitHub Actions / Fly secrets | Doppler → project `pawdoc` → config → **Access** → *Service Tokens* → generate (read-only) |
 | `GH_TOKEN` 🔒 | Apply branch protection + secret scanning via API | Optional (one-time) | local shell only | https://github.com/settings/tokens → *Fine-grained token* scoped to `emredogan-cloud/PawDoc` with **Administration: Read/Write** |
+| `SUPABASE_ACCESS_TOKEN` 🔒 | Supabase Management API / CLI (create projects, enable extensions) | Yes (0.2) | local shell + Doppler | https://supabase.com/dashboard/account/tokens → *Generate new token* (`sbp_…`) |
+
+---
+
+## Phase 0.2 additions
+
+### Supabase auth provider secrets
+Referenced by `supabase/config.toml` via `env(...)`. Set once the Apple Developer account (runbook 01) is approved and a Google OAuth client exists. Full steps in runbook 06 §4.
+
+| Variable | Purpose | Req | How to obtain |
+|---|---|---|---|
+| `SUPABASE_AUTH_EXTERNAL_APPLE_CLIENT_ID` | Apple **Services ID** (acts as the OAuth client id) | Yes | Apple Developer → Identifiers → Services ID |
+| `SUPABASE_AUTH_EXTERNAL_APPLE_SECRET` 🔒 | Apple client secret (JWT signed with the Sign in with Apple `.p8` key) | Yes | Generated from the Apple key |
+| `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` | Google OAuth 2.0 client id | Yes | Google Cloud Console → Credentials |
+| `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` 🔒 | Google OAuth client secret | Yes | Same screen |
+
+### Supabase EU project (GDPR residency, region eu-central-1)
+| Variable | Purpose | Req | Client-safe |
+|---|---|---|---|
+| `SUPABASE_EU_URL` | EU project REST/Realtime URL | Yes | ✅ |
+| `SUPABASE_EU_ANON_KEY` | EU anon key | Yes | ✅ |
+| `SUPABASE_EU_SERVICE_ROLE_KEY` 🔒 | EU service role (RLS bypass; server only) | Yes | ❌ |
+
+### R2 bucket names (finalized this phase)
+`R2_BUCKET_DEV` = `pawdoc-uploads-dev`, `R2_BUCKET_PROD` = `pawdoc-uploads-prod`. Private buckets; access only via presigned URLs (Phase 1.2). CORS policy: `infra/r2-cors.json`.
+
+---
+
+## Phase 0.3 additions
+
+### Fly.io (AI service compute)
+| Variable | Purpose | Req | How to obtain |
+|---|---|---|---|
+| `FLY_API_TOKEN` 🔒 | Non-interactive deploy from CI (Phase 0.4) | Yes (CI) | `fly tokens create deploy` → store in Doppler `prd` + GitHub Actions |
+
+### RevenueCat (subscription backend skeleton)
+Project + app identifiers only this phase; products/entitlements come in Phase 1.4.
+
+| Variable | Purpose | Req | Client-safe | How to obtain |
+|---|---|---|---|---|
+| `REVENUECAT_API_KEY` 🔒 | Server-side RevenueCat REST calls | Yes (1.4) | ❌ | RevenueCat → API keys → secret key |
+| `REVENUECAT_WEBHOOK_SECRET` 🔒 | Verify `/revenuecat-webhook` auth header (CR #21) | Yes (1.4) | ❌ | RevenueCat → webhook auth header value you set |
+| `REVENUECAT_PUBLIC_SDK_KEY_IOS` | RevenueCat SDK key (iOS client) | Yes (1.4) | ✅ public | RevenueCat → API keys → public SDK key (iOS) |
+| `REVENUECAT_PUBLIC_SDK_KEY_ANDROID` | RevenueCat SDK key (Android client) | Yes (1.4) | ✅ public | RevenueCat → API keys → public SDK key (Android) |
+
+**Canonical app identifier:** `app.pawdoc` (iOS bundle id + Android package; used by Flutter in 1.1 and the RevenueCat apps).
 
 ---
 
@@ -68,8 +114,6 @@ Documented so the roadmap's full secret surface is visible. Each is added to Dop
 
 | Variable | Service | Introduced | Notes |
 |---|---|---|---|
-| `FLY_API_TOKEN` 🔒 | Fly.io | 0.3 | `fly tokens create deploy` |
-| `REVENUECAT_API_KEY`, `REVENUECAT_WEBHOOK_SECRET` 🔒 | RevenueCat | 0.3 / 1.4 | Webhook secret used to verify `/revenuecat-webhook` (Critical Review #21) |
 | `SENTRY_DSN` | Sentry | 0.4 / 1.1 | Crash reporting |
 | `POSTHOG_API_KEY`, `POSTHOG_HOST` | PostHog | 0.4 | Product analytics (see Critical Review #18 re self-host vs cloud) |
 | `BETTER_UPTIME_*` | Better Uptime | 0.4 | Monitoring |

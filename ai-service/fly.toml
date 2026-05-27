@@ -1,0 +1,27 @@
+# PawDoc AI service — Fly.io config (Phase 0.3 placeholder).
+# CRITICAL (roadmap risk): min_machines_running = 1 + auto_stop_machines = "off"
+# keep exactly one machine always warm so there is NO cold start. Cold starts
+# would later blow the P95 < 10s analysis latency budget.
+app = "pawdoc-ai"
+primary_region = "iad"  # adjust to sit near the prod Supabase region (0.2)
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_start_machines = true
+  auto_stop_machines = "off"
+  min_machines_running = 1
+
+[[http_service.checks]]
+  grace_period = "5s"
+  interval = "15s"
+  method = "GET"
+  path = "/health"
+  timeout = "2s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory = "512mb"
