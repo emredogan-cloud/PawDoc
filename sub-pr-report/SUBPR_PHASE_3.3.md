@@ -103,8 +103,8 @@ The app shows a success toast ("Reward claimed!") or the matching error, and ref
 ## 6. Git branch / commit / push
 
 - Branch: `phase-3.3-referrals-fraud`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `52645afed94174315a9910b3fa3ffc757c4732ee`
+- Push: pushed to `origin/phase-3.3-referrals-fraud`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-3.3-referrals-fraud
 
 ## 7. Definition-of-Done verification
 
