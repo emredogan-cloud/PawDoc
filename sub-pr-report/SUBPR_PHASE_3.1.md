@@ -102,8 +102,8 @@ Safety check included: a unit test asserts **no "diagnosis/diagnose" language** 
 ## 10. Git branch / commit / push
 
 - Branch: `phase-3.1-health-history`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `cefc59538e36f7bf9a7ecc0f096870c08f62eeaa`
+- Push: pushed to `origin/phase-3.1-health-history`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-3.1-health-history
 
 ## 11. Definition-of-Done verification
 
