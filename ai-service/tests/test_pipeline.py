@@ -14,8 +14,9 @@ class FakeProvider:
         self.fail = fail
         self.calls = 0
 
-    def analyze(self, system_prompt, user_prompt, image_url=None):
+    def analyze(self, system_prompt, user_prompt, image_url=None, frame_urls=None):
         self.calls += 1
+        self.last_frame_urls = frame_urls
         if self.fail:
             raise ProviderError(f"{self.name} forced failure")
         return dict(self.response)

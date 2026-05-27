@@ -8,6 +8,7 @@ import '../analysis/analysis_runner.dart';
 import '../analysis/analysis_service.dart';
 import '../auth/auth_controller.dart';
 import '../capture/camera_screen.dart';
+import '../capture/video_capture_screen.dart';
 import '../core/connectivity.dart';
 import '../health/breed_insight_card.dart';
 import '../health/health_event_form_screen.dart';
@@ -38,6 +39,11 @@ class HomeScreen extends ConsumerWidget {
               onTap: () => Navigator.pop(context, 'photo'),
             ),
             ListTile(
+              leading: const Icon(Icons.videocam),
+              title: const Text('Record a video'),
+              onTap: () => Navigator.pop(context, 'video'),
+            ),
+            ListTile(
               leading: const Icon(Icons.edit_note),
               title: const Text('Describe symptoms'),
               onTap: () => Navigator.pop(context, 'text'),
@@ -57,6 +63,19 @@ class HomeScreen extends ConsumerWidget {
           builder: (_) => AnalysisRunnerScreen(
             petId: pet.id!, petName: pet.name, inputType: 'photo',
             imageStorageKey: key, isPremium: isPremium,
+          ),
+        ));
+        ref.invalidate(userProfileProvider);
+      }
+    } else if (mode == 'video') {
+      final frameKeys = await Navigator.of(context).push<List<String>>(
+        MaterialPageRoute(builder: (_) => const VideoCaptureScreen()),
+      );
+      if (frameKeys != null && frameKeys.isNotEmpty && context.mounted) {
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => AnalysisRunnerScreen(
+            petId: pet.id!, petName: pet.name, inputType: 'video',
+            frameStorageKeys: frameKeys, isPremium: isPremium,
           ),
         ));
         ref.invalidate(userProfileProvider);

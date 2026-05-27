@@ -11,9 +11,14 @@ import { AwsClient } from "https://esm.sh/aws4fetch@1.0.20";
 import { evaluateFreeTier } from "../_shared/free_tier.mjs";
 // deno-lint-ignore no-import-assertions
 import { containsEmergencyKeyword } from "../_shared/emergency_keywords.mjs";
+// deno-lint-ignore no-import-assertions
+import { formatVector, isCacheEligible, selectCacheHit } from "../_shared/semantic_cache.mjs";
 
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
 const PREMIUM_STATUSES = new Set(["premium", "family", "trial"]);
+const SEMANTIC_CACHE_THRESHOLD = 0.90;
+const SEMANTIC_CACHE_ENABLED =
+  !["0", "false", "no"].includes((Deno.env.get("SEMANTIC_CACHE_ENABLED") ?? "1").toLowerCase());
 
 // Presign a short-lived GET URL so the AI service can read the uploaded image
 // (Phase 1.2 stored it and handed the client only the key).
@@ -117,54 +122,117 @@ Deno.serve(async (req: Request) => {
     }, 402);
   }
 
-  // Call the AI service, propagating the request-id (CR #23).
+  // Pet context shared by /embed and /analyze.
+  const petPayload = {
+    species: pet.species,
+    breed: pet.breed,
+    age_years: petAgeYears(pet.birth_date),
+    sex: pet.sex,
+    weight_kg: pet.weight_kg,
+    prior_history: [] as string[],
+  };
+
   // Presign a GET URL for the uploaded image (Phase 1.2 produced the key).
   const imageUrl = (image_url as string | null) ??
     (body.input_storage_key ? await presignGet(body.input_storage_key) : null);
 
-  // deno-lint-ignore no-explicit-any
-  let ai: any;
-  try {
-    const resp = await fetch(`${AI_SERVICE_URL}/analyze`, {
-      method: "POST",
-      headers: { "content-type": "application/json", "x-request-id": requestId },
-      body: JSON.stringify({
-        input_type,
-        text_description: text_description ?? null,
-        image_url: imageUrl,
-        low_input_quality: body.low_input_quality ?? false,
-        pet: {
-          species: pet.species,
-          breed: pet.breed,
-          age_years: petAgeYears(pet.birth_date),
-          sex: pet.sex,
-          weight_kg: pet.weight_kg,
-          prior_history: [],
-        },
-      }),
-    });
-    if (!resp.ok) throw new Error(`AI service returned ${resp.status}`);
-    ai = await resp.json();
-  } catch (_err) {
-    return json({
-      error: "analysis_unavailable",
-      message: "We can't analyze this right now. If this seems urgent, contact a veterinarian.",
-    }, 503);
+  // Video (Phase 3.2): presign each client-extracted keyframe (4–6) so the AI
+  // service can read them with short-lived GET URLs.
+  const frameKeys: string[] = Array.isArray(body.frame_storage_keys) ? body.frame_storage_keys : [];
+  const frameUrls: string[] = [];
+  for (const k of frameKeys) {
+    const u = await presignGet(k);
+    if (u) frameUrls.push(u);
   }
 
-  const result = ai.result;
-  const meta = ai.meta ?? {};
+  // deno-lint-ignore no-explicit-any
+  let result: any = null;
+  // deno-lint-ignore no-explicit-any
+  let meta: any = {};
+  // Only text inputs get an embedding (stored on the row), so the cache only
+  // ever matches text→text — photo/video are never served from cache.
+  let embeddingLiteral: string | null = null;
+  let cacheHit = false;
 
-  // CR #8: moderation rejected the image — delete the stored object, don't persist.
-  if (meta.moderation_rejected === true) {
-    if (body.input_storage_key) {
-      try {
-        await deleteR2Object(body.input_storage_key);
-      } catch (_err) {
-        // best effort
+  // --- Semantic cache (Phase 3.2) -------------------------------------------
+  // Text-only, non-emergency: embed the symptom text + pet context and look for
+  // a same-user, same-species near-duplicate (>= 0.90). A hit skips the LLM.
+  if (isCacheEligible(input_type, isEmergencyText, SEMANTIC_CACHE_ENABLED)) {
+    try {
+      const embResp = await fetch(`${AI_SERVICE_URL}/embed`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-request-id": requestId },
+        body: JSON.stringify({ text_description: text_description ?? null, pet: petPayload }),
+      });
+      if (embResp.ok) {
+        const emb = await embResp.json();
+        embeddingLiteral = formatVector(emb.embedding);
+        if (embeddingLiteral) {
+          const { data: rows } = await admin.rpc("match_analyses", {
+            query_embedding: embeddingLiteral,
+            match_user_id: user.id,
+            match_species: pet.species,
+            match_threshold: SEMANTIC_CACHE_THRESHOLD,
+            match_count: 1,
+          });
+          const hit = selectCacheHit(rows ?? [], SEMANTIC_CACHE_THRESHOLD);
+          if (hit) {
+            result = hit.full_response;
+            meta = {
+              model_used: "semantic_cache",
+              tier_used: 2,
+              cache_hit: true,
+              similarity: hit.similarity,
+              latency_ms: 0,
+            };
+            cacheHit = true;
+          }
+        }
       }
+    } catch (_err) {
+      // The cache must never break a request — fall through to a fresh analysis.
     }
-    return json({ result, analysis_id: null, request_id: requestId });
+  }
+
+  // --- Fresh analysis (cache miss / ineligible) ------------------------------
+  if (!cacheHit) {
+    // deno-lint-ignore no-explicit-any
+    let ai: any;
+    try {
+      const resp = await fetch(`${AI_SERVICE_URL}/analyze`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-request-id": requestId },
+        body: JSON.stringify({
+          input_type,
+          text_description: text_description ?? null,
+          image_url: imageUrl,
+          frame_urls: frameUrls,
+          low_input_quality: body.low_input_quality ?? false,
+          pet: petPayload,
+        }),
+      });
+      if (!resp.ok) throw new Error(`AI service returned ${resp.status}`);
+      ai = await resp.json();
+    } catch (_err) {
+      return json({
+        error: "analysis_unavailable",
+        message: "We can't analyze this right now. If this seems urgent, contact a veterinarian.",
+      }, 503);
+    }
+    result = ai.result;
+    meta = ai.meta ?? {};
+
+    // CR #8: moderation rejected the image — delete the stored object, don't persist.
+    if (meta.moderation_rejected === true) {
+      if (body.input_storage_key) {
+        try {
+          await deleteR2Object(body.input_storage_key);
+        } catch (_err) {
+          // best effort
+        }
+      }
+      return json({ result, analysis_id: null, request_id: requestId });
+    }
   }
 
   // Persist the analysis (service role).
@@ -182,6 +250,9 @@ Deno.serve(async (req: Request) => {
     confidence_score: result.confidence,
     ai_latency_ms: meta.latency_ms,
     emergency_override_applied: meta.emergency_override_applied ?? false,
+    // Phase 3.2: store the embedding (text inputs only) so the semantic cache
+    // grows; null for photo/video keeps them out of the cache entirely.
+    embedding: embeddingLiteral,
   }).select("id").single();
   if (storeErr) console.error("analyze: failed to store analysis", requestId, storeErr.message);
 
@@ -193,5 +264,5 @@ Deno.serve(async (req: Request) => {
     }).eq("id", user.id);
   }
 
-  return json({ result, analysis_id: stored?.id ?? null, request_id: requestId });
+  return json({ result, analysis_id: stored?.id ?? null, cache_hit: cacheHit, request_id: requestId });
 });

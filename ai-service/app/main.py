@@ -13,8 +13,9 @@ from fastapi import Depends, FastAPI, Request
 
 from . import config
 from .cache import make_cache
+from .embeddings import build_embedding_input, make_embedding_provider
 from .logging_setup import configure_logging, get_logger, get_request_id, set_request_id
-from .models import AnalyzeRequest
+from .models import AnalyzeRequest, EmbedRequest
 from .moderation import AllowAllModerator, GeminiModerator
 from .pipeline import AnalysisPipeline
 from .providers import ClaudeProvider, GeminiProvider
@@ -23,7 +24,7 @@ configure_logging()
 log = get_logger("main")
 
 SERVICE_NAME = "pawdoc-ai"
-VERSION = "1.3.0"
+VERSION = "3.2.0"
 
 app = FastAPI(title="PawDoc AI Service", version=VERSION)
 
@@ -75,4 +76,19 @@ def analyze(req: AnalyzeRequest, pipeline: AnalysisPipeline = Depends(get_pipeli
             "latency_ms": outcome.latency_ms,
             "request_id": get_request_id(),
         },
+    }
+
+
+@app.post("/embed")
+def embed(req: EmbedRequest) -> dict:
+    """Semantic-cache embedding (Phase 3.2). Returns the 1536-dim vector for the
+    pet-context + symptom text, or {"embedding": null} when embeddings aren't
+    available (no key / disabled / error) — the Edge Function then skips the
+    cache and runs a normal analysis. Best-effort; never blocks triage."""
+    vector = make_embedding_provider().embed(build_embedding_input(req.pet, req.text_description))
+    return {
+        "embedding": vector,
+        "model": config.EMBEDDING_MODEL if vector else None,
+        "dim": config.EMBEDDING_DIM,
+        "request_id": get_request_id(),
     }

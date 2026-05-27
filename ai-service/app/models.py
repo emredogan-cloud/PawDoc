@@ -27,10 +27,20 @@ class AnalyzeRequest(BaseModel):
     input_type: str  # photo | video | text
     text_description: str | None = None
     image_url: str | None = None  # short-lived signed R2 URL (Phase 1.2)
+    # Video (Phase 3.2): short-lived signed R2 URLs for the client-extracted
+    # keyframes (4–6). Empty for photo/text.
+    frame_urls: list[str] = Field(default_factory=list)
     pet: PetContext
     # Set by the Edge Function when client-side quality checks were poor; feeds
     # the borderline-NORMAL re-check (CR #4).
     low_input_quality: bool = False
+
+
+class EmbedRequest(BaseModel):
+    """Input for the /embed endpoint (semantic cache, Phase 3.2)."""
+
+    text_description: str | None = None
+    pet: PetContext
 
 
 class AnalysisResult(BaseModel):
