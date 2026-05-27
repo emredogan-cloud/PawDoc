@@ -10,6 +10,7 @@ import '../auth/auth_controller.dart';
 import '../capture/camera_screen.dart';
 import '../capture/video_capture_screen.dart';
 import '../core/connectivity.dart';
+import '../feedback/followup_banner.dart';
 import '../health/breed_insight_card.dart';
 import '../health/health_event_form_screen.dart';
 import '../health/timeline.dart';
@@ -156,6 +157,8 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           children: [
             const OfflineBanner(),
+            // 72h "was this helpful?" follow-up (self-hides when nothing pending).
+            const FollowUpBanner(),
             // Query counter.
             profile.when(
               loading: () => const SizedBox.shrink(),

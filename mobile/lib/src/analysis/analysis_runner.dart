@@ -115,7 +115,11 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
           ),
         );
       case _Phase.result:
-        return ResultScreen(result: _outcome!.result, onDone: _onResultDone);
+        return ResultScreen(
+          result: _outcome!.result,
+          analysisId: _outcome!.analysisId,
+          onDone: _onResultDone,
+        );
     }
   }
 }
