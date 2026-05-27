@@ -48,4 +48,8 @@ class Analytics {
   static Future<void> referralSuccess() => capture('referral_success');
   static Future<void> referralFraudPrevented(String reason) =>
       capture('referral_fraud_prevented', {'reason': reason});
+
+  // Phase 3.3 Part 2 — engagement.
+  static Future<void> reminderSet(String reminderType) =>
+      capture('reminder_set', {'reminder_type': reminderType});
 }

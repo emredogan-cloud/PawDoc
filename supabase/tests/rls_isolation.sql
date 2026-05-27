@@ -106,5 +106,30 @@ begin
 end
 $$;
 
+-- Reminders WRITE isolation (Phase 3.3): A must NOT create a reminder owned by B.
+do $$
+begin
+  begin
+    insert into public.reminders (pet_id, user_id, reminder_type, due_date)
+    values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '22222222-2222-2222-2222-222222222222', 'Hijack', current_date);
+    raise exception 'reminders WRITE: A inserted a reminder for B (RLS WITH CHECK failed)';
+  exception
+    when insufficient_privilege then null; -- expected
+  end;
+end
+$$;
+
+-- Positive control (Phase 3.3): A CAN create its own reminder (the client writes
+-- reminders directly, RLS-scoped by user_id). Proves the reminders CRUD works.
+insert into public.reminders (pet_id, user_id, reminder_type, due_date)
+values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 'Flea medication', current_date + 7);
+do $$
+begin
+  if (select count(*) from public.reminders) <> 1 then
+    raise exception 'reminders WRITE: A should see exactly its own 1 reminder after insert';
+  end if;
+end
+$$;
+
 reset role;
 select 'RLS ISOLATION TESTS PASSED' as result;

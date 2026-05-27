@@ -402,6 +402,11 @@ verify_jwt = false
 [functions.claim-referral]
 verify_jwt = true
 
+# /process-reminders is called by pg_cron via pg_net (no user JWT); it
+# authenticates with the x-cron-secret header (== CRON_SECRET). Phase 3.3 Part 2.
+[functions.process-reminders]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
