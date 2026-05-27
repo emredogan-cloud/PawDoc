@@ -3,14 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../analytics/analytics.dart';
+import '../feedback/result_feedback_widget.dart';
 import '../models/analysis_result.dart';
 import '../vet_finder/vet_finder_screen.dart';
 import 'emergency_result_screen.dart';
 
-/// Routes to the EMERGENCY screen or the standard result screen.
+/// Routes to the EMERGENCY screen or the standard result screen. [analysisId]
+/// (null if the row failed to store) gates the in-app feedback widget.
 class ResultScreen extends StatelessWidget {
-  const ResultScreen({super.key, required this.result, this.onDone});
+  const ResultScreen({super.key, required this.result, this.analysisId, this.onDone});
   final AnalysisResult result;
+  final String? analysisId;
   final VoidCallback? onDone;
 
   @override
@@ -18,7 +21,7 @@ class ResultScreen extends StatelessWidget {
     if (result.triageLevel == TriageLevel.emergency) {
       return EmergencyResultScreen(result: result);
     }
-    return StandardResultScreen(result: result, onDone: onDone);
+    return StandardResultScreen(result: result, analysisId: analysisId, onDone: onDone);
   }
 }
 
@@ -41,8 +44,9 @@ const _escalationTriggers = [
 ];
 
 class StandardResultScreen extends ConsumerStatefulWidget {
-  const StandardResultScreen({super.key, required this.result, this.onDone});
+  const StandardResultScreen({super.key, required this.result, this.analysisId, this.onDone});
   final AnalysisResult result;
+  final String? analysisId;
   final VoidCallback? onDone;
 
   @override
@@ -132,6 +136,11 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
               icon: const Icon(Icons.share),
               label: const Text('Share this result'),
             ),
+          // In-app feedback (Phase 4.1) — only when the analysis was stored.
+          if (widget.analysisId != null) ...[
+            const SizedBox(height: 16),
+            ResultFeedbackWidget(analysisId: widget.analysisId!),
+          ],
           const SizedBox(height: 8),
           FilledButton(
             key: const Key('result_done'),

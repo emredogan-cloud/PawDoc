@@ -131,5 +131,30 @@ begin
 end
 $$;
 
+-- analysis_feedback WRITE isolation (CR #2 / Phase 4.1): A must NOT submit
+-- feedback on B's analysis. Ownership is derived from the parent analysis.
+do $$
+begin
+  begin
+    insert into public.analysis_feedback (analysis_id, rating, comment)
+    values ('b1b1b1b1-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 1, 'hijack');
+    raise exception 'analysis_feedback WRITE: A wrote feedback on B''s analysis (RLS WITH CHECK failed)';
+  exception
+    when insufficient_privilege then null; -- expected
+  end;
+end
+$$;
+
+-- Positive control (Phase 4.1): A CAN submit feedback on its OWN analysis.
+insert into public.analysis_feedback (analysis_id, rating, comment)
+values ('a1a1a1a1-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 5, 'helpful');
+do $$
+begin
+  if (select count(*) from public.analysis_feedback) <> 1 then
+    raise exception 'analysis_feedback WRITE: A should see exactly its own 1 feedback row';
+  end if;
+end
+$$;
+
 reset role;
 select 'RLS ISOLATION TESTS PASSED' as result;

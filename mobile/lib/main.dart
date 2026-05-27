@@ -26,6 +26,18 @@ Future<void> main() async {
   if (Env.posthogApiKey.isNotEmpty) {
     final config = PostHogConfig(Env.posthogApiKey)..host = Env.posthogHost;
     await Posthog().setup(config);
+    // Deterministic, stable A/B bucketing (Phase 4.1): tie PostHog's distinct_id
+    // to the Supabase uid so a user always lands in the same variant.
+    if (Env.hasSupabase) {
+      Supabase.instance.client.auth.onAuthStateChange.listen((state) async {
+        final uid = state.session?.user.id;
+        if (uid != null) {
+          try {
+            await Posthog().identify(userId: uid);
+          } catch (_) {}
+        }
+      });
+    }
   }
 
   // Push notifications (Phase 2.1). The permission prompt is fired later, on

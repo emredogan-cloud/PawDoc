@@ -57,4 +57,8 @@ class Analytics {
   static Future<void> vetFinderOpened() => capture('vet_finder_opened');
   static Future<void> vetCalled() => capture('vet_called');
   static Future<void> healthReportExported() => capture('health_report_exported');
+
+  // Phase 4.1 — experimentation / feedback.
+  static Future<void> feedbackSubmitted(String source) =>
+      capture('feedback_submitted', {'source': source});
 }
