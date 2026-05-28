@@ -135,13 +135,17 @@ class HomeScreen extends ConsumerWidget {
           PopupMenuButton<String>(
             key: const Key('home_overflow_menu'),
             onSelected: (v) {
-              if (v == 'delete') {
+              if (v == 'family') {
+                context.push('/family');
+              } else if (v == 'delete') {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
                 );
               }
             },
             itemBuilder: (_) => const [
+              // Phase 6.3.1 — Family Sharing entry-point.
+              PopupMenuItem(value: 'family', child: Text('Family sharing')),
               PopupMenuItem(value: 'delete', child: Text('Delete account')),
             ],
           ),

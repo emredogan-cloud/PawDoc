@@ -429,6 +429,17 @@ verify_jwt = false
 [functions.generate-pdf-report]
 verify_jwt = true
 
+# /invite-family-member is called by the family-tier owner to invite a member
+# (Phase 6.3.1). JWT identifies the inviter; server-side enforces tier.
+[functions.invite-family-member]
+verify_jwt = true
+
+# /accept-family-invite is called by the invitee after deep-linking into the
+# app. JWT identifies the accepter; server validates token + expiry + the
+# already-in-a-family rule (Phase 6.3.1).
+[functions.accept-family-invite]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327
