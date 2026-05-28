@@ -81,8 +81,8 @@ The article is an MDX **page** at `app/blog/when-to-take-your-dog-to-the-vet-for
 ## 7. Git branch / commit / push
 
 - Branch: `phase-4.3-web-presence`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `9c48b247e1e2c360f636c01bbf6b5044acaf3f2c`
+- Push: pushed to `origin/phase-4.3-web-presence`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-4.3-web-presence
 
 ## 8. Definition-of-Done verification
 
