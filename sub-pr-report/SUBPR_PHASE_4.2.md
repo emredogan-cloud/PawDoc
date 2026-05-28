@@ -81,8 +81,8 @@ Set the variant **keys** to exactly `A` / `B` / `C`. Roll out the % split per va
 ## 7. Git branch / commit / push
 
 - Branch: `phase-4.2-ab-experiments`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `087518f9c2f5238e3564340630fe03b67e68e24b`
+- Push: pushed to `origin/phase-4.2-ab-experiments`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-4.2-ab-experiments
 
 ## 8. Definition-of-Done verification
 
