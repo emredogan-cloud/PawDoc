@@ -43,22 +43,35 @@ class FollowUpBanner extends ConsumerWidget {
             const SizedBox(height: 4),
             const Text('Tell us how it turned out — it helps us improve.'),
             const SizedBox(height: 8),
+            // Phase 6.2 — surface ALL FIVE canonical outcomes (the DB now
+            // enforces the same set via a CHECK constraint). vet_said_nothing
+            // is the missing piece that lets view_accuracy_signals classify
+            // false-positive_proxy rows on the dashboards.
             Wrap(
               spacing: 8,
               children: [
                 ActionChip(
+                  key: const Key('followup_resolved_on_own'),
                   label: const Text('Resolved on its own'),
                   onPressed: () => _record(ref, pending.analysisId, FeedbackOutcome.resolvedOnOwn),
                 ),
                 ActionChip(
+                  key: const Key('followup_vet_confirmed'),
                   label: const Text('Vet confirmed it'),
                   onPressed: () => _record(ref, pending.analysisId, FeedbackOutcome.vetConfirmed),
                 ),
                 ActionChip(
+                  key: const Key('followup_vet_said_nothing'),
+                  label: const Text('Vet said it was nothing'),
+                  onPressed: () => _record(ref, pending.analysisId, FeedbackOutcome.vetSaidNothing),
+                ),
+                ActionChip(
+                  key: const Key('followup_still_monitoring'),
                   label: const Text('Still monitoring'),
                   onPressed: () => _record(ref, pending.analysisId, FeedbackOutcome.stillMonitoring),
                 ),
                 ActionChip(
+                  key: const Key('followup_other'),
                   label: const Text("Wasn't accurate"),
                   onPressed: () => _record(ref, pending.analysisId, FeedbackOutcome.other),
                 ),

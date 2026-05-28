@@ -21,4 +21,26 @@ void main() {
     expect(c['outcome'], 'resolved_on_own');
     expect(c.containsKey('rating'), isFalse);
   });
+
+  // Phase 6.2 — the canonical outcome domain must exactly match the DB CHECK
+  // constraint in 20260528020000_accuracy_views.sql. If a value is added on
+  // one side and not the other, this test catches the drift.
+  test('FeedbackOutcome covers exactly the 5 canonical values', () {
+    const canonical = <String>{
+      'resolved_on_own',
+      'vet_confirmed',
+      'vet_said_nothing',
+      'still_monitoring',
+      'other',
+    };
+    final exposed = <String>{
+      FeedbackOutcome.resolvedOnOwn,
+      FeedbackOutcome.vetConfirmed,
+      FeedbackOutcome.vetSaidNothing,
+      FeedbackOutcome.stillMonitoring,
+      FeedbackOutcome.other,
+    };
+    expect(exposed, canonical,
+        reason: 'Client outcome enum drifted from the server CHECK constraint.');
+  });
 }
