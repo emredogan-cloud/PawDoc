@@ -65,4 +65,7 @@ class Analytics {
 
   // Phase 4.2 — onboarding A/B (paywall shown inside onboarding, Variant B).
   static Future<void> onboardingPaywallShown() => capture('onboarding_paywall_shown');
+
+  // Phase 5.3 — AI Health Journal.
+  static Future<void> journalViewed() => capture('journal_viewed');
 }

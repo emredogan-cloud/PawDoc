@@ -14,8 +14,9 @@ from fastapi import Depends, FastAPI, Request
 from . import config
 from .cache import make_cache
 from .embeddings import build_embedding_input, make_embedding_provider
+from .journal import JournalProvider, make_journal_provider
 from .logging_setup import configure_logging, get_logger, get_request_id, set_request_id
-from .models import AnalyzeRequest, EmbedRequest
+from .models import AnalyzeRequest, EmbedRequest, JournalRequest
 from .moderation import AllowAllModerator, GeminiModerator
 from .pipeline import AnalysisPipeline
 from .providers import ClaudeProvider, GeminiProvider
@@ -90,5 +91,26 @@ def embed(req: EmbedRequest) -> dict:
         "embedding": vector,
         "model": config.EMBEDDING_MODEL if vector else None,
         "dim": config.EMBEDDING_DIM,
+        "request_id": get_request_id(),
+    }
+
+
+def get_journal_provider() -> JournalProvider:
+    """Resolves the journal provider; overridden in tests with a fake."""
+    return make_journal_provider()
+
+
+@app.post("/generate_journal")
+def generate_journal(
+    req: JournalRequest,
+    provider: JournalProvider = Depends(get_journal_provider),
+) -> dict:
+    """AI Health Journal (Phase 5.3). Returns the synthesized narrative or
+    {"narrative": null} on ANY OpenAI failure (CR #5 resilience) — the cron Edge
+    Function then logs + skips that pet without writing partial data."""
+    narrative = provider.generate(req)
+    return {
+        "narrative": narrative,
+        "model": config.OPENAI_MODEL if narrative else None,
         "request_id": get_request_id(),
     }

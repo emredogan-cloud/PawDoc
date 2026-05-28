@@ -175,8 +175,12 @@ flutter run \
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase URL the web `/check` page calls | Yes (web) | Cloudflare Pages env (build-time, public) |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon (publishable) key for the web checker | Yes (web) | Cloudflare Pages env (build-time, public) |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile **site** key (public, in the browser) — Phase 5.2 | Yes (web) | Cloudflare Pages env (build-time, public) |
+| `OPENAI_API_KEY` 🔒 | OpenAI key for the weekly AI Health Journal (GPT-4o family) — Phase 5.3 | Yes (journal) | Fly env on the AI service |
+| `OPENAI_MODEL` | Pinned journal model (CR #17, default `gpt-4o-mini` — cheap) — Phase 5.3 | Optional | Fly env |
 
 > `ANTHROPIC_API_KEY` + `GOOGLE_AI_API_KEY` (Phase 0.1 backbone) are consumed by the AI service (Tier 3 / Tier 2). Set them as Fly secrets on `pawdoc-ai`. The **dynamic** kill-switch (no redeploy) is the Redis key `pawdoc:ai_kill_switch` = `1`.
+>
+> **Phase 5.3 (AI Health Journal):** the weekly cron `generate-journals` reuses the **existing** `CRON_SECRET` (3.3 P2) + Vault `project_url`/`cron_secret`; the new secret is `OPENAI_API_KEY` on the AI service. The journal pipeline FAILS-SAFE: any OpenAI error (no key, timeout, SDK error) returns `{narrative: null}` and the cron logs + skips that pet — no DB write, no system crash (CR #5). Set a billing alarm on the OpenAI key; the default `gpt-4o-mini` keeps weekly-per-pet spend small.
 >
 > **Phase 5.2 (anonymous web checker):** `/analyze-anonymous` is the ONLY anonymous AI path and **fails closed (503)** unless BOTH `TURNSTILE_SECRET_KEY` and the existing `UPSTASH_REDIS_REST_URL`/`_TOKEN` are set (it enforces a 3/IP/24h Upstash rate limit + Turnstile). The `NEXT_PUBLIC_*` values are public/build-time (set in Cloudflare Pages); the Turnstile **secret** stays server-side on the Edge Function. Set a **global AI spend alarm** (CR #5/#13) — anonymous AI is a cost-abuse magnet. See `docs/runbooks/21-web-checker.md`.
 >

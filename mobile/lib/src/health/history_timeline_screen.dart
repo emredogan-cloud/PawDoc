@@ -6,6 +6,7 @@ import '../export/health_report_service.dart';
 import '../pets/active_pet.dart';
 import '../reminders/reminders_screen.dart';
 import 'health_event_form_screen.dart';
+import 'journal_card.dart';
 import 'timeline.dart';
 
 /// The combined health-history timeline for the **active** pet (analyses +
@@ -77,8 +78,9 @@ class HealthHistoryScreen extends ConsumerWidget {
           data: (items) {
             if (items.isEmpty) {
               return ListView(
-                children: const [
-                  Padding(
+                children: [
+                  Padding(padding: const EdgeInsets.all(8), child: JournalCard(petId: pet.id!)),
+                  const Padding(
                     padding: EdgeInsets.all(32),
                     child: Center(
                       child: Text(
@@ -90,10 +92,16 @@ class HealthHistoryScreen extends ConsumerWidget {
                 ],
               );
             }
+            // Index 0 = the latest journal card; the timeline follows.
             return ListView.separated(
-              itemCount: items.length,
+              itemCount: items.length + 1,
               separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (context, i) => _TimelineTile(item: items[i]),
+              itemBuilder: (context, i) {
+                if (i == 0) {
+                  return Padding(padding: const EdgeInsets.all(8), child: JournalCard(petId: pet.id!));
+                }
+                return _TimelineTile(item: items[i - 1]);
+              },
             );
           },
         ),
