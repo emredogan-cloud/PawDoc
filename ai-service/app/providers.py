@@ -24,6 +24,7 @@ class AIProvider(Protocol):
         user_prompt: str,
         image_url: str | None = None,
         frame_urls: list[str] | None = None,
+        pet_context_block: str | None = None,
     ) -> dict:
         ...
 
@@ -57,8 +58,18 @@ class GeminiProvider:
         user_prompt: str,
         image_url: str | None = None,
         frame_urls: list[str] | None = None,
+        pet_context_block: str | None = None,
     ) -> dict:
         model = self.select_model(frame_urls)
+        # Gemini has no equivalent of Anthropic's ephemeral prompt cache, so we
+        # concatenate the static + per-pet + per-check parts into one stream.
+        # Static parts still go first so they hit the model's implicit KV cache
+        # when the SDK / server side optimizes for repeated prefixes.
+        sections = [system_prompt]
+        if pet_context_block:
+            sections.append(pet_context_block)
+        sections.append(user_prompt)
+        contents = "\n\n".join(sections)
         try:
             from google import genai  # lazy
             from google.genai import types
@@ -66,7 +77,7 @@ class GeminiProvider:
             client = genai.Client(api_key=self._api_key)
             resp = client.models.generate_content(
                 model=model,
-                contents=f"{system_prompt}\n\n{user_prompt}",
+                contents=contents,
                 config=types.GenerateContentConfig(
                     temperature=config.ANALYSIS_TEMPERATURE,
                     response_mime_type="application/json",
@@ -89,12 +100,35 @@ class ClaudeProvider:
         self._api_key = api_key
         self._model = model
 
+    def build_system_blocks(self, system_prompt: str, pet_context_block: str | None):
+        """Pure builder for the `system` field — two ephemeral cache breakpoints:
+        block #1 is the static safety contract, block #2 (when present) is the
+        per-pet personalization context (Phase 6.1). Exposed so tests can assert
+        the cache structure without calling the API."""
+        blocks: list[dict] = [
+            {
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": {"type": "ephemeral"},
+            },
+        ]
+        if pet_context_block:
+            blocks.append(
+                {
+                    "type": "text",
+                    "text": pet_context_block,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            )
+        return blocks
+
     def analyze(
         self,
         system_prompt: str,
         user_prompt: str,
         image_url: str | None = None,
         frame_urls: list[str] | None = None,
+        pet_context_block: str | None = None,
     ) -> dict:
         try:
             import anthropic  # lazy
@@ -104,14 +138,11 @@ class ClaudeProvider:
                 model=self._model,
                 max_tokens=1024,
                 temperature=config.ANALYSIS_TEMPERATURE,
-                system=[
-                    {
-                        "type": "text",
-                        "text": system_prompt,
-                        # Anthropic prompt caching on the (stable) system prompt.
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
+                # Phase 6.1 — two ephemeral cache breakpoints: static safety
+                # contract + per-pet personalization block. Repeated checks for
+                # the same pet within 5 min pay 25% of input cost on the cached
+                # portion (Anthropic prompt caching, 5-min TTL).
+                system=self.build_system_blocks(system_prompt, pet_context_block),
                 tools=[_ANALYSIS_TOOL],
                 tool_choice={"type": "tool", "name": "report_triage"},
                 messages=[{"role": "user", "content": user_prompt}],

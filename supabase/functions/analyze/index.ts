@@ -138,6 +138,44 @@ Deno.serve(async (req: Request) => {
     prior_history: [] as string[],
   };
 
+  // Phase 6.1 — Personalization context. Fetch the pet's last 30 days of
+  // analyses and health events under the USER-scoped client (RLS enforces
+  // own-row only). Strip to compact summary fields — never ship `full_response`
+  // payloads (keeps the prompt small + the cost bounded). Caps mirror the
+  // Python-side RECENT_*_CAP constants in prompts.py so the prompt size is
+  // capped on both ends.
+  const SINCE_ISO = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+  const RECENT_CAP = 10;
+  // deno-lint-ignore no-explicit-any
+  let recentAnalyses: any[] = [];
+  // deno-lint-ignore no-explicit-any
+  let recentEvents: any[] = [];
+  try {
+    const { data: a } = await userClient
+      .from("analyses")
+      .select("triage_level, primary_concern, created_at")
+      .eq("pet_id", pet_id)
+      .gte("created_at", SINCE_ISO)
+      .order("created_at", { ascending: false })
+      .limit(RECENT_CAP);
+    if (Array.isArray(a)) recentAnalyses = a;
+  } catch (_err) {
+    // Personalization is best-effort: a failed history fetch must NEVER block
+    // the analysis path. We continue with an empty list.
+  }
+  try {
+    const { data: e } = await userClient
+      .from("health_events")
+      .select("event_type, event_date, notes")
+      .eq("pet_id", pet_id)
+      .gte("event_date", SINCE_ISO.slice(0, 10))
+      .order("event_date", { ascending: false })
+      .limit(RECENT_CAP);
+    if (Array.isArray(e)) recentEvents = e;
+  } catch (_err) {
+    // best-effort (see above)
+  }
+
   // Presign a GET URL for the uploaded image (Phase 1.2 produced the key).
   const imageUrl = (image_url as string | null) ??
     (body.input_storage_key ? await presignGet(body.input_storage_key) : null);
@@ -216,6 +254,9 @@ Deno.serve(async (req: Request) => {
           low_input_quality: body.low_input_quality ?? false,
           pet: petPayload,
           locale, // Phase 5.4 / CR #11
+          // Phase 6.1 — personalization context (server-fetched, RLS-scoped).
+          recent_analyses: recentAnalyses,
+          recent_events: recentEvents,
         }),
       });
       if (!resp.ok) throw new Error(`AI service returned ${resp.status}`);

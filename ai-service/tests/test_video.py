@@ -16,9 +16,11 @@ class FakeProvider:
         self.calls = 0
         self.last_frame_urls = None
 
-    def analyze(self, system_prompt, user_prompt, image_url=None, frame_urls=None):
+    def analyze(self, system_prompt, user_prompt, image_url=None, frame_urls=None,
+                pet_context_block=None):
         self.calls += 1
         self.last_frame_urls = frame_urls
+        self.last_pet_context = pet_context_block
         return dict(self.response)
 
 

@@ -1,7 +1,20 @@
-"""System prompt v1 with anti-hallucination guards (Phase 1.3 deliverable)."""
+"""System prompt v1 with anti-hallucination guards (Phase 1.3 deliverable).
+
+Phase 6.1 — Personalization. The prompt is now split into three parts so we
+can cache the static + per-pet pieces and pay tokens only for the dynamic
+per-check text:
+
+  (1) `SYSTEM_PROMPT_V1`             — fully static safety contract. ALWAYS cached.
+  (2) `build_personalization_block`  — pet profile + recent history. Per-pet,
+                                       stable within a session ⇒ second cache
+                                       breakpoint when the provider supports it
+                                       (Anthropic ephemeral cache, 5-min TTL).
+  (3) `build_user_prompt`            — owner's current symptom text + input
+                                       type. Always dynamic; never cached.
+"""
 from __future__ import annotations
 
-from .models import AnalyzeRequest
+from .models import AnalyzeRequest, PetContext
 
 SYSTEM_PROMPT_V1 = """You are PawDoc, a veterinary triage assistant for pet owners.
 
@@ -36,9 +49,9 @@ Return ONLY a JSON object matching this schema (no prose, no markdown):
 }"""
 
 
-# Species-specific clinical context (Phase 5.1). Injected into the user prompt so
-# the model applies the right red-flag thresholds — exotics decompensate fast and
-# hide illness, so signs that are "monitor" in a dog are urgent in them.
+# Species-specific clinical context (Phase 5.1). Injected into the personalization
+# block so the model applies the right red-flag thresholds — exotics decompensate
+# fast and hide illness, so signs that are "monitor" in a dog are urgent in them.
 SPECIES_GUIDANCE: dict[str, str] = {
     "rabbit": (
         "Species note (rabbit): rabbits are prey animals that hide illness. GI "
@@ -67,15 +80,19 @@ SPECIES_GUIDANCE: dict[str, str] = {
 
 
 def species_guidance(species: str) -> str:
-    """Species-specific clinical notes for the prompt; '' for dog/cat/other."""
+    """Species-specific clinical notes; '' for dog/cat/other."""
     key = species.strip().lower().replace(" ", "_")
     return SPECIES_GUIDANCE.get(key, "")
 
 
-def build_user_prompt(request: AnalyzeRequest) -> str:
-    """Inject pet context (species, breed, age, sex, weight, prior history) so
-    the model can personalize — without fabricating anything not given."""
-    pet = request.pet
+# Phase 6.1 — bound the prompt size. Recent history is a moat, not an essay:
+# the most relevant signal is the last few items. These caps keep token cost
+# predictable even for power users with rich timelines.
+RECENT_ANALYSES_CAP = 10
+RECENT_EVENTS_CAP = 10
+
+
+def _pet_profile_lines(pet: PetContext) -> list[str]:
     lines = [f"Species: {pet.species}"]
     if pet.breed:
         lines.append(f"Breed: {pet.breed}")
@@ -87,9 +104,81 @@ def build_user_prompt(request: AnalyzeRequest) -> str:
         lines.append(f"Weight (kg): {pet.weight_kg}")
     if pet.prior_history:
         lines.append("Prior history: " + "; ".join(pet.prior_history))
+    return lines
+
+
+def _format_recent_analyses(rows: list[dict]) -> list[str]:
+    """Compact, per-row summaries — no full payloads, no PII."""
+    out: list[str] = []
+    for r in rows[:RECENT_ANALYSES_CAP]:
+        # The Edge ships {triage_level, primary_concern, created_at} — be
+        # tolerant of any missing field rather than failing the whole call.
+        triage = (r.get("triage_level") or "").upper()
+        date = (r.get("created_at") or "")[:10] or "earlier"
+        concern = r.get("primary_concern") or "(no concern recorded)"
+        out.append(f"  - [{date}] {triage}: {concern}")
+    return out
+
+
+def _format_recent_events(rows: list[dict]) -> list[str]:
+    out: list[str] = []
+    for r in rows[:RECENT_EVENTS_CAP]:
+        kind = r.get("event_type") or "event"
+        date = (r.get("event_date") or "")[:10] or "earlier"
+        notes = r.get("notes")
+        out.append(
+            f"  - [{date}] {kind}" + (f": {notes}" if notes else "")
+        )
+    return out
+
+
+def build_personalization_block(
+    pet: PetContext,
+    recent_analyses: list[dict] | None = None,
+    recent_events: list[dict] | None = None,
+) -> str:
+    """Per-pet, history-aware context for the model. Stable within a session ⇒
+    placed in the provider's cache-able portion of the prompt (Anthropic's
+    `cache_control: ephemeral` block #2). Adapts to whatever the caller has —
+    a pet with no history still gets a sensible profile block.
+    """
+    parts = ["Pet profile:", *_pet_profile_lines(pet)]
+    guidance = species_guidance(pet.species)
+    if guidance:
+        parts.append("")
+        parts.append(guidance)
+
+    # Recent analyses: newest first if the caller sorted them; we don't re-sort
+    # (the Edge already orders DESC). Empty section is omitted entirely.
+    if recent_analyses:
+        parts.append("")
+        parts.append("Recent analyses (last 30 days, newest first):")
+        parts.extend(_format_recent_analyses(recent_analyses))
+
+    if recent_events:
+        parts.append("")
+        parts.append("Recent health events (last 30 days, newest first):")
+        parts.extend(_format_recent_events(recent_events))
+
+    if recent_analyses or recent_events:
+        parts.append("")
+        parts.append(
+            "Treat the history as background context, NOT as ground truth — "
+            "weigh it against the current input, and never invent details not "
+            "stated here."
+        )
+
+    return "\n".join(parts)
+
+
+def build_user_prompt(request: AnalyzeRequest) -> str:
+    """Dynamic per-check portion — owner's current description + input type.
+    Phase 6.1: the pet profile + history moved to `build_personalization_block`
+    (cache-friendly); this string is the only part that varies request-to-request.
+    """
+    lines: list[str] = [f"Input type: {request.input_type}"]
     if request.text_description:
         lines.append(f"Owner description: {request.text_description}")
-    lines.append(f"Input type: {request.input_type}")
     if request.frame_urls:
         lines.append(
             f"{len(request.frame_urls)} video keyframes are provided (sampled across "
@@ -97,7 +186,4 @@ def build_user_prompt(request: AnalyzeRequest) -> str:
         )
     elif request.image_url:
         lines.append("An image is provided for visual assessment.")
-    guidance = species_guidance(pet.species)
-    if guidance:
-        lines.append(guidance)
     return "\n".join(lines)
