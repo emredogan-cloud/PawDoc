@@ -34,6 +34,10 @@ class AnalyzeRequest(BaseModel):
     # Set by the Edge Function when client-side quality checks were poor; feeds
     # the borderline-NORMAL re-check (CR #4).
     low_input_quality: bool = False
+    # CR #11 (Phase 5.4): user's preferred locale ('en' default, 'de' for the
+    # German launch). Drives the pre-AI emergency-override keyword set, so a
+    # German "Krampfanfall" still bypasses the AI to EMERGENCY.
+    locale: str = "en"
 
 
 class JournalRequest(BaseModel):

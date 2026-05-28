@@ -42,7 +42,10 @@ docker exec -i "$CT" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
   -f /repo/supabase/migrations/20260527010000_initial_schema.sql \
   -f /repo/supabase/migrations/20260527010001_rls_policies.sql \
   -f /repo/supabase/migrations/20260527070000_health_journals.sql \
-  -f /repo/supabase/tests/health_journals.sql
+  -f /repo/supabase/migrations/20260528010000_b2b_lite.sql \
+  -f /repo/supabase/migrations/20260528010001_b2b_lite_journal_eligibility.sql \
+  -f /repo/supabase/tests/health_journals.sql \
+  -f /repo/supabase/tests/b2b_lite_journals.sql
 rc=$?
 
 echo "----------------------------------------------------------------"

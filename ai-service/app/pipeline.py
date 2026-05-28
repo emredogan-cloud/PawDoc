@@ -128,8 +128,11 @@ class AnalysisPipeline:
             return self._outcome(_degraded_result(), 0, "kill_switch", degraded=True, start=start)
 
         # 2. Hardcoded emergency override — BEFORE any AI call. Species-aware
-        #    (Phase 5.1): global keywords + the pet's species-specific set.
-        matched = check_emergency_override(request.text_description, request.pet.species)
+        #    (Phase 5.1) AND locale-aware (Phase 5.4 / CR #11): global keywords
+        #    + the pet's species-specific set, in the user's preferred locale.
+        matched = check_emergency_override(
+            request.text_description, request.pet.species, request.locale
+        )
         if matched:
             log.info("emergency override fired on keyword=%s", matched)
             return self._outcome(

@@ -1,0 +1,36 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "PawDoc",
+  "@appTitle": { "description": "Application name." },
+
+  "emergencyTitle": "This may be an emergency",
+  "@emergencyTitle": { "description": "Emergency result screen heading (CR #11 safety-critical)." },
+
+  "emergencyRecommendedPrefix": "Recommended: {timeframe}.",
+  "@emergencyRecommendedPrefix": {
+    "description": "Recommended urgency timeframe line on the emergency screen.",
+    "placeholders": { "timeframe": { "type": "String", "example": "immediately" } }
+  },
+
+  "emergencyFindVet": "Find an emergency vet now",
+  "@emergencyFindVet": { "description": "Primary CTA on the emergency screen — safety-critical." },
+
+  "emergencyDisclaimer": "PawDoc provides information, not a diagnosis. In an emergency, contact a veterinarian immediately.",
+  "@emergencyDisclaimer": { "description": "Server-injected disclaimer line on EMERGENCY (always shown when required)." },
+
+  "emergencyAcknowledge": "I understand this needs urgent attention",
+  "@emergencyAcknowledge": { "description": "Acknowledgment checkbox label." },
+
+  "actionContinue": "Continue",
+  "@actionContinue": { "description": "Generic Continue button." },
+
+  "telehealthTitle": "Talk to a vet now",
+  "@telehealthTitle": { "description": "Telehealth CTA title (Airvet-style affiliate)." },
+
+  "telehealthSubtitle": "On-demand video consult with a licensed vet.",
+  "@telehealthSubtitle": { "description": "Telehealth CTA subtitle." },
+
+  "telehealthCta": "Consult a vet",
+  "@telehealthCta": { "description": "Telehealth button label." }
+}

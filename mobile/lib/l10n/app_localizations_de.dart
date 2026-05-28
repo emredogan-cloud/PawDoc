@@ -1,0 +1,44 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for German (`de`).
+class AppLocalizationsDe extends AppLocalizations {
+  AppLocalizationsDe([String locale = 'de']) : super(locale);
+
+  @override
+  String get appTitle => 'PawDoc';
+
+  @override
+  String get emergencyTitle => 'Das könnte ein Notfall sein';
+
+  @override
+  String emergencyRecommendedPrefix(String timeframe) {
+    return 'Empfohlen: $timeframe.';
+  }
+
+  @override
+  String get emergencyFindVet => 'Sofort einen Notfall-Tierarzt finden';
+
+  @override
+  String get emergencyDisclaimer =>
+      'PawDoc liefert Informationen, keine Diagnose. Im Notfall sofort einen Tierarzt kontaktieren.';
+
+  @override
+  String get emergencyAcknowledge => 'Mir ist klar, dass dies dringend ist';
+
+  @override
+  String get actionContinue => 'Weiter';
+
+  @override
+  String get telehealthTitle => 'Jetzt mit einem Tierarzt sprechen';
+
+  @override
+  String get telehealthSubtitle =>
+      'Video-Konsultation auf Abruf mit einem zugelassenen Tierarzt.';
+
+  @override
+  String get telehealthCta => 'Tierarzt konsultieren';
+}

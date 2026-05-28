@@ -28,6 +28,7 @@ class Pet {
     this.medicalNotes,
     this.isActive = true,
     this.isJournalEnabled = false,
+    this.clientName,
   });
 
   final String? id;
@@ -43,6 +44,9 @@ class Pet {
   final bool isActive;
   /// Phase 5.3: opt-in to the weekly AI Health Journal (Premium/Family).
   final bool isJournalEnabled;
+  /// Phase 5.4: B2B-Lite "sitter mode" label — which client this pet belongs
+  /// to, e.g. "Smith family". Cosmetic only; RLS still scopes by user_id.
+  final String? clientName;
 
   factory Pet.fromJson(Map<String, dynamic> json) {
     final birth = json['birth_date'] as String?;
@@ -59,6 +63,7 @@ class Pet {
       medicalNotes: json['medical_notes'] as String?,
       isActive: json['is_active'] as bool? ?? true,
       isJournalEnabled: json['is_journal_enabled'] as bool? ?? false,
+      clientName: json['client_name'] as String?,
     );
   }
 
@@ -75,6 +80,7 @@ class Pet {
         'medical_notes': medicalNotes,
         'is_active': isActive,
         'is_journal_enabled': isJournalEnabled,
+        'client_name': clientName,
       };
 
   Map<String, dynamic> toJson() => {'id': id, 'user_id': userId, ...toColumns()};
@@ -90,6 +96,7 @@ class Pet {
     String? medicalNotes,
     bool? isActive,
     bool? isJournalEnabled,
+    String? clientName,
   }) =>
       Pet(
         id: id,
@@ -104,5 +111,6 @@ class Pet {
         medicalNotes: medicalNotes ?? this.medicalNotes,
         isActive: isActive ?? this.isActive,
         isJournalEnabled: isJournalEnabled ?? this.isJournalEnabled,
+        clientName: clientName ?? this.clientName,
       );
 }

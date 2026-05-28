@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../analytics/analytics.dart';
 import '../feedback/result_feedback_widget.dart';
 import '../models/analysis_result.dart';
+import '../monetization/telehealth_button.dart';
 import '../vet_finder/vet_finder_screen.dart';
 import 'emergency_result_screen.dart';
 
@@ -120,7 +121,7 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
           const SizedBox(height: 24),
           // MONITOR offers the location-aware vet finder (EMERGENCY has its own);
           // NORMAL offers sharing.
-          if (r.triageLevel == TriageLevel.monitor)
+          if (r.triageLevel == TriageLevel.monitor) ...[
             OutlinedButton.icon(
               key: const Key('result_find_vet'),
               onPressed: () => Navigator.of(context).push(
@@ -129,6 +130,10 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
               icon: const Icon(Icons.local_hospital_outlined),
               label: const Text('Find a nearby vet'),
             ),
+            const SizedBox(height: 8),
+            // Phase 5.4 — telehealth deep link as a parallel option on MONITOR.
+            const TelehealthButton(source: 'monitor_result'),
+          ],
           if (r.triageLevel == TriageLevel.normal)
             OutlinedButton.icon(
               key: const Key('result_share'),

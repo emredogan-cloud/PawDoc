@@ -18,6 +18,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _breed;
+  late final TextEditingController _clientName;
   late String _species;
   DateTime? _birthDate;
   bool _saving = false;
@@ -30,6 +31,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
     super.initState();
     _name = TextEditingController(text: widget.pet?.name ?? '');
     _breed = TextEditingController(text: widget.pet?.breed ?? '');
+    _clientName = TextEditingController(text: widget.pet?.clientName ?? '');
     _species = widget.pet?.species ?? kSpecies.first;
     _birthDate = widget.pet?.birthDate;
     _journalEnabled = widget.pet?.isJournalEnabled ?? false;
@@ -39,6 +41,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   void dispose() {
     _name.dispose();
     _breed.dispose();
+    _clientName.dispose();
     super.dispose();
   }
 
@@ -54,6 +57,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
       breed: _breed.text.trim().isEmpty ? null : _breed.text.trim(),
       birthDate: _birthDate,
       isJournalEnabled: _journalEnabled,
+      clientName: _clientName.text.trim().isEmpty ? null : _clientName.text.trim(),
     );
     try {
       if (_isEdit) {
@@ -125,6 +129,19 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                 );
                 if (picked != null) setState(() => _birthDate = picked);
               },
+            ),
+            const SizedBox(height: 16),
+            // Phase 5.4 — B2B-Lite sitter mode: free-text client label. Useful
+            // for sitters managing several owners' pets under one account.
+            TextFormField(
+              key: const Key('pet_client_name_field'),
+              controller: _clientName,
+              decoration: const InputDecoration(
+                labelText: 'Client name (optional — sitter mode)',
+                helperText: 'Tag whose pet this is, e.g. "Smith family". Visible only to you.',
+                border: OutlineInputBorder(),
+              ),
+              textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 16),
             SwitchListTile(

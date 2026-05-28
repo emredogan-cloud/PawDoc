@@ -30,6 +30,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Phase 5.4 — i18n / l10n (English + German launch, CR #11). The Edge analyze
+  # function passes the user's preferred_locale to the AI service so the same
+  # locale value (e.g. 'de') reaches both the emergency-keyword override
+  # (safety-critical) and the UI strings here.
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -78,6 +85,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  # Generate AppLocalizations from lib/l10n/*.arb (configured by l10n.yaml).
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

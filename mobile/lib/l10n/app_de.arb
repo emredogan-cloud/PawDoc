@@ -1,0 +1,23 @@
+{
+  "@@locale": "de",
+
+  "appTitle": "PawDoc",
+
+  "emergencyTitle": "Das könnte ein Notfall sein",
+
+  "emergencyRecommendedPrefix": "Empfohlen: {timeframe}.",
+
+  "emergencyFindVet": "Sofort einen Notfall-Tierarzt finden",
+
+  "emergencyDisclaimer": "PawDoc liefert Informationen, keine Diagnose. Im Notfall sofort einen Tierarzt kontaktieren.",
+
+  "emergencyAcknowledge": "Mir ist klar, dass dies dringend ist",
+
+  "actionContinue": "Weiter",
+
+  "telehealthTitle": "Jetzt mit einem Tierarzt sprechen",
+
+  "telehealthSubtitle": "Video-Konsultation auf Abruf mit einem zugelassenen Tierarzt.",
+
+  "telehealthCta": "Tierarzt konsultieren"
+}

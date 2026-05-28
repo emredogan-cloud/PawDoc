@@ -7,8 +7,10 @@ class UserProfile {
   final String subscriptionStatus;
   final int freeUsedThisMonth;
 
-  bool get isPremium =>
-      const {'premium', 'family', 'trial'}.contains(subscriptionStatus);
+  /// Tiers that unlock all premium features. Phase 5.4 adds `b2b_lite` (sitter).
+  static const _premiumTiers = {'premium', 'family', 'trial', 'b2b_lite'};
+
+  bool get isPremium => _premiumTiers.contains(subscriptionStatus);
   int get freeRemaining => (3 - freeUsedThisMonth).clamp(0, 3);
 }
 
