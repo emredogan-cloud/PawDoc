@@ -36,6 +36,42 @@ Return ONLY a JSON object matching this schema (no prose, no markdown):
 }"""
 
 
+# Species-specific clinical context (Phase 5.1). Injected into the user prompt so
+# the model applies the right red-flag thresholds — exotics decompensate fast and
+# hide illness, so signs that are "monitor" in a dog are urgent in them.
+SPECIES_GUIDANCE: dict[str, str] = {
+    "rabbit": (
+        "Species note (rabbit): rabbits are prey animals that hide illness. GI "
+        "stasis is a TRUE EMERGENCY — not eating, few/no fecal droppings, or a "
+        "bloated/hard belly needs urgent care (not 'monitor'). Head tilt, labored "
+        "breathing, or sudden lethargy are also urgent. Never advise withholding food."
+    ),
+    "guinea_pig": (
+        "Species note (guinea pig): like rabbits, prone to GI stasis — not eating or "
+        "not passing droppings is urgent. Respiratory-fragile (labored breathing is an "
+        "emergency). They cannot synthesize vitamin C."
+    ),
+    "bird": (
+        "Species note (bird): birds mask illness extremely well; visible signs often "
+        "mean the bird is already critically ill. Treat as urgent: fluffed/puffed "
+        "feathers, sitting on the cage floor, tail-bobbing, open-mouth breathing, not "
+        "eating, or any sudden change. Keep away from fumes (non-stick cookware, smoke)."
+    ),
+    "reptile": (
+        "Species note (reptile): ectotherms — many problems trace to husbandry "
+        "(temperature, UVB, humidity). Urgent signs: open-mouth breathing (possible "
+        "respiratory infection), mouth rot, prolapse, or unresponsiveness. Reduced "
+        "appetite can be normal during brumation, so weigh it alongside other signs."
+    ),
+}
+
+
+def species_guidance(species: str) -> str:
+    """Species-specific clinical notes for the prompt; '' for dog/cat/other."""
+    key = species.strip().lower().replace(" ", "_")
+    return SPECIES_GUIDANCE.get(key, "")
+
+
 def build_user_prompt(request: AnalyzeRequest) -> str:
     """Inject pet context (species, breed, age, sex, weight, prior history) so
     the model can personalize — without fabricating anything not given."""
@@ -61,4 +97,7 @@ def build_user_prompt(request: AnalyzeRequest) -> str:
         )
     elif request.image_url:
         lines.append("An image is provided for visual assessment.")
+    guidance = species_guidance(pet.species)
+    if guidance:
+        lines.append(guidance)
     return "\n".join(lines)

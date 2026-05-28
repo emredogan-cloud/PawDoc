@@ -27,7 +27,15 @@ void main() {
     expect(cols.containsKey('user_id'), isFalse); // set by the repository
   });
 
-  test('kSpecies covers the onboarding grid', () {
-    expect(kSpecies, containsAll(['dog', 'cat', 'rabbit', 'bird', 'reptile']));
+  test('kSpecies covers the onboarding grid incl. exotics (Phase 5.1)', () {
+    expect(kSpecies, containsAll(['dog', 'cat', 'rabbit', 'guinea_pig', 'bird', 'reptile', 'other']));
+  });
+
+  test('speciesLabel maps every species to an emoji label', () {
+    expect(speciesLabel('guinea_pig'), '🐹 Guinea pig');
+    expect(speciesLabel('rabbit'), '🐰 Rabbit');
+    expect(speciesLabel('bird'), '🦜 Bird');
+    expect(speciesLabel('reptile'), '🦎 Reptile');
+    expect(speciesLabel('anything-else'), '🐾 Other');
   });
 }

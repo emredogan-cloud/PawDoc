@@ -4,6 +4,7 @@ import pytest
 from app.models import TriageLevel
 from app.safety import (
     EMERGENCY_KEYWORDS,
+    SPECIES_EMERGENCY_KEYWORDS,
     check_emergency_override,
     emergency_override_result,
 )
@@ -34,3 +35,34 @@ def test_override_result_is_emergency_with_disclaimer():
     assert result.confidence == 1.0
     assert result.disclaimer_required is True
     assert "seizure" in result.primary_concern
+
+
+# --- Phase 5.1: species-specific emergency keywords -------------------------
+_SPECIES_CASES = [
+    (species, kw) for species, kws in SPECIES_EMERGENCY_KEYWORDS.items() for kw in kws
+]
+
+
+@pytest.mark.parametrize("species,keyword", _SPECIES_CASES)
+def test_species_keyword_triggers_for_its_species(species, keyword):
+    assert check_emergency_override(f"my {species} is {keyword}", species) is not None
+
+
+def test_species_keyword_is_species_specific():
+    # "not eating" is an EMERGENCY for a rabbit (GI stasis) but only a monitor
+    # signal for a dog -> the override must fire for the rabbit, NOT the dog.
+    assert check_emergency_override("my rabbit is not eating", "rabbit") is not None
+    assert check_emergency_override("my dog is not eating", "dog") is None
+    # A space normalizes to the guinea_pig key.
+    assert check_emergency_override("my guinea pig is not eating", "guinea pig") is not None
+
+
+def test_global_keyword_fires_regardless_of_species():
+    assert check_emergency_override("my rabbit had a seizure", "rabbit") is not None
+    assert check_emergency_override("seizure", None) is not None
+
+
+def test_keyword_lists_stay_in_sync_with_js_mirror():
+    # Parity guard: the species KEYS the Python pipeline knows must match the JS
+    # mirror used by the Edge paywall bypass (keep both lists aligned by hand).
+    assert set(SPECIES_EMERGENCY_KEYWORDS) == {"rabbit", "guinea_pig", "bird", "reptile"}
