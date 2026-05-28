@@ -87,8 +87,8 @@ The emergency keyword sets now live in **two** places by necessity — Python (`
 ## 8. Git branch / commit / push
 
 - Branch: `phase-5.1-exotic-species`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `24b40204a697d0212fc0897b1efc55e18a9570ce`
+- Push: pushed to `origin/phase-5.1-exotic-species`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-5.1-exotic-species
 
 ## 9. Definition-of-Done verification
 
