@@ -103,8 +103,8 @@ The `pets_pending_journal(week_start)` SQL function (SECURITY DEFINER, locked to
 ## 7. Git branch / commit / push
 
 - Branch: `phase-5.3-health-journal`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `ba4789b3147669da6d9ede1934c29bab35fc7ddf`
+- Push: pushed to `origin/phase-5.3-health-journal`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-5.3-health-journal
 
 ## 8. Definition-of-Done verification
 
