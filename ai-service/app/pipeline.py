@@ -24,7 +24,7 @@ from .models import (
     parse_analysis_result,
 )
 from .moderation import AllowAllModerator, ImageModerator
-from .prompts import SYSTEM_PROMPT_V1, build_user_prompt
+from .prompts import SYSTEM_PROMPT_V1, build_personalization_block, build_user_prompt
 from .providers import AIProvider, ProviderError
 from .safety import (
     bias_to_monitor,
@@ -90,13 +90,26 @@ class AnalysisPipeline:
         self.moderator = moderator or AllowAllModerator()
 
     def _call(self, provider: AIProvider, request: AnalyzeRequest) -> AnalysisResult:
-        """One retry on failure (roadmap), then give up (caller degrades)."""
+        """One retry on failure (roadmap), then give up (caller degrades).
+
+        Phase 6.1 — also builds the per-pet personalization block (breed/age +
+        last 30d history) and passes it as a cache-able prefix; providers that
+        support prompt caching (Anthropic) will reuse it on the cross-verify
+        and on repeat checks for the same pet within 5 minutes.
+        """
         user_prompt = build_user_prompt(request)
+        pet_context = build_personalization_block(
+            request.pet, request.recent_analyses, request.recent_events
+        )
         last: Exception | None = None
         for attempt in (1, 2):
             try:
                 raw = provider.analyze(
-                    SYSTEM_PROMPT_V1, user_prompt, request.image_url, request.frame_urls
+                    SYSTEM_PROMPT_V1,
+                    user_prompt,
+                    request.image_url,
+                    request.frame_urls,
+                    pet_context_block=pet_context,
                 )
                 return parse_analysis_result(raw)
             except (ProviderError, AnalysisParseError) as exc:

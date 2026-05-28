@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "description": "PawDoc Golden Set — Phase 6.1 (CR #2-eval). Offline + deterministic safety regression harness for the analysis pipeline. The strict safety contract is: FALSE_NEGATIVES_ON_EMERGENCY must equal 0. Other categories are tracked but do not block the build.",
+  "cases": [
+    {
+      "id": "emergency_en_global_keyword",
+      "category": "EMERGENCY",
+      "description": "English global keyword — dog had a seizure. Pre-AI override must fire BEFORE any AI call.",
+      "expected_triage": "EMERGENCY",
+      "expected_override": true,
+      "request": {
+        "input_type": "text",
+        "text_description": "my dog had a seizure this morning",
+        "pet": {"species": "dog", "age_years": 5.0},
+        "locale": "en"
+      }
+    },
+    {
+      "id": "emergency_de_global_keyword",
+      "category": "EMERGENCY",
+      "description": "CR #11 / Phase 5.4 — German Krampfanfall under locale=de must override to EMERGENCY.",
+      "expected_triage": "EMERGENCY",
+      "expected_override": true,
+      "request": {
+        "input_type": "text",
+        "text_description": "Der Hund hatte heute Morgen einen Krampfanfall.",
+        "pet": {"species": "dog", "age_years": 5.0},
+        "locale": "de"
+      }
+    },
+    {
+      "id": "emergency_species_specific_rabbit_en",
+      "category": "EMERGENCY",
+      "description": "Phase 5.1 — 'not eating' is EMERGENCY for a rabbit (GI stasis), only MONITOR for a dog.",
+      "expected_triage": "EMERGENCY",
+      "expected_override": true,
+      "request": {
+        "input_type": "text",
+        "text_description": "my rabbit is not eating today",
+        "pet": {"species": "rabbit", "age_years": 3.0},
+        "locale": "en"
+      }
+    },
+    {
+      "id": "emergency_species_specific_rabbit_de",
+      "category": "EMERGENCY",
+      "description": "Phase 5.4 — DE rabbit 'frisst nicht' must fire the same as the EN override.",
+      "expected_triage": "EMERGENCY",
+      "expected_override": true,
+      "request": {
+        "input_type": "text",
+        "text_description": "Mein Kaninchen frisst nicht und bewegt sich kaum.",
+        "pet": {"species": "rabbit", "age_years": 3.0},
+        "locale": "de"
+      }
+    },
+    {
+      "id": "emergency_ai_detected_cross_verified",
+      "category": "EMERGENCY",
+      "description": "No hardcoded keyword fires; Tier 2 + Tier 3 both classify EMERGENCY at high confidence.",
+      "expected_triage": "EMERGENCY",
+      "expected_override": false,
+      "expected_cross_verified": true,
+      "request": {
+        "input_type": "text",
+        "text_description": "very pale and weak after a tick bite",
+        "pet": {"species": "dog", "age_years": 7.0},
+        "locale": "en"
+      },
+      "tier2_response": {"triage_level": "EMERGENCY", "confidence": 0.95, "primary_concern": "tick paralysis suspected"},
+      "tier3_response": {"triage_level": "EMERGENCY", "confidence": 0.92, "primary_concern": "tick paralysis suspected"}
+    },
+    {
+      "id": "emergency_kept_when_cross_verify_disagrees",
+      "category": "EMERGENCY",
+      "description": "Cross-verify safety rule — Tier 3 disagrees but the EMERGENCY classification is kept (the safer choice).",
+      "expected_triage": "EMERGENCY",
+      "expected_override": false,
+      "expected_cross_verified": false,
+      "request": {
+        "input_type": "text",
+        "text_description": "shaking and refusing to move",
+        "pet": {"species": "dog", "age_years": 4.0},
+        "locale": "en"
+      },
+      "tier2_response": {"triage_level": "EMERGENCY", "confidence": 0.91, "primary_concern": "possible severe pain"},
+      "tier3_response": {"triage_level": "NORMAL", "confidence": 0.7, "primary_concern": "stress reaction"}
+    },
+    {
+      "id": "emergency_with_personalized_history",
+      "category": "EMERGENCY",
+      "description": "Phase 6.1 regression — a pet with a history of MONITOR vomiting still hits EMERGENCY on a current keyword; personalization MUST NOT downgrade safety.",
+      "expected_triage": "EMERGENCY",
+      "expected_override": true,
+      "request": {
+        "input_type": "text",
+        "text_description": "she just had a seizure",
+        "pet": {"species": "dog", "breed": "Golden Retriever", "age_years": 8.0},
+        "locale": "en",
+        "recent_analyses": [
+          {"triage_level": "MONITOR", "primary_concern": "intermittent vomiting", "created_at": "2026-05-22T10:00:00Z"},
+          {"triage_level": "NORMAL",  "primary_concern": "mild ear redness",      "created_at": "2026-05-15T12:00:00Z"}
+        ],
+        "recent_events": [
+          {"event_type": "vaccine", "event_date": "2026-05-20", "notes": "DHPP booster"}
+        ]
+      }
+    },
+    {
+      "id": "borderline_normal_biased_to_monitor",
+      "category": "MONITOR",
+      "description": "CR #4 — Tier 2 + Tier 3 both confidently NORMAL, but the owner reports vomiting (a risk signal). Pipeline must bias the NORMAL down to MONITOR.",
+      "expected_triage": "MONITOR",
+      "request": {
+        "input_type": "text",
+        "text_description": "my cat is vomiting and lethargic",
+        "pet": {"species": "cat", "age_years": 6.0},
+        "locale": "en"
+      },
+      "tier2_response": {"triage_level": "NORMAL", "confidence": 0.95, "primary_concern": "likely benign"},
+      "tier3_response": {"triage_level": "NORMAL", "confidence": 0.95, "primary_concern": "likely benign"}
+    },
+    {
+      "id": "insufficient_information_under_floor",
+      "category": "MONITOR",
+      "description": "Both tiers return MONITOR below the 0.60 confidence floor — the pipeline returns the safe 'insufficient information' result.",
+      "expected_triage": "MONITOR",
+      "expected_primary_contains": "Not enough information",
+      "request": {
+        "input_type": "text",
+        "text_description": "something seems off",
+        "pet": {"species": "dog", "age_years": 4.0},
+        "locale": "en"
+      },
+      "tier2_response": {"triage_level": "MONITOR", "confidence": 0.5, "primary_concern": "unclear"},
+      "tier3_response": {"triage_level": "MONITOR", "confidence": 0.4, "primary_concern": "unclear"}
+    },
+    {
+      "id": "kill_switch_degraded",
+      "category": "MONITOR",
+      "description": "CR #19 — kill switch active: pipeline returns the degraded MONITOR result without invoking any provider.",
+      "expected_triage": "MONITOR",
+      "expected_degraded": true,
+      "kill_switch": true,
+      "request": {
+        "input_type": "text",
+        "text_description": "limping a little",
+        "pet": {"species": "dog", "age_years": 4.0},
+        "locale": "en"
+      }
+    },
+    {
+      "id": "moderation_rejected_image",
+      "category": "MONITOR",
+      "description": "CR #8 — an unsafe image is rejected BEFORE any AI analysis; the safe rejection result is MONITOR.",
+      "expected_triage": "MONITOR",
+      "expected_moderation_rejected": true,
+      "moderation_safe": false,
+      "request": {
+        "input_type": "photo",
+        "image_url": "https://r2.example/unsafe.jpg",
+        "pet": {"species": "dog", "age_years": 4.0},
+        "locale": "en"
+      }
+    },
+    {
+      "id": "normal_benign_no_risk_signals",
+      "category": "NORMAL",
+      "description": "Benign text + confident Tier-2 NORMAL + no risk-signal keywords ⇒ pipeline returns NORMAL.",
+      "expected_triage": "NORMAL",
+      "request": {
+        "input_type": "text",
+        "text_description": "she is playing and eating well",
+        "pet": {"species": "dog", "age_years": 3.0},
+        "locale": "en"
+      },
+      "tier2_response": {"triage_level": "NORMAL", "confidence": 0.92, "primary_concern": "no concerning signs"},
+      "tier3_response": {"triage_level": "NORMAL", "confidence": 0.9,  "primary_concern": "no concerning signs"}
+    }
+  ]
+}

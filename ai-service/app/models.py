@@ -38,6 +38,12 @@ class AnalyzeRequest(BaseModel):
     # German launch). Drives the pre-AI emergency-override keyword set, so a
     # German "Krampfanfall" still bypasses the AI to EMERGENCY.
     locale: str = "en"
+    # Phase 6.1 — personalization context. The Edge Function fetches the pet's
+    # last 30 days of analyses + health events and ships compact summaries here
+    # (no full payloads — keeps the prompt small and the cost bounded). Both
+    # default to an empty list so older callers / tests continue to work.
+    recent_analyses: list[dict] = Field(default_factory=list)
+    recent_events: list[dict] = Field(default_factory=list)
 
 
 class JournalRequest(BaseModel):
