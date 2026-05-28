@@ -36,6 +36,17 @@ class AnalyzeRequest(BaseModel):
     low_input_quality: bool = False
 
 
+class JournalRequest(BaseModel):
+    """Input for the /generate_journal endpoint (AI Health Journal, Phase 5.3).
+    The Edge cron summarizes the pet's last 7 days into these compact entries so
+    the prompt stays small + the cost predictable."""
+
+    pet: PetContext
+    week_start_date: str  # ISO date 'YYYY-MM-DD' (Monday of the week)
+    analyses: list[dict] = Field(default_factory=list)  # {triage_level, primary_concern, created_at}
+    events: list[dict] = Field(default_factory=list)  # {event_type, event_date, notes?}
+
+
 class EmbedRequest(BaseModel):
     """Input for the /embed endpoint (semantic cache, Phase 3.2)."""
 

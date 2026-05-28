@@ -27,8 +27,16 @@ FREE_TIER_MONTHLY_LIMIT = 3
 SEMANTIC_CACHE_THRESHOLD = 0.90
 SEMANTIC_CACHE_ENABLED = os.getenv("SEMANTIC_CACHE_ENABLED", "1").lower() in ("1", "true", "yes")
 
+# Phase 5.3 — AI Health Journal (OpenAI). The model is pinned (CR #17) and the
+# default is the cheap `gpt-4o-mini` to keep weekly-per-pet spend in check.
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+JOURNAL_TEMPERATURE = 0.4
+JOURNAL_MAX_TOKENS = 500
+JOURNAL_TIMEOUT_SECONDS = 30
+
 # --- Secrets / runtime flags (read from env; never hardcode) -----------------
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 GOOGLE_AI_API_KEY = os.getenv("GOOGLE_AI_API_KEY", "")
 UPSTASH_REDIS_REST_URL = os.getenv("UPSTASH_REDIS_REST_URL", "")
 UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")

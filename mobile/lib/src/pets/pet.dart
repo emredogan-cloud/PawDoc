@@ -27,6 +27,7 @@ class Pet {
     this.photoUrl,
     this.medicalNotes,
     this.isActive = true,
+    this.isJournalEnabled = false,
   });
 
   final String? id;
@@ -40,6 +41,8 @@ class Pet {
   final String? photoUrl;
   final String? medicalNotes;
   final bool isActive;
+  /// Phase 5.3: opt-in to the weekly AI Health Journal (Premium/Family).
+  final bool isJournalEnabled;
 
   factory Pet.fromJson(Map<String, dynamic> json) {
     final birth = json['birth_date'] as String?;
@@ -55,6 +58,7 @@ class Pet {
       photoUrl: json['photo_url'] as String?,
       medicalNotes: json['medical_notes'] as String?,
       isActive: json['is_active'] as bool? ?? true,
+      isJournalEnabled: json['is_journal_enabled'] as bool? ?? false,
     );
   }
 
@@ -70,6 +74,7 @@ class Pet {
         'photo_url': photoUrl,
         'medical_notes': medicalNotes,
         'is_active': isActive,
+        'is_journal_enabled': isJournalEnabled,
       };
 
   Map<String, dynamic> toJson() => {'id': id, 'user_id': userId, ...toColumns()};
@@ -84,6 +89,7 @@ class Pet {
     String? photoUrl,
     String? medicalNotes,
     bool? isActive,
+    bool? isJournalEnabled,
   }) =>
       Pet(
         id: id,
@@ -97,5 +103,6 @@ class Pet {
         photoUrl: photoUrl ?? this.photoUrl,
         medicalNotes: medicalNotes ?? this.medicalNotes,
         isActive: isActive ?? this.isActive,
+        isJournalEnabled: isJournalEnabled ?? this.isJournalEnabled,
       );
 }

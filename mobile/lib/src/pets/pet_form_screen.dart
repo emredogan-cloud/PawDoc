@@ -21,6 +21,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   late String _species;
   DateTime? _birthDate;
   bool _saving = false;
+  bool _journalEnabled = false;
 
   bool get _isEdit => widget.pet != null;
 
@@ -31,6 +32,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
     _breed = TextEditingController(text: widget.pet?.breed ?? '');
     _species = widget.pet?.species ?? kSpecies.first;
     _birthDate = widget.pet?.birthDate;
+    _journalEnabled = widget.pet?.isJournalEnabled ?? false;
   }
 
   @override
@@ -51,6 +53,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
       species: _species,
       breed: _breed.text.trim().isEmpty ? null : _breed.text.trim(),
       birthDate: _birthDate,
+      isJournalEnabled: _journalEnabled,
     );
     try {
       if (_isEdit) {
@@ -122,6 +125,16 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                 );
                 if (picked != null) setState(() => _birthDate = picked);
               },
+            ),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              key: const Key('pet_journal_toggle'),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Weekly AI Health Journal'),
+              subtitle: const Text(
+                  'Get an AI-written summary of your pet’s week every Sunday (Premium / Family).'),
+              value: _journalEnabled,
+              onChanged: (v) => setState(() => _journalEnabled = v),
             ),
             const SizedBox(height: 24),
             FilledButton(
