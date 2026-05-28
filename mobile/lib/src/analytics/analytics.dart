@@ -81,4 +81,8 @@ class Analytics {
   static Future<void> pdfReportPurchased() => capture('pdf_report_purchased');
   static Future<void> insuranceAffiliateClicked(String source) =>
       capture('insurance_affiliate_clicked', {'source': source});
+
+  // Phase 6.3.1 — Family Sharing.
+  static Future<void> familyInviteSent() => capture('family_invite_sent');
+  static Future<void> familyInviteAccepted() => capture('family_invite_accepted');
 }
