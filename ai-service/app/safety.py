@@ -14,59 +14,133 @@ from .models import AnalysisResult, AnalyzeRequest, TriageLevel
 # Verbatim from the source roadmap (23 keywords; the decomposed roadmap's "14"
 # undercounts — using the authoritative source list). Substring match errs
 # toward over-triage (false positive), the SAFE direction for a triage product.
-# NOTE (CR #11, deferred to localization phases 5.4/8.3): this is English-only
-# and substring-matched; localize per supported locale before non-English launch.
-EMERGENCY_KEYWORDS: list[str] = [
-    "not breathing", "stopped breathing", "can't breathe", "labored breathing",
-    "blue gums", "grey gums", "pale gums",
-    "seizure", "seizing", "convulsing",
-    "collapse", "collapsed", "can't stand",
-    "grapes", "xylitol", "rat poison", "antifreeze",
-    "suspected poisoning", "ate something toxic",
-    "hit by car", "severe bleeding",
-    "broken bone", "compound fracture",
-]
-
-# Species-specific emergency triggers (Phase 5.1). These fire the override ONLY
-# when the pet is of the matching species — e.g. "not eating" is an EMERGENCY for
-# a rabbit/guinea pig (GI stasis) or a bird (prey animals hide illness until
-# critical), but for a dog it is only a RISK_SIGNAL (monitor). Keys are
-# normalized species (see _norm_species). Err toward over-triage = the SAFE
-# direction. KEEP IN SYNC with supabase/functions/_shared/emergency_keywords.mjs
-# (the Edge Function uses the same list to bypass the paywall for emergencies).
-SPECIES_EMERGENCY_KEYWORDS: dict[str, list[str]] = {
-    # Rabbits: GI stasis is a true emergency; they hide illness as prey animals.
-    "rabbit": [
-        "not eating", "won't eat", "stopped eating", "not pooping", "no poop",
-        "no droppings", "not drinking", "won't drink", "bloated", "hard belly",
-        "head tilt", "tilting head", "gi stasis", "stasis", "not moving",
+#
+# CR #11 (Phase 5.4): keywords are now keyed by BCP-47 language ('en', 'de').
+# An unknown locale falls back to 'en' (safe — we never serve an empty keyword
+# set). The `EMERGENCY_KEYWORDS` / `SPECIES_EMERGENCY_KEYWORDS` names are kept
+# as aliases for the English lists so older parametrize tests and external
+# callers stay green. KEEP IN SYNC with
+# supabase/functions/_shared/emergency_keywords.mjs (the Edge Function uses the
+# same locale-keyed mapping to bypass the paywall for emergencies).
+EMERGENCY_KEYWORDS_BY_LOCALE: dict[str, list[str]] = {
+    "en": [
+        "not breathing", "stopped breathing", "can't breathe", "labored breathing",
+        "blue gums", "grey gums", "pale gums",
+        "seizure", "seizing", "convulsing",
+        "collapse", "collapsed", "can't stand",
+        "grapes", "xylitol", "rat poison", "antifreeze",
+        "suspected poisoning", "ate something toxic",
+        "hit by car", "severe bleeding",
+        "broken bone", "compound fracture",
     ],
-    # Guinea pigs: same GI-stasis physiology + respiratory fragility.
-    "guinea_pig": [
-        "not eating", "won't eat", "stopped eating", "not pooping", "no poop",
-        "not drinking", "won't drink", "bloated", "gi stasis", "stasis",
-        "labored breathing", "not moving",
-    ],
-    # Birds: mask illness extremely well — visible signs often mean critical.
-    "bird": [
-        "fluffed", "fluffed up", "puffed", "puffed up", "bottom of the cage",
-        "on the cage floor", "sitting on the bottom", "tail bobbing",
-        "open mouth breathing", "open-mouth breathing", "not eating", "won't eat",
-        "fell off perch", "not perching",
-    ],
-    # Reptiles: temperature-dependent; reduced appetite can be normal during
-    # brumation, so this set is deliberately conservative (clear danger signs).
-    "reptile": [
-        "open mouth breathing", "open-mouth breathing", "mouth rot", "prolapse",
-        "unresponsive", "not moving", "gasping",
+    # German (Deutsch). Lowercased here (substring match is case-insensitive on
+    # the input). Includes common phrasing variants because over-inclusion is
+    # the SAFE direction for a triage app.
+    "de": [
+        # Breathing.
+        "atmet nicht", "hat aufgehört zu atmen", "kann nicht atmen", "atemnot",
+        "schwere atmung", "atmet schwer",
+        # Mucous-membrane color.
+        "blaues zahnfleisch", "graues zahnfleisch", "blasses zahnfleisch",
+        # Seizure / collapse / immobility.
+        "krampfanfall", "krampft", "anfall", "konvulsionen", "zuckungen",
+        "kollaps", "zusammengebrochen", "kann nicht stehen",
+        # Toxins.
+        "weintrauben", "trauben", "xylit", "xylitol",
+        "rattengift", "frostschutzmittel", "frostschutz",
+        "verdacht auf vergiftung", "vergiftet",
+        "etwas giftiges gefressen", "etwas giftiges gegessen",
+        # Trauma / bleeding / fracture.
+        "vom auto angefahren", "angefahren", "starke blutung", "blutet stark",
+        "knochenbruch", "gebrochener knochen", "offener bruch", "offene fraktur",
     ],
 }
+# Back-compat alias used by tests / imports already in the tree.
+EMERGENCY_KEYWORDS: list[str] = EMERGENCY_KEYWORDS_BY_LOCALE["en"]
+
+# Species-specific emergency triggers (Phase 5.1, localized in Phase 5.4).
+# Layout: {locale: {species: [keywords]}}. These fire ONLY when the pet is of
+# the matching species — e.g. "not eating" is an EMERGENCY for a rabbit/guinea
+# pig (GI stasis) or a bird, but only a RISK_SIGNAL for a dog. KEEP IN SYNC
+# with supabase/functions/_shared/emergency_keywords.mjs.
+SPECIES_EMERGENCY_KEYWORDS_BY_LOCALE: dict[str, dict[str, list[str]]] = {
+    "en": {
+        # Rabbits: GI stasis is a true emergency; they hide illness as prey animals.
+        "rabbit": [
+            "not eating", "won't eat", "stopped eating", "not pooping", "no poop",
+            "no droppings", "not drinking", "won't drink", "bloated", "hard belly",
+            "head tilt", "tilting head", "gi stasis", "stasis", "not moving",
+        ],
+        # Guinea pigs: same GI-stasis physiology + respiratory fragility.
+        "guinea_pig": [
+            "not eating", "won't eat", "stopped eating", "not pooping", "no poop",
+            "not drinking", "won't drink", "bloated", "gi stasis", "stasis",
+            "labored breathing", "not moving",
+        ],
+        # Birds: mask illness extremely well — visible signs often mean critical.
+        "bird": [
+            "fluffed", "fluffed up", "puffed", "puffed up", "bottom of the cage",
+            "on the cage floor", "sitting on the bottom", "tail bobbing",
+            "open mouth breathing", "open-mouth breathing", "not eating", "won't eat",
+            "fell off perch", "not perching",
+        ],
+        # Reptiles: temperature-dependent; reduced appetite can be normal during
+        # brumation, so this set is deliberately conservative (clear danger signs).
+        "reptile": [
+            "open mouth breathing", "open-mouth breathing", "mouth rot", "prolapse",
+            "unresponsive", "not moving", "gasping",
+        ],
+    },
+    "de": {
+        # Kaninchen (rabbit).
+        "rabbit": [
+            "frisst nicht", "isst nicht", "frisst kein heu", "frisst kein futter",
+            "kein kot", "keine köttel", "kein köttel", "keinen kot abgesetzt",
+            "verstopfung", "trinkt nicht", "aufgebläht", "aufgeblähter bauch",
+            "harter bauch", "kopfschiefhaltung", "schiefer kopf", "kippt den kopf",
+            "magen-darm-stase", "darmstase", "bewegt sich nicht",
+        ],
+        # Meerschweinchen (guinea pig).
+        "guinea_pig": [
+            "frisst nicht", "isst nicht", "kein kot", "keine köttel",
+            "trinkt nicht", "aufgebläht", "aufgeblähter bauch",
+            "schwere atmung", "atmet schwer", "darmstase", "bewegt sich nicht",
+        ],
+        # Vogel (bird).
+        "bird": [
+            "aufgeplustert", "plustert sich auf", "sitzt am käfigboden",
+            "auf dem käfigboden", "auf dem boden des käfigs", "schwanzwippen",
+            "wippt mit dem schwanz", "atmet mit offenem schnabel",
+            "öffnet den schnabel zum atmen", "frisst nicht",
+            "vom ast gefallen", "vom sitzast gefallen", "sitzt nicht auf",
+        ],
+        # Reptil.
+        "reptile": [
+            "atmet mit offenem maul", "atmet mit offenem mund", "schnappt nach luft",
+            "maulfäule", "prolaps", "reagiert nicht", "bewegt sich nicht",
+        ],
+    },
+}
+# Back-compat alias.
+SPECIES_EMERGENCY_KEYWORDS: dict[str, list[str]] = SPECIES_EMERGENCY_KEYWORDS_BY_LOCALE["en"]
+
+# Supported locales (used by both keyword maps).
+SUPPORTED_LOCALES: tuple[str, ...] = tuple(EMERGENCY_KEYWORDS_BY_LOCALE.keys())
 
 
 def _norm_species(species: str | None) -> str:
     """Normalize a species token so 'guinea pig' / 'Guinea_Pig' / 'guinea_pig'
     all match the same key."""
     return (species or "").strip().lower().replace(" ", "_")
+
+
+def _norm_locale(locale: str | None) -> str:
+    """BCP-47 -> 2-letter primary tag, lowercased. Unknown locales fall back to
+    'en' (the SAFE default — we never silently serve an empty keyword set)."""
+    if not locale:
+        return "en"
+    code = locale.strip().lower().split("-")[0]
+    return code if code in EMERGENCY_KEYWORDS_BY_LOCALE else "en"
 
 
 # Risk signals that should prevent a too-easy NORMAL (CR #4).
@@ -78,18 +152,24 @@ RISK_SIGNAL_KEYWORDS: list[str] = [
 ]
 
 
-def check_emergency_override(text: str | None, species: str | None = None) -> str | None:
+def check_emergency_override(
+    text: str | None,
+    species: str | None = None,
+    locale: str | None = "en",
+) -> str | None:
     """Return the first matching emergency keyword, or None. Evaluates the GLOBAL
     keywords (all species) and then the SPECIES-SPECIFIC keywords for the pet's
-    species (Phase 5.1) — so e.g. "not eating" overrides to EMERGENCY for a
-    rabbit but not for a dog."""
+    species (Phase 5.1), in the requested locale (Phase 5.4 / CR #11). An
+    unknown locale falls back to English so we never silently lose coverage."""
     if not text:
         return None
     lowered = text.lower()
-    for keyword in EMERGENCY_KEYWORDS:
+    lkey = _norm_locale(locale)
+    for keyword in EMERGENCY_KEYWORDS_BY_LOCALE[lkey]:
         if keyword in lowered:
             return keyword
-    for keyword in SPECIES_EMERGENCY_KEYWORDS.get(_norm_species(species), ()):
+    species_map = SPECIES_EMERGENCY_KEYWORDS_BY_LOCALE.get(lkey, {})
+    for keyword in species_map.get(_norm_species(species), ()):
         if keyword in lowered:
             return keyword
     return None

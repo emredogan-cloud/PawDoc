@@ -84,6 +84,9 @@ Deno.serve(async (req: Request) => {
   const text = typeof body?.text_description === "string" ? body.text_description.trim() : "";
   if (!text) return json({ error: "text_description is required" }, 400);
   const species = typeof body?.species === "string" && body.species.trim() ? body.species.trim() : "dog";
+  // CR #11 (Phase 5.4): allow the web client to pass its locale so the AI
+  // service applies the right pre-AI emergency-keyword set. Defaults to 'en'.
+  const locale = typeof body?.locale === "string" && body.locale.trim() ? body.locale.trim() : "en";
 
   const ip = clientIp(req.headers);
   if (!ip) return json({ error: "rate_limit" }, 429); // can't identify -> can't rate limit -> deny
@@ -118,6 +121,7 @@ Deno.serve(async (req: Request) => {
         frame_urls: [],
         low_input_quality: false,
         pet: { species, breed: null, age_years: null, sex: null, weight_kg: null, prior_history: [] },
+        locale,
       }),
     });
     if (!resp.ok) throw new Error(`AI service ${resp.status}`);

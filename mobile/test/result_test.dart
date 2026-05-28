@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pawdoc/l10n/app_localizations.dart';
 import 'package:pawdoc/src/analysis/result_screen.dart';
 import 'package:pawdoc/src/models/analysis_result.dart';
 
@@ -15,8 +16,14 @@ AnalysisResult mk(TriageLevel level) => AnalysisResult(
       disclaimerRequired: true,
     );
 
-Widget _wrap(AnalysisResult r) =>
-    ProviderScope(child: MaterialApp(home: ResultScreen(result: r)));
+Widget _wrap(AnalysisResult r) => ProviderScope(
+      child: MaterialApp(
+        // Phase 5.4 — wire the l10n delegates so AppLocalizations.of() resolves.
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ResultScreen(result: r),
+      ),
+    );
 
 void main() {
   testWidgets('NORMAL result shows badge, disclaimer, and Share', (tester) async {

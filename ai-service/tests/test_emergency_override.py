@@ -4,7 +4,10 @@ import pytest
 from app.models import TriageLevel
 from app.safety import (
     EMERGENCY_KEYWORDS,
+    EMERGENCY_KEYWORDS_BY_LOCALE,
     SPECIES_EMERGENCY_KEYWORDS,
+    SPECIES_EMERGENCY_KEYWORDS_BY_LOCALE,
+    SUPPORTED_LOCALES,
     check_emergency_override,
     emergency_override_result,
 )
@@ -66,3 +69,57 @@ def test_keyword_lists_stay_in_sync_with_js_mirror():
     # Parity guard: the species KEYS the Python pipeline knows must match the JS
     # mirror used by the Edge paywall bypass (keep both lists aligned by hand).
     assert set(SPECIES_EMERGENCY_KEYWORDS) == {"rabbit", "guinea_pig", "bird", "reptile"}
+
+
+# --- Phase 5.4 / CR #11: localized emergency keywords ---------------------
+def test_supported_locales_includes_en_and_de():
+    assert set(SUPPORTED_LOCALES) == {"en", "de"}
+
+
+def test_de_global_keyword_fires_under_locale_de():
+    # German "Krampfanfall" must trip the override when locale=de.
+    assert check_emergency_override(
+        "Der Hund hatte einen Krampfanfall.", "dog", "de"
+    ) is not None
+    assert check_emergency_override(
+        "Verdacht auf Vergiftung mit Schokolade.", "dog", "de"
+    ) is not None
+
+
+def test_de_species_keyword_is_species_specific():
+    # "frisst nicht" -> emergency for rabbit (GI stasis), not for dog.
+    assert check_emergency_override("Mein Kaninchen frisst nicht.", "rabbit", "de") is not None
+    assert check_emergency_override("Mein Hund frisst nicht.", "dog", "de") is None
+
+
+def test_locales_do_not_cross_match():
+    # German phrase must not fire under English keywords.
+    assert check_emergency_override(
+        "Der Hund hatte einen Krampfanfall.", "dog", "en"
+    ) is None
+    # English phrase must not fire under German keywords.
+    assert check_emergency_override("my dog had a seizure", "dog", "de") is None
+
+
+def test_unknown_locale_falls_back_to_english_safe_default():
+    # Unknown locale -> 'en' coverage, never an empty keyword set.
+    assert check_emergency_override("my dog had a seizure", "dog", "fr") is not None
+    assert check_emergency_override("my dog had a seizure", "dog", None) is not None
+
+
+def test_bcp47_de_de_normalizes_to_de():
+    assert check_emergency_override(
+        "Der Hund hatte einen Krampfanfall.", "dog", "de-DE"
+    ) is not None
+
+
+def test_de_species_keys_match_en_species_keys():
+    # Defense-in-depth: a species supported in EN must have a DE counterpart.
+    assert set(SPECIES_EMERGENCY_KEYWORDS_BY_LOCALE["de"]) == set(
+        SPECIES_EMERGENCY_KEYWORDS_BY_LOCALE["en"]
+    )
+
+
+def test_back_compat_aliases_point_to_english_lists():
+    assert EMERGENCY_KEYWORDS is EMERGENCY_KEYWORDS_BY_LOCALE["en"]
+    assert SPECIES_EMERGENCY_KEYWORDS is SPECIES_EMERGENCY_KEYWORDS_BY_LOCALE["en"]

@@ -25,3 +25,40 @@ test("RevenueCat events map to subscription_status", () => {
   assert.equal(entitlementStatusFromEvent({ type: "CANCELLATION" }), null);
   assert.equal(entitlementStatusFromEvent({ type: "BILLING_ISSUE" }), null);
 });
+
+// --- Phase 5.4: B2B-Lite (sitter) + Family entitlement mapping --------------
+test("RevenueCat entitlement_id 'b2b_lite' maps to b2b_lite status", () => {
+  assert.equal(
+    entitlementStatusFromEvent({ type: "INITIAL_PURCHASE", entitlement_ids: ["b2b_lite"] }),
+    "b2b_lite",
+  );
+  // Also accepts the singular form some webhook payloads use.
+  assert.equal(
+    entitlementStatusFromEvent({ type: "RENEWAL", entitlement_id: "b2b_lite" }),
+    "b2b_lite",
+  );
+});
+
+test("RevenueCat entitlement 'family' maps to family", () => {
+  assert.equal(
+    entitlementStatusFromEvent({ type: "INITIAL_PURCHASE", entitlement_ids: ["family"] }),
+    "family",
+  );
+});
+
+test("Unknown / missing entitlement falls back to legacy 'premium'", () => {
+  // Preserves existing customers (no entitlement_id field on older events).
+  assert.equal(entitlementStatusFromEvent({ type: "RENEWAL", entitlement_ids: ["pro"] }), "premium");
+  assert.equal(entitlementStatusFromEvent({ type: "INITIAL_PURCHASE", entitlement_ids: [] }), "premium");
+});
+
+test("Trial period beats entitlement-id (RC reports period_type=TRIAL)", () => {
+  assert.equal(
+    entitlementStatusFromEvent({
+      type: "INITIAL_PURCHASE",
+      period_type: "TRIAL",
+      entitlement_ids: ["b2b_lite"],
+    }),
+    "trial",
+  );
+});

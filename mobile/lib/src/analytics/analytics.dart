@@ -68,4 +68,9 @@ class Analytics {
 
   // Phase 5.3 — AI Health Journal.
   static Future<void> journalViewed() => capture('journal_viewed');
+
+  // Phase 5.4 — Embedded telehealth (Airvet-style affiliate). `source` tags
+  // where the user tapped from (emergency_result | monitor_result | home).
+  static Future<void> telehealthClicked(String source) =>
+      capture('telehealth_clicked', {'source': source});
 }

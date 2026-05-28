@@ -15,7 +15,8 @@ import { containsEmergencyKeyword } from "../_shared/emergency_keywords.mjs";
 import { formatVector, isCacheEligible, selectCacheHit } from "../_shared/semantic_cache.mjs";
 
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
-const PREMIUM_STATUSES = new Set(["premium", "family", "trial"]);
+// Phase 5.4 — `b2b_lite` (sitter, $19.99/mo) joins the unlimited-access tiers.
+const PREMIUM_STATUSES = new Set(["premium", "family", "trial", "b2b_lite"]);
 const SEMANTIC_CACHE_THRESHOLD = 0.90;
 const SEMANTIC_CACHE_ENABLED =
   !["0", "false", "no"].includes((Deno.env.get("SEMANTIC_CACHE_ENABLED") ?? "1").toLowerCase());
@@ -101,13 +102,17 @@ Deno.serve(async (req: Request) => {
   // Free-tier evaluation (server-side; CR #10 reset).
   const { data: profile } = await admin
     .from("users")
-    .select("subscription_status, free_analyses_used_this_month, free_analyses_reset_at, bonus_analyses")
+    .select("subscription_status, free_analyses_used_this_month, free_analyses_reset_at, bonus_analyses, preferred_locale")
     .eq("id", user.id).single();
   const isPremium = PREMIUM_STATUSES.has(profile?.subscription_status ?? "free");
+  // CR #11 (Phase 5.4): localize the pre-AI emergency check by the user's
+  // preferred_locale (default 'en'). The Edge body may also override per request.
+  const locale = (typeof body?.locale === "string" && body.locale) ||
+    profile?.preferred_locale || "en";
   // EMERGENCY IS NEVER PAYWALLED (trust rule): a text tripping an emergency
   // keyword bypasses the free-tier gate entirely and is not counted against
   // the quota. The AI service still runs the authoritative hardcoded override.
-  const isEmergencyText = containsEmergencyKeyword(text_description, pet.species);
+  const isEmergencyText = containsEmergencyKeyword(text_description, pet.species, locale);
   const decision = evaluateFreeTier({
     usedThisMonth: profile?.free_analyses_used_this_month ?? 0,
     resetAt: profile?.free_analyses_reset_at,
@@ -210,6 +215,7 @@ Deno.serve(async (req: Request) => {
           frame_urls: frameUrls,
           low_input_quality: body.low_input_quality ?? false,
           pet: petPayload,
+          locale, // Phase 5.4 / CR #11
         }),
       });
       if (!resp.ok) throw new Error(`AI service returned ${resp.status}`);

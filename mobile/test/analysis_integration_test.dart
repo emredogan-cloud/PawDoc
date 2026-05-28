@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pawdoc/l10n/app_localizations.dart';
 import 'package:pawdoc/src/analysis/analysis_runner.dart';
 import 'package:pawdoc/src/analysis/analysis_service.dart';
 import 'package:pawdoc/src/models/analysis_result.dart';
@@ -38,6 +39,9 @@ AnalysisResult mk(TriageLevel level) => AnalysisResult(
 Widget _runner(AnalysisResult result) => ProviderScope(
       overrides: [analysisServiceProvider.overrideWithValue(FakeAnalysisService(result))],
       child: MaterialApp(
+        // Phase 5.4 — wire the l10n delegates so EMERGENCY screen renders.
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: const AnalysisRunnerScreen(petId: 'p', petName: 'Rex', inputType: 'text', textDescription: 'tired'),
       ),
     );

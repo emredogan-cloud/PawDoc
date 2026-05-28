@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../analytics/analytics.dart';
 import '../models/analysis_result.dart';
+import '../monetization/telehealth_button.dart';
 import '../vet_finder/vet_finder_screen.dart';
 
 /// EMERGENCY result: warm red, urgent copy, a vet-finder deep link, and an
@@ -38,6 +40,10 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
   Widget build(BuildContext context) {
     const red = Color(0xFFC62828); // warm, urgent red
     final r = widget.result;
+    // CR #11 (Phase 5.4): localized strings. `l!` is safe — AppLocalizations
+    // is set up via the MaterialApp delegates; if missing in dev/test we'd
+    // fail fast (acceptable, since this screen is safety-critical).
+    final l = AppLocalizations.of(context)!;
 
     return PopScope(
       canPop: _acknowledged, // acknowledgment gate
@@ -51,15 +57,15 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
               children: [
                 const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 64),
                 const SizedBox(height: 12),
-                const Text('This may be an emergency',
+                Text(l.emergencyTitle,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Text(r.primaryConcern,
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 18)),
                 const SizedBox(height: 8),
-                Text('Recommended: ${r.urgencyTimeframe}.',
+                Text(l.emergencyRecommendedPrefix(r.urgencyTimeframe),
                     textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
                 const SizedBox(height: 24),
                 FilledButton.icon(
@@ -67,14 +73,18 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                   style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: red),
                   onPressed: _findVet,
                   icon: const Icon(Icons.local_hospital),
-                  label: const Text('Find an emergency vet now'),
+                  label: Text(l.emergencyFindVet),
                 ),
+                const SizedBox(height: 12),
+                // Phase 5.4 — Airvet-style telehealth deep-link, prominently
+                // placed on the emergency screen (revenue-share affiliate).
+                const TelehealthButton(source: 'emergency_result'),
                 const SizedBox(height: 24),
                 if (r.disclaimerRequired)
-                  const Text(
-                    'PawDoc provides information, not a diagnosis. In an emergency, contact a veterinarian immediately.',
+                  Text(
+                    l.emergencyDisclaimer,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 const SizedBox(height: 16),
                 CheckboxListTile(
@@ -83,15 +93,15 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                   onChanged: (v) => setState(() => _acknowledged = v ?? false),
                   controlAffinity: ListTileControlAffinity.leading,
                   tileColor: Colors.white24,
-                  title: const Text('I understand this needs urgent attention',
-                      style: TextStyle(color: Colors.white)),
+                  title: Text(l.emergencyAcknowledge,
+                      style: const TextStyle(color: Colors.white)),
                 ),
                 const SizedBox(height: 8),
                 FilledButton(
                   key: const Key('emergency_continue'),
                   style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: red),
                   onPressed: _acknowledged ? () => Navigator.of(context).maybePop() : null,
-                  child: const Text('Continue'),
+                  child: Text(l.actionContinue),
                 ),
               ],
             ),
