@@ -265,8 +265,8 @@ The seeds for V3 already exist: every analysis carries an outcome label that the
 ## 7. Git branch / commit / push
 
 - Branch: `phase-6.3.1-family-sharing-ui`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `baedd0632c9c9bf9c3a4d52841f1b4ec9ac0b496`
+- Push: pushed to `origin/phase-6.3.1-family-sharing-ui`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-6.3.1-family-sharing-ui
 
 ## 8. Definition-of-Done verification
 
