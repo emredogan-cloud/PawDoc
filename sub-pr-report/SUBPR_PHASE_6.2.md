@@ -147,8 +147,8 @@ The label column duplicates the view's CASE classification in Python (`_classify
 ## 6. Git branch / commit / push
 
 - Branch: `phase-6.2-outcome-feedback`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `6b644c4d898842f62fd9874688e876a001dfa460`
+- Push: pushed to `origin/phase-6.2-outcome-feedback`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-6.2-outcome-feedback
 
 ## 7. Definition-of-Done verification
 
