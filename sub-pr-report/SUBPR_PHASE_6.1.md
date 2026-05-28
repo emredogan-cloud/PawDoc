@@ -119,8 +119,8 @@ client.messages.create(
 ## 6. Git branch / commit / push
 
 - Branch: `phase-6.1-personalization`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `09a52becafe0cc3778f9ab0390a8909091dd1195`
+- Push: pushed to `origin/phase-6.1-personalization`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-6.1-personalization
 
 ## 7. Definition-of-Done verification
 
