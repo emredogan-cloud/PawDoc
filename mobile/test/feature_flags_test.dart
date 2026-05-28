@@ -13,7 +13,36 @@ void main() {
     expect(await ff.isEnabled('x', defaultValue: true), isTrue); // explicit default honored
   });
 
-  test('flag keys are defined', () {
+  test('flag keys + variant sets are defined', () {
     expect(FeatureFlagKeys.paywallTiming, 'paywall-timing');
+    expect(FeatureFlagKeys.onboardingVariant, 'onboarding_variant');
+    expect(FeatureFlagKeys.onboardingVariants, {'A', 'B'});
+    expect(FeatureFlagKeys.paywallVariant, 'paywall_variant');
+    expect(FeatureFlagKeys.paywallVariants, {'A', 'B', 'C'});
+  });
+
+  group('getVariant (multivariate, fail-safe to A)', () {
+    FeatureFlags withFlag(Object? value) =>
+        FeatureFlags((_) async => false, getFlag: (_) async => value);
+
+    test('returns an allowed variant', () async {
+      expect(await withFlag('B').getVariant(FeatureFlagKeys.paywallVariant,
+          allowed: FeatureFlagKeys.paywallVariants), 'B');
+      expect(await withFlag('C').getVariant(FeatureFlagKeys.paywallVariant,
+          allowed: FeatureFlagKeys.paywallVariants), 'C');
+    });
+
+    test('falls back to A on null / empty / disallowed / non-string / error', () async {
+      expect(await withFlag(null).getVariant('k'), 'A');
+      expect(await withFlag('').getVariant('k'), 'A');
+      expect(await withFlag('Z').getVariant('k', allowed: {'A', 'B'}), 'A'); // unrecognized
+      expect(await withFlag(42).getVariant('k'), 'A'); // non-string
+      final boom = FeatureFlags((_) async => false, getFlag: (_) async => throw Exception('offline'));
+      expect(await boom.getVariant('k'), 'A'); // error -> control
+    });
+
+    test('default constructor (no getFlag) yields control A', () async {
+      expect(await FeatureFlags((_) async => false).getVariant('k'), 'A');
+    });
   });
 }

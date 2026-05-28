@@ -27,6 +27,17 @@ void main() {
     expect(shouldShowPaywall(ctx(emergency: true), now: now), isFalse);
   });
 
+  test('EMERGENCY block is variant-independent (Phase 4.2 SACRED rule)', () {
+    // The A/B variants (paywall_variant, onboarding_variant) change only the
+    // paywall LAYOUT and the onboarding TIMING — they do NOT take part in this
+    // policy. shouldShowPaywall has no variant input, so the EMERGENCY block
+    // holds identically for every variant, even in an otherwise-eligible context.
+    expect(
+      shouldShowPaywall(ctx(emergency: true, first: true, premium: false), now: now),
+      isFalse,
+    );
+  });
+
   test('NEVER shows during onboarding', () {
     expect(shouldShowPaywall(ctx(onboarding: true), now: now), isFalse);
   });
