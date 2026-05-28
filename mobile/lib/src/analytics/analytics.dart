@@ -73,4 +73,12 @@ class Analytics {
   // where the user tapped from (emergency_result | monitor_result | home).
   static Future<void> telehealthClicked(String source) =>
       capture('telehealth_clicked', {'source': source});
+
+  // Phase 6.3 — PDF Health Report add-on + Pet Insurance affiliate links.
+  static Future<void> pdfReportRequested(String entitlement) =>
+      capture('pdf_report_requested', {'entitlement': entitlement});
+  static Future<void> pdfReportGenerated() => capture('pdf_report_generated');
+  static Future<void> pdfReportPurchased() => capture('pdf_report_purchased');
+  static Future<void> insuranceAffiliateClicked(String source) =>
+      capture('insurance_affiliate_clicked', {'source': source});
 }

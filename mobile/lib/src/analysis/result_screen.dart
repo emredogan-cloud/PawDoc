@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 import '../analytics/analytics.dart';
 import '../feedback/result_feedback_widget.dart';
 import '../models/analysis_result.dart';
+import '../monetization/insurance_affiliate_cta.dart';
 import '../monetization/telehealth_button.dart';
 import '../vet_finder/vet_finder_screen.dart';
 import 'emergency_result_screen.dart';
@@ -141,6 +142,12 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
               icon: const Icon(Icons.share),
               label: const Text('Share this result'),
             ),
+          // Phase 6.3 — Pet-insurance affiliate CTA on the standard result.
+          // Self-hides if PET_INSURANCE_AFFILIATE_URL isn't configured.
+          const SizedBox(height: 8),
+          InsuranceAffiliateCta(source: r.triageLevel == TriageLevel.monitor
+              ? 'monitor_result'
+              : 'normal_result'),
           // In-app feedback (Phase 4.1) — only when the analysis was stored.
           if (widget.analysisId != null) ...[
             const SizedBox(height: 16),

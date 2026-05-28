@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../account/user_profile.dart';
+import '../analytics/analytics.dart';
 import '../core/dates.dart';
 import '../export/health_report_service.dart';
 import '../pets/active_pet.dart';
 import '../reminders/reminders_screen.dart';
 import 'health_event_form_screen.dart';
 import 'journal_card.dart';
+import 'pdf_report_service.dart';
 import 'timeline.dart';
 
 /// The combined health-history timeline for the **active** pet (analyses +
@@ -34,7 +37,7 @@ class HealthHistoryScreen extends ConsumerWidget {
         actions: [
           IconButton(
             key: const Key('export_health_report'),
-            tooltip: 'Export health report',
+            tooltip: 'Share report (Markdown)',
             icon: const Icon(Icons.ios_share),
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
@@ -43,6 +46,48 @@ class HealthHistoryScreen extends ConsumerWidget {
               } catch (_) {
                 messenger.showSnackBar(
                   const SnackBar(content: Text('Could not prepare the report. Please try again.')),
+                );
+              }
+            },
+          ),
+          IconButton(
+            // Phase 6.3 — paid PDF Health Report ($4.99 add-on; free for
+            // premium tiers). The Edge Function enforces entitlement; this
+            // button shows the affordance for everyone (premium / credits /
+            // neither — the SnackBar guides them).
+            key: const Key('generate_pdf_report'),
+            tooltip: 'PDF Health Report',
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final profile = ref.read(userProfileProvider).asData?.value;
+              await Analytics.pdfReportRequested(
+                profile?.isPremium == true
+                    ? 'premium'
+                    : (profile?.pdfReportsRemaining ?? 0) > 0
+                        ? 'credits'
+                        : 'free',
+              );
+              try {
+                await ref.read(pdfReportServiceProvider).generateAndShare(
+                      petId: pet.id!,
+                      petName: pet.name,
+                    );
+                await Analytics.pdfReportGenerated();
+                // Refresh the profile so a consumed credit is reflected.
+                ref.invalidate(userProfileProvider);
+              } on PdfReportPaywallException {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Buy a PDF Health Report (\$4.99) or upgrade to Premium '
+                      'to unlock detailed exports.',
+                    ),
+                  ),
+                );
+              } catch (_) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Could not generate the PDF. Please try again.')),
                 );
               }
             },
