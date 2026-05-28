@@ -248,8 +248,8 @@ The RevenueCat consumable `pdf_report_addon` ($4.99) increments `pdf_reports_rem
 ## 6. Git branch / commit / push
 
 - Branch: `phase-6.3-revenue-addons`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `53a5c7b08defa9760c2101f72e399aef6126f914`
+- Push: pushed to `origin/phase-6.3-revenue-addons`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-6.3-revenue-addons
 
 ## 7. Definition-of-Done verification
 
