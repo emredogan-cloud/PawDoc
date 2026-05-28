@@ -171,8 +171,14 @@ flutter run \
 | `ONESIGNAL_APP_ID` | OneSignal app id for server-side push (`app_id` in the REST body) — Phase 3.3 P2 | Yes (push) | `supabase secrets set` on `process-reminders` |
 | `ONESIGNAL_REST_API_KEY` 🔒 | OneSignal REST key for server push (reminders + re-engagement) — Phase 3.3 P2 | Yes (push) | `supabase secrets set` on `process-reminders` |
 | `PLACES_API_KEY` 🔒 | Google Places (New) key for the `/find-vets` proxy. **Server-only** — never in the client — Phase 3.4 | Yes (vet finder) | `supabase secrets set` on `find-vets` |
+| `TURNSTILE_SECRET_KEY` 🔒 | Cloudflare Turnstile **secret** for `/analyze-anonymous` (bot block). **Server-only** — Phase 5.2 | Yes (web checker) | `supabase secrets set` on `analyze-anonymous` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase URL the web `/check` page calls | Yes (web) | Cloudflare Pages env (build-time, public) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon (publishable) key for the web checker | Yes (web) | Cloudflare Pages env (build-time, public) |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare Turnstile **site** key (public, in the browser) — Phase 5.2 | Yes (web) | Cloudflare Pages env (build-time, public) |
 
 > `ANTHROPIC_API_KEY` + `GOOGLE_AI_API_KEY` (Phase 0.1 backbone) are consumed by the AI service (Tier 3 / Tier 2). Set them as Fly secrets on `pawdoc-ai`. The **dynamic** kill-switch (no redeploy) is the Redis key `pawdoc:ai_kill_switch` = `1`.
+>
+> **Phase 5.2 (anonymous web checker):** `/analyze-anonymous` is the ONLY anonymous AI path and **fails closed (503)** unless BOTH `TURNSTILE_SECRET_KEY` and the existing `UPSTASH_REDIS_REST_URL`/`_TOKEN` are set (it enforces a 3/IP/24h Upstash rate limit + Turnstile). The `NEXT_PUBLIC_*` values are public/build-time (set in Cloudflare Pages); the Turnstile **secret** stays server-side on the Edge Function. Set a **global AI spend alarm** (CR #5/#13) — anonymous AI is a cost-abuse magnet. See `docs/runbooks/21-web-checker.md`.
 >
 > **Phase 3.4 (vet finder):** `PLACES_API_KEY` lives ONLY in the `find-vets` Edge Function; the Flutter client sends a lat/lng (or zip/city) and gets back a clean vet list — the key never reaches the device. `find-vets` is `verify_jwt = true` (signed-in users only) so the Places quota can't be drained anonymously. Set a **billing budget alert** on the key (CR #12). Restrict the key to the Places API and (where possible) to the server.
 >

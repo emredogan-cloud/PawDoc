@@ -412,6 +412,11 @@ verify_jwt = false
 [functions.find-vets]
 verify_jwt = true
 
+# /analyze-anonymous is the ONLY anonymous AI path (web symptom checker). No JWT;
+# protected by Turnstile + an Upstash IP rate limit (fail-closed). Phase 5.2.
+[functions.analyze-anonymous]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
