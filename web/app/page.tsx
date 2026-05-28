@@ -28,7 +28,10 @@ export default function Home() {
           <a className="badge" href={STORE.appStore}>Download on the App Store</a>
           <a className="badge" href={STORE.googlePlay}>Get it on Google Play</a>
         </div>
-        <p className="note" style={{ marginTop: 16 }}>
+        <p style={{ marginTop: 16 }}>
+          <Link href="/check/">Or try the free web symptom checker &rarr;</Link>
+        </p>
+        <p className="note">
           PawDoc provides information and triage guidance — not a veterinary diagnosis. In an
           emergency, contact your vet immediately.
         </p>
