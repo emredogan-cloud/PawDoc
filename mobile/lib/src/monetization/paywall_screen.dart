@@ -3,9 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../analytics/analytics.dart';
+import '../experiments/feature_flags.dart';
+import 'paywall_copy.dart';
 
-/// Annual-first paywall. Shown only after the first successful analysis and per
-/// the trust rule (see maybe_show_paywall.dart). Never during an emergency.
+/// Annual-first paywall (Variant A control). Phase 4.2 adds layout variants via
+/// the `paywall_variant` flag — B: monthly featured; C: social proof. The flag
+/// only changes the LAYOUT, never WHEN the paywall is shown, so the EMERGENCY
+/// trust rule (enforced in paywall_policy.dart) is untouched. Fail-safe: an
+/// unknown/missing flag renders Variant A.
 class PaywallScreen extends ConsumerStatefulWidget {
   const PaywallScreen({super.key});
 
@@ -17,12 +22,22 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   Offering? _offering;
   bool _loading = true;
   bool _purchasing = false;
+  String _variant = 'A'; // control until the flag resolves (fail-safe)
 
   @override
   void initState() {
     super.initState();
-    Analytics.paywallShown();
-    _load();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final variant = await ref.read(featureFlagsProvider).getVariant(
+          FeatureFlagKeys.paywallVariant,
+          allowed: FeatureFlagKeys.paywallVariants,
+        );
+    if (mounted) setState(() => _variant = variant);
+    await Analytics.paywallShown(variant); // variant captured for the A/B funnel
+    await _load();
   }
 
   Future<void> _load() async {
@@ -60,6 +75,37 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     }
   }
 
+  // Plan cards in the order/emphasis dictated by the variant.
+  List<Widget> _plans(Package? annual, Package? monthly) {
+    final annualCard = _PlanCard(
+      key: const Key('paywall_annual'),
+      title: 'Annual',
+      price: annual?.storeProduct.priceString ?? '\$59.99 / year',
+      subtitle: 'About \$5/month, billed yearly',
+      featured: _variant != 'B', // featured in A/C; in B it's the badged secondary
+      badge: _variant == 'B' ? 'Best value' : null,
+      busy: _purchasing,
+      onTap: () => _purchase(annual),
+    );
+    final monthlyCard = _PlanCard(
+      key: const Key('paywall_monthly'),
+      title: 'Monthly',
+      price: monthly?.storeProduct.priceString ?? '\$9.99 / month',
+      subtitle: 'Flexible, cancel anytime',
+      featured: _variant == 'B', // monthly is the hero in Variant B
+      busy: _purchasing,
+      onTap: () => _purchase(monthly),
+    );
+    final cards = _variant == 'B'
+        ? [monthlyCard, annualCard] // monthly first (Variant B)
+        : [annualCard, monthlyCard]; // annual-first (A control + C)
+    return [
+      cards.first,
+      const SizedBox(height: 12),
+      cards.last,
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final annual = _offering?.annual;
@@ -73,27 +119,13 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           Text('Unlimited peace of mind', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
           const Text('Unlimited AI health checks, history, and reminders for all your pets.'),
+          // Variant C: social proof (testimonial + vet advisor badge).
+          if (_variant == 'C') ...[
+            const SizedBox(height: 16),
+            const _SocialProof(),
+          ],
           const SizedBox(height: 24),
-          // Annual first (featured).
-          _PlanCard(
-            key: const Key('paywall_annual'),
-            title: 'Annual — best value',
-            price: annual?.storeProduct.priceString ?? '\$59.99 / year',
-            subtitle: 'About \$5/month, billed yearly',
-            featured: true,
-            busy: _purchasing,
-            onTap: () => _purchase(annual),
-          ),
-          const SizedBox(height: 12),
-          _PlanCard(
-            key: const Key('paywall_monthly'),
-            title: 'Monthly',
-            price: monthly?.storeProduct.priceString ?? '\$9.99 / month',
-            subtitle: 'Flexible, cancel anytime',
-            featured: false,
-            busy: _purchasing,
-            onTap: () => _purchase(monthly),
-          ),
+          ..._plans(annual, monthly),
           const SizedBox(height: 16),
           if (_loading) const Center(child: CircularProgressIndicator()),
           if (!_loading && _offering == null)
@@ -111,10 +143,60 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
             child: const Text('Restore purchases'),
           ),
           TextButton(
+            key: const Key('paywall_not_now'),
             onPressed: () => Navigator.of(context).maybePop(),
             child: const Text('Not now'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Social-proof block for Variant C. Copy is placeholder (see paywall_copy.dart)
+/// and CMS-swappable; no medical guarantee implied.
+class _SocialProof extends StatelessWidget {
+  const _SocialProof();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      key: const Key('paywall_social_proof'),
+      color: scheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: scheme.primary,
+                  child: const Icon(Icons.verified_user, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(PaywallSocialProof.vetAdvisorTitle,
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text(PaywallSocialProof.vetAdvisorSubtitle,
+                          style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(PaywallSocialProof.testimonialQuote,
+                style: const TextStyle(fontStyle: FontStyle.italic)),
+            const SizedBox(height: 4),
+            Text(PaywallSocialProof.testimonialAuthor,
+                style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
       ),
     );
   }
@@ -129,6 +211,7 @@ class _PlanCard extends StatelessWidget {
     required this.featured,
     required this.busy,
     required this.onTap,
+    this.badge,
   });
 
   final String title;
@@ -137,6 +220,7 @@ class _PlanCard extends StatelessWidget {
   final bool featured;
   final bool busy;
   final VoidCallback onTap;
+  final String? badge;
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +233,22 @@ class _PlanCard extends StatelessWidget {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            if (badge != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(badge!, style: TextStyle(fontSize: 11, color: scheme.onPrimaryContainer)),
+              ),
+            ],
+          ],
+        ),
         subtitle: Text('$price\n$subtitle'),
         isThreeLine: true,
         trailing: FilledButton(

@@ -29,7 +29,8 @@ class Analytics {
   static Future<void> resultViewed(String triageLevel) =>
       capture('result_viewed', {'triage_level': triageLevel});
   static Future<void> emergencyTriggered() => capture('emergency_triggered');
-  static Future<void> paywallShown() => capture('paywall_shown');
+  static Future<void> paywallShown([String? variant]) =>
+      capture('paywall_shown', {'variant': ?variant}); // variant tags the A/B funnel
   static Future<void> trialStarted() => capture('trial_started');
   static Future<void> subscriptionConverted() => capture('subscription_converted');
 
@@ -61,4 +62,7 @@ class Analytics {
   // Phase 4.1 — experimentation / feedback.
   static Future<void> feedbackSubmitted(String source) =>
       capture('feedback_submitted', {'source': source});
+
+  // Phase 4.2 — onboarding A/B (paywall shown inside onboarding, Variant B).
+  static Future<void> onboardingPaywallShown() => capture('onboarding_paywall_shown');
 }
