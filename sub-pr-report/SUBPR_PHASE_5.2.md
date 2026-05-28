@@ -76,8 +76,8 @@ The result shows the **triage badge + primary concern**; the "What to do next" s
 ## 7. Git branch / commit / push
 
 - Branch: `phase-5.2-web-checker`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `f98a759cfc7b1f9057d3b7679ad66639e52dab5f`
+- Push: pushed to `origin/phase-5.2-web-checker`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-5.2-web-checker
 
 ## 8. Definition-of-Done verification
 
