@@ -13,8 +13,43 @@ export const EMERGENCY_KEYWORDS = [
   "broken bone", "compound fracture",
 ];
 
-export function containsEmergencyKeyword(text) {
+// Species-specific triggers (Phase 5.1) — KEEP IN SYNC with
+// ai-service/app/safety.py SPECIES_EMERGENCY_KEYWORDS. These fire only for the
+// matching species (e.g. "not eating" = emergency for a rabbit/bird, not a dog),
+// so an exotic emergency ALSO bypasses the free-tier paywall gate.
+export const SPECIES_EMERGENCY_KEYWORDS = {
+  rabbit: [
+    "not eating", "won't eat", "stopped eating", "not pooping", "no poop",
+    "no droppings", "not drinking", "won't drink", "bloated", "hard belly",
+    "head tilt", "tilting head", "gi stasis", "stasis", "not moving",
+  ],
+  guinea_pig: [
+    "not eating", "won't eat", "stopped eating", "not pooping", "no poop",
+    "not drinking", "won't drink", "bloated", "gi stasis", "stasis",
+    "labored breathing", "not moving",
+  ],
+  bird: [
+    "fluffed", "fluffed up", "puffed", "puffed up", "bottom of the cage",
+    "on the cage floor", "sitting on the bottom", "tail bobbing",
+    "open mouth breathing", "open-mouth breathing", "not eating", "won't eat",
+    "fell off perch", "not perching",
+  ],
+  reptile: [
+    "open mouth breathing", "open-mouth breathing", "mouth rot", "prolapse",
+    "unresponsive", "not moving", "gasping",
+  ],
+};
+
+function normSpecies(species) {
+  return String(species ?? "").trim().toLowerCase().replace(/ /g, "_");
+}
+
+// `species` is optional; when given, the matching species-specific keywords are
+// also checked (in addition to the global list).
+export function containsEmergencyKeyword(text, species) {
   if (!text) return false;
   const t = String(text).toLowerCase();
-  return EMERGENCY_KEYWORDS.some((k) => t.includes(k));
+  if (EMERGENCY_KEYWORDS.some((k) => t.includes(k))) return true;
+  const speciesKeywords = SPECIES_EMERGENCY_KEYWORDS[normSpecies(species)] ?? [];
+  return speciesKeywords.some((k) => t.includes(k));
 }

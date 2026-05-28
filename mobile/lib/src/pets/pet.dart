@@ -1,5 +1,18 @@
 /// Pet model mirroring the `pets` table (Phase 1.1 schema).
-const List<String> kSpecies = ['dog', 'cat', 'rabbit', 'bird', 'reptile', 'other'];
+/// Phase 5.1 adds the exotic species (guinea_pig) alongside the existing ones.
+const List<String> kSpecies = ['dog', 'cat', 'rabbit', 'guinea_pig', 'bird', 'reptile', 'other'];
+
+/// Display label (emoji + name) for a species value. Single source of truth used
+/// by the onboarding grid + the pet-edit form so the two never drift.
+String speciesLabel(String s) => switch (s) {
+      'dog' => '🐶 Dog',
+      'cat' => '🐱 Cat',
+      'rabbit' => '🐰 Rabbit',
+      'guinea_pig' => '🐹 Guinea pig',
+      'bird' => '🦜 Bird',
+      'reptile' => '🦎 Reptile',
+      _ => '🐾 Other',
+    };
 
 class Pet {
   const Pet({

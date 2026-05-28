@@ -160,7 +160,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
           Wrap(spacing: 8, children: [
             for (final s in kSpecies)
               ChoiceChip(
-                label: Text(_speciesLabel(s)),
+                label: Text(speciesLabel(s)),
                 selected: _species == s,
                 onSelected: (_) => setState(() => _species = s),
               ),
@@ -230,12 +230,3 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         ),
       ]);
 }
-
-String _speciesLabel(String s) => switch (s) {
-      'dog' => '🐶 Dog',
-      'cat' => '🐱 Cat',
-      'rabbit' => '🐰 Rabbit',
-      'bird' => '🦜 Bird',
-      'reptile' => '🦎 Reptile',
-      _ => 'Other',
-    };

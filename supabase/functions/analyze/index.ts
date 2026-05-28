@@ -107,7 +107,7 @@ Deno.serve(async (req: Request) => {
   // EMERGENCY IS NEVER PAYWALLED (trust rule): a text tripping an emergency
   // keyword bypasses the free-tier gate entirely and is not counted against
   // the quota. The AI service still runs the authoritative hardcoded override.
-  const isEmergencyText = containsEmergencyKeyword(text_description);
+  const isEmergencyText = containsEmergencyKeyword(text_description, pet.species);
   const decision = evaluateFreeTier({
     usedThisMonth: profile?.free_analyses_used_this_month ?? 0,
     resetAt: profile?.free_analyses_reset_at,

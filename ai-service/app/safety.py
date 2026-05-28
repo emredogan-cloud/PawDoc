@@ -27,6 +27,48 @@ EMERGENCY_KEYWORDS: list[str] = [
     "broken bone", "compound fracture",
 ]
 
+# Species-specific emergency triggers (Phase 5.1). These fire the override ONLY
+# when the pet is of the matching species — e.g. "not eating" is an EMERGENCY for
+# a rabbit/guinea pig (GI stasis) or a bird (prey animals hide illness until
+# critical), but for a dog it is only a RISK_SIGNAL (monitor). Keys are
+# normalized species (see _norm_species). Err toward over-triage = the SAFE
+# direction. KEEP IN SYNC with supabase/functions/_shared/emergency_keywords.mjs
+# (the Edge Function uses the same list to bypass the paywall for emergencies).
+SPECIES_EMERGENCY_KEYWORDS: dict[str, list[str]] = {
+    # Rabbits: GI stasis is a true emergency; they hide illness as prey animals.
+    "rabbit": [
+        "not eating", "won't eat", "stopped eating", "not pooping", "no poop",
+        "no droppings", "not drinking", "won't drink", "bloated", "hard belly",
+        "head tilt", "tilting head", "gi stasis", "stasis", "not moving",
+    ],
+    # Guinea pigs: same GI-stasis physiology + respiratory fragility.
+    "guinea_pig": [
+        "not eating", "won't eat", "stopped eating", "not pooping", "no poop",
+        "not drinking", "won't drink", "bloated", "gi stasis", "stasis",
+        "labored breathing", "not moving",
+    ],
+    # Birds: mask illness extremely well — visible signs often mean critical.
+    "bird": [
+        "fluffed", "fluffed up", "puffed", "puffed up", "bottom of the cage",
+        "on the cage floor", "sitting on the bottom", "tail bobbing",
+        "open mouth breathing", "open-mouth breathing", "not eating", "won't eat",
+        "fell off perch", "not perching",
+    ],
+    # Reptiles: temperature-dependent; reduced appetite can be normal during
+    # brumation, so this set is deliberately conservative (clear danger signs).
+    "reptile": [
+        "open mouth breathing", "open-mouth breathing", "mouth rot", "prolapse",
+        "unresponsive", "not moving", "gasping",
+    ],
+}
+
+
+def _norm_species(species: str | None) -> str:
+    """Normalize a species token so 'guinea pig' / 'Guinea_Pig' / 'guinea_pig'
+    all match the same key."""
+    return (species or "").strip().lower().replace(" ", "_")
+
+
 # Risk signals that should prevent a too-easy NORMAL (CR #4).
 RISK_SIGNAL_KEYWORDS: list[str] = [
     "vomit", "vomiting", "diarrhea", "blood", "bloody", "lethargic", "lethargy",
@@ -36,12 +78,18 @@ RISK_SIGNAL_KEYWORDS: list[str] = [
 ]
 
 
-def check_emergency_override(text: str | None) -> str | None:
-    """Return the first matching emergency keyword, or None."""
+def check_emergency_override(text: str | None, species: str | None = None) -> str | None:
+    """Return the first matching emergency keyword, or None. Evaluates the GLOBAL
+    keywords (all species) and then the SPECIES-SPECIFIC keywords for the pet's
+    species (Phase 5.1) — so e.g. "not eating" overrides to EMERGENCY for a
+    rabbit but not for a dog."""
     if not text:
         return None
     lowered = text.lower()
     for keyword in EMERGENCY_KEYWORDS:
+        if keyword in lowered:
+            return keyword
+    for keyword in SPECIES_EMERGENCY_KEYWORDS.get(_norm_species(species), ()):
         if keyword in lowered:
             return keyword
     return None
@@ -80,7 +128,7 @@ def is_sensitive_pet(request: AnalyzeRequest) -> bool:
     age = request.pet.age_years
     if age is not None and (age < 1 or age >= 10):
         return True
-    return request.pet.species.lower() in {"rabbit", "bird", "reptile", "guinea pig"}
+    return _norm_species(request.pet.species) in {"rabbit", "bird", "reptile", "guinea_pig"}
 
 
 def needs_normal_recheck(result: AnalysisResult, request: AnalyzeRequest) -> bool:

@@ -127,8 +127,9 @@ class AnalysisPipeline:
             log.warning("AI kill-switch active — returning degraded fallback")
             return self._outcome(_degraded_result(), 0, "kill_switch", degraded=True, start=start)
 
-        # 2. Hardcoded emergency override — BEFORE any AI call.
-        matched = check_emergency_override(request.text_description)
+        # 2. Hardcoded emergency override — BEFORE any AI call. Species-aware
+        #    (Phase 5.1): global keywords + the pet's species-specific set.
+        matched = check_emergency_override(request.text_description, request.pet.species)
         if matched:
             log.info("emergency override fired on keyword=%s", matched)
             return self._outcome(
