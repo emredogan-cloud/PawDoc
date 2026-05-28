@@ -170,8 +170,8 @@ def check_emergency_override(text, species=None, locale="en"):
 ## 7. Git branch / commit / push
 
 - Branch: `phase-5.4-telehealth-localization`
-- Implementation commit (deliverables): `<filled post-commit>`
-- Push: `<filled post-push>`
+- Implementation commit (deliverables): `ae4f5d33b8a09f1006beacfc39185a8cff346c8c`
+- Push: pushed to `origin/phase-5.4-telehealth-localization`; open PR at https://github.com/emredogan-cloud/PawDoc/pull/new/phase-5.4-telehealth-localization
 
 ## 8. Definition-of-Done verification
 
