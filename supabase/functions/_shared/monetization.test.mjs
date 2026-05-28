@@ -62,3 +62,46 @@ test("Trial period beats entitlement-id (RC reports period_type=TRIAL)", () => {
     "trial",
   );
 });
+
+// --- Phase 6.3: PDF Health Report add-on (consumable) -----------------------
+import { ADDON_PRODUCTS, addonCreditsFromEvent } from "./revenuecat.mjs";
+
+test("PDF Health Report addon is registered with a +1 credit grant", () => {
+  assert.deepEqual(
+    ADDON_PRODUCTS.pdf_report_addon,
+    { column: "pdf_reports_remaining", delta: 1 },
+  );
+});
+
+test("NON_RENEWING_PURCHASE of pdf_report_addon grants 1 credit", () => {
+  const credit = addonCreditsFromEvent({
+    type: "NON_RENEWING_PURCHASE",
+    product_id: "pdf_report_addon",
+    app_user_id: "u1",
+  });
+  assert.equal(credit?.column, "pdf_reports_remaining");
+  assert.equal(credit?.delta, 1);
+  assert.equal(credit?.productId, "pdf_report_addon");
+});
+
+test("INITIAL_PURCHASE of pdf_report_addon also grants a credit (non-consumable case)", () => {
+  // Some projects ship the addon as a non-consumable; we recognize both.
+  const credit = addonCreditsFromEvent({
+    type: "INITIAL_PURCHASE",
+    product_identifier: "pdf_report_addon",
+  });
+  assert.equal(credit?.delta, 1);
+});
+
+test("Unknown product or unrelated event yields no credit", () => {
+  assert.equal(
+    addonCreditsFromEvent({ type: "NON_RENEWING_PURCHASE", product_id: "some_other" }),
+    null,
+  );
+  assert.equal(
+    addonCreditsFromEvent({ type: "RENEWAL", product_id: "pdf_report_addon" }),
+    null,
+  );
+  assert.equal(addonCreditsFromEvent({}), null);
+  assert.equal(addonCreditsFromEvent(null), null);
+});

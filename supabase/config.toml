@@ -423,6 +423,12 @@ verify_jwt = false
 [functions.generate-journals]
 verify_jwt = false
 
+# /generate-pdf-report is the $4.99 PDF Health Report add-on (Phase 6.3).
+# Requires a signed-in user (JWT verified by default). Server-side entitlement
+# check + decrement of users.pdf_reports_remaining lives inside the function.
+[functions.generate-pdf-report]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

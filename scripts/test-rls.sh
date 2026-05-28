@@ -35,14 +35,16 @@ if [ "$ready" = 1 ]; then
 fi
 [ "$ready" = 1 ] || { echo "Postgres never became ready"; docker logs "$CT" 2>&1 | tail -20; exit 1; }
 
-echo "→ applying shim + migrations + RLS isolation test ..."
+echo "→ applying shim + migrations + RLS isolation tests ..."
 docker exec -i "$CT" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
   -f /repo/supabase/tests/_local_shim.sql \
   -f /repo/supabase/migrations/20260527000000_enable_extensions.sql \
   -f /repo/supabase/migrations/20260527010000_initial_schema.sql \
   -f /repo/supabase/migrations/20260527010001_rls_policies.sql \
+  -f /repo/supabase/migrations/20260528030000_family_sharing.sql \
   -f /repo/supabase/tests/rls_isolation.sql \
-  -f /repo/supabase/tests/account_deletion.sql
+  -f /repo/supabase/tests/account_deletion.sql \
+  -f /repo/supabase/tests/family_sharing.sql
 rc=$?
 
 echo "----------------------------------------------------------------"
