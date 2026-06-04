@@ -48,27 +48,31 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   flutter:
-    name: Flutter analyze + test
+    name: Flutter analyze + test + build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Detect Flutter app
-        id: detect
-        run: |
-          if [ -f mobile/pubspec.yaml ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No mobile/ app yet (added in Phase 1.1) — skipping Flutter analyze/test."
-          fi
+      # Java 17 is required by the Android Gradle config (sourceCompatibility 17).
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
       - uses: subosito/flutter-action@v2
-        if: steps.detect.outputs.exists == 'true'
         with:
           channel: stable
       - name: Analyze & test
-        if: steps.detect.outputs.exists == 'true'
         working-directory: mobile
         run: |
           flutter pub get
           flutter analyze
           flutter test
+      # Build the Android app so a broken release path fails CI instead of
+      # shipping silently. A Kotlin/toolchain incompatibility (sentry_flutter
+      # pinned to Kotlin 1.6 vs the Kotlin 2.x compiler) reached `main` undetected
+      # because CI ran analyze+test but never built an APK. See
+      # RELEASE_PATH_RECOVERY_REPORT.md.
+      - name: Build Android artifacts
+        working-directory: mobile
+        run: |
+          flutter build apk --debug
+          flutter build appbundle

@@ -12,9 +12,11 @@ import 'src/notifications/onesignal_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Supabase is required at runtime; guarded so the app still launches in a
-  // dev/test build without --dart-define (it will route to sign-in and any
-  // backend call will surface a clear error).
+  // Supabase is required at runtime. Built without the SUPABASE_URL /
+  // SUPABASE_ANON_KEY dart-defines, init is skipped and the app shows a clear
+  // configuration-required screen (see startApp) instead of crashing into a
+  // raw provider/assertion error screen. Real builds inject these via
+  // --dart-define (CI / Doppler), so production users never hit this path.
   if (Env.hasSupabase) {
     await Supabase.initialize(
       url: Env.supabaseUrl,
@@ -62,7 +64,18 @@ Future<void> main() async {
     } catch (_) {}
   }
 
-  void startApp() => runApp(const ProviderScope(child: PawDocApp()));
+  // Without Supabase configured the Supabase-backed providers (router, auth)
+  // cannot be built and would surface a raw provider/assertion error screen
+  // (Supabase.instance not initialized). Show an explicit configuration screen
+  // instead: still refuses to run misconfigured (no fake backend), but fails
+  // cleanly. Found + fixed during on-device validation (2026-06-04).
+  void startApp() {
+    if (!Env.hasSupabase) {
+      runApp(const _MissingConfigApp());
+      return;
+    }
+    runApp(const ProviderScope(child: PawDocApp()));
+  }
 
   // Initialize Sentry early to capture dev-time crashes (Phase 1.1 deliverable).
   if (Env.sentryDsn.isNotEmpty) {
@@ -72,5 +85,46 @@ Future<void> main() async {
     );
   } else {
     startApp();
+  }
+}
+
+/// Shown only when the app was built without SUPABASE_URL / SUPABASE_ANON_KEY
+/// (no backend). Production / CI builds always inject these via --dart-define,
+/// so users never see this. It replaces the raw provider-error screen that would
+/// otherwise appear because the Supabase-backed providers cannot initialize.
+class _MissingConfigApp extends StatelessWidget {
+  const _MissingConfigApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Padding(
+          padding: EdgeInsets.all(24),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.settings_suggest_outlined, size: 48),
+                SizedBox(height: 16),
+                Text(
+                  'PawDoc is not configured',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'This build is missing SUPABASE_URL and SUPABASE_ANON_KEY. '
+                  'Rebuild with --dart-define values (from Doppler) to connect '
+                  'to the backend.',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
