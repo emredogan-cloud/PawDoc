@@ -13,8 +13,12 @@ import { evaluateFreeTier } from "../_shared/free_tier.mjs";
 import { containsEmergencyKeyword } from "../_shared/emergency_keywords.mjs";
 // deno-lint-ignore no-import-assertions
 import { formatVector, isCacheEligible, selectCacheHit } from "../_shared/semantic_cache.mjs";
+// deno-lint-ignore no-import-assertions
+import { aiServiceHeaders } from "../_shared/ai_service.mjs";
 
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
+// Phase A — trust-boundary credential presented to the internal AI service.
+const AI_SERVICE_TOKEN = Deno.env.get("AI_SERVICE_TOKEN") ?? "";
 // Phase 5.4 — `b2b_lite` (sitter, $19.99/mo) joins the unlimited-access tiers.
 const PREMIUM_STATUSES = new Set(["premium", "family", "trial", "b2b_lite"]);
 const SEMANTIC_CACHE_THRESHOLD = 0.90;
@@ -205,7 +209,7 @@ Deno.serve(async (req: Request) => {
     try {
       const embResp = await fetch(`${AI_SERVICE_URL}/embed`, {
         method: "POST",
-        headers: { "content-type": "application/json", "x-request-id": requestId },
+        headers: aiServiceHeaders(requestId, AI_SERVICE_TOKEN),
         body: JSON.stringify({ text_description: text_description ?? null, pet: petPayload }),
       });
       if (embResp.ok) {
@@ -245,7 +249,7 @@ Deno.serve(async (req: Request) => {
     try {
       const resp = await fetch(`${AI_SERVICE_URL}/analyze`, {
         method: "POST",
-        headers: { "content-type": "application/json", "x-request-id": requestId },
+        headers: aiServiceHeaders(requestId, AI_SERVICE_TOKEN),
         body: JSON.stringify({
           input_type,
           text_description: text_description ?? null,

@@ -16,8 +16,12 @@ import {
   // deno-lint-ignore no-import-assertions
   simplifyResult,
 } from "../_shared/web_checker.mjs";
+// deno-lint-ignore no-import-assertions
+import { aiServiceHeaders } from "../_shared/ai_service.mjs";
 
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
+// Phase A — trust-boundary credential presented to the internal AI service.
+const AI_SERVICE_TOKEN = Deno.env.get("AI_SERVICE_TOKEN") ?? "";
 const MAX_PER_DAY = 3;
 const WINDOW_SECONDS = 86400;
 
@@ -113,7 +117,7 @@ Deno.serve(async (req: Request) => {
   try {
     const resp = await fetch(`${AI_SERVICE_URL}/analyze`, {
       method: "POST",
-      headers: { "content-type": "application/json", "x-request-id": requestId },
+      headers: aiServiceHeaders(requestId, AI_SERVICE_TOKEN),
       body: JSON.stringify({
         input_type: "text",
         text_description: text,
