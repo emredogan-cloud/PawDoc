@@ -7,9 +7,10 @@ for tracing (CR #23).
 """
 from __future__ import annotations
 
+import hmac
 import uuid
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 
 from . import config
 from .cache import make_cache
@@ -42,7 +43,35 @@ async def request_id_middleware(request: Request, call_next):
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    # Intentionally OPEN: Fly's machine health checks hit this with no creds.
     return {"status": "ok", "service": SERVICE_NAME, "version": VERSION}
+
+
+def require_service_auth(authorization: str | None = Header(default=None)) -> None:
+    """Trust boundary (Phase A). The AI service is internal — only the Supabase
+    Edge Functions may reach the analysis endpoints, presenting
+    `Authorization: Bearer <AI_SERVICE_TOKEN>`. The token is compared in constant
+    time (hmac.compare_digest) to avoid leaking it via timing.
+
+    FAIL CLOSED in production: if the token is unset on a prod runtime (Fly), we
+    refuse every request (503) rather than serve the pipeline unauthenticated. In
+    dev/test (no token, not prod) requests are allowed so local iteration and the
+    unit suite run without a token. Reads config at call time so tests can patch.
+    """
+    expected = config.AI_SERVICE_TOKEN
+    if not expected:
+        if config.IS_PRODUCTION:
+            log.error(
+                "AI_SERVICE_TOKEN unset on a production runtime — refusing request "
+                "(fail closed). Set the secret on the Fly app and redeploy."
+            )
+            raise HTTPException(status_code=503, detail="service authentication not configured")
+        return  # dev/test: allow unauthenticated local calls
+    if authorization is None or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="missing bearer credentials")
+    presented = authorization[len("Bearer ") :]
+    if not hmac.compare_digest(presented.encode("utf-8"), expected.encode("utf-8")):
+        raise HTTPException(status_code=401, detail="invalid service token")
 
 
 def get_pipeline() -> AnalysisPipeline:
@@ -62,7 +91,7 @@ def get_pipeline() -> AnalysisPipeline:
     )
 
 
-@app.post("/analyze")
+@app.post("/analyze", dependencies=[Depends(require_service_auth)])
 def analyze(req: AnalyzeRequest, pipeline: AnalysisPipeline = Depends(get_pipeline)) -> dict:
     outcome = pipeline.run(req)
     return {
@@ -80,7 +109,7 @@ def analyze(req: AnalyzeRequest, pipeline: AnalysisPipeline = Depends(get_pipeli
     }
 
 
-@app.post("/embed")
+@app.post("/embed", dependencies=[Depends(require_service_auth)])
 def embed(req: EmbedRequest) -> dict:
     """Semantic-cache embedding (Phase 3.2). Returns the 1536-dim vector for the
     pet-context + symptom text, or {"embedding": null} when embeddings aren't
@@ -100,7 +129,7 @@ def get_journal_provider() -> JournalProvider:
     return make_journal_provider()
 
 
-@app.post("/generate_journal")
+@app.post("/generate_journal", dependencies=[Depends(require_service_auth)])
 def generate_journal(
     req: JournalRequest,
     provider: JournalProvider = Depends(get_journal_provider),

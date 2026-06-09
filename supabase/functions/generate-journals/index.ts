@@ -20,8 +20,12 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { cronSecretValid } from "../_shared/reminders.mjs";
 // deno-lint-ignore no-import-assertions
 import { mondayOfWeekUtc, summarizeAnalyses, summarizeEvents } from "../_shared/journal.mjs";
+// deno-lint-ignore no-import-assertions
+import { aiServiceHeaders } from "../_shared/ai_service.mjs";
 
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
+// Phase A — trust-boundary credential presented to the internal AI service.
+const AI_SERVICE_TOKEN = Deno.env.get("AI_SERVICE_TOKEN") ?? "";
 const DEADLINE_MS = 50_000; // leave headroom inside the 60s Edge cap
 const CONCURRENCY = 5;
 
@@ -83,7 +87,7 @@ Deno.serve(async (req: Request) => {
 
       const resp = await fetch(`${AI_SERVICE_URL}/generate_journal`, {
         method: "POST",
-        headers: { "content-type": "application/json", "x-request-id": requestId },
+        headers: aiServiceHeaders(requestId, AI_SERVICE_TOKEN),
         body: JSON.stringify({
           pet: { species: pet.species, breed: pet.breed ?? null, age_years: null, sex: null, weight_kg: null, prior_history: [] },
           week_start_date: weekStart,

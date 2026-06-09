@@ -45,3 +45,18 @@ UPSTASH_REDIS_REST_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN", "")
 # read from the cache at request time by the pipeline.
 AI_KILL_SWITCH_ENV = os.getenv("AI_KILL_SWITCH", "").lower() in ("1", "true", "yes")
 KILL_SWITCH_CACHE_KEY = "pawdoc:ai_kill_switch"
+
+# --- Trust boundary (Phase A) ------------------------------------------------
+# The AI service is INTERNAL: only the Supabase Edge Functions may call it, and
+# they present `Authorization: Bearer <AI_SERVICE_TOKEN>`. Verified constant-time
+# in main.require_service_auth. Empty by default so local dev + the unit suite
+# run unauthenticated; in production the token MUST be set or the service fails
+# closed (refuses every request) rather than serving the pipeline open.
+AI_SERVICE_TOKEN = os.getenv("AI_SERVICE_TOKEN", "")
+# Fly sets FLY_APP_NAME on every machine, so "running on Fly" == production.
+# AI_ENV is an explicit override for any non-Fly production host.
+IS_PRODUCTION = bool(os.getenv("FLY_APP_NAME")) or os.getenv("AI_ENV", "").lower() in (
+    "prod",
+    "production",
+    "prd",
+)
