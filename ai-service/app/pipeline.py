@@ -6,7 +6,9 @@
   5. confidence < 0.60 -> "insufficient information" (never fabricate)
   6. borderline-NORMAL re-check (CR #4): escalate / bias to MONITOR
   7. force disclaimer_required at the API level
-  Provider/parse failures -> degraded fallback (CR #5). One retry on failure.
+  A Tier-2 provider failure fails OVER to Tier 3 (resilience: keeps triage working
+  on the healthy provider); degrade to the safe fallback (CR #5) only if BOTH tiers
+  fail. One retry per provider call.
 """
 from __future__ import annotations
 
@@ -171,16 +173,31 @@ class AnalysisPipeline:
             )
             return self._outcome(rejected, 0, "moderation", moderation_rejected=True, start=start)
 
-        # 3. Tier 2 -> route on confidence; else Tier 3.
+        # 3. Tier 2 (Gemini) primary. On a Tier-2 provider failure (e.g. quota /
+        #    RESOURCE_EXHAUSTED, timeout, 5xx) fail OVER to Tier 3 (Claude) instead
+        #    of degrading, so triage keeps working on the healthy provider; degrade
+        #    only if BOTH tiers fail. A low-confidence Tier-2 read still escalates to
+        #    Tier 3 as before, and if THAT escalation call fails we degrade
+        #    (unchanged — a low-confidence read is never surfaced as the final answer).
         try:
             result = self._call(self.tier2, request)
             tier, model = 2, self.tier2.name
-            if result.confidence <= config.CONFIDENCE_ROUTE_THRESHOLD:
+        except ProviderError as exc:
+            log.warning("Tier 2 (%s) failed: %s — failing over to Tier 3", self.tier2.name, exc)
+            try:
                 result = self._call(self.tier3, request)
                 tier, model = 3, self.tier3.name
-        except ProviderError as exc:
-            log.error("pipeline degraded after provider failure: %s", exc)
-            return self._outcome(_degraded_result(), 0, "degraded", degraded=True, start=start)
+            except ProviderError as exc2:
+                log.error("pipeline degraded after both tiers failed: %s", exc2)
+                return self._outcome(_degraded_result(), 0, "degraded", degraded=True, start=start)
+        else:
+            if result.confidence <= config.CONFIDENCE_ROUTE_THRESHOLD:
+                try:
+                    result = self._call(self.tier3, request)
+                    tier, model = 3, self.tier3.name
+                except ProviderError as exc:
+                    log.error("pipeline degraded after Tier-3 escalation failure: %s", exc)
+                    return self._outcome(_degraded_result(), 0, "degraded", degraded=True, start=start)
 
         # 4. Cross-verify any EMERGENCY with a second Tier-3 call. EMERGENCY is
         #    kept regardless (safe); we record whether the second call agreed.

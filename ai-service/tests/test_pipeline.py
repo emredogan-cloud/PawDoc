@@ -133,6 +133,44 @@ def test_cr5_provider_failure_degrades_gracefully():
     assert t2.calls == 2  # one retry before degrading
 
 
+def test_tier2_failure_fails_over_to_tier3():
+    # Resilience: Gemini (Tier 2) is down (e.g. quota / RESOURCE_EXHAUSTED), but
+    # Claude (Tier 3) is healthy -> fail OVER instead of degrading; triage works.
+    t2 = FakeProvider("gemini", 2, fail=True)
+    t3 = FakeProvider("claude", 3, res("MONITOR", 0.82))
+    out = build(t2, t3).run(req())
+    assert out.degraded is False          # did NOT degrade — failed over
+    assert out.tier_used == 3
+    assert out.result.triage_level is TriageLevel.MONITOR
+    assert t2.calls == 2                  # tried Gemini (1 retry) first
+    assert t3.calls >= 1                  # then Claude served the result
+
+
+def test_failover_result_still_emergency_cross_verified():
+    # A failed-over Tier-3 EMERGENCY must still go through the safety gates
+    # (cross-verification), not bypass them.
+    t2 = FakeProvider("gemini", 2, fail=True)
+    t3 = FakeProvider("claude", 3, res("EMERGENCY", 0.9))
+    out = build(t2, t3).run(req("very lethargic"))
+    assert out.degraded is False
+    assert out.result.triage_level is TriageLevel.EMERGENCY
+    assert out.cross_verified is True
+    assert t3.calls == 2  # failover primary + EMERGENCY cross-verify
+
+
+def test_tier3_escalation_failure_still_degrades():
+    # Regression lock: Tier 2 succeeds but low-confidence -> escalate to Tier 3,
+    # which is down. We must NOT surface the low-confidence Tier-2 read; degrade
+    # (unchanged behavior — the failover only covers a Tier-2 PRIMARY failure).
+    t2 = FakeProvider("gemini", 2, res("NORMAL", 0.4))
+    t3 = FakeProvider("claude", 3, fail=True)
+    out = build(t2, t3).run(req())
+    assert out.degraded is True
+    assert out.result.triage_level is TriageLevel.MONITOR
+    assert t2.calls == 1   # Tier 2 succeeded (no retry needed)
+    assert t3.calls == 2   # Tier 3 escalation tried with one retry, then degrade
+
+
 def test_disclaimer_is_always_required():
     out = build().run(req())
     assert out.result.disclaimer_required is True
