@@ -8,6 +8,7 @@ import '../monetization/insurance_affiliate_cta.dart';
 import '../monetization/telehealth_button.dart';
 import '../theme/design_tokens.dart';
 import '../vet_finder/vet_finder_screen.dart';
+import 'result_l10n.dart';
 
 /// EMERGENCY result: warm red, urgent copy, a vet-finder deep link, and an
 /// explicit acknowledgment gate — the user MUST acknowledge before leaving
@@ -68,11 +69,14 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
-                Text(r.primaryConcern,
+                // M0 F-3: dynamic values are display-localized (template +
+                // urgency mapping); unknown values pass through verbatim.
+                // Pure string presentation — gate/logic untouched.
+                Text(localizedPrimaryConcern(l, r.primaryConcern),
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 18)),
                 const SizedBox(height: 8),
-                Text(l.emergencyRecommendedPrefix(r.urgencyTimeframe),
+                Text(l.emergencyRecommendedPrefix(localizedUrgency(l, r.urgencyTimeframe)),
                     textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
                 const SizedBox(height: 24),
                 FilledButton.icon(

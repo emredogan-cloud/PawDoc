@@ -20,6 +20,20 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String emergencyIndicatorDetected(String indicator) {
+    return 'Notfall-Anzeichen erkannt: \'$indicator\'.';
+  }
+
+  @override
+  String get urgencyImmediately => 'sofort';
+
+  @override
+  String get urgencyWithin24Hours => 'innerhalb von 24 Stunden';
+
+  @override
+  String get urgencyRoutine => 'routinemäßig';
+
+  @override
   String get emergencyFindVet => 'Sofort einen Notfall-Tierarzt finden';
 
   @override
