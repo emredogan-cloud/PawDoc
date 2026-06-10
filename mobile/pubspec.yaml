@@ -67,6 +67,8 @@ dependencies:
   onesignal_flutter: ^5.5.5
   connectivity_plus: ^7.1.1
   google_fonts: ^8.1.0
+  flutter_animate: ^4.5.2
+  animations: ^2.2.0
 
 dev_dependencies:
   flutter_test:

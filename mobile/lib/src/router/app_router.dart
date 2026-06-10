@@ -16,6 +16,7 @@ import '../onboarding/onboarding_flow.dart';
 import '../pets/pets_list_screen.dart';
 import '../referral/referral_prefs.dart';
 import '../text_input/symptom_text_screen.dart';
+import 'app_page_transitions.dart';
 
 /// Bridges a Stream to a [Listenable] so go_router re-runs `redirect` whenever
 /// auth state changes.
@@ -64,15 +65,52 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
-      GoRoute(path: '/sign-in', builder: (context, state) => const SignInScreen()),
-      GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingFlow()),
-      GoRoute(path: '/pets', builder: (context, state) => const PetsListScreen()),
-      GoRoute(path: '/history', builder: (context, state) => const HealthHistoryScreen()),
-      GoRoute(path: '/capture', builder: (context, state) => const CameraScreen()),
-      GoRoute(path: '/symptom-text', builder: (context, state) => const SymptomTextScreen()),
+      // Page transitions standardized via AppPageTransitions (§4.1). Sections
+      // use fade-through; pushed modal/detail screens use shared-axis. Reduce-
+      // motion collapses every transition to instant. The result/EMERGENCY
+      // screens are pushed via Navigator (not here), so they keep the default
+      // clear platform transition — no playful motion on the safety path.
+      GoRoute(
+        path: '/',
+        pageBuilder: (context, state) =>
+            AppPageTransitions.fadeThrough(context, const HomeScreen()),
+      ),
+      GoRoute(
+        path: '/sign-in',
+        pageBuilder: (context, state) =>
+            AppPageTransitions.fadeThrough(context, const SignInScreen()),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        pageBuilder: (context, state) =>
+            AppPageTransitions.fadeThrough(context, const OnboardingFlow()),
+      ),
+      GoRoute(
+        path: '/pets',
+        pageBuilder: (context, state) =>
+            AppPageTransitions.sharedAxisVertical(context, const PetsListScreen()),
+      ),
+      GoRoute(
+        path: '/history',
+        pageBuilder: (context, state) =>
+            AppPageTransitions.fadeThrough(context, const HealthHistoryScreen()),
+      ),
+      GoRoute(
+        path: '/capture',
+        pageBuilder: (context, state) =>
+            AppPageTransitions.sharedAxisVertical(context, const CameraScreen()),
+      ),
+      GoRoute(
+        path: '/symptom-text',
+        pageBuilder: (context, state) =>
+            AppPageTransitions.sharedAxisVertical(context, const SymptomTextScreen()),
+      ),
       // Phase 6.3.1 — Family Sharing settings + deep link.
-      GoRoute(path: '/family', builder: (_, _) => const FamilySettingsScreen()),
+      GoRoute(
+        path: '/family',
+        pageBuilder: (context, state) =>
+            AppPageTransitions.sharedAxisVertical(context, const FamilySettingsScreen()),
+      ),
       // Invite acceptance — handles both pawdoc://invite/:token (custom scheme)
       // and https://pawdoc.app/invite/:token (Universal / App Link). The auth
       // redirect above bounces unsigned-in users to /sign-in first; go_router

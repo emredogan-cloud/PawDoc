@@ -4,14 +4,29 @@ const List<String> kSpecies = ['dog', 'cat', 'rabbit', 'guinea_pig', 'bird', 're
 
 /// Display label (emoji + name) for a species value. Single source of truth used
 /// by the onboarding grid + the pet-edit form so the two never drift.
-String speciesLabel(String s) => switch (s) {
-      'dog' => '🐶 Dog',
-      'cat' => '🐱 Cat',
-      'rabbit' => '🐰 Rabbit',
-      'guinea_pig' => '🐹 Guinea pig',
-      'bird' => '🦜 Bird',
-      'reptile' => '🦎 Reptile',
-      _ => '🐾 Other',
+String speciesLabel(String s) => '${speciesEmoji(s)} ${speciesName(s)}';
+
+/// Emoji glyph for a species — used as the graceful fallback when the custom
+/// species-icon asset isn't present yet (PAWDOC_UI_UX_MASTER_ROADMAP.md §6.10).
+String speciesEmoji(String s) => switch (s) {
+      'dog' => '🐶',
+      'cat' => '🐱',
+      'rabbit' => '🐰',
+      'guinea_pig' => '🐹',
+      'bird' => '🦜',
+      'reptile' => '🦎',
+      _ => '🐾',
+    };
+
+/// Plain display name for a species (no emoji) — for chip labels + a11y.
+String speciesName(String s) => switch (s) {
+      'dog' => 'Dog',
+      'cat' => 'Cat',
+      'rabbit' => 'Rabbit',
+      'guinea_pig' => 'Guinea pig',
+      'bird' => 'Bird',
+      'reptile' => 'Reptile',
+      _ => 'Other',
     };
 
 class Pet {

@@ -1,20 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../analytics/analytics.dart';
+import '../core/app_image.dart';
+import '../core/motion.dart';
+import '../core/pet_display.dart';
 import '../experiments/feature_flags.dart';
 import '../monetization/paywall_screen.dart';
-import '../core/pet_display.dart';
 import '../notifications/onesignal_service.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
+import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 
-/// The 5-screen onboarding wizard (roadmap §6):
+/// The 5-screen onboarding wizard (roadmap §3.2 / §4.5):
 /// Value Hook → Pet Setup → Trust Signal → Push Permission (UI only) → Activation.
 /// Fires `onboarding_step_completed` per step and `onboarding_completed` at the end.
 /// Push permission is UI only here — OneSignal is wired in Phase 2.1.
+///
+/// Phase D adds the OnboardingScaffold (progress dots + Skip), a hero
+/// illustration slot, custom species chips, and per-step motion — all
+/// reduce-motion-gated. The 5-step flow, analytics, pet creation, and routing
+/// are unchanged.
 class OnboardingFlow extends ConsumerStatefulWidget {
   const OnboardingFlow({super.key});
 
@@ -107,6 +117,11 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     if (mounted) context.go('/');
   }
 
+  /// Top-right Skip → home. Routing/guard logic is unchanged: onboarding is an
+  /// optional flow entered from the home empty state, so leaving simply returns
+  /// to home (which re-shows the "set up your pet" prompt if none exists).
+  void _skip() => context.go('/');
+
   // Hardened display name: capitalizes the first letter and falls back to
   // "your pet" for an empty/whitespace name, so personalized copy never reads
   // "check on ker" or "in 's health". The stored name is untouched.
@@ -116,15 +131,22 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(),
+        child: Column(
           children: [
-            _valueHook(),
-            _petSetup(),
-            _trustSignal(),
-            _pushPermission(),
-            _activation(),
+            _OnboardingHeader(step: _page, total: _names.length, onSkip: _skip),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _valueHook(),
+                  _petSetup(),
+                  _trustSignal(),
+                  _pushPermission(),
+                  _activation(),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -132,72 +154,129 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   }
 
   Widget _pad(List<Widget> children) => Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpace.s24),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
       );
 
+  /// Staggered fade-up for entrance copy (reduce-motion → plain).
+  Widget _fadeUp(Widget child, int index) {
+    if (reduceMotion(context)) return child;
+    return child
+        .animate()
+        .fadeIn(
+            duration: AppMotion.standard,
+            delay: Duration(milliseconds: 60 * index))
+        .slideY(
+            begin: 0.12,
+            end: 0,
+            duration: AppMotion.standard,
+            curve: AppMotion.emphasized);
+  }
+
+  // ---- Step 1 · Value Hook ----
   Widget _valueHook() => _pad([
         const Spacer(),
-        Text('Never wonder if your pet needs the vet again.',
-            style: Theme.of(context).textTheme.headlineMedium, textAlign: TextAlign.center),
-        const SizedBox(height: 12),
-        const Text('AI triage in seconds. 24/7. Less than \$0.33/day.',
-            textAlign: TextAlign.center),
+        _onbHero(),
+        const SizedBox(height: AppSpace.s32),
+        _fadeUp(
+          Text('Never wonder if your pet needs the vet again.',
+              style: Theme.of(context).textTheme.headlineMedium,
+              textAlign: TextAlign.center),
+          0,
+        ),
+        const SizedBox(height: AppSpace.s12),
+        _fadeUp(
+          const Text('AI triage in seconds. 24/7. Less than \$0.33/day.',
+              textAlign: TextAlign.center),
+          1,
+        ),
         const Spacer(),
-        FilledButton(
+        AppButton(
           key: const Key('onb_get_started'),
           onPressed: _advance,
           child: const Text('Get Started'),
         ),
       ]);
 
+  Widget _onbHero() {
+    final scheme = Theme.of(context).colorScheme;
+    final hero = AppImage(
+      AppAssets.onbHero,
+      height: 200,
+      fallback: Container(
+        height: 200,
+        width: 200,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [scheme.primaryContainer, scheme.surface],
+          ),
+        ),
+        child: Icon(Icons.pets_rounded, size: 88, color: scheme.primary),
+      ),
+    );
+    if (reduceMotion(context)) return Center(child: hero);
+    return Center(
+      child: hero
+          .animate(onPlay: (c) => c.repeat(reverse: true))
+          .scaleXY(
+              begin: 1.0,
+              end: 1.03,
+              duration: const Duration(seconds: 4),
+              curve: Curves.easeInOut),
+    );
+  }
+
+  // ---- Step 2 · Pet Setup ----
   Widget _petSetup() => ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpace.s24),
         children: [
-          Text('Tell us about your pet', style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 16),
+          Text('Tell us about your pet',
+              style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: AppSpace.s20),
           TextField(
             key: const Key('onb_pet_name'),
             controller: _name,
-            decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(labelText: 'Name', filled: true),
           ),
-          const SizedBox(height: 16),
-          Wrap(spacing: 8, children: [
-            for (final s in kSpecies)
-              ChoiceChip(
-                label: Text(speciesLabel(s)),
-                selected: _species == s,
-                onSelected: (_) => setState(() => _species = s),
-              ),
-          ]),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpace.s20),
+          Wrap(
+            spacing: AppSpace.s8,
+            runSpacing: AppSpace.s8,
+            children: [
+              for (final s in kSpecies)
+                _SpeciesChip(
+                  species: s,
+                  selected: _species == s,
+                  onTap: () => setState(() => _species = s),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpace.s20),
           TextField(
             controller: _breed,
-            decoration: const InputDecoration(labelText: 'Breed (optional)', border: OutlineInputBorder()),
+            decoration:
+                const InputDecoration(labelText: 'Breed (optional)', filled: true),
           ),
-          const SizedBox(height: 24),
-          FilledButton(
+          const SizedBox(height: AppSpace.s24),
+          AppButton(
             key: const Key('onb_pet_continue'),
             onPressed: _busy ? null : _submitPetSetup,
             child: Text(_busy ? 'Saving…' : 'Continue'),
           ),
+          const SizedBox(height: AppSpace.s8),
           const Text('Add more pets later. Edit anytime.', textAlign: TextAlign.center),
         ],
       );
 
-  // Honesty rebuild (roadmap §3.2.3): the fabricated "★ 4.8 — trusted by
-  // thousands" and the unsubstantiated "Reviewed by veterinary experts" claims
-  // are replaced with truthful, defensible trust pillars — substance over
-  // claims. No invented metrics; safe for App Store review. Final wording is
-  // pending owner/legal sign-off.
+  // ---- Step 3 · Trust Signal (honesty rebuild from Phase B) ----
+  // The fabricated "★ 4.8 — trusted by thousands" and the unsubstantiated
+  // "Reviewed by veterinary experts" claims were replaced with truthful,
+  // defensible trust pillars. Final wording is pending owner/legal sign-off.
   Widget _trustSignal() => _pad([
         const Spacer(),
-        CircleAvatar(
-          radius: 40,
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          child: Icon(Icons.verified_user_rounded,
-              size: 40, color: Theme.of(context).colorScheme.primary),
-        ),
+        Center(child: _shieldHero()),
         const SizedBox(height: AppSpace.s16),
         Text('Built to keep pets safe',
             style: Theme.of(context).textTheme.headlineSmall,
@@ -208,8 +287,30 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         _trustPillar('Your photos are private & encrypted'),
         _trustPillar('We inform; your vet decides'),
         const Spacer(),
-        FilledButton(onPressed: _advance, child: const Text('Continue')),
+        AppButton(onPressed: _advance, child: const Text('Continue')),
       ]);
+
+  Widget _shieldHero() {
+    final scheme = Theme.of(context).colorScheme;
+    final shield = AppImage(
+      AppAssets.shieldCare,
+      width: 88,
+      height: 88,
+      fallback: CircleAvatar(
+        radius: 40,
+        backgroundColor: scheme.primaryContainer,
+        child: Icon(Icons.verified_user_rounded, size: 40, color: scheme.primary),
+      ),
+    );
+    if (reduceMotion(context)) return shield;
+    // Draw-in (scale + fade) then a soft "seal" shimmer.
+    return shield
+        .animate()
+        .scaleXY(begin: 0.8, end: 1.0, duration: AppMotion.hero, curve: AppMotion.emphasized)
+        .fadeIn(duration: AppMotion.hero)
+        .then(delay: const Duration(milliseconds: 120))
+        .shimmer(duration: const Duration(milliseconds: 800), color: scheme.primary);
+  }
 
   Widget _trustPillar(String text) => Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
@@ -226,18 +327,19 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         ),
       );
 
+  // ---- Step 4 · Push Permission Priming ----
   Widget _pushPermission() => _pad([
         const Spacer(),
-        const Icon(Icons.notifications_active, size: 56),
-        const SizedBox(height: 16),
+        Center(child: _bell()),
+        const SizedBox(height: AppSpace.s16),
         Text('Stay ahead of health issues',
             style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
-        const SizedBox(height: 8),
-        Text('Get alerts when we notice concerning trends in $_petName’s health.',
+        const SizedBox(height: AppSpace.s8),
+        Text('Get a heads-up when something about $_petName’s health needs attention.',
             textAlign: TextAlign.center),
         const Spacer(),
         // UI only — OneSignal permission request is wired in Phase 2.1.
-        FilledButton(
+        AppButton(
           key: const Key('onb_enable_alerts'),
           onPressed: () async {
             // Contextual OneSignal permission prompt (Phase 2.1); syncs player_id.
@@ -249,18 +351,183 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         TextButton(onPressed: _advance, child: const Text('Maybe later')),
       ]);
 
+  Widget _bell() {
+    const bell = Icon(Icons.notifications_active_rounded, size: 56);
+    if (reduceMotion(context)) return bell;
+    // One-time gentle ring (~±8°).
+    return bell.animate().shake(
+        duration: const Duration(milliseconds: 700), hz: 4, rotation: 0.14);
+  }
+
+  // ---- Step 5 · Activation ----
   Widget _activation() => _pad([
         const Spacer(),
+        Center(child: _petAvatar()),
+        const SizedBox(height: AppSpace.s20),
         Text('Ready to check on $_petName?',
             style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpace.s12),
         const Text('Your first 3 analyses are free — no card needed.',
             textAlign: TextAlign.center),
         const Spacer(),
-        FilledButton(
+        AppButton(
           key: const Key('onb_finish'),
           onPressed: _finish,
           child: Text('Check $_petName now'),
         ),
       ]);
+
+  Widget _petAvatar() {
+    final scheme = Theme.of(context).colorScheme;
+    final key = _createdPet?.species ?? 'other';
+    final avatar = AppImage(
+      AppAssets.avatar(key),
+      width: 96,
+      height: 96,
+      fallback: CircleAvatar(
+        radius: 44,
+        backgroundColor: scheme.primaryContainer,
+        child: Icon(Icons.pets_rounded, size: 44, color: scheme.primary),
+      ),
+    );
+    if (reduceMotion(context)) return avatar;
+    // Spring-in arrival + a single restrained sparkle (not confetti).
+    return avatar
+        .animate()
+        .scaleXY(begin: 0.8, end: 1.0, duration: AppMotion.hero, curve: Curves.easeOutBack)
+        .then(delay: const Duration(milliseconds: 80))
+        .shimmer(duration: const Duration(milliseconds: 900), color: scheme.primary);
+  }
+}
+
+/// Persistent onboarding header: a progress indicator (with "step n of total"
+/// semantics) and a top-right Skip. The active segment grows + fills; the fill
+/// animation collapses to instant under reduce-motion.
+class _OnboardingHeader extends StatelessWidget {
+  const _OnboardingHeader({
+    required this.step,
+    required this.total,
+    required this.onSkip,
+  });
+
+  final int step;
+  final int total;
+  final VoidCallback onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final animate = !reduceMotion(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpace.s24, AppSpace.s12, AppSpace.s8, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              container: true,
+              label: 'Step ${step + 1} of $total',
+              child: Row(
+                children: [
+                  for (var i = 0; i < total; i++)
+                    AnimatedContainer(
+                      duration: animate ? AppMotion.standard : Duration.zero,
+                      curve: AppMotion.standardCurve,
+                      margin: const EdgeInsets.only(right: AppSpace.s8),
+                      height: 8,
+                      width: i == step ? 24 : 8,
+                      decoration: BoxDecoration(
+                        color: i <= step
+                            ? scheme.primary
+                            : scheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          TextButton(
+            key: const Key('onb_skip'),
+            onPressed: onSkip,
+            child: const Text('Skip'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Custom species chip (§3.2.2): a branded species icon (with emoji fallback
+/// while the icon asset is being produced) + label, with a fill + selection pop
+/// on select and proper screen-reader semantics (fixes the OS-emoji a11y gap).
+/// Selection feedback is reduce-motion-aware.
+class _SpeciesChip extends StatelessWidget {
+  const _SpeciesChip({
+    required this.species,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String species;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final animate = !reduceMotion(context);
+    final icon = AppImage(
+      AppAssets.species(species),
+      width: 22,
+      height: 22,
+      fallback: Text(speciesEmoji(species), style: const TextStyle(fontSize: 18)),
+    );
+
+    final chip = AnimatedContainer(
+      duration: animate ? AppMotion.standard : Duration.zero,
+      curve: AppMotion.standardCurve,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s12, vertical: AppSpace.s8),
+      decoration: BoxDecoration(
+        color: selected ? scheme.primaryContainer : scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(
+          color: selected ? scheme.primary : scheme.outline,
+          width: selected ? 2 : 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          icon,
+          const SizedBox(width: AppSpace.s8),
+          Text(speciesName(species)),
+          if (selected) ...[
+            const SizedBox(width: AppSpace.s4),
+            Icon(Icons.check_rounded, size: 16, color: scheme.primary),
+          ],
+        ],
+      ),
+    );
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: speciesName(species),
+      child: AnimatedScale(
+        scale: selected ? 1.0 : 0.97,
+        duration: animate ? AppMotion.micro : Duration.zero,
+        curve: Curves.easeOutBack,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: chip,
+        ),
+      ),
+    );
+  }
 }

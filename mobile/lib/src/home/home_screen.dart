@@ -10,6 +10,7 @@ import '../auth/auth_controller.dart';
 import '../capture/camera_screen.dart';
 import '../capture/video_capture_screen.dart';
 import '../core/connectivity.dart';
+import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../feedback/followup_banner.dart';
 import '../health/breed_insight_card.dart';
@@ -22,6 +23,7 @@ import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
 import '../referral/referral_screen.dart';
 import '../text_input/symptom_text_screen.dart';
+import '../theme/design_tokens.dart';
 
 /// Sentinel value for the "Add pet" entry in the pet switcher menu.
 const _addPetSentinel = '__add_pet__';
@@ -179,7 +181,17 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             petsAsync.when(
-              loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
+              // Pilot skeletons (§4.3) — shimmer placeholders matching the final
+              // layout (insight + pet hero + actions). Static under reduce-motion.
+              loading: () => const Column(
+                children: [
+                  SkeletonCard(height: 72),
+                  SizedBox(height: AppSpace.s8),
+                  SkeletonCard(height: 120),
+                  SizedBox(height: AppSpace.s8),
+                  SkeletonCard(height: 44),
+                ],
+              ),
               error: (e, _) => Text('Could not load pets: $e'),
               data: (list) {
                 if (list.isEmpty) {
@@ -320,7 +332,7 @@ class _PetCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(pet.name, style: Theme.of(context).textTheme.titleLarge),
+                      Text(petDisplayName(pet.name), style: Theme.of(context).textTheme.titleLarge),
                       lastTriage.when(
                         loading: () => const Text('…'),
                         error: (_, _) => Text(pet.species),
@@ -334,11 +346,13 @@ class _PetCard extends ConsumerWidget {
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: FilledButton.icon(
+              // Phase C pilot: primary CTA uses AppButton (press-scale + haptic,
+              // reduce-motion aware). Name uses the Phase B display helper.
+              child: AppButton(
                 key: Key('check_${pet.id}'),
                 onPressed: onCheck,
                 icon: const Icon(Icons.health_and_safety),
-                label: Text('Check ${pet.name}'),
+                child: Text('Check ${petDisplayName(pet.name)}'),
               ),
             ),
           ],

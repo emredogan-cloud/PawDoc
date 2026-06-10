@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../account/user_profile.dart';
 import '../analytics/analytics.dart';
 import '../core/dates.dart';
+import '../core/motion.dart';
 import '../export/health_report_service.dart';
 import '../pets/active_pet.dart';
 import '../reminders/reminders_screen.dart';
@@ -116,7 +117,15 @@ class HealthHistoryScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(healthTimelineProvider(pet.id!)),
         child: timeline.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          // Pilot skeleton (§4.3): 3 ghost timeline nodes. Static under
+          // reduce-motion. ListView keeps pull-to-refresh available.
+          loading: () => ListView(
+            children: const [
+              SkeletonTimelineNode(),
+              SkeletonTimelineNode(),
+              SkeletonTimelineNode(),
+            ],
+          ),
           error: (e, _) => ListView(
             children: [Padding(padding: const EdgeInsets.all(24), child: Text('Could not load history:\n$e'))],
           ),
