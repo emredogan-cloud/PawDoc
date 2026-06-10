@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../analytics/analytics.dart';
 import '../auth/supabase_providers.dart';
 import '../pets/pets_repository.dart';
+import '../theme/design_tokens.dart';
 import 'family_repository.dart';
 
 /// Phase 6.3.1 — landing screen for the family invite deep link
@@ -112,7 +113,7 @@ class _AcceptFamilyInviteScreenState extends ConsumerState<AcceptFamilyInviteScr
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppRadius.brSm,
                     ),
                     child: Text(
                       _error!,

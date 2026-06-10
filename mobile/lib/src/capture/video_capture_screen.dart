@@ -4,6 +4,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../theme/design_tokens.dart';
 import 'keyframe_extractor.dart';
 import 'upload_service.dart';
 
@@ -132,9 +133,9 @@ class _VideoCaptureScreenState extends ConsumerState<VideoCaptureScreen> {
             top: 16,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Colors.black54,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: AppRadius.brMd,
               ),
               child: Text(
                 _recording

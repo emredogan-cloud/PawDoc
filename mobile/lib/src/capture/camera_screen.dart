@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 
+import '../theme/design_tokens.dart';
 import 'image_compressor.dart';
 import 'image_quality.dart';
 import 'upload_service.dart';
@@ -152,9 +153,9 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
               top: 16,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.black54,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: AppRadius.brMd,
                 ),
                 child: Text(_liveHint, style: const TextStyle(color: Colors.white)),
               ),

@@ -66,6 +66,7 @@ dependencies:
   shared_preferences: ^2.5.5
   onesignal_flutter: ^5.5.5
   connectivity_plus: ^7.1.1
+  google_fonts: ^8.1.0
 
 dev_dependencies:
   flutter_test:
@@ -93,10 +94,23 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  # UI redesign asset tree (PAWDOC_UI_UX_MASTER_ROADMAP.md §7.1). Folders ship
+  # with a .gitkeep placeholder and are populated as art is produced; every
+  # illustration is rendered via AppImage with a code fallback, so a missing
+  # asset never breaks the build or the UI.
+  assets:
+    - assets/brand/
+    - assets/icon/
+    - assets/illustrations/onboarding/
+    - assets/illustrations/analysis/
+    - assets/illustrations/empty_states/
+    - assets/illustrations/monetization/
+    - assets/illustrations/growth/
+    - assets/illustrations/system/
+    - assets/icons/species/
+    - assets/icons/actions/
+    - assets/icons/status/
+    - assets/icons/avatars/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -104,6 +118,12 @@ flutter:
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
 
+  # Fonts (Inter + Bricolage Grotesque; see theme/design_tokens.dart) are loaded
+  # at runtime via the `google_fonts` package and cached on device. To make them
+  # fully offline-deterministic, drop the .ttf files into assets/fonts/, declare
+  # them in a `fonts:` block below, and set
+  # GoogleFonts.config.allowRuntimeFetching = false at startup.
+  #
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a
   # "family" key with the font family name, and a "fonts" key with a

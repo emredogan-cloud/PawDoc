@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../analytics/analytics.dart';
 import '../core/dates.dart';
+import '../core/pet_display.dart';
 import 'reminder.dart';
 import 'reminders_repository.dart';
 
@@ -57,7 +58,7 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('New reminder · ${widget.petName}')),
+      appBar: AppBar(title: Text('New reminder · ${petDisplayName(widget.petName)}')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

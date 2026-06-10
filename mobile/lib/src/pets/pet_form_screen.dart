@@ -140,6 +140,9 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
               decoration: const InputDecoration(
                 labelText: 'Client name (optional — sitter mode)',
                 helperText: 'Tag whose pet this is, e.g. "Smith family". Visible only to you.',
+                // Without this the privacy note ellipsizes to "Visible onl…",
+                // undercutting the very reassurance it offers (roadmap S12).
+                helperMaxLines: 3,
                 border: OutlineInputBorder(),
               ),
               textCapitalization: TextCapitalization.words,

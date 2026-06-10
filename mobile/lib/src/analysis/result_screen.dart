@@ -7,6 +7,7 @@ import '../feedback/result_feedback_widget.dart';
 import '../models/analysis_result.dart';
 import '../monetization/insurance_affiliate_cta.dart';
 import '../monetization/telehealth_button.dart';
+import '../theme/design_tokens.dart';
 import '../vet_finder/vet_finder_screen.dart';
 import 'emergency_result_screen.dart';
 
@@ -27,10 +28,12 @@ class ResultScreen extends StatelessWidget {
   }
 }
 
+// Safety-locked triage hues, codified to tokens (values unchanged). Kept as the
+// light variants so behavior is identical; theme-aware tuning is a Phase H job.
 Color _triageColor(TriageLevel l) => switch (l) {
-      TriageLevel.emergency => const Color(0xFFC62828),
-      TriageLevel.monitor => const Color(0xFFFFB300),
-      TriageLevel.normal => const Color(0xFF2E7D32),
+      TriageLevel.emergency => AppColors.emergencyLight,
+      TriageLevel.monitor => AppColors.monitorLight,
+      TriageLevel.normal => AppColors.normalLight,
     };
 
 String _triageLabel(TriageLevel l) => switch (l) {
@@ -82,7 +85,7 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: color, borderRadius: AppRadius.brMd),
             child: Text(
               _triageLabel(r.triageLevel),
               style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
@@ -111,7 +114,7 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: AppRadius.brSm,
               ),
               child: const Text(
                 'PawDoc provides information, not a veterinary diagnosis. When in doubt, contact your vet.',

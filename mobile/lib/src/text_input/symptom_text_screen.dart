@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/pet_display.dart';
+
 /// Text symptom input with character guidance. Phase 1.2 stops at producing the
 /// input text — it pops the trimmed description back to the caller (the AI call
 /// is wired in Phase 1.4). No AI logic here.
@@ -34,7 +36,7 @@ class _SymptomTextScreenState extends State<SymptomTextScreen> {
   Widget build(BuildContext context) {
     final len = _controller.text.trim().length;
     final tooShort = len < SymptomTextScreen.minChars;
-    final who = widget.petName ?? 'your pet';
+    final who = petDisplayName(widget.petName);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Describe what you see')),

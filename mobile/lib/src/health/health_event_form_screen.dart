@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../analytics/analytics.dart';
 import '../core/dates.dart';
+import '../core/pet_display.dart';
 import 'health_event.dart';
 import 'health_events_repository.dart';
 import 'timeline.dart';
@@ -67,7 +68,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Log event · ${widget.petName}')),
+      appBar: AppBar(title: Text('Log event · ${petDisplayName(widget.petName)}')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

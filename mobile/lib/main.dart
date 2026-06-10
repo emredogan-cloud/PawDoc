@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
@@ -7,11 +8,41 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'src/app.dart';
 import 'src/config/env.dart';
+import 'src/core/boot_error_app.dart';
 import 'src/notifications/onesignal_service.dart';
+import 'src/theme/design_tokens.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // In release, replace Flutter's raw red error box for any in-tree build/render
+  // failure with a calm placeholder — a user must never see a stack trace. Debug
+  // keeps the red screen (useful for developers; tests run in debug too).
+  if (kReleaseMode) {
+    ErrorWidget.builder = (details) => const _CalmInlineError();
+  }
+
+  // Top-level boundary: if initialization throws before the UI can mount (e.g.
+  // Supabase init fails), show a calm "Couldn't start — retry" screen instead of
+  // crashing into a raw stack trace (closes runtime R09).
+  await _bootstrap();
+}
+
+Future<void> _bootstrap() async {
+  try {
+    await _initAndRun();
+  } catch (e, st) {
+    // Route through the framework so a configured Sentry still captures it.
+    FlutterError.reportError(FlutterErrorDetails(
+      exception: e,
+      stack: st,
+      library: 'pawdoc bootstrap',
+    ));
+    runApp(BootErrorApp(onRetry: _bootstrap));
+  }
+}
+
+Future<void> _initAndRun() async {
   // Supabase is required at runtime. Built without the SUPABASE_URL /
   // SUPABASE_ANON_KEY dart-defines, init is skipped and the app shows a clear
   // configuration-required screen (see startApp) instead of crashing into a
@@ -123,6 +154,38 @@ class _MissingConfigApp extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Calm in-place replacement for Flutter's red error box (release only). Used
+/// for in-tree build/render failures so a user never sees a raw stack trace.
+/// Self-contained (provides its own Directionality) because it can be inserted
+/// anywhere in the tree, including before MaterialApp mounts.
+class _CalmInlineError extends StatelessWidget {
+  const _CalmInlineError();
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Container(
+        color: AppColors.ink900,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(AppSpace.s24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.pets_rounded, color: AppColors.ink300, size: 40),
+            const SizedBox(height: AppSpace.s12),
+            Text(
+              'Something went wrong on this screen.',
+              textAlign: TextAlign.center,
+              style: AppType.textTheme().bodyLarge?.copyWith(color: AppColors.ink50),
+            ),
+          ],
         ),
       ),
     );

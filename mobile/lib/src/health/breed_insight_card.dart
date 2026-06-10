@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/design_tokens.dart';
 import 'breed_insights.dart';
 
 /// A tappable card showing a rotating, breed-specific wellness tip for the
@@ -29,7 +30,7 @@ class _BreedInsightCardState extends State<BreedInsightCard> {
       color: scheme.secondaryContainer,
       child: InkWell(
         key: const Key('breed_insight_card'),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.brMd,
         onTap: () => setState(() => _offset++),
         child: Padding(
           padding: const EdgeInsets.all(16),

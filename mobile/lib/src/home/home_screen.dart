@@ -10,6 +10,7 @@ import '../auth/auth_controller.dart';
 import '../capture/camera_screen.dart';
 import '../capture/video_capture_screen.dart';
 import '../core/connectivity.dart';
+import '../core/pet_display.dart';
 import '../feedback/followup_banner.dart';
 import '../health/breed_insight_card.dart';
 import '../health/health_event_form_screen.dart';
@@ -268,7 +269,7 @@ class _PetSwitcher extends ConsumerWidget {
           CheckedPopupMenuItem<String>(
             value: p.id!,
             checked: p.id == active?.id,
-            child: Text(p.name),
+            child: Text(petDisplayName(p.name)),
           ),
         const PopupMenuDivider(),
         const PopupMenuItem<String>(
@@ -285,7 +286,7 @@ class _PetSwitcher extends ConsumerWidget {
         children: [
           Flexible(
             child: Text(
-              active?.name ?? 'PawDoc',
+              active == null ? 'PawDoc' : petDisplayName(active!.name),
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.titleLarge,
             ),

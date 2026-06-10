@@ -6,6 +6,7 @@ import '../analytics/analytics.dart';
 import '../models/analysis_result.dart';
 import '../monetization/insurance_affiliate_cta.dart';
 import '../monetization/telehealth_button.dart';
+import '../theme/design_tokens.dart';
 import '../vet_finder/vet_finder_screen.dart';
 
 /// EMERGENCY result: warm red, urgent copy, a vet-finder deep link, and an
@@ -39,7 +40,10 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const red = Color(0xFFC62828); // warm, urgent red
+    // Codified to the safety-locked token (identical value #C62828). Kept
+    // light-variant only so behavior is unchanged; theme-aware tuning + restyle
+    // is deferred to Phase H (emergency screen, extra-review gated).
+    const red = AppColors.emergencyLight;
     final r = widget.result;
     // CR #11 (Phase 5.4): localized strings. `l!` is safe — AppLocalizations
     // is set up via the MaterialApp delegates; if missing in dev/test we'd

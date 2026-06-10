@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../analytics/analytics.dart';
 import '../experiments/feature_flags.dart';
 import '../monetization/paywall_screen.dart';
+import '../core/pet_display.dart';
 import '../notifications/onesignal_service.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
+import '../theme/design_tokens.dart';
 
 /// The 5-screen onboarding wizard (roadmap §6):
 /// Value Hook → Pet Setup → Trust Signal → Push Permission (UI only) → Activation.
@@ -105,7 +107,10 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     if (mounted) context.go('/');
   }
 
-  String get _petName => _createdPet?.name ?? 'your pet';
+  // Hardened display name: capitalizes the first letter and falls back to
+  // "your pet" for an empty/whitespace name, so personalized copy never reads
+  // "check on ker" or "in 's health". The stored name is untouched.
+  String get _petName => petDisplayName(_createdPet?.name);
 
   @override
   Widget build(BuildContext context) {
@@ -180,17 +185,46 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         ],
       );
 
+  // Honesty rebuild (roadmap §3.2.3): the fabricated "★ 4.8 — trusted by
+  // thousands" and the unsubstantiated "Reviewed by veterinary experts" claims
+  // are replaced with truthful, defensible trust pillars — substance over
+  // claims. No invented metrics; safe for App Store review. Final wording is
+  // pending owner/legal sign-off.
   Widget _trustSignal() => _pad([
         const Spacer(),
-        const CircleAvatar(radius: 40, child: Icon(Icons.verified_user, size: 40)),
-        const SizedBox(height: 16),
-        Text('Reviewed by veterinary experts',
-            style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center),
-        const SizedBox(height: 8),
-        const Text('★ 4.8 — trusted by thousands of pet parents.', textAlign: TextAlign.center),
+        CircleAvatar(
+          radius: 40,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          child: Icon(Icons.verified_user_rounded,
+              size: 40, color: Theme.of(context).colorScheme.primary),
+        ),
+        const SizedBox(height: AppSpace.s16),
+        Text('Built to keep pets safe',
+            style: Theme.of(context).textTheme.headlineSmall,
+            textAlign: TextAlign.center),
+        const SizedBox(height: AppSpace.s20),
+        _trustPillar('Vet-informed triage protocols'),
+        _trustPillar('Errs on the safe side — flags emergencies first'),
+        _trustPillar('Your photos are private & encrypted'),
+        _trustPillar('We inform; your vet decides'),
         const Spacer(),
         FilledButton(onPressed: _advance, child: const Text('Continue')),
       ]);
+
+  Widget _trustPillar(String text) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.check_circle_rounded,
+                size: 22, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: AppSpace.s12),
+            Expanded(
+              child: Text(text, style: Theme.of(context).textTheme.bodyLarge),
+            ),
+          ],
+        ),
+      );
 
   Widget _pushPermission() => _pad([
         const Spacer(),
