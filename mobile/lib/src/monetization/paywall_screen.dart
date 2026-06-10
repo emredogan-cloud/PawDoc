@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../analytics/analytics.dart';
+import '../core/app_image.dart';
 import '../experiments/feature_flags.dart';
+import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import 'paywall_copy.dart';
 
@@ -63,7 +65,12 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       final result = await Purchases.purchasePackage(pkg);
       if (result.customerInfo.entitlements.active.isNotEmpty) {
         await Analytics.subscriptionConverted();
-        if (mounted) Navigator.of(context).pop(true);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Welcome to Premium 🎉')),
+          );
+          Navigator.of(context).pop(true);
+        }
         return;
       }
     } catch (e) {
@@ -84,7 +91,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       price: annual?.storeProduct.priceString ?? '\$59.99 / year',
       subtitle: 'About \$5/month, billed yearly',
       featured: _variant != 'B', // featured in A/C; in B it's the badged secondary
-      badge: _variant == 'B' ? 'Best value' : null,
+      badge: _variant == 'B' ? 'Best value' : 'Save 50%',
       busy: _purchasing,
       onTap: () => _purchase(annual),
     );
@@ -120,6 +127,16 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           Text('Unlimited peace of mind', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: AppSpace.s8),
           const Text('Unlimited AI health checks, history, and reminders for all your pets.'),
+          const SizedBox(height: AppSpace.s16),
+          Center(
+            child: AppImage(
+              AppAssets.paywallPeace,
+              height: 120,
+              fallback: const SizedBox.shrink(), // graceful: hide if no art yet
+            ),
+          ),
+          const SizedBox(height: AppSpace.s16),
+          const _ValueStack(),
           // Variant C: a truthful value/trust card (was a fabricated testimonial;
           // honesty-fixed in Phase B). Layout-only A/B arm — analytics unchanged.
           if (_variant == 'C') ...[
@@ -237,6 +254,40 @@ class _PremiumComingSoon extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// "What you get" — the real Premium features (§3.8 value stack).
+class _ValueStack extends StatelessWidget {
+  const _ValueStack();
+
+  static const _features = [
+    'Unlimited AI health checks',
+    'Full health history',
+    'Reminders for every pet',
+    'Weekly AI health journal',
+    'Family & sitter sharing',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final f in _features)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.s4),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle_rounded, size: 20, color: scheme.primary),
+                const SizedBox(width: AppSpace.s12),
+                Expanded(child: Text(f, style: Theme.of(context).textTheme.bodyLarge)),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

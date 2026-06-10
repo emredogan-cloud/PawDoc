@@ -26,14 +26,9 @@ void main() {
     expect(find.text('Welcome to PawDoc 🐾'), findsOneWidget);
     expect(find.byKey(const Key('home_add_pet')), findsOneWidget);
 
-    // Logout lives in the overflow menu (closed here), NOT as a top-level icon.
-    expect(find.byKey(const Key('home_overflow_menu')), findsOneWidget);
+    // Account entry present; sign-out is NOT a one-tap home action — it now
+    // lives inside the Account screen behind a confirm (roadmap §3.10.2).
+    expect(find.byKey(const Key('home_account_button')), findsOneWidget);
     expect(find.byKey(const Key('sign_out_button')), findsNothing);
-
-    // Open the menu → "Sign out" is now reachable.
-    await tester.tap(find.byKey(const Key('home_overflow_menu')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('sign_out_button')), findsOneWidget);
-    expect(find.text('Sign out'), findsOneWidget);
   });
 }

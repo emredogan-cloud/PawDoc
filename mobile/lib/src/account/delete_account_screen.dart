@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/motion.dart';
+import '../theme/design_tokens.dart';
 import 'account_service.dart';
 
 /// In-app account deletion (CR #9 / Apple 5.1.1(v)). Clear, requires an explicit
@@ -81,11 +83,25 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           Semantics(
             button: true,
             label: 'Permanently delete my account',
-            child: FilledButton(
-              key: const Key('delete_account_button'),
-              style: FilledButton.styleFrom(backgroundColor: scheme.error, foregroundColor: scheme.onError),
-              onPressed: (_confirmed && !_busy) ? _delete : null,
-              child: Text(_busy ? 'Deleting…' : 'Delete my account'),
+            // Disarmed→armed: a restrained scale cue (no playful motion); the
+            // disabled state carries a visible outline + readable text (≥3:1)
+            // so it never reads as low-contrast grey-on-grey.
+            child: AnimatedScale(
+              scale: _confirmed ? 1.0 : 0.98,
+              duration: reduceMotion(context) ? Duration.zero : AppMotion.standard,
+              curve: AppMotion.standardCurve,
+              child: FilledButton(
+                key: const Key('delete_account_button'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: scheme.error,
+                  foregroundColor: scheme.onError,
+                  disabledBackgroundColor: scheme.surfaceContainerHighest,
+                  disabledForegroundColor: scheme.onSurfaceVariant,
+                  side: BorderSide(color: scheme.outline),
+                ),
+                onPressed: (_confirmed && !_busy) ? _delete : null,
+                child: Text(_busy ? 'Deleting…' : 'Delete my account'),
+              ),
             ),
           ),
           const SizedBox(height: 8),

@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../account/user_profile.dart';
+import '../core/app_image.dart';
+import '../theme/app_assets.dart';
+import '../theme/design_tokens.dart';
 import 'family_repository.dart';
 import 'invite_family_member_screen.dart';
 
@@ -54,10 +57,11 @@ class FamilySettingsScreen extends ConsumerWidget {
                     key: const Key('family_invite_paywall_card'),
                     child: ListTile(
                       leading: const Icon(Icons.lock_outline),
-                      title: const Text('Family Sharing is on the Family plan'),
+                      title: const Text('Family sharing is a Premium feature'),
+                      // De-jargonized (was "B2B-Lite (sitter)") for consumers.
                       subtitle: const Text(
-                          'Upgrade to invite up to 5 household members. '
-                          'B2B-Lite (sitter) also unlocks Family Sharing.'),
+                          'Invite up to 5 people on Premium Family. '
+                          'Sitters get access too.'),
                       trailing: FilledButton(
                         key: const Key('family_invite_upgrade_button'),
                         onPressed: () => context.push('/onboarding'), // existing upgrade path
@@ -92,6 +96,7 @@ class _FamilyHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
     if (summary == null) {
       return Text('No family group yet.', style: t.bodyLarge);
     }
@@ -100,11 +105,21 @@ class _FamilyHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(s.groupName, style: t.titleLarge),
-        const SizedBox(height: 4),
+        Text('Your care circle', style: t.titleLarge),
+        const SizedBox(height: AppSpace.s4),
         Text(size == 1
-            ? 'Just you — invite someone to start sharing.'
+            ? 'It’s just you for now — invite family or a sitter so everyone can help care for your pets.'
             : '$size members'),
+        if (size == 1) ...[
+          const SizedBox(height: AppSpace.s16),
+          Center(
+            child: AppImage(
+              AppAssets.familyCircle,
+              height: 120,
+              fallback: Icon(Icons.groups_rounded, size: 72, color: scheme.primary),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -113,6 +128,14 @@ class _FamilyHeader extends StatelessWidget {
 class _MembersList extends StatelessWidget {
   const _MembersList({required this.summary});
   final FamilySummary? summary;
+
+  // Friendly display name from an email's local part (avoids leading with PII).
+  static String _memberName(String? email) {
+    if (email == null || email.isEmpty) return 'Member';
+    final local = email.split('@').first;
+    if (local.isEmpty) return email;
+    return local[0].toUpperCase() + local.substring(1);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,7 +153,8 @@ class _MembersList extends StatelessWidget {
                     ? Icons.workspace_premium_outlined
                     : Icons.person_outline),
               ),
-              title: Text(m.email ?? '(no email)'),
+              // Display name over the raw email (PII restraint, §3.9.1).
+              title: Text(_memberName(m.email)),
               subtitle: Text(m.role == 'owner' ? 'Owner' : 'Member'),
             ),
         ],
