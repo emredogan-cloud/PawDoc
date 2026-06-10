@@ -105,8 +105,12 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             ),
           ),
           const SizedBox(height: 8),
+          // F-1: the escape route is NEVER disabled — even mid-deletion the
+          // user can leave (the cascade finishes server-side either way and
+          // the auth listener signs the device out when it does).
           TextButton(
-            onPressed: _busy ? null : () => Navigator.of(context).maybePop(),
+            key: const Key('delete_cancel_button'),
+            onPressed: () => Navigator.of(context).maybePop(),
             child: const Text('Cancel'),
           ),
         ],
