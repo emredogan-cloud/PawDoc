@@ -18,7 +18,7 @@ from .embeddings import build_embedding_input, make_embedding_provider
 from .journal import JournalProvider, make_journal_provider
 from .logging_setup import configure_logging, get_logger, get_request_id, set_request_id
 from .models import AnalyzeRequest, EmbedRequest, JournalRequest
-from .moderation import AllowAllModerator, GeminiModerator
+from .moderation import AllowAllModerator, GeminiModerator, ImageModerator
 from .pipeline import AnalysisPipeline
 from .providers import ClaudeProvider, GeminiProvider
 
@@ -74,20 +74,32 @@ def require_service_auth(authorization: str | None = Header(default=None)) -> No
         raise HTTPException(status_code=401, detail="invalid service token")
 
 
+def build_moderator() -> ImageModerator:
+    """Phase C (RF-8) — content hardening. A real vision moderator is MANDATORY
+    in production. Without GOOGLE_AI_API_KEY there is no NSFW gate; rather than
+    silently fall back to AllowAllModerator (which would accept EVERY upload),
+    FAIL CLOSED on a prod runtime. Dev/test still allow AllowAllModerator so the
+    suite + local iteration run without a key. Reads config at call time so tests
+    can patch."""
+    if config.GOOGLE_AI_API_KEY:
+        return GeminiModerator(config.GOOGLE_AI_API_KEY)
+    if config.IS_PRODUCTION:
+        raise RuntimeError(
+            "content moderation unavailable in production (GOOGLE_AI_API_KEY unset) "
+            "— refusing to serve uploads unmoderated (fail closed)."
+        )
+    return AllowAllModerator()
+
+
 def get_pipeline() -> AnalysisPipeline:
     """Provider construction is cheap and key-free (SDKs are lazy-imported on
     call), so this is safe even when keys are absent — analysis then degrades
     gracefully rather than crashing. Overridden in tests with fakes."""
-    moderator = (
-        GeminiModerator(config.GOOGLE_AI_API_KEY)
-        if config.GOOGLE_AI_API_KEY
-        else AllowAllModerator()
-    )
     return AnalysisPipeline(
         tier2=GeminiProvider(config.GOOGLE_AI_API_KEY),
         tier3=ClaudeProvider(config.ANTHROPIC_API_KEY),
         cache=make_cache(),
-        moderator=moderator,
+        moderator=build_moderator(),
     )
 
 

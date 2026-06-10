@@ -154,14 +154,17 @@ class AnalysisPipeline:
                 emergency_override_result(matched), 0, "override", override=True, start=start
             )
 
-        # CR #8: moderate the image BEFORE any analysis; refuse unsafe content
-        # (the Edge Function deletes the stored R2 object on a moderation reject).
-        if request.image_url and not self.moderator.is_safe(request.image_url):
-            log.warning("image rejected by content moderation")
+        # CR #8 + Phase C (RF-7): moderate the still image AND every video
+        # keyframe BEFORE any analysis; ANY unsafe item -> refuse (the Edge
+        # Function deletes the stored R2 objects on a moderation reject). is_safe
+        # fails closed (errors/blocks -> unsafe), so a moderation outage rejects too.
+        media_urls = [u for u in [request.image_url, *request.frame_urls] if u]
+        if media_urls and not all(self.moderator.is_safe(u) for u in media_urls):
+            log.warning("media rejected by content moderation")
             rejected = AnalysisResult(
                 triage_level=TriageLevel.MONITOR,
                 confidence=0.0,
-                primary_concern="We couldn't process this image.",
+                primary_concern="We couldn't process this media.",
                 visible_symptoms=[],
                 differential=[],
                 recommended_actions=[
