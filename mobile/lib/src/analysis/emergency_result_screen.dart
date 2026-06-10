@@ -40,9 +40,11 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Codified to the safety-locked token (identical value #C62828). Kept
-    // light-variant only so behavior is unchanged; theme-aware tuning + restyle
-    // is deferred to Phase H (emergency screen, extra-review gated).
+    // Safety-locked emergency red (#C62828, light variant). Phase H restyle was
+    // deliberately the lightest possible touch on this screen: secondary text
+    // raised from white70 → white for AA contrast. The ack gate, back-block,
+    // find-vet prominence, paywall bypass, and all logic are UNCHANGED; no
+    // illustration/glass/celebration/added motion (static = safest here).
     const red = AppColors.emergencyLight;
     final r = widget.result;
     // CR #11 (Phase 5.4): localized strings. `l!` is safe — AppLocalizations
@@ -71,7 +73,7 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                     style: const TextStyle(color: Colors.white, fontSize: 18)),
                 const SizedBox(height: 8),
                 Text(l.emergencyRecommendedPrefix(r.urgencyTimeframe),
-                    textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70)),
+                    textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   key: const Key('emergency_find_vet'),
@@ -93,7 +95,7 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                   Text(
                     l.emergencyDisclaimer,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
                   ),
                 const SizedBox(height: 16),
                 CheckboxListTile(

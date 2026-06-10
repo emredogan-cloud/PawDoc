@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,28 +40,8 @@ class HomeScreen extends ConsumerWidget {
   Future<void> _check(BuildContext context, WidgetRef ref, Pet pet, bool isPremium) async {
     final mode = await showModalBottomSheet<String>(
       context: context,
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Take a photo'),
-              onTap: () => Navigator.pop(context, 'photo'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.videocam),
-              title: const Text('Record a video'),
-              onTap: () => Navigator.pop(context, 'video'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit_note),
-              title: const Text('Describe symptoms'),
-              onTap: () => Navigator.pop(context, 'text'),
-            ),
-          ],
-        ),
-      ),
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _CaptureSheet(),
     );
     if (mode == null || !context.mounted) return;
 
@@ -526,6 +508,157 @@ class _QuotaStrip extends StatelessWidget {
               ?.copyWith(color: scheme.onSurfaceVariant),
         ),
       ],
+    );
+  }
+}
+
+/// Frosted capture sheet (roadmap §3.4.1): three guided mode tiles + a
+/// "what makes a good photo?" tip. Returns 'photo' / 'video' / 'text' — the
+/// capture/analysis flow is unchanged.
+class _CaptureSheet extends StatelessWidget {
+  const _CaptureSheet();
+
+  void _tips(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('What makes a good photo?'),
+        content: const Text(
+          '• Good, even lighting — avoid harsh shadows\n'
+          '• Fill the frame with the area of concern\n'
+          '• Hold steady so it stays in focus\n'
+          '• Unsure? Take it from a couple of angles',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: const Text('Got it')),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tiles = <Widget>[
+      _CaptureModeTile(
+        icon: Icons.camera_alt_rounded,
+        title: 'Take a photo',
+        hint: 'Best for skin, eyes, wounds',
+        onTap: () => Navigator.pop(context, 'photo'),
+      ),
+      _CaptureModeTile(
+        icon: Icons.videocam_rounded,
+        title: 'Record a video',
+        hint: 'Best for limping, breathing, seizures',
+        onTap: () => Navigator.pop(context, 'video'),
+      ),
+      _CaptureModeTile(
+        icon: Icons.edit_note_rounded,
+        title: 'Describe symptoms',
+        hint: 'No camera? Tell us what you see',
+        onTap: () => Navigator.pop(context, 'text'),
+      ),
+    ];
+    final animate = !reduceMotion(context);
+    return ClipRRect(
+      borderRadius:
+          const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+            sigmaX: AppGlass.sheetBlur, sigmaY: AppGlass.sheetBlur),
+        child: Container(
+          color: scheme.surface.withValues(alpha: AppGlass.sheetOpacity),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpace.s16, AppSpace.s8, AppSpace.s16, AppSpace.s16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: AppSpace.s12),
+                    decoration: BoxDecoration(
+                      color: scheme.outline,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                  ),
+                  for (var i = 0; i < tiles.length; i++)
+                    animate
+                        ? tiles[i].animate().fadeIn(
+                            duration: AppMotion.standard,
+                            delay: Duration(milliseconds: 50 * i))
+                        : tiles[i],
+                  TextButton.icon(
+                    onPressed: () => _tips(context),
+                    icon: const Icon(Icons.help_outline_rounded, size: 18),
+                    label: const Text('What makes a good photo?'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CaptureModeTile extends StatelessWidget {
+  const _CaptureModeTile({
+    required this.icon,
+    required this.title,
+    required this.hint,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String hint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.s8),
+      child: Material(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: AppRadius.brMd,
+        child: InkWell(
+          borderRadius: AppRadius.brMd,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpace.s16),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: scheme.primaryContainer,
+                  child: Icon(icon, color: scheme.primary),
+                ),
+                const SizedBox(width: AppSpace.s16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: Theme.of(context).textTheme.titleMedium),
+                      Text(hint,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: scheme.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
+import '../core/motion.dart';
 import '../core/pet_display.dart';
+import '../theme/design_tokens.dart';
 
 /// Text symptom input with character guidance. Phase 1.2 stops at producing the
 /// input text — it pops the trimmed description back to the caller (the AI call
 /// is wired in Phase 1.4). No AI logic here.
+///
+/// Phase G polish: example chips that seed the field, and an animated
+/// "Looks good." affirmation (reduce-motion-gated). The min-character gate and
+/// the popped value are unchanged.
 class SymptomTextScreen extends StatefulWidget {
   const SymptomTextScreen({super.key, this.petName});
 
@@ -12,6 +19,13 @@ class SymptomTextScreen extends StatefulWidget {
 
   static const int minChars = 20;
   static const int maxChars = 1000;
+  static const List<String> examples = [
+    'Vomiting',
+    'Diarrhea',
+    'Limping',
+    'Not eating',
+    'Lethargic',
+  ];
 
   @override
   State<SymptomTextScreen> createState() => _SymptomTextScreenState();
@@ -32,6 +46,14 @@ class _SymptomTextScreenState extends State<SymptomTextScreen> {
     super.dispose();
   }
 
+  void _addExample(String word) {
+    final current = _controller.text.trim();
+    _controller.text =
+        current.isEmpty ? word : '$current, ${word.toLowerCase()}';
+    _controller.selection =
+        TextSelection.collapsed(offset: _controller.text.length);
+  }
+
   @override
   Widget build(BuildContext context) {
     final len = _controller.text.trim().length;
@@ -41,7 +63,7 @@ class _SymptomTextScreenState extends State<SymptomTextScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Describe what you see')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpace.s16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -50,7 +72,20 @@ class _SymptomTextScreenState extends State<SymptomTextScreen> {
               'eating, energy, or behavior, and anything unusual you’ve noticed.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpace.s12),
+            Wrap(
+              spacing: AppSpace.s8,
+              runSpacing: AppSpace.s8,
+              children: [
+                for (final ex in SymptomTextScreen.examples)
+                  ActionChip(
+                    label: Text(ex),
+                    avatar: const Icon(Icons.add, size: 16),
+                    onPressed: () => _addExample(ex),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpace.s12),
             TextField(
               key: const Key('symptom_text_field'),
               controller: _controller,
@@ -58,28 +93,44 @@ class _SymptomTextScreenState extends State<SymptomTextScreen> {
               maxLength: SymptomTextScreen.maxChars,
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
+                filled: true,
                 hintText: 'e.g. Since this morning she’s been very tired and hasn’t eaten…',
               ),
             ),
-            Text(
-              tooShort
-                  ? 'Add a little more detail (at least ${SymptomTextScreen.minChars} characters).'
-                  : 'Looks good.',
-              style: TextStyle(
-                color: tooShort
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(context).colorScheme.primary,
-              ),
-            ),
+            tooShort
+                ? Text(
+                    'Add a little more detail (at least ${SymptomTextScreen.minChars} characters).',
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  )
+                : _looksGood(),
             const Spacer(),
-            FilledButton(
+            AppButton(
               key: const Key('symptom_continue_button'),
-              onPressed: tooShort ? null : () => Navigator.of(context).pop(_controller.text.trim()),
+              onPressed: tooShort
+                  ? null
+                  : () => Navigator.of(context).pop(_controller.text.trim()),
               child: const Text('Continue'),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _looksGood() {
+    final scheme = Theme.of(context).colorScheme;
+    final row = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.check_circle_rounded, size: 18, color: scheme.primary),
+        const SizedBox(width: AppSpace.s4),
+        Text('Looks good.', style: TextStyle(color: scheme.primary)),
+      ],
+    );
+    if (reduceMotion(context)) return row;
+    return row
+        .animate()
+        .fadeIn(duration: AppMotion.micro)
+        .slideY(begin: 0.4, end: 0, duration: AppMotion.standard, curve: AppMotion.emphasized);
   }
 }

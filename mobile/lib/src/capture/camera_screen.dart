@@ -145,30 +145,129 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Take a photo')),
       body: Stack(
-        alignment: Alignment.bottomCenter,
         children: [
-          Center(child: CameraPreview(controller)),
-          if (_liveHint.isNotEmpty)
-            Positioned(
-              top: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: const BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: AppRadius.brMd,
+          Positioned.fill(child: Center(child: CameraPreview(controller))),
+          const Positioned.fill(child: _FramingOverlay()),
+          Positioned(
+            top: AppSpace.s16,
+            left: 0,
+            right: 0,
+            child: Center(child: _LightingChip(hint: _liveHint)),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: AppSpace.s32,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _PrivacyNote(),
+                const SizedBox(height: AppSpace.s12),
+                FloatingActionButton.large(
+                  tooltip: 'Take photo',
+                  onPressed: _busy ? null : _capture,
+                  child: _busy
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Icon(Icons.camera_alt),
                 ),
-                child: Text(_liveHint, style: const TextStyle(color: Colors.white)),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 32),
-            child: FloatingActionButton.large(
-              onPressed: _busy ? null : _capture,
-              child: _busy
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Icon(Icons.camera_alt),
+              ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A calm framing guide drawn over the viewfinder (decorative). Helps the user
+/// center the pet and fill the frame for a better triage photo.
+class _FramingOverlay extends StatelessWidget {
+  const _FramingOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Center(
+        child: FractionallySizedBox(
+          widthFactor: 0.82,
+          heightFactor: 0.5,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white70, width: 2),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+            ),
+            child: const Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: AppSpace.s8),
+                child: Text(
+                  'Center your pet · fill the frame',
+                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Live lighting coach (reuses the existing luma hint): green when the frame
+/// looks good, amber with the specific tip when it doesn't (§3.4.2).
+class _LightingChip extends StatelessWidget {
+  const _LightingChip({required this.hint});
+  final String hint;
+
+  @override
+  Widget build(BuildContext context) {
+    final good = hint.isEmpty;
+    final color = good ? AppColors.normalLight : AppColors.monitorLight;
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppSpace.s12, vertical: AppSpace.s8),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(good ? Icons.check_circle_rounded : Icons.wb_sunny_rounded,
+              size: 16, color: color),
+          const SizedBox(width: AppSpace.s4),
+          Semantics(
+            liveRegion: true,
+            child: Text(good ? 'Lighting looks good' : hint,
+                style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Quiet privacy reassurance — EXIF/GPS is stripped before upload (handled in
+/// [_compress]/[compressForUpload]; this is display only).
+class _PrivacyNote extends StatelessWidget {
+  const _PrivacyNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppSpace.s12, vertical: AppSpace.s4),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.lock_outline_rounded, size: 14, color: Colors.white70),
+          SizedBox(width: AppSpace.s4),
+          Text('Photos are private — location removed',
+              style: TextStyle(color: Colors.white70, fontSize: 12)),
         ],
       ),
     );
