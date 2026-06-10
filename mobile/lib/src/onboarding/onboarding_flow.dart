@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +12,7 @@ import '../monetization/paywall_screen.dart';
 import '../notifications/onesignal_service.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
+import '../pets/species_chip.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 
@@ -246,7 +246,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             runSpacing: AppSpace.s8,
             children: [
               for (final s in kSpecies)
-                _SpeciesChip(
+                SpeciesChip(
                   species: s,
                   selected: _species == s,
                   onTap: () => setState(() => _species = s),
@@ -458,76 +458,3 @@ class _OnboardingHeader extends StatelessWidget {
   }
 }
 
-/// Custom species chip (§3.2.2): a branded species icon (with emoji fallback
-/// while the icon asset is being produced) + label, with a fill + selection pop
-/// on select and proper screen-reader semantics (fixes the OS-emoji a11y gap).
-/// Selection feedback is reduce-motion-aware.
-class _SpeciesChip extends StatelessWidget {
-  const _SpeciesChip({
-    required this.species,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String species;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final animate = !reduceMotion(context);
-    final icon = AppImage(
-      AppAssets.species(species),
-      width: 22,
-      height: 22,
-      fallback: Text(speciesEmoji(species), style: const TextStyle(fontSize: 18)),
-    );
-
-    final chip = AnimatedContainer(
-      duration: animate ? AppMotion.standard : Duration.zero,
-      curve: AppMotion.standardCurve,
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.s12, vertical: AppSpace.s8),
-      decoration: BoxDecoration(
-        color: selected ? scheme.primaryContainer : scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(
-          color: selected ? scheme.primary : scheme.outline,
-          width: selected ? 2 : 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          icon,
-          const SizedBox(width: AppSpace.s8),
-          Text(speciesName(species)),
-          if (selected) ...[
-            const SizedBox(width: AppSpace.s4),
-            Icon(Icons.check_rounded, size: 16, color: scheme.primary),
-          ],
-        ],
-      ),
-    );
-
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: speciesName(species),
-      child: AnimatedScale(
-        scale: selected ? 1.0 : 0.97,
-        duration: animate ? AppMotion.micro : Duration.zero,
-        curve: Curves.easeOutBack,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onTap();
-          },
-          child: chip,
-        ),
-      ),
-    );
-  }
-}

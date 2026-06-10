@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../analytics/analytics.dart';
 import '../core/dates.dart';
+import '../core/motion.dart';
 import '../core/pet_display.dart';
 import 'health_event.dart';
 import 'health_events_repository.dart';
@@ -76,9 +77,11 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
+            runSpacing: 8,
             children: [
               for (final t in kHealthEventTypes)
                 ChoiceChip(
+                  avatar: Icon(_eventIcon(t), size: 18),
                   label: Text(healthEventLabel(t)),
                   selected: _type == t,
                   onSelected: (_) => setState(() => _type = t),
@@ -125,7 +128,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          FilledButton(
+          AppButton(
             key: const Key('event_save_button'),
             onPressed: _saving ? null : _save,
             child: Text(_saving ? 'Saving…' : 'Save event'),
@@ -134,4 +137,12 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
       ),
     );
   }
+
+  static IconData _eventIcon(String type) => switch (type) {
+        'vaccination' => Icons.vaccines_outlined,
+        'vet_visit' => Icons.local_hospital_outlined,
+        'medication' => Icons.medication_outlined,
+        'weight' => Icons.monitor_weight_outlined,
+        _ => Icons.note_alt_outlined,
+      };
 }

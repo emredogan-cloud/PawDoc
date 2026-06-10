@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/app_image.dart';
+import '../core/motion.dart';
 import '../monetization/insurance_affiliate_cta.dart';
+import '../theme/app_assets.dart';
+import '../theme/design_tokens.dart';
 import 'pet.dart';
 import 'pets_repository.dart';
+import 'species_chip.dart';
 
 /// Add or edit a pet. Pass an existing [pet] to edit; null to create.
 class PetFormScreen extends ConsumerStatefulWidget {
@@ -80,39 +85,59 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: Text(_isEdit ? 'Edit pet' : 'Add a pet')),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpace.s16),
           children: [
+            // Species-tinted avatar preview (identity), updates with the species
+            // pick. (A real photo picker is a separate feature — see report.)
+            Center(
+              child: AppImage(
+                AppAssets.avatar(_species),
+                width: 80,
+                height: 80,
+                fallback: CircleAvatar(
+                  radius: 40,
+                  backgroundColor: scheme.primaryContainer,
+                  child: Icon(Icons.pets_rounded, size: 36, color: scheme.primary),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpace.s24),
+            _section(context, 'Identity'),
             TextFormField(
               key: const Key('pet_name_field'),
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder()),
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'Name', filled: true),
               validator: (v) => (v == null || v.trim().isEmpty) ? 'Name is required' : null,
             ),
-            const SizedBox(height: 16),
-            const Text('Species'),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpace.s16),
+            Text('Species', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: AppSpace.s8),
             Wrap(
-              spacing: 8,
+              spacing: AppSpace.s8,
+              runSpacing: AppSpace.s8,
               children: [
                 for (final s in kSpecies)
-                  ChoiceChip(
-                    label: Text(speciesLabel(s)),
+                  SpeciesChip(
+                    species: s,
                     selected: _species == s,
-                    onSelected: (_) => setState(() => _species = s),
+                    onTap: () => setState(() => _species = s),
                   ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpace.s24),
+            _section(context, 'Details'),
             TextFormField(
               controller: _breed,
-              decoration: const InputDecoration(labelText: 'Breed (optional)', border: OutlineInputBorder()),
+              decoration: const InputDecoration(labelText: 'Breed (optional)', filled: true),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpace.s8),
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Date of birth (optional)'),
@@ -131,7 +156,8 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                 if (picked != null) setState(() => _birthDate = picked);
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpace.s24),
+            _section(context, 'Sharing'),
             // Phase 5.4 — B2B-Lite sitter mode: free-text client label. Useful
             // for sitters managing several owners' pets under one account.
             TextFormField(
@@ -143,11 +169,11 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                 // Without this the privacy note ellipsizes to "Visible onl…",
                 // undercutting the very reassurance it offers (roadmap S12).
                 helperMaxLines: 3,
-                border: OutlineInputBorder(),
+                filled: true,
               ),
               textCapitalization: TextCapitalization.words,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpace.s8),
             SwitchListTile(
               key: const Key('pet_journal_toggle'),
               contentPadding: EdgeInsets.zero,
@@ -157,19 +183,30 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
               value: _journalEnabled,
               onChanged: (v) => setState(() => _journalEnabled = v),
             ),
-            const SizedBox(height: 24),
-            FilledButton(
+            const SizedBox(height: AppSpace.s24),
+            AppButton(
               key: const Key('pet_save_button'),
               onPressed: _saving ? null : _save,
               child: Text(_saving ? 'Saving…' : (_isEdit ? 'Save changes' : 'Add pet')),
             ),
             // Phase 6.3 — soft-sell pet insurance on the pet-profile screen.
             // Self-hides when PET_INSURANCE_AFFILIATE_URL is empty.
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpace.s24),
             const InsuranceAffiliateCta(source: 'pet_profile'),
           ],
         ),
       ),
     );
   }
+
+  Widget _section(BuildContext context, String title) => Padding(
+        padding: const EdgeInsets.only(bottom: AppSpace.s8),
+        child: Text(
+          title,
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        ),
+      );
 }
