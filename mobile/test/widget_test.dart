@@ -37,4 +37,16 @@ void main() {
     expect(find.text('Enter a valid email'), findsOneWidget);
     expect(find.text('At least 6 characters'), findsOneWidget);
   });
+
+  // Phase E — honest trust footer (encryption + Privacy/Terms), no fake claims.
+  testWidgets('SignInScreen shows an honest trust footer', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: SignInScreen())),
+    );
+    expect(find.text('Your data is encrypted.'), findsOneWidget);
+    expect(find.text('Privacy'), findsOneWidget);
+    expect(find.text('Terms'), findsOneWidget);
+    // The reassurance subline is present; no fabricated metrics anywhere.
+    expect(find.textContaining('vet-informed triage'), findsOneWidget);
+  });
 }
