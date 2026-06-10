@@ -6,6 +6,9 @@ import 'package:share_plus/share_plus.dart';
 import '../account/user_profile.dart';
 import '../analytics/analytics.dart';
 import '../auth/supabase_providers.dart';
+import '../core/app_image.dart';
+import '../theme/app_assets.dart';
+import '../theme/design_tokens.dart';
 import 'referral_prefs.dart';
 import 'referral_service.dart';
 
@@ -32,16 +35,32 @@ class ReferralScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Give friends a free start, and earn rewards when they subscribe.'),
-            const SizedBox(height: 24),
+            Center(
+              child: AppImage(
+                AppAssets.referralGift,
+                height: 120,
+                fallback: Icon(Icons.card_giftcard_rounded,
+                    size: 72, color: Theme.of(context).colorScheme.primary),
+              ),
+            ),
+            const SizedBox(height: AppSpace.s16),
+            const Text(
+              'Give friends a free start, and earn rewards when they subscribe.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpace.s24),
             Card(
               child: ListTile(
                 title: const Text('Your referral code'),
                 subtitle: Text(code, style: Theme.of(context).textTheme.headlineSmall),
-                trailing: IconButton(
-                  icon: const Icon(Icons.copy),
-                  onPressed: () => Clipboard.setData(ClipboardData(text: code)),
-                ),
+                trailing: const Icon(Icons.copy),
+                // Tap the whole card to copy, with a clear confirmation.
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: code));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Code copied to clipboard')),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 16),

@@ -66,6 +66,7 @@ class RemindersScreen extends ConsumerWidget {
                   title: Text(r.reminderType),
                   subtitle: Text(r.isSent ? 'Sent' : 'Due ${shortDate(r.dueDate)}'),
                   trailing: IconButton(
+                    tooltip: 'Delete reminder',
                     icon: const Icon(Icons.delete_outline),
                     onPressed: () async {
                       await ref.read(remindersRepositoryProvider).delete(r.id!);

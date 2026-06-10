@@ -5,11 +5,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../account/delete_account_screen.dart';
+import '../account/account_screen.dart';
 import '../account/user_profile.dart';
 import '../analysis/analysis_runner.dart';
 import '../analysis/analysis_service.dart';
-import '../auth/auth_controller.dart';
 import '../capture/camera_screen.dart';
 import '../capture/video_capture_screen.dart';
 import '../core/app_image.dart';
@@ -115,50 +114,16 @@ class HomeScreen extends ConsumerWidget {
               MaterialPageRoute(builder: (_) => const ReferralScreen()),
             ),
           ),
-          // Logout moved OFF the AppBar into this menu so it can't be a one-tap
-          // mis-hit (roadmap §3.3). The pet switcher stays in the AppBar title.
-          PopupMenuButton<String>(
-            key: const Key('home_overflow_menu'),
-            tooltip: 'More options',
-            onSelected: (v) {
-              if (v == 'family') {
-                context.push('/family');
-              } else if (v == 'logout') {
-                ref.read(authControllerProvider).signOut();
-              } else if (v == 'delete') {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
-                );
-              }
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'family',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.group_outlined),
-                  title: Text('Family sharing'),
-                ),
-              ),
-              PopupMenuItem(
-                key: Key('sign_out_button'),
-                value: 'logout',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.logout),
-                  title: Text('Sign out'),
-                ),
-              ),
-              PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'delete',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.delete_outline),
-                  title: Text('Delete account'),
-                ),
-              ),
-            ],
+          // Account consolidates family / sign-out / delete (roadmap §3.10.2);
+          // sign-out now lives there behind a confirm, so it can't be a one-tap
+          // AppBar mis-hit. The pet switcher stays in the AppBar title.
+          IconButton(
+            key: const Key('home_account_button'),
+            tooltip: 'Account',
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AccountScreen()),
+            ),
           ),
         ],
       ),
