@@ -69,6 +69,9 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
         _outcome = outcome;
         _phase = _Phase.result;
       });
+      // F-2: the home hero + pets-list chip read this; refresh it the moment
+      // the analysis completes so "No checks yet" can never outlive a check.
+      ref.invalidate(latestTriageProvider(widget.petId));
       // Side effects must not block or error the result UI.
       unawaited(Analytics.analysisCompleted(outcome.result.triageLevel.wireValue));
       unawaited(PaywallPrefs.markFirstAnalysisCompleted());

@@ -14,6 +14,7 @@ import '../capture/video_capture_screen.dart';
 import '../core/app_image.dart';
 import '../core/app_views.dart';
 import '../core/connectivity.dart';
+import '../core/last_check.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../feedback/followup_banner.dart';
@@ -132,7 +133,11 @@ class HomeScreen extends ConsumerWidget {
           ref.invalidate(petsListProvider);
           ref.invalidate(userProfileProvider);
           final id = activePet?.id;
-          if (id != null) ref.invalidate(healthTimelineProvider(id));
+          if (id != null) {
+            ref.invalidate(healthTimelineProvider(id));
+            // F-2: pull-to-refresh also refreshes the hero's last-check line.
+            ref.invalidate(latestTriageProvider(id));
+          }
         },
         child: ListView(
           padding: const EdgeInsets.all(AppSpace.s16),
@@ -339,8 +344,12 @@ class _PetHeroCard extends ConsumerWidget {
                       lastTriage.when(
                         loading: () => const Text('…'),
                         error: (_, _) => const SizedBox.shrink(),
+                        // F-2: recency, not the raw wire level — "Last check:
+                        // just now" right after a completed analysis.
                         data: (t) => Text(
-                          t == null ? 'No checks yet' : 'Last check: $t',
+                          t == null
+                              ? 'No checks yet'
+                              : 'Last check: ${t.checkedAt == null ? t.level : lastCheckLabel(t.checkedAt!)}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: scheme.onSurfaceVariant),
                         ),
