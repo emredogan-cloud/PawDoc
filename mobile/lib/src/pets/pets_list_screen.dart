@@ -3,11 +3,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../analysis/analysis_service.dart';
-import '../core/app_image.dart';
 import '../core/app_views.dart';
+import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
-import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import 'add_pet_flow.dart';
 import 'pet.dart';
@@ -191,16 +190,9 @@ class _PetListTile extends ConsumerWidget {
     return ListTile(
       onTap: onTap,
       onLongPress: onLongPress,
-      leading: AppImage(
-        AppAssets.avatar(pet.species),
-        width: 44,
-        height: 44,
-        fallback: CircleAvatar(
-          radius: 22,
-          backgroundColor: scheme.primaryContainer,
-          child: Icon(Icons.pets_rounded, color: scheme.primary),
-        ),
-      ),
+      // M2 (#9): living species avatar; per-pet seed de-syncs blink phases so
+      // rows never blink in unison; offscreen rows pause via visibility.
+      leading: LivingPetAvatar(species: pet.species, size: 44, seed: pet.id),
       title: Text(petDisplayName(pet.name)),
       subtitle: Text(_meta()),
       // F-4: the last-check chip — fed by latestTriageProvider, which the

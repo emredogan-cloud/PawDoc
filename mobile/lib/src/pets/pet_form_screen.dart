@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/app_image.dart';
+import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../monetization/insurance_affiliate_cta.dart';
-import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import 'pet.dart';
 import 'pets_repository.dart';
@@ -85,7 +84,6 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: Text(_isEdit ? 'Edit pet' : 'Add a pet')),
       body: Form(
@@ -93,18 +91,14 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpace.s16),
           children: [
-            // Species-tinted avatar preview (identity), updates with the species
-            // pick. (A real photo picker is a separate feature — see report.)
+            // M2 (#9): living avatar preview (identity) — re-rigs live as the
+            // species pick changes. (A real photo picker is separate — see report.)
             Center(
-              child: AppImage(
-                AppAssets.avatar(_species),
-                width: 80,
-                height: 80,
-                fallback: CircleAvatar(
-                  radius: 40,
-                  backgroundColor: scheme.primaryContainer,
-                  child: Icon(Icons.pets_rounded, size: 36, color: scheme.primary),
-                ),
+              child: LivingPetAvatar(
+                key: ValueKey('form_pal_$_species'),
+                species: _species,
+                size: 80,
+                seed: widget.pet?.id,
               ),
             ),
             const SizedBox(height: AppSpace.s24),

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../analytics/analytics.dart';
 import '../core/app_image.dart';
 import '../core/app_motion_asset.dart';
+import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../experiments/feature_flags.dart';
@@ -377,18 +378,16 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   Widget _petAvatar() {
     final scheme = Theme.of(context).colorScheme;
     final key = _createdPet?.species ?? 'other';
-    final avatar = AppImage(
-      AppAssets.avatar(key),
-      width: 96,
-      height: 96,
-      fallback: CircleAvatar(
-        radius: 44,
-        backgroundColor: scheme.primaryContainer,
-        child: Icon(Icons.pets_rounded, size: 44, color: scheme.primary),
-      ),
+    // M2 (#10): the first emotional moment — the species Paw Pal arrives
+    // (existing spring + shimmer preserved), does ONE happy beat, then idles
+    // with its blink loop. Reduce-motion renders the static species PNG.
+    final avatar = LivingPetAvatar(
+      species: key,
+      size: 96,
+      seed: _createdPet?.id,
+      mountBeat: PalBeat.happy,
     );
     if (reduceMotion(context)) return avatar;
-    // Spring-in arrival + a single restrained sparkle (not confetti).
     return avatar
         .animate()
         .scaleXY(begin: 0.8, end: 1.0, duration: AppMotion.hero, curve: Curves.easeOutBack)

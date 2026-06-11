@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../analytics/analytics.dart';
+import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../feedback/result_feedback_widget.dart';
@@ -20,11 +21,20 @@ import 'emergency_result_screen.dart';
 /// screen ONLY; the EMERGENCY screen receives no motion/celebration additions.
 class ResultScreen extends StatelessWidget {
   const ResultScreen(
-      {super.key, required this.result, this.analysisId, this.onDone, this.petName});
+      {super.key,
+      required this.result,
+      this.analysisId,
+      this.onDone,
+      this.petName,
+      this.petSpecies});
   final AnalysisResult result;
   final String? analysisId;
   final VoidCallback? onDone;
   final String? petName;
+
+  /// M2 (#13): enables the relief/attentive avatar beat on the standard
+  /// screen. EMERGENCY ignores it entirely — that screen renders zero rig.
+  final String? petSpecies;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +42,11 @@ class ResultScreen extends StatelessWidget {
       return EmergencyResultScreen(result: result);
     }
     return StandardResultScreen(
-        result: result, analysisId: analysisId, onDone: onDone, petName: petName);
+        result: result,
+        analysisId: analysisId,
+        onDone: onDone,
+        petName: petName,
+        petSpecies: petSpecies);
   }
 }
 
@@ -70,11 +84,17 @@ const _escalationTriggers = [
 
 class StandardResultScreen extends ConsumerStatefulWidget {
   const StandardResultScreen(
-      {super.key, required this.result, this.analysisId, this.onDone, this.petName});
+      {super.key,
+      required this.result,
+      this.analysisId,
+      this.onDone,
+      this.petName,
+      this.petSpecies});
   final AnalysisResult result;
   final String? analysisId;
   final VoidCallback? onDone;
   final String? petName;
+  final String? petSpecies;
 
   @override
   ConsumerState<StandardResultScreen> createState() => _StandardResultScreenState();
@@ -108,6 +128,22 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
         // present and hittable from the first frame.
         children: _staggered(context, [
           _TriageHero(level: r.triageLevel),
+          // M2 (#13): the pet shares the relief — NORMAL gets one happy beat,
+          // MONITOR strictly the restrained attentive (ear-perk-only rule).
+          // EMERGENCY never reaches this screen. Decorative; never gates.
+          if (widget.petSpecies != null) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: LivingPetAvatar(
+                species: widget.petSpecies!,
+                size: 64,
+                seed: widget.analysisId,
+                mountBeat: r.triageLevel == TriageLevel.normal
+                    ? PalBeat.happy
+                    : PalBeat.attentive,
+              ),
+            ),
+          ],
           // "Saved to {Pet}'s history" — only when the row truly stored (honesty:
           // celebrations fire on real events only).
           if (widget.analysisId != null && widget.petName != null) ...[

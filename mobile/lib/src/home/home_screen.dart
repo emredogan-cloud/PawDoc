@@ -11,11 +11,11 @@ import '../analysis/analysis_runner.dart';
 import '../analysis/analysis_service.dart';
 import '../capture/camera_screen.dart';
 import '../capture/video_capture_screen.dart';
-import '../core/app_image.dart';
 import '../core/app_motion_asset.dart';
 import '../core/app_views.dart';
 import '../core/connectivity.dart';
 import '../core/last_check.dart';
+import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../feedback/followup_banner.dart';
@@ -53,7 +53,7 @@ class HomeScreen extends ConsumerWidget {
       if (key != null && context.mounted) {
         await Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => AnalysisRunnerScreen(
-            petId: pet.id!, petName: pet.name, inputType: 'photo',
+            petId: pet.id!, petName: pet.name, petSpecies: pet.species, inputType: 'photo',
             imageStorageKey: key, isPremium: isPremium,
           ),
         ));
@@ -66,7 +66,7 @@ class HomeScreen extends ConsumerWidget {
       if (frameKeys != null && frameKeys.isNotEmpty && context.mounted) {
         await Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => AnalysisRunnerScreen(
-            petId: pet.id!, petName: pet.name, inputType: 'video',
+            petId: pet.id!, petName: pet.name, petSpecies: pet.species, inputType: 'video',
             frameStorageKeys: frameKeys, isPremium: isPremium,
           ),
         ));
@@ -79,7 +79,7 @@ class HomeScreen extends ConsumerWidget {
       if (text != null && context.mounted) {
         await Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => AnalysisRunnerScreen(
-            petId: pet.id!, petName: pet.name, inputType: 'text',
+            petId: pet.id!, petName: pet.name, petSpecies: pet.species, inputType: 'text',
             textDescription: text, isPremium: isPremium,
           ),
         ));
@@ -331,7 +331,7 @@ class _PetHeroCard extends ConsumerWidget {
           children: [
             Row(
               children: [
-                _avatar(context),
+                _avatar(context, lastTriage),
                 const SizedBox(width: AppSpace.s16),
                 Expanded(
                   child: Column(
@@ -376,26 +376,17 @@ class _PetHeroCard extends ConsumerWidget {
     );
   }
 
-  Widget _avatar(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final av = AppImage(
-      AppAssets.avatar(pet.species),
-      width: 56,
-      height: 56,
-      fallback: CircleAvatar(
-        radius: 28,
-        backgroundColor: scheme.primaryContainer,
-        child: Icon(Icons.pets_rounded, size: 28, color: scheme.primary),
-      ),
+  /// M2 (#9/#11): the pet's living avatar — the rig owns breath/blink now
+  /// (the old code-breath on a generic disc is gone). The last-check
+  /// timestamp is the beat key: when a new check lands (F-2 invalidation),
+  /// the avatar does the attentive→relieved beat on return.
+  Widget _avatar(BuildContext context, AsyncValue<LatestTriage?> lastTriage) {
+    return LivingPetAvatar(
+      species: pet.species,
+      size: 56,
+      seed: pet.id,
+      beatKey: lastTriage.value?.checkedAt,
     );
-    if (reduceMotion(context)) return av;
-    return av
-        .animate(onPlay: (c) => c.repeat(reverse: true))
-        .scaleXY(
-            begin: 1.0,
-            end: 1.02,
-            duration: const Duration(seconds: 4),
-            curve: Curves.easeInOut);
   }
 }
 
