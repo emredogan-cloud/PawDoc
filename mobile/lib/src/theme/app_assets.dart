@@ -58,6 +58,8 @@ class AppMotionAssets {
   static const String familyCircleLoop = '$_m/family_circle_loop_v1.json'; // A5
   static const String referralGiftIdle = '$_m/referral_gift_idle_v1.json'; // A6, settle→loop
   static const String historyEmptyLoop = '$_m/history_empty_loop_v1.json'; // matrix #8
+  static const String referralGiftOpen = '$_m/referral_gift_open_v1.json'; // A7, one-shot (M3)
+  static const String premiumWelcome = '$_m/premium_welcome_v1.json'; // A8, one-shot (M3)
 
   /// M2 flagship — the Paw Pals species rig (7 artboards, state machine
   /// `pal`). Budget ≤300KB, gate-tested in test/paw_pals_riv_test.dart.
@@ -73,5 +75,7 @@ class AppMotionAssets {
     familyCircleLoop: AppAssets.familyCircle,
     referralGiftIdle: AppAssets.referralGift,
     historyEmptyLoop: AppAssets.emptyHistory,
+    referralGiftOpen: AppAssets.referralGiftOpen,
+    premiumWelcome: AppAssets.paywallPeace,
   };
 }
