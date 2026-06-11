@@ -8,8 +8,8 @@
 | M0 bug fixes | `motion-m0` / **#35** → `main` | ALL PASS | **4/4 green** | PENDING | held on device |
 | M1 first breath | `motion-m1` / **#36** → m0 | ALL PASS | **4/4 green** | PENDING | held (train) |
 | M2 Paw Pals | `motion-m2` / **#37** → m1 | ALL PASS | **4/4 green** | PENDING | held (train) |
-| M3 milestones | `motion-m3` / **#38** → m2 | ALL PASS | 3/4 green, Flutter job running (passed locally) | PENDING | held (train) |
-| M4 hardening | `motion-m4` / **#39** → m3 | ALL PASS | 3/4 green, Flutter job running (passed locally) | PENDING | held (train) |
+| M3 milestones | `motion-m3` / **#38** → m2 | ALL PASS | **4/4 green** | PENDING | held (train) |
+| M4 hardening | `motion-m4` / **#39** → m3 | ALL PASS | **4/4 green** | PENDING | held (train) |
 
 **Founder resume path (one action):** plug the Android phone in via USB with debugging on. The device pass per phase is scripted in §Device Results; after it, the train squash-merges in order #35→#36→#37→#38→#39 (each retargeted to `main` after its parent merges).
 
@@ -91,7 +91,7 @@ Device-bound (M2 soak gate). Design posture: tiny vector rigs, paused offscreen,
 - Honesty: every celebration fires on real events only (claim success, entitlement-active, stored analysisId, true first flip).
 
 ## CI Results
-M0/M1/M2: **4/4 green** (ruff+pytest, ShellCheck, gitleaks, Flutter analyze+test+build). M3/M4: 3/4 green with the Flutter job still running at audit time — the identical suite passed locally (179/185 resp.) and on every earlier branch. Final test count: **185 passed + 1 documented skip** (rive runtime drive, headless-impossible, device item #1).
+**All five branches 4/4 green** (ruff+pytest, ShellCheck, gitleaks, Flutter analyze+test+build) — confirmed completed on motion-m0 through motion-m4. Final test count: **185 passed + 1 documented skip** (rive runtime drive, headless-impossible, device item #1). CI stayed green throughout the program; no failure was ever bypassed.
 
 ## Remaining Risks
 1. **Rive runtime import is structurally verified but not yet runtime-rendered** (no host native lib, no device yet). Mitigated: independent pure-Dart re-parse in CI + the widget degrades to the paw-disc on any failure (tested) + kill-switch flag. Worst case = old visuals, never breakage.
