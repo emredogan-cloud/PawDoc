@@ -30,7 +30,10 @@ class AppAssets {
   static const String sysOffline = '$_ill/system/system_offline_v1.png';
 
   // ---- Species + avatars (keyed by the Species enum value) ----
-  static String species(String key) => '$_ic/species/species_$key.png';
+  // 'other' ships as the paw mascot file (species_other_paw.png) — without
+  // this mapping the Other chip silently fell back to the emoji (M2 find).
+  static String species(String key) =>
+      '$_ic/species/species_${key == 'other' ? 'other_paw' : key}.png';
   static String avatar(String key) => '$_ic/avatars/avatar_$key.png';
 
   // ---- Status glyphs (always paired with text label + shape — never alone) ----
@@ -55,6 +58,10 @@ class AppMotionAssets {
   static const String familyCircleLoop = '$_m/family_circle_loop_v1.json'; // A5
   static const String referralGiftIdle = '$_m/referral_gift_idle_v1.json'; // A6, settle→loop
   static const String historyEmptyLoop = '$_m/history_empty_loop_v1.json'; // matrix #8
+
+  /// M2 flagship — the Paw Pals species rig (7 artboards, state machine
+  /// `pal`). Budget ≤300KB, gate-tested in test/paw_pals_riv_test.dart.
+  static const String pawPals = '$_m/paw_pals_v1.riv'; // A10
 
   /// Every shipped motion asset with its required PNG fallback (drives the
   /// budget/parse test and the reduce-motion audit).
