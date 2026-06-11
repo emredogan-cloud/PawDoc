@@ -116,6 +116,30 @@ abstract class AppLocalizations {
   /// **'Recommended: {timeframe}.'**
   String emergencyRecommendedPrefix(String timeframe);
 
+  /// M0 F-3: localized wrapper for the server's emergency-override primary_concern template. The quoted indicator is the matched keyword (already in the user's locale — safety.py keyword lists are per-locale) and is never altered.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency indicator detected: \'{indicator}\'.'**
+  String emergencyIndicatorDetected(String indicator);
+
+  /// M0 F-3: display value for the wire urgency_timeframe 'immediately' (contract stays English on the wire).
+  ///
+  /// In en, this message translates to:
+  /// **'immediately'**
+  String get urgencyImmediately;
+
+  /// M0 F-3: display value for the wire urgency_timeframe 'within 24 hours'.
+  ///
+  /// In en, this message translates to:
+  /// **'within 24 hours'**
+  String get urgencyWithin24Hours;
+
+  /// M0 F-3: display value for the wire urgency_timeframe 'routine'.
+  ///
+  /// In en, this message translates to:
+  /// **'routine'**
+  String get urgencyRoutine;
+
   /// Primary CTA on the emergency screen — safety-critical.
   ///
   /// In en, this message translates to:

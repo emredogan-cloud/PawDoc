@@ -59,17 +59,37 @@ final analysisServiceProvider = Provider<AnalysisService>((ref) {
   return SupabaseAnalysisService(ref.watch(supabaseClientProvider));
 });
 
-/// Most-recent triage level for a pet (home "last check" line). RLS-scoped.
+/// The most recent completed check for a pet (M0 fix F-2/F-4): level for the
+/// pets-list chip, timestamp for the home-hero "Last check: just now" line.
+class LatestTriage {
+  const LatestTriage({required this.level, required this.checkedAt});
+
+  /// Wire triage level (EMERGENCY | MONITOR | NORMAL).
+  final String level;
+
+  /// Null only if the row's created_at is missing/unparsable (defensive).
+  final DateTime? checkedAt;
+}
+
+/// Most-recent check for a pet (home "last check" line + pets-list chip).
+/// RLS-scoped. Invalidated by the analysis runner the moment an analysis
+/// completes, so a finished check is reflected immediately on return (F-2).
 final latestTriageProvider =
-    FutureProvider.autoDispose.family<String?, String>((ref, petId) async {
+    FutureProvider.autoDispose.family<LatestTriage?, String>((ref, petId) async {
   final client = ref.watch(supabaseClientProvider);
   final rows = await client
       .from('analyses')
-      .select('triage_level')
+      .select('triage_level, created_at')
       .eq('pet_id', petId)
       .order('created_at', ascending: false)
       .limit(1);
   final list = rows as List;
   if (list.isEmpty) return null;
-  return (list.first as Map)['triage_level'] as String?;
+  final row = list.first as Map;
+  final level = row['triage_level'] as String?;
+  if (level == null) return null;
+  return LatestTriage(
+    level: level,
+    checkedAt: DateTime.tryParse(row['created_at'] as String? ?? ''),
+  );
 });

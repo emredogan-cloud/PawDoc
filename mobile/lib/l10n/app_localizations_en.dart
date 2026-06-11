@@ -20,6 +20,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String emergencyIndicatorDetected(String indicator) {
+    return 'Emergency indicator detected: \'$indicator\'.';
+  }
+
+  @override
+  String get urgencyImmediately => 'immediately';
+
+  @override
+  String get urgencyWithin24Hours => 'within 24 hours';
+
+  @override
+  String get urgencyRoutine => 'routine';
+
+  @override
   String get emergencyFindVet => 'Find an emergency vet now';
 
   @override

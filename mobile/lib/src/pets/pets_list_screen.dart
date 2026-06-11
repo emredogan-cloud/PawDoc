@@ -203,11 +203,14 @@ class _PetListTile extends ConsumerWidget {
       ),
       title: Text(petDisplayName(pet.name)),
       subtitle: Text(_meta()),
+      // F-4: the last-check chip — fed by latestTriageProvider, which the
+      // analysis runner now invalidates on completion, so it can't go stale.
       trailing: lastTriage.maybeWhen(
         data: (t) => t == null
             ? null
             : Chip(
-                label: Text(t, style: Theme.of(context).textTheme.labelSmall),
+                key: ValueKey('last_check_chip_${pet.id}'),
+                label: Text(t.level, style: Theme.of(context).textTheme.labelSmall),
                 visualDensity: VisualDensity.compact,
                 side: BorderSide.none,
                 backgroundColor: scheme.secondaryContainer,

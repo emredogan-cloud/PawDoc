@@ -13,6 +13,21 @@
     "placeholders": { "timeframe": { "type": "String", "example": "immediately" } }
   },
 
+  "emergencyIndicatorDetected": "Emergency indicator detected: '{indicator}'.",
+  "@emergencyIndicatorDetected": {
+    "description": "M0 F-3: localized wrapper for the server's emergency-override primary_concern template. The quoted indicator is the matched keyword (already in the user's locale — safety.py keyword lists are per-locale) and is never altered.",
+    "placeholders": { "indicator": { "type": "String", "example": "not breathing" } }
+  },
+
+  "urgencyImmediately": "immediately",
+  "@urgencyImmediately": { "description": "M0 F-3: display value for the wire urgency_timeframe 'immediately' (contract stays English on the wire)." },
+
+  "urgencyWithin24Hours": "within 24 hours",
+  "@urgencyWithin24Hours": { "description": "M0 F-3: display value for the wire urgency_timeframe 'within 24 hours'." },
+
+  "urgencyRoutine": "routine",
+  "@urgencyRoutine": { "description": "M0 F-3: display value for the wire urgency_timeframe 'routine'." },
+
   "emergencyFindVet": "Find an emergency vet now",
   "@emergencyFindVet": { "description": "Primary CTA on the emergency screen — safety-critical." },
 

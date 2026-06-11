@@ -7,6 +7,14 @@
 
   "emergencyRecommendedPrefix": "Empfohlen: {timeframe}.",
 
+  "emergencyIndicatorDetected": "Notfall-Anzeichen erkannt: '{indicator}'.",
+
+  "urgencyImmediately": "sofort",
+
+  "urgencyWithin24Hours": "innerhalb von 24 Stunden",
+
+  "urgencyRoutine": "routinemäßig",
+
   "emergencyFindVet": "Sofort einen Notfall-Tierarzt finden",
 
   "emergencyDisclaimer": "PawDoc liefert Informationen, keine Diagnose. Im Notfall sofort einen Tierarzt kontaktieren.",
