@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../analytics/analytics.dart';
-import '../core/app_image.dart';
+import '../core/app_motion_asset.dart';
 import '../experiments/feature_flags.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
@@ -129,9 +129,12 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           const Text('Unlimited AI health checks, history, and reminders for all your pets.'),
           const SizedBox(height: AppSpace.s16),
           Center(
-            child: AppImage(
-              AppAssets.paywallPeace,
-              height: 120,
+            // M1 (A4): sleeper breathes with floating "z" — placement raised
+            // 120→160 per the production spec; static PNG under reduce-motion.
+            child: AppMotionAsset(
+              AppMotionAssets.paywallPeaceLoop,
+              fallbackAsset: AppAssets.paywallPeace,
+              height: 160,
               fallback: const SizedBox.shrink(), // graceful: hide if no art yet
             ),
           ),

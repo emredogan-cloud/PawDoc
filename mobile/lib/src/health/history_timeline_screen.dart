@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../account/user_profile.dart';
 import '../analytics/analytics.dart';
-import '../core/app_image.dart';
+import '../core/app_motion_asset.dart';
 import '../core/dates.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
@@ -351,8 +351,11 @@ class _HistoryEmptyState extends StatelessWidget {
     return ListView(
       children: [
         const SizedBox(height: AppSpace.s48),
-        AppImage(
-          AppAssets.emptyHistory,
+        // M1 (matrix #8): "story starts here" art breathes, trail sparkles
+        // twinkle; static PNG under reduce-motion / load failure.
+        AppMotionAsset(
+          AppMotionAssets.historyEmptyLoop,
+          fallbackAsset: AppAssets.emptyHistory,
           height: 140,
           fallback: Icon(Icons.timeline_rounded, size: 72, color: scheme.primary),
         ),

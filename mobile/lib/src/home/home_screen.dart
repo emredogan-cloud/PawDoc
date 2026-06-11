@@ -12,6 +12,7 @@ import '../analysis/analysis_service.dart';
 import '../capture/camera_screen.dart';
 import '../capture/video_capture_screen.dart';
 import '../core/app_image.dart';
+import '../core/app_motion_asset.dart';
 import '../core/app_views.dart';
 import '../core/connectivity.dart';
 import '../core/last_check.dart';
@@ -412,8 +413,11 @@ class _HomeEmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpace.s32),
       child: Column(
         children: [
-          AppImage(
-            AppAssets.emptyHome,
+          // M1 (A2): welcome duo breathes + blinks; static PNG under
+          // reduce-motion / load failure (handled inside the wrapper).
+          AppMotionAsset(
+            AppMotionAssets.emptyHomeLoop,
+            fallbackAsset: AppAssets.emptyHome,
             height: 160,
             fallback: Icon(Icons.pets_rounded, size: 72, color: scheme.primary),
           ),

@@ -6,7 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../account/user_profile.dart';
 import '../analytics/analytics.dart';
 import '../auth/supabase_providers.dart';
-import '../core/app_image.dart';
+import '../core/app_motion_asset.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import 'referral_prefs.dart';
@@ -36,8 +36,12 @@ class ReferralScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Center(
-              child: AppImage(
-                AppAssets.referralGift,
+              // M1 (A6): gift settles in once (marker), then idles with a tiny
+              // wiggle + sparkle orbit; static PNG under reduce-motion.
+              child: AppMotionAsset(
+                AppMotionAssets.referralGiftIdle,
+                fallbackAsset: AppAssets.referralGift,
+                loopFromMarker: 'loop',
                 height: 120,
                 fallback: Icon(Icons.card_giftcard_rounded,
                     size: 72, color: Theme.of(context).colorScheme.primary),

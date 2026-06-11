@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../analytics/analytics.dart';
 import '../core/app_image.dart';
+import '../core/app_motion_asset.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../experiments/feature_flags.dart';
@@ -200,30 +201,26 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
 
   Widget _onbHero() {
     final scheme = Theme.of(context).colorScheme;
-    final hero = AppImage(
-      AppAssets.onbHero,
-      height: 200,
-      fallback: Container(
-        height: 200,
-        width: 200,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [scheme.primaryContainer, scheme.surface],
-          ),
-        ),
-        child: Icon(Icons.pets_rounded, size: 88, color: scheme.primary),
-      ),
-    );
-    if (reduceMotion(context)) return Center(child: hero);
+    // M1 (A1): the cuddle-duo Lottie owns the motion now (breath, sparkles,
+    // ground glow) — the old imperceptible code-breath is removed. Reduce
+    // motion / load failure falls back to the static PNG inside the wrapper.
     return Center(
-      child: hero
-          .animate(onPlay: (c) => c.repeat(reverse: true))
-          .scaleXY(
-              begin: 1.0,
-              end: 1.03,
-              duration: const Duration(seconds: 4),
-              curve: Curves.easeInOut),
+      child: AppMotionAsset(
+        AppMotionAssets.onbHeroLoop,
+        fallbackAsset: AppAssets.onbHero,
+        height: 200,
+        fallback: Container(
+          height: 200,
+          width: 200,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [scheme.primaryContainer, scheme.surface],
+            ),
+          ),
+          child: Icon(Icons.pets_rounded, size: 88, color: scheme.primary),
+        ),
+      ),
     );
   }
 
