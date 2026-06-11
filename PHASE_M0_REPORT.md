@@ -29,7 +29,7 @@
 | `./scripts/verify-disclaimers.sh` | **PASS** — 6/6 |
 | `flutter build apk --debug` | **PASS** — apk produced (see §5) |
 | GitHub CI | run on PR (see PR checks) |
-| Device validation | **PENDING — BLOCKED: no USB device attached** (see §5) |
+| Device validation | **PASS** — 2026-06-11 live pass; see PAWDOC_MOTION_IMPLEMENTATION_FINAL_AUDIT.md §Device Results |
 
 New tests:
 - `account_service_test.dart` — 8 orchestration tests incl. the exact live F-1 case (hang + revoked auth → success within 15s, `fake_async`-driven) and the honest-failure case (hang + valid auth → TimeoutException surfaces).

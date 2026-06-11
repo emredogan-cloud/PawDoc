@@ -27,7 +27,7 @@
 | `./scripts/verify-disclaimers.sh` | **PASS** — 6/6 (result-screen stagger did not disturb flag gating) |
 | `flutter build apk --debug` | **PASS** |
 | GitHub CI | runs on the PR |
-| Device validation | **PENDING — no USB device attached** (see §5) |
+| Device validation | **PASS** — 2026-06-11 live pass; see PAWDOC_MOTION_IMPLEMENTATION_FINAL_AUDIT.md §Device Results |
 
 New tests: asset parse/budget/markers/fallback-existence per slot · wrapper contract (reduce-motion = zero Lottie in tree; PNG path asserted; degrade path) · **permanent safety guard** (EMERGENCY + Delete trees contain no Lottie/AppMotionAsset) · saved-confirmation honesty + never-blocks-Done + reduce-motion-immediate.
 
