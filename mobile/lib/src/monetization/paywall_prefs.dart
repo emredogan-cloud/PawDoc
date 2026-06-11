@@ -5,9 +5,13 @@ class PaywallPrefs {
   static const _kFirst = 'pawdoc.first_analysis_completed';
   static const _kLastShown = 'pawdoc.paywall_last_shown';
 
-  static Future<void> markFirstAnalysisCompleted() async {
+  /// Returns true exactly once — when this call flipped the flag (M3 #17:
+  /// the one-time-ever "story has begun" toast keys off it).
+  static Future<bool> markFirstAnalysisCompleted() async {
     final p = await SharedPreferences.getInstance();
+    final wasCompleted = p.getBool(_kFirst) ?? false;
     await p.setBool(_kFirst, true);
+    return !wasCompleted;
   }
 
   static Future<bool> firstAnalysisCompleted() async {

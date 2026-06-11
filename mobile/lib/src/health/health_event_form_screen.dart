@@ -29,6 +29,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
   final _notes = TextEditingController();
   final _weight = TextEditingController();
   bool _saving = false;
+  bool _saved = false;
 
   @override
   void dispose() {
@@ -55,6 +56,14 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
       await ref.read(healthEventsRepositoryProvider).create(event);
       await Analytics.healthEventLogged(_type);
       ref.invalidate(healthTimelineProvider(widget.petId));
+      if (!mounted) return;
+      // M3 (#16): one 300ms check-morph beat on the button before closing —
+      // completion feel without delaying navigation meaningfully; skipped
+      // entirely under reduce-motion.
+      if (!reduceMotion(context)) {
+        setState(() => _saved = true);
+        await Future<void>.delayed(const Duration(milliseconds: 320));
+      }
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
       if (mounted) {
@@ -130,8 +139,24 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
           const SizedBox(height: 24),
           AppButton(
             key: const Key('event_save_button'),
-            onPressed: _saving ? null : _save,
-            child: Text(_saving ? 'Saving…' : 'Save event'),
+            onPressed: (_saving || _saved) ? null : _save,
+            child: AnimatedSwitcher(
+              duration: reduceMotion(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 200),
+              child: _saved
+                  ? const Row(
+                      key: ValueKey('saved'),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle_rounded, size: 18),
+                        SizedBox(width: 6),
+                        Text('Saved'),
+                      ],
+                    )
+                  : Text(_saving ? 'Saving…' : 'Save event',
+                      key: ValueKey(_saving)),
+            ),
           ),
         ],
       ),

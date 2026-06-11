@@ -462,20 +462,40 @@ class _QuotaStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final style = Theme.of(context)
+        .textTheme
+        .bodySmall
+        ?.copyWith(color: scheme.onSurfaceVariant);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(Icons.bolt, size: 16, color: scheme.onSurfaceVariant),
         const SizedBox(width: AppSpace.s4),
-        Text(
-          isPremium
-              ? 'Premium — unlimited checks'
-              : '$freeRemaining of 3 free checks left',
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: scheme.onSurfaceVariant),
-        ),
+        if (isPremium)
+          Text('Premium — unlimited checks', style: style)
+        else
+          // M3 (#18): a 300ms count-DOWN tick when the remaining number
+          // changes (it's "remaining", so the old value slides up and out);
+          // instant under reduce-motion.
+          AnimatedSwitcher(
+            duration: reduceMotion(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                        begin: const Offset(0, 0.6), end: Offset.zero)
+                    .animate(animation),
+                child: child,
+              ),
+            ),
+            child: Text(
+              '$freeRemaining of 3 free checks left',
+              key: ValueKey(freeRemaining),
+              style: style,
+            ),
+          ),
       ],
     );
   }

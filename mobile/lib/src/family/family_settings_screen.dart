@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../account/user_profile.dart';
 import '../core/app_motion_asset.dart';
+import '../core/motion.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import 'family_repository.dart';
@@ -128,9 +130,19 @@ class _FamilyHeader extends StatelessWidget {
   }
 }
 
-class _MembersList extends StatelessWidget {
+class _MembersList extends StatefulWidget {
   const _MembersList({required this.summary});
   final FamilySummary? summary;
+
+  @override
+  State<_MembersList> createState() => _MembersListState();
+}
+
+class _MembersListState extends State<_MembersList> {
+  /// Member ids already shown — tiles for ids that appear LATER (an invite
+  /// accepted while the screen is up / after a refresh) slide in (M3 #19).
+  /// Initialized on first build so opening the screen never animates.
+  Set<String>? _seen;
 
   // Friendly display name from an email's local part (avoids leading with PII).
   static String _memberName(String? email) {
@@ -142,26 +154,47 @@ class _MembersList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (summary == null || summary!.members.isEmpty) {
+    final summary = widget.summary;
+    if (summary == null || summary.members.isEmpty) {
       return const SizedBox.shrink();
     }
+    final ids = {for (final m in summary.members) m.userId};
+    final previous = _seen;
+    _seen = ids;
+    final animateNew = previous != null && !reduceMotion(context);
+
     return Card(
       child: Column(
         children: [
-          for (final m in summary!.members)
-            ListTile(
-              key: Key('family_member_${m.userId}'),
-              leading: CircleAvatar(
-                child: Icon(m.role == 'owner'
-                    ? Icons.workspace_premium_outlined
-                    : Icons.person_outline),
-              ),
-              // Display name over the raw email (PII restraint, §3.9.1).
-              title: Text(_memberName(m.email)),
-              subtitle: Text(m.role == 'owner' ? 'Owner' : 'Member'),
-            ),
+          for (final m in summary.members)
+            if (animateNew && !previous.contains(m.userId))
+              // M3 (#19): the new member's tile slides in — one 800ms beat.
+              _tile(m)
+                  .animate()
+                  .fadeIn(duration: const Duration(milliseconds: 400))
+                  .slideX(
+                      begin: 0.15,
+                      end: 0,
+                      duration: const Duration(milliseconds: 400),
+                      curve: AppMotion.emphasized)
+                  .then()
+                  .shimmer(duration: const Duration(milliseconds: 400))
+            else
+              _tile(m),
         ],
       ),
     );
   }
+
+  Widget _tile(FamilyMember m) => ListTile(
+        key: Key('family_member_${m.userId}'),
+        leading: CircleAvatar(
+          child: Icon(m.role == 'owner'
+              ? Icons.workspace_premium_outlined
+              : Icons.person_outline),
+        ),
+        // Display name over the raw email (PII restraint, §3.9.1).
+        title: Text(_memberName(m.email)),
+        subtitle: Text(m.role == 'owner' ? 'Owner' : 'Member'),
+      );
 }
