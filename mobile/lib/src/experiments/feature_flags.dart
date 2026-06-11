@@ -41,6 +41,24 @@ class FeatureFlags {
     }
   }
 
+  /// Kill-switch semantics (M2 Paw Pals — device finding D-2): the feature is
+  /// ON unless the flag EXISTS and is explicitly off. PostHog's
+  /// isFeatureEnabled returns false for an ABSENT flag, which would silently
+  /// disable a default-on feature the founder never created a flag for; a
+  /// kill-switch exists to turn things OFF in an incident, not to gate
+  /// rollout. Absent flag or any PostHog failure -> ON.
+  Future<bool> isEnabledUnlessKilled(String key) async {
+    try {
+      final value = await _getFlag(key);
+      if (value == null) return true; // absent -> default ON
+      if (value is bool) return value;
+      final s = value.toString().toLowerCase();
+      return !(s == 'false' || s == 'off' || s == 'disabled');
+    } catch (_) {
+      return true;
+    }
+  }
+
   /// Multivariate variant string. Returns [defaultValue] (the CONTROL variant)
   /// when the flag is null/empty, not one of [allowed], or on ANY error —
   /// "fail-safe to control" (Phase 4.2 strict rule).

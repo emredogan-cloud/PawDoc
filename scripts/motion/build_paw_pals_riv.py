@@ -149,8 +149,12 @@ class ArtboardBuilder:
         return i
 
     # -- components ---------------------------------------------------------
-    def node(self, parent, x=0.0, y=0.0, name='n'):
-        obj(self.w, 'Node', name=name, parentId=parent, x=x, y=y)
+    def node(self, parent, x=0.0, y=0.0, name='n', scale=None):
+        props = dict(name=name, parentId=parent, x=x, y=y)
+        if scale is not None:
+            props['scaleX'] = scale
+            props['scaleY'] = scale
+        obj(self.w, 'Node', **props)
         return self.alloc()
 
     def shape(self, parent, x, y, name='s', rotation=None, opacity=None,
@@ -241,9 +245,11 @@ class ArtboardBuilder:
         obj(w, 'StateMachineLayer', smName='main')
         self.alloc()
 
-        # State emission order defines stateToId indices:
-        # 0 Entry, 1 idle, 2 tilt, 3 happy, 4 attentive, 5 sleep
-        S_IDLE, S_TILT, S_HAPPY, S_ATTENTIVE, S_SLEEP = 1, 2, 3, 4, 5
+        # State emission order defines stateToId indices. The runtime ASSERTS
+        # the editor-standard Any/Entry/Exit trio exists on every layer
+        # (device finding D-3: LayerController `layer.anyState != null`).
+        # 0 Any, 1 Entry, 2 Exit, 3 idle, 4 tilt, 5 happy, 6 attentive, 7 sleep
+        S_IDLE, S_TILT, S_HAPPY, S_ATTENTIVE, S_SLEEP = 3, 4, 5, 6, 7
 
         def state(anim_name):
             obj(w, 'AnimationState', animationId=anim_ids[anim_name])
@@ -261,10 +267,14 @@ class ArtboardBuilder:
                         opValue=op)
                 self.alloc()
 
+        obj(w, 'AnyState')
+        self.alloc()
         # Entry -> idle (immediate)
         obj(w, 'EntryState')
         self.alloc()
         transition(S_IDLE)
+        obj(w, 'ExitState')
+        self.alloc()
 
         back = dict(flags=FLAG_EXIT_TIME | FLAG_EXIT_PCT, exit_time=100,
                     duration=120)
@@ -294,69 +304,48 @@ class ArtboardBuilder:
 # tilt/bounce key the root; ears/eyes/extras key their own shapes.
 # ---------------------------------------------------------------------------
 def build_species(ab, spec):
+    """Emits the face FRONT-to-BACK: rive-0.13 draws the drawables list in
+    reverse (`drawable.prev` walk), so the FIRST-emitted shape renders on top
+    (device finding D-5 — emitting painter-style buried every feature under
+    the head)."""
     w = ab.w
-    root = ab.node(0, x=128.0, y=140.0, name='root')
+    # D-4: static zoom so the face fills the artboard (sized per species so
+    # ears/crests never clip); animations key the inner root, never the zoom.
+    zoom = ab.node(0, x=128.0, y=134.0, name='zoom', scale=spec.get('zoom', 1.35))
+    root = ab.node(zoom, x=0.0, y=0.0, name='root')
 
     ids = {'root': root}
     deep = spec.get('outline', DEEP)
     body = spec['body']
     stroke_w = 7.0
-
-    # ears / crest behind the head
-    for ename, e in spec.get('ears', {}).items():
-        s = ab.shape(root, e['x'], e['y'], name=ename,
-                     rotation=e.get('rot', 0.0))
-        if e['kind'] == 'ellipse':
-            ab.ellipse(s, e['w'], e['h'])
-        else:
-            ab.triangle(s, e['pts'], radius=e.get('radius', 12.0))
-        ab.fill(s, e.get('color', body))
-        ab.stroke(s, deep, stroke_w)
-        ids[ename] = s
-
-    # head
-    head = ab.shape(root, 0.0, 0.0, name='head')
-    ab.ellipse(head, spec['head_w'], spec['head_h'])
-    ab.fill(head, body)
-    ab.stroke(head, deep, stroke_w)
-    ids['head'] = head
-
-    # muzzle / belly patch
-    if 'muzzle' in spec:
-        m = spec['muzzle']
-        mz = ab.shape(root, m['x'], m['y'], name='muzzle')
-        ab.ellipse(mz, m['w'], m['h'])
-        ab.fill(mz, m.get('color', CREAM))
-        ids['muzzle'] = mz
-
-    # spots (reptile/guinea accents)
-    for i, sp in enumerate(spec.get('spots', [])):
-        s = ab.shape(root, sp[0], sp[1], name=f'spot{i}')
-        ab.ellipse(s, sp[2], sp[2])
-        ab.fill(s, MINT)
-
-    # blush
-    for bx in (-1, 1):
-        b = ab.shape(root, bx * spec.get('blush_dx', 52.0),
-                     spec.get('blush_dy', 18.0), name=f'blush{bx}',
-                     opacity=0.85)
-        ab.ellipse(b, 24.0, 14.0)
-        ab.fill(b, BLUSH)
-
-    # eyes (blink = scaleY beat; widen = scale up)
     eye_dx = spec.get('eye_dx', 30.0)
     eye_dy = spec.get('eye_dy', -10.0)
     eye_r = spec.get('eye_r', 13.0)
+
+    # 1 — sleep "z" (very front; hidden by default, only sleep keys it in)
+    z = ab.shape(root, 62.0, -64.0, name='z', opacity=0.0)
+    ab.rect(z, 18.0, 4.0, radius=2.0)
+    zm = ab.shape(z, 0.0, 8.0, name='zmid', rotation=-0.85)
+    ab.rect(zm, 18.0, 4.0, radius=2.0)
+    zb = ab.shape(z, 0.0, 16.0, name='zbot')
+    ab.rect(zb, 18.0, 4.0, radius=2.0)
+    ids['z'] = z
+
+    # 2 — eye catchlights (front of pupils)
+    for side, sx in (('eyeL', -1), ('eyeR', 1)):
+        hl = ab.shape(root, sx * eye_dx - eye_r * 0.3, eye_dy - eye_r * 0.35,
+                      name=side + 'hl')
+        ab.ellipse(hl, eye_r * 0.55, eye_r * 0.55)
+        ab.fill(hl, WHITE)
+
+    # 3 — eyes (blink = scaleY beat; widen = scale up)
     for side, sx in (('eyeL', -1), ('eyeR', 1)):
         e = ab.shape(root, sx * eye_dx, eye_dy, name=side)
         ab.ellipse(e, eye_r * 2, eye_r * 2)
         ab.fill(e, INK)
         ids[side] = e
-        hl = ab.shape(e, -eye_r * 0.3, -eye_r * 0.35, name=side + 'hl')
-        ab.ellipse(hl, eye_r * 0.55, eye_r * 0.55)
-        ab.fill(hl, WHITE)
 
-    # nose / beak
+    # 4 — nose / beak
     if 'nose' in spec:
         n = spec['nose']
         ns = ab.shape(root, n.get('x', 0.0), n['y'], name='nose')
@@ -369,8 +358,7 @@ def build_species(ab, spec):
             ab.stroke(ns, n['stroke'], 5.0)
         ids['nose'] = ns
 
-    # mouth — gentle smile: open 3-vertex path with a big corner radius on
-    # the mid vertex renders as a soft arc (stroke only, no fill)
+    # 5 — mouth: open 3-vertex path with a generous corner radius = soft smile
     if spec.get('mouth', True):
         mw = spec.get('mouth_w', 30.0)
         mo = ab.shape(root, 0.0, spec.get('mouth_dy', 30.0), name='mouth')
@@ -383,14 +371,46 @@ def build_species(ab, spec):
         ab.stroke(mo, deep, 5.5)
         ids['mouth'] = mo
 
-    # sleep "z" — hidden by default; only the sleep animation keys it visible
-    z = ab.shape(root, 62.0, -64.0, name='z', opacity=0.0)
-    ab.rect(z, 18.0, 4.0, radius=2.0)
-    zm = ab.shape(z, 0.0, 8.0, name='zmid', rotation=-0.85)
-    ab.rect(zm, 18.0, 4.0, radius=2.0)
-    zb = ab.shape(z, 0.0, 16.0, name='zbot')
-    ab.rect(zb, 18.0, 4.0, radius=2.0)
-    ids['z'] = z
+    # 6 — blush
+    for bx in (-1, 1):
+        b = ab.shape(root, bx * spec.get('blush_dx', 52.0),
+                     spec.get('blush_dy', 18.0), name=f'blush{bx}',
+                     opacity=0.85)
+        ab.ellipse(b, 24.0, 14.0)
+        ab.fill(b, BLUSH)
+
+    # 7 — spots (reptile/guinea accents)
+    for i, sp in enumerate(spec.get('spots', [])):
+        sshape = ab.shape(root, sp[0], sp[1], name=f'spot{i}')
+        ab.ellipse(sshape, sp[2], sp[2])
+        ab.fill(sshape, MINT)
+
+    # 8 — muzzle / belly patch
+    if 'muzzle' in spec:
+        m = spec['muzzle']
+        mz = ab.shape(root, m['x'], m['y'], name='muzzle')
+        ab.ellipse(mz, m['w'], m['h'])
+        ab.fill(mz, m.get('color', CREAM))
+        ids['muzzle'] = mz
+
+    # 9 — head
+    head = ab.shape(root, 0.0, 0.0, name='head')
+    ab.ellipse(head, spec['head_w'], spec['head_h'])
+    ab.fill(head, body)
+    ab.stroke(head, deep, stroke_w)
+    ids['head'] = head
+
+    # 10 — ears / crest (behind the head, like the icon set)
+    for ename, e in spec.get('ears', {}).items():
+        sh = ab.shape(root, e['x'], e['y'], name=ename,
+                      rotation=e.get('rot', 0.0))
+        if e['kind'] == 'ellipse':
+            ab.ellipse(sh, e['w'], e['h'])
+        else:
+            ab.triangle(sh, e['pts'], radius=e.get('radius', 12.0))
+        ab.fill(sh, e.get('color', body))
+        ab.stroke(sh, deep, stroke_w)
+        ids[ename] = sh
 
     return ids
 
@@ -421,7 +441,7 @@ def build_animations(ab, ids, spec):
     # happy beat — shared bounce + the species part beat
     part = ids.get(spec.get('happy_part', ''), None)
     happy_tracks = {
-        root: {'y': [(0, 140.0), (12, 128.0), (26, 142.5), (38, 140.0)]},
+        root: {'y': [(0, 0.0), (12, -12.0), (26, 2.5), (38, 0.0)]},
     }
     if part is not None:
         happy_tracks[part] = {
@@ -437,7 +457,7 @@ def build_animations(ab, ids, spec):
                'scaleY': [(0, 1.0), (8, 1.16), (24, 1.16), (30, 1.0)]},
         eyeR: {'scaleX': [(0, 1.0), (8, 1.16), (24, 1.16), (30, 1.0)],
                'scaleY': [(0, 1.0), (8, 1.16), (24, 1.16), (30, 1.0)]},
-        root: {'y': [(0, 140.0), (8, 135.0), (24, 135.0), (30, 140.0)]},
+        root: {'y': [(0, 0.0), (8, -5.0), (24, -5.0), (30, 0.0)]},
     })
 
     # sleep — eyes closed, slow deep breath (5s), z fades in/out
@@ -456,6 +476,7 @@ def build_animations(ab, ids, spec):
 # Per-species look + rhythm. Angles in radians; coords relative to root.
 SPECIES = {
     'dog': dict(
+        zoom=1.35,
         body=CREAM, head_w=150.0, head_h=132.0,
         ears={'earL': dict(kind='ellipse', x=-68.0, y=-44.0, w=52.0, h=86.0,
                            rot=0.45, color=TEAL),
@@ -468,6 +489,7 @@ SPECIES = {
         idle_frames=312, blink_at=150,
     ),
     'cat': dict(
+        zoom=1.3,
         body=TEAL, head_w=146.0, head_h=126.0,
         ears={'earL': dict(kind='tri', x=-52.0, y=-66.0, rot=-0.12,
                            pts=[(-26.0, 28.0), (0.0, -34.0), (26.0, 28.0)],
@@ -484,10 +506,11 @@ SPECIES = {
         idle_frames=366, blink_at=204,
     ),
     'rabbit': dict(
+        zoom=1.1,
         body=CREAM, head_w=138.0, head_h=124.0,
-        ears={'earL': dict(kind='ellipse', x=-34.0, y=-92.0, w=40.0, h=120.0,
+        ears={'earL': dict(kind='ellipse', x=-34.0, y=-70.0, w=40.0, h=96.0,
                            rot=-0.12, color=CREAM),
-              'earR': dict(kind='ellipse', x=34.0, y=-92.0, w=40.0, h=120.0,
+              'earR': dict(kind='ellipse', x=34.0, y=-70.0, w=40.0, h=96.0,
                            rot=0.12, color=MINT)},
         nose=dict(kind='tri', y=10.0,
                   pts=[(-9.0, -5.0), (9.0, -5.0), (0.0, 8.0)],
@@ -497,6 +520,7 @@ SPECIES = {
         idle_frames=282, blink_at=126,
     ),
     'guinea_pig': dict(
+        zoom=1.45,
         body=CREAM, head_w=156.0, head_h=128.0,
         ears={'earL': dict(kind='ellipse', x=-58.0, y=-56.0, w=42.0, h=38.0,
                            rot=-0.3, color=CORAL),
@@ -509,6 +533,7 @@ SPECIES = {
         idle_frames=330, blink_at=180,
     ),
     'bird': dict(
+        zoom=1.25,
         body=TEAL, head_w=140.0, head_h=132.0,
         ears={'crest': dict(kind='ellipse', x=0.0, y=-76.0, w=26.0, h=56.0,
                             rot=0.0, color=MINT),
@@ -523,6 +548,7 @@ SPECIES = {
         idle_frames=300, blink_at=132,
     ),
     'reptile': dict(
+        zoom=1.45,
         body=TEAL, head_w=166.0, head_h=128.0,
         ears={},
         muzzle=dict(x=0.0, y=26.0, w=96.0, h=50.0, color=0xFFF2FBF4),
@@ -531,7 +557,8 @@ SPECIES = {
         happy_part='eyeR', part_rot0=0.0, part_beat=0.18,
         idle_frames=348, blink_at=216,
     ),
-    'other': dict(  # the paw mascot — pads as 'ears', a face on the pad
+    'other': dict(
+        zoom=1.15,  # the paw mascot — pads as 'ears', a face on the pad
         body=TEAL, head_w=150.0, head_h=128.0,
         ears={'toeL': dict(kind='ellipse', x=-58.0, y=-70.0, w=44.0, h=54.0,
                            rot=-0.35, color=MINT),
