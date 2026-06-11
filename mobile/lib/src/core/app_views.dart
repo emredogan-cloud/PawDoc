@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_assets.dart';
+import 'app_motion_asset.dart';
+
 /// Shared, polished loading / error / empty states.
 class AppLoadingView extends StatelessWidget {
   const AppLoadingView({super.key, this.label});
@@ -32,7 +35,16 @@ class AppErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
+            // M4 (matrix #20): the calm "nap" loop replaces the bare error
+            // icon — muted breath, never playful; static PNG under
+            // reduce-motion; icon fallback if the art is missing.
+            AppMotionAsset(
+              AppMotionAssets.errorNapLoop,
+              fallbackAsset: AppAssets.sysError,
+              height: 120,
+              fallback: Icon(Icons.error_outline,
+                  size: 48, color: Theme.of(context).colorScheme.error),
+            ),
             const SizedBox(height: 12),
             Semantics(liveRegion: true, child: Text(message, textAlign: TextAlign.center)),
             if (onRetry != null) ...[
