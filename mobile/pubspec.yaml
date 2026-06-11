@@ -71,6 +71,11 @@ dependencies:
   animations: ^2.2.0
   lottie: ^3.3.3
   visibility_detector: ^0.4.0+2
+  # Pinned to the last pure-Dart-renderer generation (roadmap §4: "pure-Dart
+  # render, no platform channels"). 0.14+ moved to rive_native platform
+  # binaries fetched at build time — a CI/offline + size risk we don't take
+  # for chip-scale avatars. Revisit only with a deliberate migration.
+  rive: 0.13.20
 
 dev_dependencies:
   flutter_test:
