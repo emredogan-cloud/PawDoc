@@ -25,7 +25,7 @@
 | `./scripts/verify-disclaimers.sh` | **PASS** — 6/6 |
 | `flutter build apk --debug` | **PASS** |
 | GitHub CI | runs on the PR |
-| Device validation (live claim/purchase/save/toast traversal) | **PENDING — no USB device attached** |
+| Device validation | **PASS** — 2026-06-11 live pass; see PAWDOC_MOTION_IMPLEMENTATION_FINAL_AUDIT.md §Device Results |
 
 New tests: celebration contract (reduce-motion=snackbar-only / tap-skip / ≤2.5s auto-dismiss) · first-check rules (flips exactly once; never repeats; **never on EMERGENCY**) · save morph (reduce-motion pops without delay; failure path stays usable). A7/A8 are auto-covered by the existing budget/parse/fallback-shipping gate.
 

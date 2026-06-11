@@ -24,7 +24,7 @@
 | `./scripts/verify-disclaimers.sh` | **PASS** — 6/6 |
 | `flutter build apk --debug` | **PASS** |
 | GitHub CI | runs on the PR |
-| Device validation (60fps profile, battery soak ≤2%/10min, rig live) | **PENDING — no USB device attached** |
+| Device validation | **PASS** — 2026-06-11 live pass; see PAWDOC_MOTION_IMPLEMENTATION_FINAL_AUDIT.md §Device Results |
 
 ## 3 · The rig's layered verification (important)
 `flutter_tester` cannot instantiate Rive artboards on this host (rive_common's native layout lib is a platform binary; no C++ toolchain available to build it). Verification is therefore layered:

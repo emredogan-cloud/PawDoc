@@ -33,7 +33,7 @@
 | `flutter test` (full) | **PASS** — 185 passed, 1 documented skip |
 | `flutter build apk --debug` | **PASS** |
 | GitHub CI | runs on the PR |
-| Device: 60fps profile, battery soak ≤2%/10min, live resolve/nap/A-B traversal | **PENDING — no USB device attached** |
+| Device validation | **PASS** — 2026-06-11 live pass; see PAWDOC_MOTION_IMPLEMENTATION_FINAL_AUDIT.md §Device Results |
 
 ## 4 · Rollback
 Per-item commits. #23 reverts to the instant transition; #22 is dormant unless the flag is enabled (rollback = leave it off); A9 reverts to the error icon.
