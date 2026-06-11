@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../core/app_image.dart';
 import '../core/motion.dart';
@@ -27,12 +28,23 @@ class SpeciesChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final animate = !reduceMotion(context);
-    final icon = AppImage(
+    Widget icon = AppImage(
       AppAssets.species(species),
       width: 22,
       height: 22,
       fallback: Text(speciesEmoji(species), style: const TextStyle(fontSize: 18)),
     );
+    // M2 (#12, "C scale-only" variant): the species icon does ONE micro-beat
+    // when its chip becomes selected — ≤400ms, no loop, reduce-motion exempt.
+    if (animate && selected) {
+      icon = icon
+          .animate(key: ValueKey('species_pop_$species'))
+          .scaleXY(
+              begin: 0.7,
+              end: 1.0,
+              duration: const Duration(milliseconds: 360),
+              curve: Curves.easeOutBack);
+    }
 
     final chip = AnimatedContainer(
       duration: animate ? AppMotion.standard : Duration.zero,

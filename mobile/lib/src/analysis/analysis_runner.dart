@@ -22,6 +22,7 @@ class AnalysisRunnerScreen extends ConsumerStatefulWidget {
     required this.petId,
     required this.petName,
     required this.inputType,
+    this.petSpecies,
     this.textDescription,
     this.imageStorageKey,
     this.frameStorageKeys,
@@ -31,6 +32,9 @@ class AnalysisRunnerScreen extends ConsumerStatefulWidget {
   final String petId;
   final String petName;
   final String inputType;
+
+  /// M2 (#13): feeds the result screen's relief/attentive avatar beat.
+  final String? petSpecies;
   final String? textDescription;
   final String? imageStorageKey;
   final List<String>? frameStorageKeys; // Phase 3.2 video keyframes
@@ -123,6 +127,7 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
           analysisId: _outcome!.analysisId,
           onDone: _onResultDone,
           petName: widget.petName,
+          petSpecies: widget.petSpecies,
         );
     }
   }
