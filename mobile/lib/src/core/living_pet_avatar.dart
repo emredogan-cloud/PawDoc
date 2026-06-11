@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -25,13 +26,13 @@ enum PalBeat {
   attentiveThenHappy,
 }
 
-/// Kill-switch for the whole Paw Pals layer (M2 rollback path). Control
-/// default is ENABLED; flipping the PostHog flag off reverts every surface
-/// to the original paw-disc without a release.
+/// Kill-switch for the whole Paw Pals layer (M2 rollback path). The feature
+/// is ON by default — including when the founder has not created the flag in
+/// PostHog at all; creating `paw_pals_enabled` = false reverts every surface
+/// to the original paw-disc without a release (true kill-switch semantics,
+/// device finding D-2).
 final pawPalsEnabledProvider = FutureProvider.autoDispose<bool>((ref) {
-  return ref
-      .watch(featureFlagsProvider)
-      .isEnabled('paw_pals_enabled', defaultValue: true);
+  return ref.watch(featureFlagsProvider).isEnabledUnlessKilled('paw_pals_enabled');
 });
 
 /// The species rig file, parsed once per session. Any failure (corrupt asset,
@@ -39,9 +40,21 @@ final pawPalsEnabledProvider = FutureProvider.autoDispose<bool>((ref) {
 /// paw-disc fallback — the rig can never break a screen.
 Future<RiveFile?> _loadPawPals() async {
   try {
+    // Device finding D-1 (M2 device pass): the runtime requires its engine
+    // initialized before import on-device; without this the import throws
+    // and every avatar silently degraded to the paw-disc. flutter_tester has
+    // no rive native lib — initialize() faults outside our zone there, so
+    // tests exercise the import-throw degrade path instead (same fallback).
+    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+      // Defensive: never let engine init hold the avatar hostage — on
+      // timeout we still attempt the import (the engine may have loaded).
+      await RiveFile.initialize()
+          .timeout(const Duration(seconds: 4), onTimeout: () {});
+    }
     final data = await rootBundle.load(AppMotionAssets.pawPals);
     return RiveFile.import(data);
-  } catch (_) {
+  } catch (e) {
+    debugPrint('PawPals rig unavailable, using paw-disc fallback: $e');
     return null;
   }
 }
@@ -99,12 +112,7 @@ class _LivingPetAvatarState extends ConsumerState<LivingPetAvatar> {
   SMIBool? _sleepy;
   bool _rigFailed = false;
   bool _visible = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _initRig();
-  }
+  bool _rigRequested = false;
 
   Future<void> _initRig() async {
     _pawPalsFuture ??= _loadPawPals();
@@ -138,7 +146,8 @@ class _LivingPetAvatarState extends ConsumerState<LivingPetAvatar> {
         _controller = controller;
       });
       _scheduleMountBeat();
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('PawPals: rig stage failed for ${widget.species}: $e\n$st');
       if (mounted) setState(() => _rigFailed = true);
     }
   }
@@ -207,8 +216,15 @@ class _LivingPetAvatarState extends ConsumerState<LivingPetAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    // Reduce-motion: the static species PNG, no rig at all (M2 acceptance).
+    // Reduce-motion: the static species PNG, no rig at all (M2 acceptance) —
+    // the runtime is never even loaded for reduce-motion users.
     if (reduceMotion(context)) return _staticPng(context);
+
+    // Lazy rig load on the first motion-enabled build.
+    if (!_rigRequested) {
+      _rigRequested = true;
+      _initRig();
+    }
 
     // Flag-gated rollout: disabled (or flag still loading on first frame)
     // keeps the original paw-disc — the M2 rollback path.

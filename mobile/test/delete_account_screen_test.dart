@@ -17,6 +17,13 @@ class _HangingAccountService implements AccountService {
   }
 }
 
+class _OkAccountService implements AccountService {
+  @override
+  Future<void> deleteAccount() async {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+}
+
 class _FailingAccountService implements AccountService {
   @override
   Future<void> deleteAccount() async {
@@ -88,6 +95,20 @@ void main() {
     final button = tester
         .widget<FilledButton>(find.byKey(const Key('delete_account_button')));
     expect(button.onPressed, isNotNull);
+  });
+
+  testWidgets('successful deletion pops the pushed stack itself (D-6)',
+      (tester) async {
+    await tester.pumpWidget(_host(_OkAccountService()));
+    await _openAndArm(tester);
+
+    await tester.tap(find.byKey(const Key('delete_account_button')));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+
+    // The router's redirect happens beneath plain pushed routes (live
+    // finding D-6) — the screen must dismiss itself on success.
+    expect(find.byType(DeleteAccountScreen), findsNothing);
   });
 
   testWidgets('delete stays disarmed until DELETE is typed', (tester) async {

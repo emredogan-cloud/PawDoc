@@ -574,6 +574,27 @@ def build_a8():
     emit(comp, "premium_welcome_v1.json")
 
 
+def build_a9():
+    """Error 'nap' loop (M4 matrix #20, 6s): the error-pet breathes gently with
+    one ear-twitch-substitute sparkle; muted register — calm, never playful."""
+    op = 360
+    im, png, bbox, scale = prep_image(os.path.join(ILL, "system", "system_error_calm_v1.png"), 540)
+    W, H, mx, my = std_canvas(im)
+    art = image_layer("img_0", 2,
+                      pos=[W / 2, my + im.height * 0.96, 0],
+                      anchor=[im.width / 2, im.height * 0.96, 0],
+                      scale=breath_scale(op, 180, 0.4, 1.0), op=op)
+    sparkles = shape_layer("sparkles", [
+        sparkle([W * 0.30, H * 0.30], 8, [(96, 54)], op),
+        sparkle([W * 0.72, H * 0.26], 9, [(258, 54)], op),
+    ], op=op, ind=1)
+    comp = composition("error_nap_loop_v1", W, H, op,
+                       [img_asset(png, im.width, im.height)],
+                       [sparkles, art],
+                       markers=[{"tm": 0, "cm": "loop", "dr": op}])
+    emit(comp, "error_nap_loop_v1.json")
+
+
 if __name__ == "__main__":
     print("Building Lottie assets -> mobile/assets/motion/")
     build_a1()
@@ -585,5 +606,6 @@ if __name__ == "__main__":
     build_history()
     build_a7()
     build_a8()
+    build_a9()
     print("done.")
     sys.exit(0)

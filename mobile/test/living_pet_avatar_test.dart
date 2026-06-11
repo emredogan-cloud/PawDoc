@@ -10,6 +10,7 @@ import 'package:pawdoc/l10n/app_localizations.dart';
 import 'package:pawdoc/src/analysis/result_screen.dart';
 import 'package:pawdoc/src/core/app_image.dart';
 import 'package:pawdoc/src/core/living_pet_avatar.dart';
+import 'package:pawdoc/src/experiments/feature_flags.dart';
 import 'package:pawdoc/src/models/analysis_result.dart';
 import 'package:rive/rive.dart' show Rive;
 
@@ -30,6 +31,29 @@ Widget _wrap(Widget child,
     );
 
 void main() {
+  group('kill-switch semantics (device finding D-2)', () {
+    FeatureFlags flags(Object? Function() get) =>
+        FeatureFlags((_) async => false, getFlag: (_) async => get());
+
+    test('absent flag -> ON', () async {
+      expect(await flags(() => null).isEnabledUnlessKilled('k'), isTrue);
+    });
+    test('explicit false/off strings -> OFF', () async {
+      expect(await flags(() => false).isEnabledUnlessKilled('k'), isFalse);
+      expect(await flags(() => 'false').isEnabledUnlessKilled('k'), isFalse);
+      expect(await flags(() => 'off').isEnabledUnlessKilled('k'), isFalse);
+    });
+    test('true / arbitrary variant -> ON', () async {
+      expect(await flags(() => true).isEnabledUnlessKilled('k'), isTrue);
+      expect(await flags(() => 'B').isEnabledUnlessKilled('k'), isTrue);
+    });
+    test('PostHog failure -> ON', () async {
+      expect(
+          await flags(() => throw Exception('down')).isEnabledUnlessKilled('k'),
+          isTrue);
+    });
+  });
+
   testWidgets('reduce-motion: static species PNG, zero rig', (tester) async {
     await tester.pumpWidget(_wrap(
       const LivingPetAvatar(species: 'dog', size: 56),

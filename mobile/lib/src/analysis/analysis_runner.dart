@@ -4,14 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../analytics/analytics.dart';
+import '../core/motion.dart';
+import '../experiments/feature_flags.dart';
 import '../models/analysis_result.dart';
 import '../monetization/maybe_show_paywall.dart';
 import '../monetization/paywall_prefs.dart';
+import '../theme/design_tokens.dart';
 import 'analysis_service.dart';
 import 'loading_screen.dart';
 import 'result_screen.dart';
 
-enum _Phase { loading, result, error }
+enum _Phase { loading, resolving, result, error }
 
 /// Drives one analysis end-to-end: connects the Phase 1.2 input (R2 key/text)
 /// to the Phase 1.3 `/analyze` Edge Function, shows the loading view, then the
@@ -70,10 +73,25 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
             frameStorageKeys: widget.frameStorageKeys,
           );
       if (!mounted) return;
+      // M4 (#23, safety-review gated): non-emergency verdicts get one 450ms
+      // pulse→verdict-hue resolve beat before the reveal. EMERGENCY keeps
+      // the INSTANT cut (hard guardrail: never delay an emergency), and
+      // reduce-motion users go straight to the result.
+      final resolve =
+          outcome.result.triageLevel != TriageLevel.emergency &&
+              !reduceMotion(context);
       setState(() {
         _outcome = outcome;
-        _phase = _Phase.result;
+        _phase = resolve ? _Phase.resolving : _Phase.result;
       });
+      if (resolve) {
+        unawaited(Future<void>.delayed(const Duration(milliseconds: 540))
+            .then((_) {
+          if (mounted && _phase == _Phase.resolving) {
+            setState(() => _phase = _Phase.result);
+          }
+        }));
+      }
       // F-2: the home hero + pets-list chip read this; refresh it the moment
       // the analysis completes so "No checks yet" can never outlive a check.
       ref.invalidate(latestTriageProvider(widget.petId));
@@ -101,11 +119,34 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  Color _resolveColor(TriageLevel level) => switch (level) {
+        TriageLevel.emergency => AppColors.emergencyLight, // never reached
+        TriageLevel.monitor => AppColors.monitorLight,
+        TriageLevel.normal => AppColors.normalLight,
+      };
+
   @override
   Widget build(BuildContext context) {
+    // M4 (#22) evaluation arm — PostHog 'pulse_pet_variant', control = OFF
+    // (pulse-only). The A/B is decided by data, not taste; flipping the flag
+    // exposes the calm pulse-pet without a release.
+    final pulsePet = ref
+                .watch(featureFlagProvider('pulse_pet_variant'))
+                .maybeWhen(data: (v) => v, orElse: () => false) &&
+            widget.petSpecies != null
+        ? widget.petSpecies
+        : null;
+
     switch (_phase) {
       case _Phase.loading:
-        return const Scaffold(body: AnalysisLoadingView());
+        return Scaffold(body: AnalysisLoadingView(pulsePetSpecies: pulsePet));
+      case _Phase.resolving:
+        return Scaffold(
+          body: AnalysisLoadingView(
+            resolveColor: _resolveColor(_outcome!.result.triageLevel),
+            pulsePetSpecies: pulsePet,
+          ),
+        );
       case _Phase.error:
         return Scaffold(
           appBar: AppBar(title: const Text('Analysis')),

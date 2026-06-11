@@ -36,7 +36,12 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
     setState(() => _busy = true);
     try {
       await ref.read(accountServiceProvider).deleteAccount();
-      // Sign-out triggers the router redirect to /sign-in; nothing more to do.
+      // Device finding D-6 (live F-1 validation): the router's signed-out
+      // redirect happens BENEATH this plain pushed route, so without an
+      // explicit pop the screen sits on "Deleting…" forever even though the
+      // deletion + local sign-out completed in budget. Pop the pushed stack;
+      // the redirected router (sign-in) is what remains.
+      if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
