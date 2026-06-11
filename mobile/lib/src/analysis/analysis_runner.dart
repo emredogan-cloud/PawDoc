@@ -122,6 +122,7 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
           result: _outcome!.result,
           analysisId: _outcome!.analysisId,
           onDone: _onResultDone,
+          petName: widget.petName,
         );
     }
   }

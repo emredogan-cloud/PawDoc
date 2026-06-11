@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../analytics/analytics.dart';
 import '../core/motion.dart';
+import '../core/pet_display.dart';
 import '../feedback/result_feedback_widget.dart';
 import '../models/analysis_result.dart';
 import '../monetization/insurance_affiliate_cta.dart';
@@ -15,18 +16,23 @@ import 'emergency_result_screen.dart';
 
 /// Routes to the EMERGENCY screen or the standard result screen. [analysisId]
 /// (null if the row failed to store) gates the in-app feedback widget.
+/// [petName] feeds the M1 "Saved to {Pet}'s history" confirmation — standard
+/// screen ONLY; the EMERGENCY screen receives no motion/celebration additions.
 class ResultScreen extends StatelessWidget {
-  const ResultScreen({super.key, required this.result, this.analysisId, this.onDone});
+  const ResultScreen(
+      {super.key, required this.result, this.analysisId, this.onDone, this.petName});
   final AnalysisResult result;
   final String? analysisId;
   final VoidCallback? onDone;
+  final String? petName;
 
   @override
   Widget build(BuildContext context) {
     if (result.triageLevel == TriageLevel.emergency) {
       return EmergencyResultScreen(result: result);
     }
-    return StandardResultScreen(result: result, analysisId: analysisId, onDone: onDone);
+    return StandardResultScreen(
+        result: result, analysisId: analysisId, onDone: onDone, petName: petName);
   }
 }
 
@@ -63,10 +69,12 @@ const _escalationTriggers = [
 ];
 
 class StandardResultScreen extends ConsumerStatefulWidget {
-  const StandardResultScreen({super.key, required this.result, this.analysisId, this.onDone});
+  const StandardResultScreen(
+      {super.key, required this.result, this.analysisId, this.onDone, this.petName});
   final AnalysisResult result;
   final String? analysisId;
   final VoidCallback? onDone;
+  final String? petName;
 
   @override
   ConsumerState<StandardResultScreen> createState() => _StandardResultScreenState();
@@ -95,8 +103,17 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
       appBar: AppBar(title: const Text('Result')),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: [
+        // M1 (matrix #7): sections fade-up in 280ms beats instead of popping
+        // in; instant under reduce-motion. Decorative only — every element is
+        // present and hittable from the first frame.
+        children: _staggered(context, [
           _TriageHero(level: r.triageLevel),
+          // "Saved to {Pet}'s history" — only when the row truly stored (honesty:
+          // celebrations fire on real events only).
+          if (widget.analysisId != null && widget.petName != null) ...[
+            const SizedBox(height: 12),
+            _SavedConfirmation(petName: widget.petName!),
+          ],
           const SizedBox(height: 16),
           Text(r.primaryConcern, style: Theme.of(context).textTheme.titleMedium),
           if (r.visibleSymptoms.isNotEmpty) ...[
@@ -180,9 +197,28 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
             onPressed: widget.onDone ?? () => Navigator.of(context).maybePop(),
             child: const Text('Done'),
           ),
-        ],
+        ]),
       ),
     );
+  }
+
+  /// 280ms fade-up beats, 40ms apart (M1 #7). Widgets are in the tree (and
+  /// tappable) immediately; only opacity/offset animate. Reduce-motion: none.
+  List<Widget> _staggered(BuildContext context, List<Widget> children) {
+    if (reduceMotion(context)) return children;
+    return [
+      for (var i = 0; i < children.length; i++)
+        children[i]
+            .animate()
+            .fadeIn(
+                duration: const Duration(milliseconds: 280),
+                delay: Duration(milliseconds: 40 * i))
+            .slideY(
+                begin: 0.04,
+                end: 0,
+                duration: const Duration(milliseconds: 280),
+                curve: AppMotion.emphasized),
+    ];
   }
 
   Widget _section(String title, List<String> lines) => Column(
@@ -193,6 +229,57 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
           for (final l in lines) Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Text(l)),
         ],
       );
+}
+
+/// M1 (matrix #7): the quiet "it's in the record" reassurance beat — a calm
+/// confirmation chip, not a celebration. Slides in after the verdict lands;
+/// static under reduce-motion.
+class _SavedConfirmation extends StatelessWidget {
+  const _SavedConfirmation({required this.petName});
+  final String petName;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final chip = Container(
+      key: const Key('result_saved_confirmation'),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s12, vertical: AppSpace.s8),
+      decoration: BoxDecoration(
+        color: scheme.secondaryContainer,
+        borderRadius: AppRadius.brSm,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle_rounded,
+              size: 16, color: scheme.onSecondaryContainer),
+          const SizedBox(width: AppSpace.s8),
+          Flexible(
+            child: Text(
+              'Saved to ${petDisplayName(petName)}’s history',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: scheme.onSecondaryContainer),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (reduceMotion(context)) return chip;
+    return chip
+        .animate()
+        .fadeIn(
+            delay: const Duration(milliseconds: 400),
+            duration: const Duration(milliseconds: 280))
+        .slideY(
+            begin: -0.3,
+            end: 0,
+            delay: const Duration(milliseconds: 400),
+            duration: const Duration(milliseconds: 280),
+            curve: AppMotion.emphasized);
+  }
 }
 
 /// Triage verdict hero: colour + distinct shape (icon) + text label — never
