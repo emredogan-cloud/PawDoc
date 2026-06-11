@@ -47,6 +47,7 @@ class AnalysisRunnerScreen extends ConsumerStatefulWidget {
 class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
   _Phase _phase = _Phase.loading;
   AnalysisOutcome? _outcome;
+  bool _firstCheckEver = false;
 
   @override
   void initState() {
@@ -78,7 +79,15 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
       ref.invalidate(latestTriageProvider(widget.petId));
       // Side effects must not block or error the result UI.
       unawaited(Analytics.analysisCompleted(outcome.result.triageLevel.wireValue));
-      unawaited(PaywallPrefs.markFirstAnalysisCompleted());
+      // M3 (#17): the one-time-ever "story has begun" toast — NEVER on an
+      // EMERGENCY result (no celebration adjacency on the critical path).
+      unawaited(PaywallPrefs.markFirstAnalysisCompleted().then((first) {
+        if (first &&
+            mounted &&
+            outcome.result.triageLevel != TriageLevel.emergency) {
+          setState(() => _firstCheckEver = true);
+        }
+      }));
     } catch (_) {
       if (mounted) setState(() => _phase = _Phase.error);
     }
@@ -128,6 +137,7 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
           onDone: _onResultDone,
           petName: widget.petName,
           petSpecies: widget.petSpecies,
+          firstCheckToast: _firstCheckEver,
         );
     }
   }

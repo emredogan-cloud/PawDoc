@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""M1 "First breath" Lottie asset builder (PAWDOC_MOTION_ROADMAP.md §4, A1-A6 + matrix #8).
+"""PawDoc Lottie asset builder (PAWDOC_MOTION_ROADMAP.md §4).
+
+M1 "First breath": A1-A6 + matrix #8 ambient loops / one-shots.
+M3 "Emotional milestones": A7 gift-open + A8 premium-welcome one-shots.
 
 Reproducible pipeline: founder PNG illustrations -> embedded-image Lottie with
 vector overlay motion (breathing transforms, blinks, sparkles, glow, ECG draw,
@@ -482,8 +485,97 @@ def build_history():
     emit(comp, "history_empty_loop_v1.json")
 
 
+
+
+def build_a7():
+    """Gift-open claim reveal (one-shot 2.2s): the open-gift art pops in with
+    overshoot, the built-in glow heart blooms, <=12 paw-confetti particles arc
+    out and fade, settles to the art's own open pose. Claim success ONLY."""
+    op = 132
+    im, png, bbox, scale = prep_image(os.path.join(ILL, "growth", "referral_gift_open_v1.png"), 540)
+    W, H, mx, my = std_canvas(im)
+    pop = anim([(0, [82, 82, 100]), (16, [105, 105, 100]),
+                (28, [98.5, 98.5, 100]), (40, [100, 100, 100]),
+                (op, [100, 100, 100])], 3)
+    art = {"ddd": 0, "ind": 2, "ty": 2, "nm": "gift", "refId": "img_0", "sr": 1,
+           "ks": {"o": anim([(0, [0]), (8, [100]), (op, [100])], 1),
+                  "r": static(0),
+                  "p": static([W / 2, my + im.height * 0.96, 0]),
+                  "a": static([im.width / 2, im.height * 0.96, 0]),
+                  "s": pop},
+           "ao": 0, "ip": 0, "op": op, "st": 0, "bm": 0}
+
+    # reward glow bloom over the art's heart region (upper center-right)
+    hx, hy = W * 0.60, H * 0.30
+    glow = shape_layer("glow", [group(
+        [ellipse([im.width * 0.5, im.width * 0.5]), fill([1.0, 0.92, 0.70])],
+        pos=[hx, hy],
+        scale=anim([(0, [60, 60]), (54, [128, 128]), (op, [108, 108])], 2),
+        opacity=anim([(0, [0]), (22, [42]), (66, [16]), (op, [10])], 1))],
+        op=op, ind=3)
+
+    # paw confetti: 10 particles (<=12 budget), arcs out, gone by ~1.9s
+    import math
+    particles = []
+    palette = [SPARK, [1.0, 0.66, 0.48], MINT, [1.0, 0.92, 0.70]]
+    for i in range(10):
+        ang = math.radians(250 + i * 24 + (7 * i) % 11)
+        dist = im.width * (0.30 + 0.05 * (i % 3))
+        x0, y0 = W / 2, H * 0.46
+        x1 = x0 + dist * math.cos(ang) * 1.1
+        y1 = y0 + dist * math.sin(ang) - im.width * 0.10
+        y2 = y1 + im.width * 0.16
+        t0, tm, t1 = 10, 60, 112
+        particles.append(group(
+            [star(7 + (i % 3) * 2, 3 + (i % 3)), fill(palette[i % 4])],
+            pos=anim([(t0, [x0, y0]), (tm, [x1, y1]), (t1, [x1 + 6, y2])], 2),
+            rotation=anim([(t0, [0]), (t1, [120 + 30 * (i % 4)])], 1),
+            opacity=anim([(0, [0]), (t0, [0]), (t0 + 6, [95]),
+                          (tm + 24, [70]), (t1, [0]), (op, [0])], 1),
+            name=f"paw{i}"))
+    confetti = shape_layer("confetti", particles, op=op, ind=1)
+
+    comp = composition("referral_gift_open_v1", W, H, op,
+                       [img_asset(png, im.width, im.height)],
+                       [confetti, art, glow])
+    emit(comp, "referral_gift_open_v1.json")
+
+
+def build_a8():
+    """Welcome-to-Premium (one-shot 2.5s): the sleeper rises and stretches
+    (raster art keeps eyes closed — the wake reads through the rise), six
+    sparkles, warm glow bloom, settles content. No confetti cannon."""
+    op = 150
+    im, png, bbox, scale = prep_image(os.path.join(ILL, "monetization", "paywall_peace_of_mind_v1.png"), 540)
+    W, H, mx, my = std_canvas(im)
+    base_y = my + im.height * 0.96
+    art = {"ddd": 0, "ind": 2, "ty": 2, "nm": "sleeper", "refId": "img_0", "sr": 1,
+           "ks": {"o": anim([(0, [0]), (10, [100]), (op, [100])], 1),
+                  "r": static(0),
+                  "p": anim([(0, [W / 2, base_y + 6, 0]), (42, [W / 2, base_y - 9, 0]),
+                             (96, [W / 2, base_y - 4, 0]), (op, [W / 2, base_y - 4, 0])], 3),
+                  "a": static([im.width / 2, im.height * 0.96, 0]),
+                  "s": anim([(0, [100, 100, 100]), (45, [102.5, 106, 100]),
+                             (90, [100.5, 100.5, 100]), (op, [100.5, 100.5, 100])], 3)},
+           "ao": 0, "ip": 0, "op": op, "st": 0, "bm": 0}
+    glow = shape_layer("glow", [group(
+        [ellipse([im.width * 0.9, im.height * 0.62]), fill([1.0, 0.95, 0.78])],
+        pos=[W / 2, my + im.height * 0.55],
+        opacity=anim([(0, [0]), (40, [30]), (110, [12]), (op, [12])], 1))],
+        op=op, ind=3)
+    sparkles = shape_layer("sparkles", [
+        sparkle([W * (0.18 + 0.13 * i), H * (0.20 + 0.07 * (i % 3))], 9 + (i % 3) * 2,
+                [(14 + i * 14, 52)], op)
+        for i in range(6)
+    ], op=op, ind=1)
+    comp = composition("premium_welcome_v1", W, H, op,
+                       [img_asset(png, im.width, im.height)],
+                       [sparkles, art, glow])
+    emit(comp, "premium_welcome_v1.json")
+
+
 if __name__ == "__main__":
-    print("Building M1 Lottie assets -> mobile/assets/motion/")
+    print("Building Lottie assets -> mobile/assets/motion/")
     build_a1()
     build_a2()
     build_a3()
@@ -491,5 +583,7 @@ if __name__ == "__main__":
     build_a5()
     build_a6()
     build_history()
+    build_a7()
+    build_a8()
     print("done.")
     sys.exit(0)

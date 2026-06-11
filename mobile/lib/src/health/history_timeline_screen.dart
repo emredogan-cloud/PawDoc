@@ -147,7 +147,13 @@ class HealthHistoryScreen extends ConsumerWidget {
           ref.invalidate(healthTimelineProvider(pet.id!));
           if (logged == true) {
             messenger.showSnackBar(
-              SnackBar(content: Text('Logged to ${petDisplayName(pet.name)}’s history')),
+              SnackBar(
+                content: Row(children: [
+                  const Icon(Icons.pets_rounded, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('Logged to ${petDisplayName(pet.name)}’s history')),
+                ]),
+              ),
             );
           }
         },

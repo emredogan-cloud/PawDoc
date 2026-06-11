@@ -4,6 +4,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../analytics/analytics.dart';
 import '../core/app_motion_asset.dart';
+import '../core/celebration_overlay.dart';
 import '../experiments/feature_flags.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
@@ -66,10 +67,17 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       if (result.customerInfo.entitlements.active.isNotEmpty) {
         await Analytics.subscriptionConverted();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Welcome to Premium 🎉')),
+          // M3 (#15): calm welcome moment on a REAL entitlement-active
+          // purchase — ≤2.5s, tap-skippable, reduce-motion → text snackbar.
+          // Purchase/eligibility logic above is untouched (visual swap only).
+          await showCelebration(
+            context,
+            motionAsset: AppMotionAssets.premiumWelcome,
+            fallbackAsset: AppAssets.paywallPeace,
+            message: 'Welcome to Premium 🎉',
+            duration: const Duration(milliseconds: 2500),
           );
-          Navigator.of(context).pop(true);
+          if (mounted) Navigator.of(context).pop(true);
         }
         return;
       }

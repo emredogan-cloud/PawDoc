@@ -7,6 +7,7 @@ import '../account/user_profile.dart';
 import '../analytics/analytics.dart';
 import '../auth/supabase_providers.dart';
 import '../core/app_motion_asset.dart';
+import '../core/celebration_overlay.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import 'referral_prefs.dart';
@@ -139,7 +140,19 @@ class _ClaimCodeCardState extends ConsumerState<_ClaimCodeCard> {
     }
     if (!mounted) return;
     setState(() => _busy = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result.message)));
+    if (result.ok) {
+      // M3 (#14): the gift-open reveal replaces the bare snackbar — REAL
+      // claim success only; ≤2.2s, tap-skippable, reduce-motion → text.
+      await showCelebration(
+        context,
+        motionAsset: AppMotionAssets.referralGiftOpen,
+        fallbackAsset: AppAssets.referralGiftOpen,
+        message: result.message,
+      );
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(result.message)));
+    }
   }
 
   @override

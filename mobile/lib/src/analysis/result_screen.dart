@@ -26,7 +26,8 @@ class ResultScreen extends StatelessWidget {
       this.analysisId,
       this.onDone,
       this.petName,
-      this.petSpecies});
+      this.petSpecies,
+      this.firstCheckToast = false});
   final AnalysisResult result;
   final String? analysisId;
   final VoidCallback? onDone;
@@ -35,6 +36,10 @@ class ResultScreen extends StatelessWidget {
   /// M2 (#13): enables the relief/attentive avatar beat on the standard
   /// screen. EMERGENCY ignores it entirely — that screen renders zero rig.
   final String? petSpecies;
+
+  /// M3 (#17): the one-time-ever "story has begun" toast. The runner only
+  /// sets this for non-emergency results; the emergency route ignores it.
+  final bool firstCheckToast;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +51,8 @@ class ResultScreen extends StatelessWidget {
         analysisId: analysisId,
         onDone: onDone,
         petName: petName,
-        petSpecies: petSpecies);
+        petSpecies: petSpecies,
+        firstCheckToast: firstCheckToast);
   }
 }
 
@@ -89,22 +95,96 @@ class StandardResultScreen extends ConsumerStatefulWidget {
       this.analysisId,
       this.onDone,
       this.petName,
-      this.petSpecies});
+      this.petSpecies,
+      this.firstCheckToast = false});
   final AnalysisResult result;
   final String? analysisId;
   final VoidCallback? onDone;
   final String? petName;
   final String? petSpecies;
+  final bool firstCheckToast;
 
   @override
   ConsumerState<StandardResultScreen> createState() => _StandardResultScreenState();
 }
 
 class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
+  OverlayEntry? _storyToast;
+
   @override
   void initState() {
     super.initState();
     Analytics.resultViewed(widget.result.triageLevel.wireValue);
+    if (widget.firstCheckToast && widget.petName != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showStoryToast());
+    }
+  }
+
+  /// M3 (#17): one-time-ever toast — 1.5s, tap-skippable, never blocks
+  /// anything (overlay above the screen). Reduce-motion: plain snackbar
+  /// (text confirmation only, per the M3 acceptance).
+  void _showStoryToast() {
+    if (!mounted) return;
+    final message = '${petDisplayName(widget.petName!)}’s story has begun';
+    if (reduceMotion(context)) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+      return;
+    }
+    final scheme = Theme.of(context).colorScheme;
+    _storyToast = OverlayEntry(
+      builder: (_) => Positioned(
+        left: 0,
+        right: 0,
+        bottom: 96,
+        child: Center(
+          child: GestureDetector(
+            onTap: _removeStoryToast, // tap = skip
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                key: const Key('first_check_toast'),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s16, vertical: AppSpace.s12),
+                decoration: BoxDecoration(
+                  color: scheme.inverseSurface,
+                  borderRadius: AppRadius.brMd,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.pets_rounded,
+                        size: 18, color: scheme.onInverseSurface),
+                    const SizedBox(width: AppSpace.s8),
+                    Text(message,
+                        style: TextStyle(color: scheme.onInverseSurface)),
+                  ],
+                ),
+              )
+                  .animate()
+                  .fadeIn(duration: const Duration(milliseconds: 220))
+                  .slideY(begin: 0.4, end: 0, curve: AppMotion.emphasized)
+                  .then(delay: const Duration(milliseconds: 1500))
+                  .fadeOut(duration: const Duration(milliseconds: 280)),
+            ),
+          ),
+        ),
+      ),
+    );
+    Overlay.of(context).insert(_storyToast!);
+    Future<void>.delayed(const Duration(seconds: 2, milliseconds: 200),
+        _removeStoryToast);
+  }
+
+  void _removeStoryToast() {
+    _storyToast?.remove();
+    _storyToast = null;
+  }
+
+  @override
+  void dispose() {
+    _removeStoryToast();
+    super.dispose();
   }
 
   Future<void> _share() async {
