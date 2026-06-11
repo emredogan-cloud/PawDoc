@@ -69,6 +69,8 @@ dependencies:
   google_fonts: ^8.1.0
   flutter_animate: ^4.5.2
   animations: ^2.2.0
+  lottie: ^3.3.3
+  visibility_detector: ^0.4.0+2
 
 dev_dependencies:
   flutter_test:
@@ -105,6 +107,7 @@ flutter:
   assets:
     - assets/brand/
     - assets/icon/
+    - assets/motion/
     - assets/illustrations/onboarding/
     - assets/illustrations/analysis/
     - assets/illustrations/empty_states/

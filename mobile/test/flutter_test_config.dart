@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 /// Auto-loaded by `flutter test` for every test in this package.
 ///
@@ -21,6 +22,13 @@ import 'package:google_fonts/google_fonts.dart';
 ///    local `MediaQuery` override (see test/motion_test.dart).
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   GoogleFonts.config.allowRuntimeFetching = false;
+
+  // M1: AppMotionAsset pauses loops offscreen via VisibilityDetector, whose
+  // default 500ms callback throttle leaves pending timers in widget tests.
+  // Zero interval fires visibility callbacks in-frame (the package's
+  // documented test setting); only tests that explicitly re-enable motion
+  // via a MediaQuery override ever reach this code path.
+  VisibilityDetectorController.instance.updateInterval = Duration.zero;
 
   setUp(() {
     TestWidgetsFlutterBinding.ensureInitialized()

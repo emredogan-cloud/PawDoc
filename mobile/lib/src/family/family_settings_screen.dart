@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../account/user_profile.dart';
-import '../core/app_image.dart';
+import '../core/app_motion_asset.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import 'family_repository.dart';
@@ -113,8 +113,11 @@ class _FamilyHeader extends StatelessWidget {
         if (size == 1) ...[
           const SizedBox(height: AppSpace.s16),
           Center(
-            child: AppImage(
-              AppAssets.familyCircle,
+            // M1 (A5): the circle breathes as one + sparkle drift; static PNG
+            // under reduce-motion / load failure.
+            child: AppMotionAsset(
+              AppMotionAssets.familyCircleLoop,
+              fallbackAsset: AppAssets.familyCircle,
               height: 120,
               fallback: Icon(Icons.groups_rounded, size: 72, color: scheme.primary),
             ),

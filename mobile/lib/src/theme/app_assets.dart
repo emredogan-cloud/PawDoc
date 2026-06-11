@@ -38,3 +38,33 @@ class AppAssets {
   static const String statusMonitor = '$_ic/status/status_monitor.png';
   static const String statusNormal = '$_ic/status/status_normal.png';
 }
+
+/// Lottie motion assets (M1 "First breath", PAWDOC_MOTION_ROADMAP.md §4).
+/// Always rendered through `AppMotionAsset` with the matching [AppAssets] PNG
+/// as the reduce-motion / degrade fallback. Budget: each file ≤250KB
+/// (enforced by test/motion_assets_test.dart).
+class AppMotionAssets {
+  const AppMotionAssets._();
+
+  static const _m = 'assets/motion';
+
+  static const String onbHeroLoop = '$_m/onboarding_hero_loop_v1.json'; // A1
+  static const String emptyHomeLoop = '$_m/empty_home_welcome_loop_v1.json'; // A2
+  static const String signinHeartbeat = '$_m/signin_heartbeat_v1.json'; // A3, one-shot
+  static const String paywallPeaceLoop = '$_m/paywall_peace_loop_v1.json'; // A4
+  static const String familyCircleLoop = '$_m/family_circle_loop_v1.json'; // A5
+  static const String referralGiftIdle = '$_m/referral_gift_idle_v1.json'; // A6, settle→loop
+  static const String historyEmptyLoop = '$_m/history_empty_loop_v1.json'; // matrix #8
+
+  /// Every shipped motion asset with its required PNG fallback (drives the
+  /// budget/parse test and the reduce-motion audit).
+  static const Map<String, String> allWithFallbacks = {
+    onbHeroLoop: AppAssets.onbHero,
+    emptyHomeLoop: AppAssets.emptyHome,
+    signinHeartbeat: AppAssets.logoMark,
+    paywallPeaceLoop: AppAssets.paywallPeace,
+    familyCircleLoop: AppAssets.familyCircle,
+    referralGiftIdle: AppAssets.referralGift,
+    historyEmptyLoop: AppAssets.emptyHistory,
+  };
+}

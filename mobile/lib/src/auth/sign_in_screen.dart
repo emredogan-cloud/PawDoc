@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../core/app_image.dart';
+import '../core/app_motion_asset.dart';
 import '../core/motion.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
@@ -198,8 +198,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
-        AppImage(
-          AppAssets.logoMark,
+        // M1 (A3): one-shot heartbeat — the ECG line draws across the shield
+        // once on build, then holds. NEVER loops (trust surface).
+        AppMotionAsset(
+          AppMotionAssets.signinHeartbeat,
+          fallbackAsset: AppAssets.logoMark,
+          oneShot: true,
           height: 72,
           semanticLabel: 'PawDoc',
           fallback: CircleAvatar(
