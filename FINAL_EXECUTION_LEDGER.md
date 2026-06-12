@@ -57,3 +57,13 @@ C1/C2/C3/C4 (legal, E&O, domain, KVKK), F-1..F-20 — see master plan. Agent pre
 - A1: https://github.com/emredogan-cloud/PawDoc/pull/new/fix/ai-multimodal
 - A2/E7: https://github.com/emredogan-cloud/PawDoc/pull/new/fix/analyze-ssrf-and-quota
 - (UI translation + launch hardening — prior missions): https://github.com/emredogan-cloud/PawDoc/pull/new/ui-translation
+
+## Sprint 1 (2026-06-12) — CLOSED
+- E11 service-hardening `fix/e11-service-hardening` e0bc83f (pytest 170; docs-off-in-prod, deps pinned)
+- E13 disclaimer-l10n  `fix/e13-disclaimer-localization` 43c80c4 (suite 190; en/de + EN fallback)
+- E14 db-hygiene       `fix/e14-db-hygiene` ea456e6 (test-rls PASS; CHECKs+indexes+security_invoker; subscription_status/RPC-revoke deferred w/ proof)
+- E15 secret-hygiene   `fix/e15-secret-hygiene` c4a3f2a (doppler.json gitignored)
+- D2 observability     `fix/d2-observability` 690277f (ai-svc Sentry + mobile tags + thresholds; Edge alerts/degraded-event + live DSN = remaining/founder)
+- D3 config-drift      `fix/d3-config-drift` 42378d6 (sync-secrets.sh + fly fra + auth-webhook removed; webhook delete = founder)
+- D5 ci-sovereignty    `fix/d5-ci-sovereignty` 3efb7fd (node-tests + placeholder gate + deploy-gated-on-CI; deno/nightly-RLS/required-checks = remaining/founder)
+See SPRINT_1_EXECUTION_REPORT.md for full evidence.
