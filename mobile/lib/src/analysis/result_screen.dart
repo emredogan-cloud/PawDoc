@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../analytics/analytics.dart';
+import '../core/app_image.dart';
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
@@ -11,7 +12,9 @@ import '../feedback/result_feedback_widget.dart';
 import '../models/analysis_result.dart';
 import '../monetization/insurance_affiliate_cta.dart';
 import '../monetization/telehealth_button.dart';
+import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_ui.dart';
 import '../vet_finder/vet_finder_screen.dart';
 import 'emergency_result_screen.dart';
 
@@ -199,8 +202,15 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
   Widget build(BuildContext context) {
     final r = widget.result;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Result')),
+    return PawBackground(
+      variant: PawSurface.dark,
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Result'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         // M1 (matrix #7): sections fade-up in 280ms beats instead of popping
@@ -208,6 +218,18 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
         // present and hittable from the first frame.
         children: _staggered(context, [
           _TriageHero(level: r.triageLevel),
+          // Static companion art for the MONITOR verdict (decorative; no motion
+          // widget on the safety surface).
+          if (r.triageLevel == TriageLevel.monitor) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: AppImage(
+                AppAssets.resultMonitor,
+                height: 96,
+                fallback: const SizedBox.shrink(),
+              ),
+            ),
+          ],
           // M2 (#13): the pet shares the relief — NORMAL gets one happy beat,
           // MONITOR strictly the restrained attentive (ear-perk-only rule).
           // EMERGENCY never reaches this screen. Decorative; never gates.
@@ -231,7 +253,11 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
             _SavedConfirmation(petName: widget.petName!),
           ],
           const SizedBox(height: 16),
-          Text(r.primaryConcern, style: Theme.of(context).textTheme.titleMedium),
+          Text(r.primaryConcern,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(color: AppColors.ink50)),
           if (r.visibleSymptoms.isNotEmpty) ...[
             const SizedBox(height: 16),
             _section('What we noticed', [for (final s in r.visibleSymptoms) '• $s']),
@@ -308,12 +334,16 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
             ResultFeedbackWidget(analysisId: widget.analysisId!),
           ],
           const SizedBox(height: 8),
-          FilledButton(
-            key: const Key('result_done'),
-            onPressed: widget.onDone ?? () => Navigator.of(context).maybePop(),
-            child: const Text('Done'),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              key: const Key('result_done'),
+              onPressed: widget.onDone ?? () => Navigator.of(context).maybePop(),
+              child: const Text('Done'),
+            ),
           ),
         ]),
+      ),
       ),
     );
   }
