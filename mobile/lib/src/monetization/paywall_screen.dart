@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../analytics/analytics.dart';
+import '../core/app_image.dart';
 import '../core/app_motion_asset.dart';
 import '../core/celebration_overlay.dart';
 import '../experiments/feature_flags.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_ui.dart';
 import 'paywall_copy.dart';
 
 /// Annual-first paywall (Variant A control). Phase 4.2 adds layout variants via
@@ -127,22 +129,36 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     final annual = _offering?.annual;
     final monthly = _offering?.monthly;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('PawDoc Premium')),
+    return PawBackground(
+      variant: PawSurface.dark,
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('PawDoc Premium'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpace.s20),
         children: [
-          Text('Unlimited peace of mind', style: Theme.of(context).textTheme.headlineSmall),
+          Text('Unlimited peace of mind',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: AppColors.ink50, fontWeight: FontWeight.w700)),
           const SizedBox(height: AppSpace.s8),
-          const Text('Unlimited AI health checks, history, and reminders for all your pets.'),
+          Text(
+              'Unlimited AI health checks, history, and reminders for all your pets.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: AppColors.ink300)),
           const SizedBox(height: AppSpace.s16),
           Center(
-            // M1 (A4): sleeper breathes with floating "z" — placement raised
-            // 120→160 per the production spec; static PNG under reduce-motion.
+            // M1 (A4): sleeper breathes with floating "z"; static PNG (the new
+            // premium night hero) under reduce-motion.
             child: AppMotionAsset(
               AppMotionAssets.paywallPeaceLoop,
-              fallbackAsset: AppAssets.paywallPeace,
-              height: 160,
+              fallbackAsset: AppAssets.premiumSleepingDog,
+              height: 180,
               fallback: const SizedBox.shrink(), // graceful: hide if no art yet
             ),
           ),
@@ -184,6 +200,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
             child: const Text('Not now'),
           ),
         ],
+      ),
       ),
     );
   }
@@ -243,27 +260,33 @@ class _PremiumComingSoon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
+    return PawCard(
       key: const Key('paywall_coming_soon'),
-      color: scheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpace.s20),
-        child: Column(
-          children: [
-            Icon(Icons.lock_clock_rounded, size: 40, color: scheme.primary),
-            const SizedBox(height: AppSpace.s12),
-            Text('Premium is coming soon',
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center),
-            const SizedBox(height: AppSpace.s8),
-            const Text(
-              'Subscriptions aren’t available just yet. Keep using PawDoc — '
-              'we’ll let you know the moment Premium opens.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+      padding: const EdgeInsets.all(AppSpace.s20),
+      child: Column(
+        children: [
+          AppImage(
+            AppAssets.premiumEnvelopePaw,
+            height: 96,
+            fallback: const Icon(Icons.lock_clock_rounded,
+                size: 40, color: PawPalette.mint),
+          ),
+          const SizedBox(height: AppSpace.s12),
+          Text('Premium is coming soon',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.ink50, fontWeight: FontWeight.w700),
+              textAlign: TextAlign.center),
+          const SizedBox(height: AppSpace.s8),
+          Text(
+            'Subscriptions aren’t available just yet. Keep using PawDoc — '
+            'we’ll let you know the moment Premium opens.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: AppColors.ink300),
+          ),
+        ],
       ),
     );
   }

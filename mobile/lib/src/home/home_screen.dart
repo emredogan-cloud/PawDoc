@@ -331,10 +331,9 @@ class _PetHeroCard extends ConsumerWidget {
     final subtitle =
         hasBreed ? '${speciesName(pet.species)} · ${pet.breed!.trim()}' : speciesName(pet.species);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpace.s16),
-        child: Column(
+    return PawCard(
+      padding: const EdgeInsets.all(AppSpace.s16),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -369,18 +368,14 @@ class _PetHeroCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: AppSpace.s16),
-            SizedBox(
-              width: double.infinity,
-              child: AppButton(
-                key: Key('check_${pet.id}'),
-                onPressed: onCheck,
-                icon: const Icon(Icons.health_and_safety),
-                child: Text('Check ${petDisplayName(pet.name)}'),
-              ),
+            PawPrimaryButton(
+              key: Key('check_${pet.id}'),
+              icon: Icons.health_and_safety_rounded,
+              onPressed: onCheck,
+              child: Text('Check ${petDisplayName(pet.name)}'),
             ),
           ],
         ),
-      ),
     );
   }
 
