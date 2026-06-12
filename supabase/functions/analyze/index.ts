@@ -17,6 +17,8 @@ import { formatVector, isCacheEligible, selectCacheHit } from "../_shared/semant
 import { aiServiceHeaders } from "../_shared/ai_service.mjs";
 // deno-lint-ignore no-import-assertions
 import { isOwnUploadKey } from "../_shared/upload_key.mjs";
+// deno-lint-ignore no-import-assertions
+import { blockAfterAi, blockBeforeAi, countsAgainstQuota } from "../_shared/quota_gate.mjs";
 
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
 // Phase A — trust-boundary credential presented to the internal AI service.
@@ -127,7 +129,13 @@ Deno.serve(async (req: Request) => {
     isPremium,
     bonus: profile?.bonus_analyses ?? 0, // Phase 3.3 referral reward pool
   });
-  if (!isEmergencyText && !decision.allowed) {
+  // GAP-A3: EMERGENCY is never paywalled — for the VISUAL half too. Block TEXT
+  // out-of-quota up front; a PHOTO/VIDEO out-of-quota request runs the AI (so an
+  // image emergency can surface) and is blocked only AFTER, and only if the
+  // verdict is not EMERGENCY (see the post-AI block below).
+  const quotaExceeded = !isEmergencyText && !decision.allowed;
+  const isVisual = input_type === "photo" || input_type === "video";
+  if (blockBeforeAi(quotaExceeded, isVisual)) {
     return json({
       error: "free_limit_reached",
       message:
@@ -296,6 +304,20 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // GAP-A3: an out-of-quota visual the AI did NOT flag as EMERGENCY → block here
+  // (uncounted, unstored) with only the triage chip + upgrade message. An
+  // EMERGENCY falls through and is returned + stored below, free.
+  if (blockAfterAi(quotaExceeded, result.triage_level)) {
+    return json({
+      error: "free_limit_reached",
+      quota_exceeded: true,
+      triage_level: result.triage_level,
+      message:
+        "You've used your free analyses this month. Upgrade to see the full result. " +
+        "If this seems urgent, contact a veterinarian now.",
+    }, 402);
+  }
+
   // Persist the analysis (service role).
   const { data: stored, error: storeErr } = await admin.from("analyses").insert({
     user_id: user.id,
@@ -317,11 +339,18 @@ Deno.serve(async (req: Request) => {
   }).select("id").single();
   if (storeErr) console.error("analyze: failed to store analysis", requestId, storeErr.message);
 
-  // Increment only after a successful, NON-emergency analysis (emergencies are
-  // free). GAP-E7: a degraded answer (tier_used === 0 — both providers failed,
-  // media unreadable, or kill-switch) is not a usable analysis and must not
-  // consume a free credit.
-  if (!isPremium && !isEmergencyText && (meta.tier_used ?? 0) > 0) {
+  // Count only a REAL, surfaced, non-emergency analysis. The GAP-E7 degraded
+  // guard (tier_used === 0) and the GAP-A3 emergency/quota guards all live in
+  // countsAgainstQuota (unit-tested).
+  if (
+    countsAgainstQuota({
+      isPremium,
+      isEmergencyText,
+      quotaExceeded,
+      triageLevel: result.triage_level,
+      tierUsed: meta.tier_used,
+    })
+  ) {
     await admin.from("users").update({
       free_analyses_used_this_month: decision.newUsed,
       free_analyses_reset_at: decision.resetAt,
