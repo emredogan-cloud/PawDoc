@@ -14,6 +14,13 @@ primary_region = "iad"  # adjust to sit near the prod Supabase region (0.2)
   auto_stop_machines = "off"
   min_machines_running = 1
 
+  # GAP-A4: cap in-flight requests per machine so a burst can't exhaust the
+  # thread pool and starve /health (which shares it). Excess queues/sheds.
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 20
+    hard_limit = 25
+
 [[http_service.checks]]
   grace_period = "5s"
   interval = "15s"
