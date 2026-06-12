@@ -41,6 +41,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'PawDoc liefert Informationen, keine Diagnose. Im Notfall sofort einen Tierarzt kontaktieren.';
 
   @override
+  String get resultDisclaimer =>
+      'PawDoc liefert Informationen, keine tierärztliche Diagnose. Wenden Sie sich im Zweifel an Ihren Tierarzt.';
+
+  @override
   String get emergencyAcknowledge => 'Mir ist klar, dass dies dringend ist';
 
   @override
