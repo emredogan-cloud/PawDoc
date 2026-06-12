@@ -651,9 +651,14 @@ class _CaptureModeTile extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpace.s16),
             child: Row(
               children: [
-                CircleAvatar(
-                  backgroundColor: scheme.primaryContainer,
-                  child: Icon(icon, color: scheme.primary),
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: PawPalette.teal.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Icon(icon, color: PawPalette.mint),
                 ),
                 const SizedBox(width: AppSpace.s16),
                 Expanded(
