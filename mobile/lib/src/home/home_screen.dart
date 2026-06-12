@@ -31,6 +31,7 @@ import '../referral/referral_screen.dart';
 import '../text_input/symptom_text_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_ui.dart';
 
 /// Sentinel value for the "Add pet" entry in the pet switcher menu.
 const _addPetSentinel = '__add_pet__';
@@ -101,8 +102,14 @@ class HomeScreen extends ConsumerWidget {
     final profile = ref.watch(userProfileProvider);
     final activePet = ref.watch(activePetProvider);
 
-    return Scaffold(
-      appBar: AppBar(
+    return PawBackground(
+      variant: PawSurface.dark,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
         title: petsAsync.maybeWhen(
           data: (list) =>
               list.isEmpty ? const Text('PawDoc') : _PetSwitcher(pets: list, active: activePet),
@@ -226,6 +233,7 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -399,22 +407,23 @@ class _HomeEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpace.s32),
       child: Column(
         children: [
-          // M1 (A2): welcome duo breathes + blinks; static PNG under
-          // reduce-motion / load failure (handled inside the wrapper).
+          // M1 (A2): welcome duo breathes + blinks; static PNG (the new
+          // duo-under-moon art) under reduce-motion / load failure.
           AppMotionAsset(
             AppMotionAssets.emptyHomeLoop,
-            fallbackAsset: AppAssets.emptyHome,
-            height: 160,
-            fallback: Icon(Icons.pets_rounded, size: 72, color: scheme.primary),
+            fallbackAsset: AppAssets.onbWelcomeDuoMoon,
+            height: 184,
+            fallback: const Icon(Icons.pets_rounded,
+                size: 88, color: PawPalette.mint),
           ),
           const SizedBox(height: AppSpace.s24),
           Text('Welcome to PawDoc 🐾',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: AppColors.ink50, fontWeight: FontWeight.w700),
               textAlign: TextAlign.center),
           const SizedBox(height: AppSpace.s8),
           Text(
@@ -422,30 +431,53 @@ class _HomeEmptyState extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
-                ?.copyWith(color: scheme.onSurfaceVariant),
+                ?.copyWith(color: AppColors.ink300),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpace.s24),
-          SizedBox(
-            width: double.infinity,
-            child: AppButton(
-              key: const Key('home_add_pet'),
-              onPressed: onAddPet,
-              icon: const Icon(Icons.add),
-              child: const Text('Add your pet'),
-            ),
+          PawPrimaryButton(
+            key: const Key('home_add_pet'),
+            icon: Icons.add_rounded,
+            onPressed: onAddPet,
+            child: const Text('Add your pet'),
           ),
           const SizedBox(height: AppSpace.s16),
-          Text(
-            freeRemaining == null
-                ? 'Premium — unlimited checks'
-                : '⚡ $freeRemaining free checks ready',
-            style: Theme.of(context)
-                .textTheme
-                .labelLarge
-                ?.copyWith(color: scheme.onSurfaceVariant),
-            textAlign: TextAlign.center,
-          ),
+          _FreeChecksChip(freeRemaining: freeRemaining),
+        ],
+      ),
+    );
+  }
+}
+
+/// Positive-framed free-checks pill for the home empty state ("⚡ 3 free checks
+/// ready"), shown as a small rounded chip rather than a billing meter.
+class _FreeChecksChip extends StatelessWidget {
+  const _FreeChecksChip({required this.freeRemaining});
+  final int? freeRemaining;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = freeRemaining == null
+        ? 'Premium — unlimited checks'
+        : '$freeRemaining free checks ready';
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s16, vertical: AppSpace.s8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: PawPalette.mint.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.bolt_rounded, size: 16, color: PawPalette.mint),
+          const SizedBox(width: AppSpace.s4),
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .labelLarge
+                  ?.copyWith(color: AppColors.ink50)),
         ],
       ),
     );

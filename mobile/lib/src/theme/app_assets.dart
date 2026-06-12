@@ -29,6 +29,30 @@ class AppAssets {
   static const String sysError = '$_ill/system/system_error_calm_v1.png';
   static const String sysOffline = '$_ill/system/system_offline_v1.png';
 
+  // ---- NEW UI translation illustrations (OLD→NEW migration, 2026-06-12) ----
+  // Cartoon puppy+kitten duo in the new teal-green design language. Every one is
+  // rendered through [AppImage] with a code fallback, so a missing file degrades
+  // gracefully (§7.4). Filenames are authoritative — provided by asset gen.
+  static const String onbWelcomeDuoMoon = '$_ill/onboarding/welcome_duo_moon_v1.png'; // 002 home empty
+  static const String onbDuoContent = '$_ill/onboarding/onboarding_duo_content_v1.png'; // 003 value
+  static const String onbDuoHug = '$_ill/onboarding/onboarding_duo_hug_v1.png'; // 004 add pet
+  static const String onbSafetyDuo = '$_ill/onboarding/onboarding_safety_duo_v1.png'; // 005 safety
+  static const String onbBellDuo = '$_ill/onboarding/onboarding_bell_duo_v1.png'; // 006 notifications
+  static const String onbFirstCheckDuo = '$_ill/onboarding/onboarding_firstcheck_duo_v1.png'; // 007 first check
+  static const String cameraGuidance = '$_ill/camera/camera_guidance_v1.png'; // 015/016 capture
+  static const String petsNone = '$_ill/pets/no_pets_v1.png'; // pets empty
+  static const String premiumGiftOpen = '$_ill/premium/gift_box_open_v1.png'; // 013 referral / 007 free checks
+  static const String premiumSleepingDog = '$_ill/premium/premium_sleeping_dog_v1.png'; // 011 hero
+  static const String premiumValueIcons = '$_ill/premium/premium_value_icons_v1.png'; // 011 value strip
+  static const String premiumEnvelopePaw = '$_ill/premium/referral_envelope_paw_v1.png'; // 011 notify-me / coming soon
+  static const String trustSleepingDuo = '$_ill/premium/trust_sleeping_cat_v1.png'; // 001 footer / 010 danger / 011
+  static const String resultCompanion = '$_ill/results/analysis_companion_v1.png'; // 019 result body
+  static const String resultEmergencySupport = '$_ill/results/emergency_support_v1.png'; // emergency result
+  static const String resultFirstCheckComplete = '$_ill/results/first_check_complete_v1.png'; // result success
+  static const String resultHistoryEmpty = '$_ill/results/history_empty_v1.png'; // 018 history hero
+  static const String resultMonitor = '$_ill/results/monitor_result_v1.png'; // 019 monitor banner
+  static const String offlineCompanion = '$_ill/system/offline_companion_v1.png'; // offline
+
   // ---- Species + avatars (keyed by the Species enum value) ----
   // 'other' ships as the paw mascot file (species_other_paw.png) — without
   // this mapping the Other chip silently fell back to the emoji (M2 find).
