@@ -81,7 +81,14 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   key: const Key('emergency_find_vet'),
-                  style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: red),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: red,
+                    shape: const StadiumBorder(),
+                    minimumSize: const Size.fromHeight(56),
+                    textStyle: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
                   onPressed: _findVet,
                   icon: const Icon(Icons.local_hospital),
                   label: Text(l.emergencyFindVet),
@@ -96,10 +103,17 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                 const InsuranceAffiliateCta(source: 'emergency_result'),
                 const SizedBox(height: 24),
                 if (r.disclaimerRequired)
-                  Text(
-                    l.emergencyDisclaimer,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpace.s12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.14),
+                      borderRadius: AppRadius.brMd,
+                    ),
+                    child: Text(
+                      l.emergencyDisclaimer,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
                   ),
                 const SizedBox(height: 16),
                 CheckboxListTile(
@@ -108,13 +122,21 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                   onChanged: (v) => setState(() => _acknowledged = v ?? false),
                   controlAffinity: ListTileControlAffinity.leading,
                   tileColor: Colors.white24,
+                  shape: const RoundedRectangleBorder(borderRadius: AppRadius.brMd),
                   title: Text(l.emergencyAcknowledge,
                       style: const TextStyle(color: Colors.white)),
                 ),
                 const SizedBox(height: 8),
                 FilledButton(
                   key: const Key('emergency_continue'),
-                  style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: red),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: red,
+                    shape: const StadiumBorder(),
+                    minimumSize: const Size.fromHeight(56),
+                    textStyle: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
                   onPressed: _acknowledged ? () => Navigator.of(context).maybePop() : null,
                   child: Text(l.actionContinue),
                 ),

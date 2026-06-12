@@ -7,11 +7,11 @@ import 'package:go_router/go_router.dart';
 import '../auth/sign_in_screen.dart';
 import '../auth/supabase_providers.dart';
 import '../capture/camera_screen.dart';
+import '../core/root_shell.dart';
 import '../family/accept_family_invite_screen.dart';
 import '../family/family_settings_screen.dart';
 import '../family/pending_invite_prefs.dart';
 import '../health/history_timeline_screen.dart';
-import '../home/home_screen.dart';
 import '../onboarding/onboarding_flow.dart';
 import '../pets/pets_list_screen.dart';
 import '../referral/referral_prefs.dart';
@@ -73,7 +73,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         pageBuilder: (context, state) =>
-            AppPageTransitions.fadeThrough(context, const HomeScreen()),
+            AppPageTransitions.fadeThrough(context, const RootShell()),
       ),
       GoRoute(
         path: '/sign-in',

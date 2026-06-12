@@ -163,6 +163,8 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
             ),
           ),
           const SizedBox(height: AppSpace.s16),
+          const _TrustPillars(),
+          const SizedBox(height: AppSpace.s16),
           const _ValueStack(),
           // Variant C: a truthful value/trust card (was a fabricated testimonial;
           // honesty-fixed in Phase B). Layout-only A/B arm — analytics unchanged.
@@ -286,6 +288,48 @@ class _PremiumComingSoon extends StatelessWidget {
                 .bodyMedium
                 ?.copyWith(color: AppColors.ink300),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Truthful trust pillars (replaces the deliberately-omitted fabricated social
+/// proof from the 011 mockup). No metrics, ratings, or testimonials — only
+/// defensible statements about how PawDoc is built. CMS-swappable later.
+class _TrustPillars extends StatelessWidget {
+  const _TrustPillars();
+
+  static const _pillars = <(IconData, String)>[
+    (Icons.medical_services_outlined, 'Designed with veterinarians in mind'),
+    (Icons.health_and_safety_outlined, 'Built to err on the safe side'),
+    (Icons.event_repeat_rounded, 'Trusted routines for everyday pet care'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return PawCard(
+      key: const Key('paywall_trust_pillars'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final (icon, text) in _pillars)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+              child: Row(
+                children: [
+                  Icon(icon, size: 20, color: PawPalette.mint),
+                  const SizedBox(width: AppSpace.s12),
+                  Expanded(
+                    child: Text(text,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(color: AppColors.ink50)),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
