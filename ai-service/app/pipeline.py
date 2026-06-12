@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from . import config
 from .cache import Cache, is_ai_disabled
 from .logging_setup import get_logger
+from .media import MediaFetchError
 from .models import (
     AnalysisParseError,
     AnalysisResult,
@@ -83,6 +84,25 @@ def _insufficient_information_result(confidence: float) -> AnalysisResult:
     )
 
 
+def _media_unreadable_result() -> AnalysisResult:
+    # GAP-A1: the media couldn't be fetched/decoded, so the model saw no pixels.
+    # We must NOT fall back to a text-only "confident" read — degrade to a safe
+    # MONITOR that names the problem (never NORMAL).
+    return AnalysisResult(
+        triage_level=TriageLevel.MONITOR,
+        confidence=0.0,
+        primary_concern="We couldn't read the photo or video.",
+        visible_symptoms=[],
+        differential=[],
+        recommended_actions=[
+            "Please retake a clear, well-lit photo or video and try again.",
+            "If your pet seems unwell, contact a veterinarian.",
+        ],
+        urgency_timeframe="retake and try again",
+        disclaimer_required=True,
+    )
+
+
 class AnalysisPipeline:
     def __init__(self, tier2: AIProvider, tier3: AIProvider, cache: Cache,
                  moderator: ImageModerator | None = None) -> None:
@@ -114,6 +134,8 @@ class AnalysisPipeline:
                     pet_context_block=pet_context,
                 )
                 return parse_analysis_result(raw)
+            except MediaFetchError:
+                raise  # don't retry — re-fetching an unreadable URL won't help
             except (ProviderError, AnalysisParseError) as exc:
                 last = exc
                 log.warning("provider %s attempt %d failed: %s", provider.name, attempt, exc)
@@ -185,6 +207,11 @@ class AnalysisPipeline:
         try:
             result = self._call(self.tier2, request)
             tier, model = 2, self.tier2.name
+        except MediaFetchError as exc:
+            log.warning("media unreadable (%s) — safe degrade (never NORMAL)", exc)
+            return self._outcome(
+                _media_unreadable_result(), 0, "media_error", degraded=True, start=start
+            )
         except ProviderError as exc:
             log.warning("Tier 2 (%s) failed: %s — failing over to Tier 3", self.tier2.name, exc)
             try:
