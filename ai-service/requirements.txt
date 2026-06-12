@@ -7,3 +7,5 @@ google-genai>=1.0
 httpx>=0.27
 # Phase 5.3 — OpenAI (GPT-4o) for the weekly Health Journal. Lazy-imported.
 openai>=1.40
+# GAP-D2: error monitoring (lazy-imported in main._init_sentry; no-op without a DSN).
+sentry-sdk[fastapi]==2.62.0

@@ -111,7 +111,14 @@ Future<void> _initAndRun() async {
   // Initialize Sentry early to capture dev-time crashes (Phase 1.1 deliverable).
   if (Env.sentryDsn.isNotEmpty) {
     await SentryFlutter.init(
-      (options) => options.dsn = Env.sentryDsn,
+      (options) {
+        options.dsn = Env.sentryDsn;
+        // GAP-D2: tag every event with environment + release so prod issues are
+        // filterable and regressions are attributable to a specific build.
+        options.environment = kReleaseMode ? 'prod' : 'dev';
+        options.release =
+            'pawdoc@${const String.fromEnvironment('APP_VERSION', defaultValue: '1.0.0+1')}';
+      },
       appRunner: startApp,
     );
   } else {
