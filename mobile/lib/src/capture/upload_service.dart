@@ -19,12 +19,18 @@ class UploadService {
 
   final SupabaseClient _client;
 
+  // GAP-E8(d): bound every network leg so a stalled upload surfaces an error
+  // instead of an infinite spinner (the F-1 hang class). On timeout these throw
+  // TimeoutException, which the capture flow handles as a normal failure.
+  static const _invokeTimeout = Duration(seconds: 20);
+  static const _putTimeout = Duration(seconds: 60);
+
   Future<UploadResult> uploadJpeg(Uint8List jpegBytes) async {
     // 1. Ask the Edge Function for a presigned URL + the storage key it minted.
     final res = await _client.functions.invoke(
       'generate-upload-url',
       body: {'content_type': 'image/jpeg', 'ext': 'jpg'},
-    );
+    ).timeout(_invokeTimeout);
     final data = res.data;
     if (data is! Map || data['url'] == null || data['key'] == null) {
       throw Exception('Could not obtain an upload URL');
@@ -37,7 +43,7 @@ class UploadService {
       Uri.parse(url),
       headers: const {'Content-Type': 'image/jpeg'},
       body: jpegBytes,
-    );
+    ).timeout(_putTimeout);
     if (put.statusCode < 200 || put.statusCode >= 300) {
       throw Exception('Upload failed (HTTP ${put.statusCode})');
     }
