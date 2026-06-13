@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ludeeus/action-shellcheck@master
+      - uses: ludeeus/action-shellcheck@2.0.0 # GAP-D5: pin off @master (supply chain)
         with:
           scandir: ./scripts
 
@@ -46,6 +46,30 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # GAP-D5: the Edge free-tier / emergency-keyword / quota-gate / SSRF-key logic
+  # is covered by node --test but was never gated in CI.
+  node-tests:
+    name: Edge shared tests (node --test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: node --test (_shared)
+        run: node --test supabase/functions/_shared/*.test.mjs
+
+  # GAP-D5/B5: a placeholder or fabricated claim can never ship silently again.
+  # NOTE: this job stays RED until GAP-B5 truthifies the store/web/legal copy —
+  # that is the intended forcing function.
+  no-placeholders:
+    name: No placeholders / overclaims
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: verify-no-placeholders
+        run: ./scripts/verify-no-placeholders.sh
 
   flutter:
     name: Flutter analyze + test + build
