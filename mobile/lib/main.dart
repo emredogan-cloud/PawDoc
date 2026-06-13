@@ -95,6 +95,22 @@ Future<void> _initAndRun() async {
     } catch (_) {}
   }
 
+  // GAP-E6: on sign-out, dissociate this device from the user's external
+  // identities (push, purchases, analytics) so nothing bleeds into the next
+  // account signed in on the same device. Best-effort: each call is guarded.
+  if (Env.hasSupabase) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((state) async {
+      if (state.event != AuthChangeEvent.signedOut) return;
+      await OneSignalService.logout();
+      try {
+        await Purchases.logOut();
+      } catch (_) {}
+      try {
+        await Posthog().reset();
+      } catch (_) {}
+    });
+  }
+
   // Without Supabase configured the Supabase-backed providers (router, auth)
   // cannot be built and would surface a raw provider/assertion error screen
   // (Supabase.instance not initialized). Show an explicit configuration screen
