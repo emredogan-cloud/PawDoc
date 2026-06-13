@@ -1,0 +1,50 @@
+# PawDoc — Android release lanes (GAP-B4). Run from mobile/android:
+#   bundle exec fastlane android build      # artifact only, no upload
+#   bundle exec fastlane android beta        # -> Play internal track
+#   bundle exec fastlane android release     # -> Play production (staged 10%)
+#
+# Flutter produces the .aab; these lanes build it and (beta/release) upload to
+# Google Play. All secrets come from ENV (see ../../../fastlane/README.md +
+# docs/runbooks/11-fastlane-match.md) — never hardcode keys. NONE of these run
+# by default; CI invokes them only on an explicit v* tag.
+require "shellwords"
+
+flutter_root = File.expand_path("../..", __dir__) # mobile/android/fastlane -> mobile
+aab_path = File.join(flutter_root, "build/app/outputs/bundle/release/app-release.aab")
+
+default_platform(:android)
+
+platform :android do
+  desc "Build a release App Bundle (.aab) with Flutter. No upload."
+  lane :build do
+    sh("cd #{flutter_root.shellescape} && flutter build appbundle --release")
+    UI.success("AAB built: #{aab_path}")
+  end
+
+  desc "Build + upload to the Play Store INTERNAL track (beta testers)."
+  lane :beta do
+    build
+    upload_to_play_store(
+      track: "internal",
+      aab: aab_path,
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY_FILE"],
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Promote to PRODUCTION as a staged rollout (10%; bump in the Play console)."
+  lane :release do
+    build
+    upload_to_play_store(
+      track: "production",
+      aab: aab_path,
+      rollout: "0.1",
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY_FILE"],
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end
