@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../analytics/analytics.dart';
+import '../capture/upload_service.dart';
 import '../core/motion.dart';
 import '../experiments/feature_flags.dart';
 import '../models/analysis_result.dart';
@@ -51,6 +52,9 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
   _Phase _phase = _Phase.loading;
   AnalysisOutcome? _outcome;
   bool _firstCheckEver = false;
+  // E8c: a specific upload failure reason, shown above (not instead of) the
+  // safety nudge on the error screen.
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -63,7 +67,10 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
   }
 
   Future<void> _run() async {
-    setState(() => _phase = _Phase.loading);
+    setState(() {
+      _phase = _Phase.loading;
+      _errorMessage = null;
+    });
     try {
       final outcome = await ref.read(analysisServiceProvider).analyze(
             petId: widget.petId,
@@ -106,8 +113,21 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
           setState(() => _firstCheckEver = true);
         }
       }));
+    } on UploadException catch (e) {
+      // E8c: surface the specific upload reason; the safety nudge still shows.
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+          _phase = _Phase.error;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() => _phase = _Phase.error);
+      if (mounted) {
+        setState(() {
+          _errorMessage = null;
+          _phase = _Phase.error;
+        });
+      }
     }
   }
 
@@ -156,6 +176,10 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (_errorMessage != null) ...[
+                    Text(_errorMessage!, textAlign: TextAlign.center),
+                    const SizedBox(height: 8),
+                  ],
                   const Text(
                     "We couldn't analyze this right now. If this seems urgent, contact a veterinarian.",
                     textAlign: TextAlign.center,
