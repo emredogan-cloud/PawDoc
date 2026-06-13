@@ -11,7 +11,7 @@
          OneSignal push state out of Android cloud backup, so they can't be
          restored onto another device. -->
     <application
-        android:label="pawdoc"
+        android:label="PawDoc"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false"
