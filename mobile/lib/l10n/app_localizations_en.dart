@@ -41,6 +41,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'PawDoc provides information, not a diagnosis. In an emergency, contact a veterinarian immediately.';
 
   @override
+  String get resultDisclaimer =>
+      'PawDoc provides information, not a veterinary diagnosis. When in doubt, contact your vet.';
+
+  @override
   String get emergencyAcknowledge => 'I understand this needs urgent attention';
 
   @override

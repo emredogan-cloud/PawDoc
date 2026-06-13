@@ -34,7 +34,20 @@ log = get_logger("main")
 SERVICE_NAME = "pawdoc-ai"
 VERSION = "3.2.0"
 
-app = FastAPI(title="PawDoc AI Service", version=VERSION)
+
+def _docs_kwargs(is_production: bool) -> dict:
+    """GAP-E11: no interactive docs or OpenAPI schema in production — the service
+    is internal (Edge Functions only). In dev/test the defaults stay on."""
+    if is_production:
+        return {"docs_url": None, "redoc_url": None, "openapi_url": None}
+    return {}
+
+
+app = FastAPI(
+    title="PawDoc AI Service",
+    version=VERSION,
+    **_docs_kwargs(config.IS_PRODUCTION),
+)
 
 
 def _init_sentry() -> bool:
