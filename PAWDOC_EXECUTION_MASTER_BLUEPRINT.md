@@ -13,11 +13,11 @@
   - **A1** — real image/video pixels now reach the AI + safe degrade (`fix/ai-multimodal` `c210c31`; pytest 176, +9 payload contract tests).
   - **A2** — blind SSRF killed; server-derived URLs + own-key validation (`fix/analyze-ssrf-and-quota` `82841dc`; node 85, +4 tests).
   - **E7** — degraded answers no longer consume a free credit (same `82841dc`).
-- **Remaining engineering findings:** A3, A4, A5, A6, E8, E10, E11, E16, E2, E1, E3(agent part), E5(agent part), E6(agent part), E9(agent part), E12, E13, E14, E15, D2(agent part), D3, D4(agent draft), D5, B2, B3, B4, B5(agent part) — plus founder-only: A6-thirdparty-keys, B1, B6, C1–C7, D1, E4(decision), F-1..F-20.
+- **Remaining engineering findings (post-Sprint-3, 2026-06-13): NONE agent-executable.** Sprint 3 closed E8b/E8c (was E8), B4, D4; E2 closed earlier. All A-wave + E7, **Sprint 1** (E11/E13/E14/E15/D2/D3/D5), **Sprint 2** (E16/E1/E3/E5/E6/E9/E10/E12/B2/B3/B5) and **Sprint 3** (E8b/E8c/B4/D4) findings are CLOSED — see FINAL_EXECUTION_LEDGER.md. The only remaining engineering step is the **founder merge of PRs #41–#69 into protected main** (required-review gate; agent can't self-approve/bypass). Founder-only: merge gate, CI-on-merged-main, device E2E, A6-thirdparty-keys, B1, B6, C1–C7, D1, E4(decision), F-1..F-20.
 - **Readiness scores (honest, evidence-based):**
-  - **Engineering-for-beta:** **~40%** — the #1/#2 code blockers (A1/A2) are done; A3–A6 + ops + release remain. *Not* gated on legal.
-  - **Beta-50 (store-distributed):** **~15%** — needs all of Wave 0 + founder infra (dev DB/PITR, monitoring, domain, signing) + interim legal text live.
-  - **Public launch:** **~5%** — dominated by the attorney/E&O external critical path (2–4+ weeks) + store review.
+  - **Engineering-for-beta:** **~90%** (was ~78%) — every agent-executable finding closed + validated per-branch + pushed as PRs. The gap to 100% is the founder merge + CI green on integrated main (the agent cannot merge into protected `main`). *Not* gated on legal.
+  - **Beta-50 (store-distributed):** **~40%** (was ~35%) — needs the merge + founder infra (dev DB/PITR, monitoring, domain, signing) + SMTP + store-listing fill.
+  - **Public launch:** **~12%** (was ~10%) — still dominated by the attorney/E&O external critical path + store review; the legal/store fill is enforced by `verify-no-placeholders.sh --strict` (B5).
 - **Verdict today:** **NOT ENGINEERING-GO yet.** Reaching "ENGINEERING GO FOR 50-USER BETA" requires Wave-0 code complete (A3, A4, A5, A6, E8b/c/d, D2-agent, D3) **and** the founder infra minimum (D1 dev+backups, D2 consoles, C3 live privacy URL + support mailbox, F-17 live photo smoke).
 
 ---
