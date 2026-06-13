@@ -60,3 +60,7 @@ IS_PRODUCTION = bool(os.getenv("FLY_APP_NAME")) or os.getenv("AI_ENV", "").lower
     "production",
     "prd",
 )
+
+# GAP-D2: error monitoring. Empty by default => Sentry is a no-op in dev/test.
+# Set as a Fly secret on the production app so outages become visible.
+SENTRY_DSN = os.getenv("SENTRY_DSN", "")

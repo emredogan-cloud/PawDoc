@@ -10,3 +10,5 @@ httpx==0.28.1
 # Phase 5.3 — OpenAI (GPT-4o) for the weekly Health Journal. Lazy-imported and
 # not in the test venv; bound the major until a deploy pins the exact version.
 openai>=1.40,<2.0
+# GAP-D2: error monitoring (lazy-imported in main._init_sentry; no-op without a DSN).
+sentry-sdk[fastapi]==2.62.0

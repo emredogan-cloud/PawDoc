@@ -16,7 +16,13 @@ from . import config
 from .cache import make_cache
 from .embeddings import build_embedding_input, make_embedding_provider
 from .journal import JournalProvider, make_journal_provider
-from .logging_setup import configure_logging, get_logger, get_request_id, set_request_id
+from .logging_setup import (
+    configure_logging,
+    get_logger,
+    get_request_id,
+    mask_secrets,
+    set_request_id,
+)
 from .models import AnalyzeRequest, EmbedRequest, JournalRequest
 from .moderation import AllowAllModerator, GeminiModerator, ImageModerator
 from .pipeline import AnalysisPipeline
@@ -42,6 +48,39 @@ app = FastAPI(
     version=VERSION,
     **_docs_kwargs(config.IS_PRODUCTION),
 )
+
+
+def _init_sentry() -> bool:
+    """GAP-D2: error monitoring. No-op without a DSN (dev/test). PII off; the
+    before_send scrubber reuses mask_secrets so secrets never reach Sentry."""
+    if not config.SENTRY_DSN:
+        return False
+    import sentry_sdk  # lazy — only imported when a DSN is configured
+
+    def _scrub(event: dict, _hint: object) -> dict:
+        try:
+            if event.get("message"):
+                event["message"] = mask_secrets(str(event["message"]))
+            for ex in (event.get("exception", {}) or {}).get("values", []) or []:
+                if ex.get("value"):
+                    ex["value"] = mask_secrets(str(ex["value"]))
+        except Exception:  # noqa: BLE001 — scrubbing must never drop an event
+            pass
+        return event
+
+    sentry_sdk.init(
+        dsn=config.SENTRY_DSN,
+        environment="prod" if config.IS_PRODUCTION else "dev",
+        release=VERSION,
+        send_default_pii=False,
+        before_send=_scrub,
+        traces_sample_rate=0.0,
+    )
+    log.info("Sentry initialized (environment=%s)", "prod" if config.IS_PRODUCTION else "dev")
+    return True
+
+
+_SENTRY_ENABLED = _init_sentry()
 
 
 @app.middleware("http")
