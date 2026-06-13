@@ -67,3 +67,21 @@ C1/C2/C3/C4 (legal, E&O, domain, KVKK), F-1..F-20 — see master plan. Agent pre
 - D3 config-drift      `fix/d3-config-drift` 42378d6 (sync-secrets.sh + fly fra + auth-webhook removed; webhook delete = founder)
 - D5 ci-sovereignty    `fix/d5-ci-sovereignty` 3efb7fd (node-tests + placeholder gate + deploy-gated-on-CI; deno/nightly-RLS/required-checks = remaining/founder)
 See SPRINT_1_EXECUTION_REPORT.md for full evidence.
+
+## Sprint 2 (2026-06-13) — CLOSED (auth lifecycle & release surface)
+- E16 quota/emergency-UX `fix/e16-quota-ux` bd57abf (symptom min 20→12 + emergency-keyword bypass so "choking" is never blocked; 4 widget tests; referral bonus-cap migration; test-rls PASS)
+- E1  password-reset     `fix/e1-password-reset` 89d9d9d (forgot-pw dialog + RecoveryScreen + /recovery route + passwordRecovery listener; widget_test 5/5; apk OK. SMTP + redirect allow-list = founder)
+- E3  auth-hardening     `fix/e3-auth-hardening` e765635 (Apple gated to iOS/macOS; client min-pw 6→8; widget_test 5/5; apk OK. Server min-pw = founder dashboard)
+- E5  rc-idempotency     `fix/e5-rc-idempotency` b21b534 (processed_rc_events pk ledger + claim/release-on-failure + constant-time auth; node 87/87 incl 6 new; test-rls PASS. deno check = CI)
+- E6  onesignal-logout   `fix/e6-onesignal-logout` 86cf9ff (clear OneSignal/RevenueCat/PostHog on signedOut + allowBackup=false; analyze clean; apk OK)
+- E9  invite-fallback    `fix/e9-invite-fallback` bee3a5d (parseInviteToken + manual-entry dialog → /invite/:token; invite_token_test 5/5; apk OK)
+- E10 pdf-upsell         `fix/e10-pdf-upsell` fb55b46 (402 dead-end → actionable "Unlock" → paywall; pdf_entitlement 3/3; apk OK. Live 402 device pass = founder)
+- E12 family-hardening   `fix/e12-family-hardening` 22752aa (pets/analyses/reminders UPDATE WITH CHECK re-asserts membership; Upgrade→paywall; test-rls PASS incl new ASSERT 10)
+- B2  launcher-icon      `fix/b2-launcher-icon` 0493106 (flutter_launcher_icons adaptive + iOS alpha-flattened; "PawDoc" display name; apk OK. iOS render = founder/Xcode)
+- B3  permission-diet    `fix/b3-permission-diet` 8cc5419 (removed RECORD_AUDIO/READ_MEDIA_IMAGES/READ+WRITE_EXTERNAL_STORAGE via tools:node=remove + iOS NSPhotoLibrary; merged-manifest before/after proof; apk OK)
+- B5  truthfulness-gate  `fix/b5-truthfulness-gate` fe427a5 (truthified store+web overclaims incl fabricated testimonials; verify-no-placeholders.sh: fixed grep -I silent-pass, split overclaims/placeholders, forced-failure proof, --strict launch gate. CI wiring on D5 branch; legal fill = founder)
+See SPRINT_2_EXECUTION_REPORT.md for full evidence.
+
+### Founder-gated after Sprint 2
+- Merges: all branches pushed; founder squash-merges (gh unauthenticated here). E1+E3 both touch sign_in_screen/widget_test (different regions → auto-merge; merge E1 then E3). B5's verify-no-placeholders.sh supersedes D5's (take B5's).
+- Founder follow-ups surfaced: SMTP (E1/F-13) + Supabase redirect allow-list (E1); server min-pw 8 (E3/F-14); RC products (E5/F-15); real store URLs + legal entity/address/effective-date + App Review demo creds → enforced by `verify-no-placeholders.sh --strict` (B5); iOS icon render check (B2); live 402→paywall device pass (E10).
