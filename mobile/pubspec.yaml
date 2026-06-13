@@ -169,3 +169,7 @@ flutter_launcher_icons:
   image_path: "assets/icon/app_icon.png"
   adaptive_icon_background: "#00897B"
   adaptive_icon_foreground: "assets/icon/app_icon.png"
+  # GAP-B2: the iOS App Store rejects icons with an alpha channel. The source is
+  # RGBA, so flatten the iOS icon onto the brand teal to keep submission safe.
+  remove_alpha_ios: true
+  background_color_ios: "#00897B"

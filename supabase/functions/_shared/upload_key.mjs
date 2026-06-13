@@ -18,3 +18,19 @@ export function buildStorageKey(userId, ext, uuid) {
   }
   return `uploads/${userId}/${uuid}.${clean}`;
 }
+
+/**
+ * GAP-A2: true iff `key` is a well-formed `uploads/<userId>/<uuid>.<ext>` owned
+ * by `userId`. /analyze uses this to reject any client-supplied storage key
+ * outside the caller's own namespace before presigning a GET URL — closing the
+ * blind-SSRF vector where the client could hand the server an arbitrary URL/key.
+ * No path traversal; extension must be on the allowlist.
+ */
+export function isOwnUploadKey(key, userId) {
+  if (typeof key !== "string" || !userId) return false;
+  if (key.includes("..") || key.includes("\\")) return false;
+  const m = /^uploads\/([0-9a-fA-F-]{36})\/([0-9a-fA-F-]{36})\.([a-z0-9]+)$/.exec(key);
+  if (!m) return false;
+  if (m[1] !== userId) return false;
+  return ALLOWED_EXT.has(m[3]);
+}

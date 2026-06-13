@@ -41,6 +41,21 @@ void main() {
         throwsA(isA<FormatException>()),
       );
     });
+
+    test('bakes EXIF orientation into pixels before stripping it (E8b)', () {
+      // A 120x60 landscape frame tagged orientation=6 (rotate 90° CW) displays
+      // as 60x120 portrait. Stripping EXIF without baking would upload it
+      // sideways; baking must swap the pixel dimensions and leave no EXIF.
+      final src = img.Image(width: 120, height: 60);
+      img.fill(src, color: img.ColorRgb8(90, 130, 110));
+      src.exif.imageIfd.orientation = 6;
+      final oriented = Uint8List.fromList(img.encodeJpg(src));
+
+      final out = img.decodeJpg(compressForUpload(oriented).bytes)!;
+      expect(out.width, 60, reason: 'orientation must be baked (width<-height)');
+      expect(out.height, 120, reason: 'orientation must be baked (height<-width)');
+      expect(out.exif.imageIfd.isEmpty, isTrue, reason: 'EXIF still stripped');
+    });
   });
 
   group('assessQuality', () {

@@ -52,6 +52,22 @@ class AuthController {
     );
   }
 
+  /// GAP-E1: send a password-reset email. The link returns to the app via the
+  /// `pawdoc://` scheme (router-handled); the PASSWORD_RECOVERY auth event then
+  /// drives the set-new-password screen. Requires SMTP (founder, F-13) + the
+  /// redirect URL allow-listed in the Supabase dashboard.
+  Future<void> resetPassword(String email) {
+    return _client.auth.resetPasswordForEmail(
+      email,
+      redirectTo: 'pawdoc://login-callback',
+    );
+  }
+
+  /// GAP-E1: set a new password during a recovery session.
+  Future<void> updatePassword(String newPassword) {
+    return _client.auth.updateUser(UserAttributes(password: newPassword));
+  }
+
   Future<void> signOut() => _client.auth.signOut();
 
   static String _generateNonce([int length = 32]) {

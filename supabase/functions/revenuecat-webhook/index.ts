@@ -6,15 +6,22 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 // deno-lint-ignore no-import-assertions
 import { addonCreditsFromEvent, entitlementStatusFromEvent } from "../_shared/revenuecat.mjs";
+// deno-lint-ignore no-import-assertions
+import { timingSafeEqual } from "../_shared/timing_safe_equal.mjs";
 
 Deno.serve(async (req: Request) => {
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
-  // CR #21 — verify the secret RevenueCat sends in the Authorization header.
+  // CR #21 / GAP-E5 — verify the secret RevenueCat sends in the Authorization
+  // header with a constant-time compare. A plain `!==` short-circuits at the
+  // first differing byte, leaking the secret via response timing. Accept the
+  // bare secret or a "Bearer <secret>" form.
   const expected = Deno.env.get("REVENUECAT_WEBHOOK_SECRET");
   const auth = req.headers.get("Authorization") ?? "";
-  if (!expected || (auth !== expected && auth !== `Bearer ${expected}`)) {
+  const authorized = !!expected &&
+    (timingSafeEqual(auth, expected) || timingSafeEqual(auth, `Bearer ${expected}`));
+  if (!authorized) {
     return json({ error: "unauthorized" }, 401);
   }
 
@@ -36,6 +43,34 @@ Deno.serve(async (req: Request) => {
     { auth: { persistSession: false } },
   );
 
+  // GAP-E5 — idempotency. Claim this event id BEFORE applying any credit so a
+  // retried or duplicated delivery can't grant it twice. The primary-key insert
+  // is the atomic guard: a duplicate hits unique_violation (23505) and is
+  // skipped as already-processed. RevenueCat always sends event.id; if it were
+  // somehow absent we fall through unguarded rather than reject (subscription
+  // status writes are idempotent by nature — only the add-on credit is at risk).
+  const eventId = event?.id != null ? String(event.id) : null;
+  if (eventId) {
+    const { error: claimErr } = await admin
+      .from("processed_rc_events")
+      .insert({ event_id: eventId, app_user_id: appUserId, event_type: event?.type ?? null });
+    if (claimErr) {
+      if (claimErr.code === "23505") {
+        return json({ ok: true, changed: false, idempotent: true });
+      }
+      console.error("revenuecat-webhook claim failed", claimErr.message);
+      return json({ error: "claim failed" }, 500);
+    }
+  }
+
+  // Release the idempotency claim so a RevenueCat retry can re-process after a
+  // transient failure below — otherwise the credit would be lost permanently.
+  const releaseClaim = async () => {
+    if (eventId) {
+      await admin.from("processed_rc_events").delete().eq("event_id", eventId);
+    }
+  };
+
   // Phase 6.3 — one-time add-on credits (e.g. the $4.99 PDF report). Applied
   // FIRST so a consumable purchase is recorded even when there's no
   // subscription status change.
@@ -50,6 +85,7 @@ Deno.serve(async (req: Request) => {
       .eq("id", appUserId).single();
     if (readErr) {
       console.error("revenuecat-webhook addon read failed", readErr.message);
+      await releaseClaim();
       return json({ error: "addon read failed" }, 500);
     }
     // deno-lint-ignore no-explicit-any
@@ -63,6 +99,7 @@ Deno.serve(async (req: Request) => {
       .eq("id", appUserId);
     if (writeErr) {
       console.error("revenuecat-webhook addon update failed", writeErr.message);
+      await releaseClaim();
       return json({ error: "addon update failed" }, 500);
     }
     return json({
@@ -83,6 +120,7 @@ Deno.serve(async (req: Request) => {
     .eq("id", appUserId);
   if (error) {
     console.error("revenuecat-webhook update failed", error.message);
+    await releaseClaim();
     return json({ error: "update failed" }, 500);
   }
   return json({ ok: true, changed: true, status });

@@ -5,11 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../analytics/analytics.dart';
 import '../capture/upload_service.dart';
+import '../core/functions_error.dart';
 import '../core/motion.dart';
 import '../experiments/feature_flags.dart';
 import '../models/analysis_result.dart';
 import '../monetization/maybe_show_paywall.dart';
 import '../monetization/paywall_prefs.dart';
+import '../monetization/paywall_screen.dart';
 import '../theme/design_tokens.dart';
 import 'analysis_service.dart';
 import 'loading_screen.dart';
@@ -121,14 +123,43 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
           _phase = _Phase.error;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      // GAP-A5: a 402 (free-tier wall) carries an upgrade message + (for visual
+      // checks, GAP-A3) a teaser triage chip — surface it instead of a dead-end
+      // generic error. EMERGENCY never reaches here (the server returns it free).
+      final fe = asFunctionError(e);
+      if (fe != null && fe.isQuotaExceeded && mounted) {
+        await _showQuotaUpgrade(fe);
+        return;
+      }
       if (mounted) {
         setState(() {
           _errorMessage = null;
           _phase = _Phase.error;
         });
       }
-    }
+
+  }
+
+  /// GAP-A5: the free-tier upgrade prompt (replaces the silent retry loop). For
+  /// an out-of-quota visual check (GAP-A3) the server also returns the teaser
+  /// triage level, shown as a chip. After the sheet, we leave the runner.
+  Future<void> _showQuotaUpgrade(FunctionError fe) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetCtx) => _QuotaUpgradeSheet(
+        message: fe.message ?? "You've used your free analyses this month.",
+        triageLevel: fe.triageLevel,
+        onUpgrade: () {
+          Navigator.of(sheetCtx).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const PaywallScreen()),
+          );
+        },
+        onDismiss: () => Navigator.of(sheetCtx).pop(),
+      ),
+    );
+    if (mounted) Navigator.of(context).pop();
   }
 
   Future<void> _onResultDone() async {
@@ -205,5 +236,54 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
           firstCheckToast: _firstCheckEver,
         );
     }
+  }
+}
+
+/// GAP-A5 upgrade sheet: a clear path out of the free-tier wall (vs. a silent
+/// retry loop). Shows the server message + (for visual checks) the teaser
+/// triage chip, an Upgrade CTA, and a dismiss.
+class _QuotaUpgradeSheet extends StatelessWidget {
+  const _QuotaUpgradeSheet({
+    required this.message,
+    required this.onUpgrade,
+    required this.onDismiss,
+    this.triageLevel,
+  });
+
+  final String message;
+  final String? triageLevel;
+  final VoidCallback onUpgrade;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpace.s24),
+        child: Column(
+          key: const Key('quota_upgrade_sheet'),
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (triageLevel != null) ...[
+              Center(child: Chip(label: Text(triageLevel!))),
+              const SizedBox(height: AppSpace.s12),
+            ],
+            Text("You're out of free checks",
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center),
+            const SizedBox(height: AppSpace.s8),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: AppSpace.s16),
+            FilledButton(
+              key: const Key('quota_upgrade_button'),
+              onPressed: onUpgrade,
+              child: const Text('Upgrade for unlimited checks'),
+            ),
+            TextButton(onPressed: onDismiss, child: const Text('Not now')),
+          ],
+        ),
+      ),
+    );
   }
 }

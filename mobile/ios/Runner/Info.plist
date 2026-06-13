@@ -7,7 +7,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-		<string>Pawdoc</string>
+		<string>PawDoc</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-		<string>pawdoc</string>
+		<string>PawDoc</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
@@ -68,8 +68,8 @@
 		</array>
 		<key>NSCameraUsageDescription</key>
 		<string>PawDoc uses the camera so you can take a photo of your pet for an AI health check.</string>
-		<key>NSPhotoLibraryUsageDescription</key>
-		<string>PawDoc needs access to your photos so you can choose an existing photo of your pet for a health check.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>PawDoc uses your location to find nearby veterinary clinics in an emergency.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>
