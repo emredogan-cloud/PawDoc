@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pawdoc/l10n/app_localizations.dart';
+import 'package:pawdoc/src/app.dart' show resolveAppLocale;
 
 Widget _probe(Locale locale, void Function(AppLocalizations) onBuild) =>
     MaterialApp(
@@ -17,6 +18,27 @@ Widget _probe(Locale locale, void Function(AppLocalizations) onBuild) =>
     );
 
 void main() {
+  group('resolveAppLocale fallback (unsupported -> English, never German)', () {
+    const supported = [Locale('de'), Locale('en')]; // generated order: de first
+    test('Turkish (unsupported) falls back to English, NOT German', () {
+      expect(resolveAppLocale(const [Locale('tr', 'TR')], supported),
+          const Locale('en'));
+    });
+    test('German device resolves to German', () {
+      expect(resolveAppLocale(const [Locale('de', 'DE')], supported).languageCode, 'de');
+    });
+    test('English (any region) resolves to English', () {
+      expect(resolveAppLocale(const [Locale('en', 'US')], supported).languageCode, 'en');
+    });
+    test('empty / null device list falls back to English', () {
+      expect(resolveAppLocale(const [], supported), const Locale('en'));
+      expect(resolveAppLocale(null, supported), const Locale('en'));
+    });
+    test('first supported match in the device list wins (fr,de -> de)', () {
+      expect(resolveAppLocale(const [Locale('fr'), Locale('de')], supported).languageCode, 'de');
+    });
+  });
+
   testWidgets('English safety-critical strings resolve', (tester) async {
     AppLocalizations? l;
     await tester.pumpWidget(_probe(const Locale('en'), (x) => l = x));
