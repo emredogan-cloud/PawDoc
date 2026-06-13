@@ -17,8 +17,17 @@ class SymptomTextScreen extends StatefulWidget {
 
   final String? petName;
 
-  static const int minChars = 20;
+  static const int minChars = 12;
   static const int maxChars = 1000;
+  // GAP-E16 safety net: a short message naming a critical sign must NEVER be
+  // blocked by the min-length gate (the server still runs the authoritative
+  // hardcoded emergency override). Stems catch variants — "choking",
+  // "he's choking", "can't breathe".
+  static const List<String> emergencyHints = [
+    'chok', 'breath', 'seizur', 'convuls', 'collaps', 'unconscious',
+    'not moving', 'bloat', 'blue gum', 'pale gum', 'bleeding', 'blood',
+    'poison', 'hit by', "won't wake", 'wont wake', 'limp body', 'gasping',
+  ];
   static const List<String> examples = [
     'Vomiting',
     'Diarrhea',
@@ -57,7 +66,10 @@ class _SymptomTextScreenState extends State<SymptomTextScreen> {
   @override
   Widget build(BuildContext context) {
     final len = _controller.text.trim().length;
-    final tooShort = len < SymptomTextScreen.minChars;
+    // GAP-E16: never block a short emergency phrase ("choking" = 7 chars).
+    final looksEmergency = SymptomTextScreen.emergencyHints
+        .any(_controller.text.toLowerCase().contains);
+    final tooShort = len < SymptomTextScreen.minChars && !looksEmergency;
     final who = petDisplayName(widget.petName);
 
     return Scaffold(
