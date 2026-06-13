@@ -1,14 +1,20 @@
 # PawDoc — Engineering GO Report
 
-> **Date:** 2026-06-12 · Companion to `FINAL_EXECUTION_LEDGER.md` (status/SHAs) + `PAWDOC_EXECUTION_MASTER_BLUEPRINT.md` (per-finding plans).
+> **Date:** 2026-06-12 (Waves 0–1) · **Updated 2026-06-13 — Sprints 1–3 complete.** Companion to `FINAL_EXECUTION_LEDGER.md` (status/SHAs) + `PAWDOC_EXECUTION_MASTER_BLUEPRINT.md` (per-finding plans).
 > **Optimized for truth, not completion.** Verdicts below are evidence-backed; nothing is claimed done without a commit + validation.
 
-## Verdicts (up front)
-- **ENGINEERING GO for 50-user beta: ❌ NO — not yet.**
-- **BETA GO (store-distributed): ❌ NO.**
-- **PUBLIC LAUNCH GO: ❌ NO.**
+## Verdicts (up front · updated 2026-06-13)
+- **ENGINEERING GO for 50-user beta: ✅ YES IN CODE — pending the founder merge.** Every agent-executable engineering finding (Waves 0–1 + Sprints 1–3) is closed, validated per-branch, and pushed as PRs **#41–#69**. The one remaining engineering step — merging into protected `main` — requires a human review the agent can neither supply (no self-approval) nor bypass (the `--admin` override was correctly refused on this safety-critical app; proof in the ledger MERGE PHASE). After the merge + CI-green-on-merged-main + on-device E2E, this becomes an unqualified GO.
+- **BETA GO (store-distributed): ❌ NO** — needs the merge + founder infra (signing, dev DB/PITR, SMTP, store-metadata fill).
+- **PUBLIC LAUNCH GO: ❌ NO** — attorney/E&O critical path + store review.
 
-The entire **critical A-series (A1–A6) + E7** — the product-breaking, safety, security, stability, conversion, and erasure blockers — is **closed, validated, and pushed.** But agent-executable findings remain open (honest list below), and the founder/deploy critical path (legal, signing, dev DB, live device smoke) is untouched. This is a multi-session program; this session closed the 7 highest-severity findings + produced the blueprint, and **stopped at its context limit — not at the founder-gated boundary.** Stated plainly so the picture is true.
+The critical **A-series (A1–A6) + E7** AND **all Sprint 1–3 findings**
+(E1/E2/E3/E5/E6/E8b/E8c/E9/E10/E11/E12/E13/E14/E15/E16, D2/D3/D4/D5, B2/B3/B4/B5)
+are **closed, validated, and pushed.** The remaining blockers are **all
+founder-controlled**: the protected-`main` merge gate, CI-green-on-merged-main,
+on-device validation, and external infra/legal. See SPRINT_1/2/3_EXECUTION_REPORT.md
++ PAWDOC_FINAL_RELEASE_CANDIDATE_REPORT.md. (The original 2026-06-12 table below
+is Wave-0–1 history; the sprint reports carry the rest.)
 
 ---
 
