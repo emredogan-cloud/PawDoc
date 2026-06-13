@@ -68,6 +68,13 @@ insert into public.family_members (group_id, user_id, role) values
   ('5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a', '6a000000-0000-0000-0000-000000000001', 'owner'),
   ('5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a', '6b000000-0000-0000-0000-000000000002', 'member');
 
+-- GAP-E12: an outsider group A is NOT a member of (owned by C), used in ASSERT
+-- 10 to prove A cannot move Rex into a group A doesn't belong to.
+insert into public.family_groups (id, owner_user_id, name) values
+  ('0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c', '6c000000-0000-0000-0000-000000000003', 'Outsiders');
+insert into public.family_members (group_id, user_id, role) values
+  ('0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c', '6c000000-0000-0000-0000-000000000003', 'owner');
+
 -- A creates Rex (the BEFORE INSERT trigger defaults him to A's solo group)
 -- and then moves him to the SHARED group. This proves the family_group_id
 -- migration path AND the default trigger work end-to-end.
@@ -206,6 +213,51 @@ begin
   if not exists (select 1 from public.pets where id = '6d501000-0000-0000-0000-000000000001') then
     raise exception 'D cannot see D''s own standalone pet (SOLO-GROUP DEFAULT BROKEN)';
   end if;
+end
+$$;
+
+-- ASSERT 10 (GAP-E12): the pet's owner cannot move it into a family group they
+-- don't belong to — the UPDATE WITH CHECK re-asserts membership, blocking
+-- cross-tenant injection of a pet into a stranger's feed.
+reset role; select set_config('request.jwt.claims', '', false);
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"6a000000-0000-0000-0000-000000000001"}', false);
+do $$
+begin
+  begin
+    update public.pets set family_group_id = '0c0c0c0c-0c0c-0c0c-0c0c-0c0c0c0c0c0c'
+    where id = '6abce700-0000-0000-0000-000000000001';
+    raise exception 'E12: A moved Rex into a non-member group (TENANT BOUNDARY BREACHED)';
+  exception when insufficient_privilege then null; -- expected: WITH CHECK blocked it
+  end;
+  -- Rex must remain in the shared group (the blocked update changed nothing).
+  if not exists (
+    select 1 from public.pets
+    where id = '6abce700-0000-0000-0000-000000000001'
+      and family_group_id = '5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a'
+  ) then
+    raise exception 'E12: Rex left the shared group after a blocked move';
+  end if;
+end
+$$;
+
+-- ASSERT 10 (cont.): A CAN still move Rex within groups A belongs to — the
+-- boundary tightens cross-tenant moves without breaking legitimate ones.
+do $$
+declare a_solo uuid;
+begin
+  select group_id into a_solo from public.family_members
+  where user_id = '6a000000-0000-0000-0000-000000000001' and role = 'owner'
+    and group_id <> '5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a'
+  limit 1;
+  update public.pets set family_group_id = a_solo
+  where id = '6abce700-0000-0000-0000-000000000001';
+  if not found then
+    raise exception 'E12: A could not move Rex into A''s own solo group (over-tightened)';
+  end if;
+  -- restore the shared group so end state is unchanged for any later reads
+  update public.pets set family_group_id = '5a5a5a5a-5a5a-5a5a-5a5a-5a5a5a5a5a5a'
+  where id = '6abce700-0000-0000-0000-000000000001';
 end
 $$;
 

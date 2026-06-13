@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../analytics/analytics.dart';
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
@@ -262,7 +263,12 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
                   const SizedBox(width: AppSpace.s8),
                   Expanded(
                     child: Text(
-                      'PawDoc provides information, not a veterinary diagnosis. When in doubt, contact your vet.',
+                      // GAP-E13: localized (en/de) via the existing l10n system.
+                      // Null-safe EN fallback so this safety string is NEVER
+                      // empty if delegates are absent. The server still forces
+                      // WHETHER it shows (r.disclaimerRequired) — unchanged.
+                      AppLocalizations.of(context)?.resultDisclaimer ??
+                          'PawDoc provides information, not a veterinary diagnosis. When in doubt, contact your vet.',
                       // AA contrast (onSurface on the raised container).
                       style: TextStyle(
                           fontSize: 12,

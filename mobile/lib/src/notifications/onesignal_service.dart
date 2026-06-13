@@ -16,6 +16,18 @@ class OneSignalService {
     OneSignal.initialize(Env.oneSignalAppId);
   }
 
+  /// GAP-E6: dissociate this device from the user's OneSignal external id on
+  /// sign-out. Without it, pushes keep targeting a logged-out user and the next
+  /// account signed in on the same device inherits the old identity.
+  static Future<void> logout() async {
+    if (Env.oneSignalAppId.isEmpty) return;
+    try {
+      await OneSignal.logout();
+    } catch (_) {
+      // Push is non-critical; never let a logout failure block sign-out.
+    }
+  }
+
   /// Request push permission (the contextual prompt on Screen 4) and sync the id.
   Future<bool> requestPermissionAndSync() async {
     if (Env.oneSignalAppId.isEmpty) return false;

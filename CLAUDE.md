@@ -14,7 +14,7 @@ AI-native pet-health triage app: photo/video/text + pet context → AI triage
 ## File layout
 - `mobile/lib/src/{auth,onboarding,pets,capture,analysis,monetization,account,notifications,core}/`
 - `ai-service/app/` (pipeline, providers, safety, moderation) + `ai-service/tests/`
-- `supabase/migrations/`, `supabase/functions/{analyze,auth-webhook,revenuecat-webhook,generate-upload-url,delete-account}`, `supabase/tests/`
+- `supabase/migrations/`, `supabase/functions/` (~13 deployed: analyze, analyze-anonymous, revenuecat-webhook, generate-upload-url, delete-account, accept-family-invite, invite-family-member, journals/reminders crons, …; **auth-webhook removed — GAP-D3**, DB trigger supersedes it), `supabase/tests/`
 - `roadmap/APP_EXECUTION_ROADMAP_DECOMPOSED.md` — execution source of truth
 - `docs/runbooks/` (founder ops), `docs/legal/`, `docs/contracts/ANALYSIS_RESULT.md`
 - `scripts/verify-phase-*.sh`, `scripts/test-rls.sh`, `scripts/verify-disclaimers.sh`

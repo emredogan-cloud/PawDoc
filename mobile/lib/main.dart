@@ -95,6 +95,22 @@ Future<void> _initAndRun() async {
     } catch (_) {}
   }
 
+  // GAP-E6: on sign-out, dissociate this device from the user's external
+  // identities (push, purchases, analytics) so nothing bleeds into the next
+  // account signed in on the same device. Best-effort: each call is guarded.
+  if (Env.hasSupabase) {
+    Supabase.instance.client.auth.onAuthStateChange.listen((state) async {
+      if (state.event != AuthChangeEvent.signedOut) return;
+      await OneSignalService.logout();
+      try {
+        await Purchases.logOut();
+      } catch (_) {}
+      try {
+        await Posthog().reset();
+      } catch (_) {}
+    });
+  }
+
   // Without Supabase configured the Supabase-backed providers (router, auth)
   // cannot be built and would surface a raw provider/assertion error screen
   // (Supabase.instance not initialized). Show an explicit configuration screen
@@ -111,7 +127,14 @@ Future<void> _initAndRun() async {
   // Initialize Sentry early to capture dev-time crashes (Phase 1.1 deliverable).
   if (Env.sentryDsn.isNotEmpty) {
     await SentryFlutter.init(
-      (options) => options.dsn = Env.sentryDsn,
+      (options) {
+        options.dsn = Env.sentryDsn;
+        // GAP-D2: tag every event with environment + release so prod issues are
+        // filterable and regressions are attributable to a specific build.
+        options.environment = kReleaseMode ? 'prod' : 'dev';
+        options.release =
+            'pawdoc@${const String.fromEnvironment('APP_VERSION', defaultValue: '1.0.0+1')}';
+      },
       appRunner: startApp,
     );
   } else {

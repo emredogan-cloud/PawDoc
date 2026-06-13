@@ -19,6 +19,8 @@
 
   "emergencyDisclaimer": "PawDoc liefert Informationen, keine Diagnose. Im Notfall sofort einen Tierarzt kontaktieren.",
 
+  "resultDisclaimer": "PawDoc liefert Informationen, keine tierärztliche Diagnose. Wenden Sie sich im Zweifel an Ihren Tierarzt.",
+
   "emergencyAcknowledge": "Mir ist klar, dass dies dringend ist",
 
   "actionContinue": "Weiter",

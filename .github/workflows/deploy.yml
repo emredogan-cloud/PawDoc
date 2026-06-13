@@ -1,13 +1,15 @@
 name: Deploy AI service
 
-# Deploys ai-service to Fly.io on merge to main (only when the service changes).
-# Requires repo secret FLY_API_TOKEN (see docs/runbooks/10-cicd-github-actions.md).
+# GAP-D5: deploy ONLY after CI passes on main. Previously this ran on push
+# regardless of CI state, so a red main push would still deploy. `workflow_run`
+# cannot path-filter, so the ai-service deploy now runs on any green main CI;
+# `fly deploy` is idempotent and /health-smoke-checked, so a no-op redeploy is
+# harmless. Requires repo secret FLY_API_TOKEN (runbook 10).
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
-    paths:
-      - "ai-service/**"
-      - ".github/workflows/deploy.yml"
 
 # Never run two deploys at once; don't cancel an in-flight deploy.
 concurrency:
@@ -21,8 +23,11 @@ jobs:
   deploy:
     name: flyctl deploy
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Deploy
         working-directory: ai-service
