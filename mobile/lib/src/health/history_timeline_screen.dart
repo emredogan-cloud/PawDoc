@@ -9,6 +9,7 @@ import '../core/dates.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../export/health_report_service.dart';
+import '../monetization/paywall_screen.dart';
 import '../pets/active_pet.dart';
 import '../pets/pet.dart';
 import '../reminders/reminders_screen.dart';
@@ -45,6 +46,7 @@ class HealthHistoryScreen extends ConsumerWidget {
 
   Future<void> _exportPdf(BuildContext context, WidgetRef ref, String petId, String petName) async {
     final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     final profile = ref.read(userProfileProvider).asData?.value;
     await Analytics.pdfReportRequested(
       profile?.isPremium == true
@@ -58,11 +60,20 @@ class HealthHistoryScreen extends ConsumerWidget {
       await Analytics.pdfReportGenerated();
       ref.invalidate(userProfileProvider); // reflect a consumed credit
     } on PdfReportPaywallException {
+      // GAP-E10: make the 402 actionable. The old snackbar told the user to buy
+      // the add-on but gave them no way to — a dead end. Surface an upsell that
+      // opens the paywall (PDF add-on + Premium) so the gate can convert.
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Buy a PDF Health Report (\$4.99) or upgrade to Premium '
-            'to unlock detailed exports.',
+        SnackBar(
+          content: const Text(
+            'Unlock detailed PDF Health Reports — buy one for \$4.99 or go Premium.',
+          ),
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: 'Unlock',
+            onPressed: () => navigator.push(
+              MaterialPageRoute(builder: (_) => const PaywallScreen()),
+            ),
           ),
         ),
       );
