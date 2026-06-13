@@ -84,13 +84,19 @@ class GeminiProvider:
             ]
             contents = [*parts, text] if parts else text
 
-            client = genai.Client(api_key=self._api_key)
+            # GAP-A4: hard request timeout (ms) + bounded output so a hung/slow
+            # Gemini call can't pin a thread or run up cost.
+            client = genai.Client(
+                api_key=self._api_key,
+                http_options=types.HttpOptions(timeout=8000),
+            )
             resp = client.models.generate_content(
                 model=model,
                 contents=contents,
                 config=types.GenerateContentConfig(
                     temperature=config.ANALYSIS_TEMPERATURE,
                     response_mime_type="application/json",
+                    max_output_tokens=1024,
                 ),
             )
             import json
@@ -169,7 +175,12 @@ class ClaudeProvider:
             else:
                 content = user_prompt
 
-            client = anthropic.Anthropic(api_key=self._api_key)
+            # GAP-A4: 8s hard timeout + no SDK-level retries (the pipeline owns
+            # the single retry / failover). The Anthropic default is 600s, which
+            # would pin a thread and starve /health on the shared pool.
+            client = anthropic.Anthropic(
+                api_key=self._api_key, timeout=8.0, max_retries=0
+            )
             message = client.messages.create(
                 model=self._model,
                 max_tokens=1024,

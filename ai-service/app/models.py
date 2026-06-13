@@ -25,11 +25,13 @@ class PetContext(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     input_type: str  # photo | video | text
-    text_description: str | None = None
+    # GAP-A4: bound the request so a megabyte prompt / frame flood can't pin the
+    # service or run up cost. Over-cap input -> 422 (Pydantic ValidationError).
+    text_description: str | None = Field(default=None, max_length=4000)
     image_url: str | None = None  # short-lived signed R2 URL (Phase 1.2)
     # Video (Phase 3.2): short-lived signed R2 URLs for the client-extracted
-    # keyframes (4–6). Empty for photo/text.
-    frame_urls: list[str] = Field(default_factory=list)
+    # keyframes (4–6). Empty for photo/text. Capped at 6 (GAP-A4).
+    frame_urls: list[str] = Field(default_factory=list, max_length=6)
     pet: PetContext
     # Set by the Edge Function when client-side quality checks were poor; feeds
     # the borderline-NORMAL re-check (CR #4).
