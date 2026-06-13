@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../account/user_profile.dart';
 import '../core/app_motion_asset.dart';
 import '../core/motion.dart';
+import '../monetization/paywall_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import 'family_repository.dart';
 import 'invite_family_member_screen.dart';
+import 'invite_token.dart';
 
 /// Phase 6.3.1 — manage the caller's family group.
 ///
@@ -66,7 +67,12 @@ class FamilySettingsScreen extends ConsumerWidget {
                           'Sitters get access too.'),
                       trailing: FilledButton(
                         key: const Key('family_invite_upgrade_button'),
-                        onPressed: () => context.push('/onboarding'), // existing upgrade path
+                        // GAP-E12: send the upgrade CTA to the paywall (the real
+                        // purchase surface), not the onboarding flow.
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => const PaywallScreen()),
+                        ),
                         child: const Text('Upgrade'),
                       ),
                     ),
@@ -84,10 +90,76 @@ class FamilySettingsScreen extends ConsumerWidget {
                 );
               },
             ),
+            const SizedBox(height: 24),
+            const Divider(),
+            // GAP-E9: manual fallback for when the invite deep link didn't open
+            // the app (link copied from a message, opened in another browser).
+            TextButton.icon(
+              key: const Key('manual_invite_entry'),
+              onPressed: () => _enterInviteManually(context),
+              icon: const Icon(Icons.link),
+              label: const Text('Have an invite link? Enter it'),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  /// GAP-E9: paste-an-invite fallback. Parses a pasted link or bare token and
+  /// routes to the existing accept screen (`/invite/:token`), which confirms
+  /// and calls accept-family-invite (idempotent).
+  Future<void> _enterInviteManually(BuildContext context) async {
+    final controller = TextEditingController();
+    final token = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        String? error;
+        return StatefulBuilder(
+          builder: (ctx, setLocal) => AlertDialog(
+            title: const Text('Enter invite link'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Paste the invite link or code you were sent.'),
+                const SizedBox(height: AppSpace.s12),
+                TextField(
+                  key: const Key('manual_invite_field'),
+                  controller: controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'Invite link or code',
+                    errorText: error,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel')),
+              FilledButton(
+                key: const Key('manual_invite_join'),
+                onPressed: () {
+                  final parsed = parseInviteToken(controller.text);
+                  if (parsed == null) {
+                    setLocal(() =>
+                        error = 'That doesn’t look like a valid invite link.');
+                    return;
+                  }
+                  Navigator.pop(ctx, parsed);
+                },
+                child: const Text('Join'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    controller.dispose();
+    if (token != null && context.mounted) {
+      context.push('/invite/$token');
+    }
   }
 }
 

@@ -152,6 +152,12 @@ abstract class AppLocalizations {
   /// **'PawDoc provides information, not a diagnosis. In an emergency, contact a veterinarian immediately.'**
   String get emergencyDisclaimer;
 
+  /// GAP-E13: server-forced disclaimer on the standard (MONITOR/NORMAL) result screen, shown when disclaimer_required is true.
+  ///
+  /// In en, this message translates to:
+  /// **'PawDoc provides information, not a veterinary diagnosis. When in doubt, contact your vet.'**
+  String get resultDisclaimer;
+
   /// Acknowledgment checkbox label.
   ///
   /// In en, this message translates to:

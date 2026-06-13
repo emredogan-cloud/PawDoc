@@ -42,6 +42,9 @@ GoogleService-Info.plist
 
 # Tool-local credential caches
 .doppler/
+# GAP-E15: the Doppler encrypted fallback snapshot — never commit it (the
+# `.doppler/` dir pattern above does NOT cover this top-level file).
+doppler.json
 .vercel/
 .wrangler/
 .fly/
@@ -122,3 +125,4 @@ coverage/
 
 # ---- Phase 6.2 training-dataset exports (admin-only, NEVER commit) ----
 *.jsonl
+runtime/
