@@ -119,6 +119,10 @@ flutter:
     - assets/illustrations/monetization/
     - assets/illustrations/growth/
     - assets/illustrations/system/
+    - assets/illustrations/camera/
+    - assets/illustrations/pets/
+    - assets/illustrations/premium/
+    - assets/illustrations/results/
     - assets/icons/species/
     - assets/icons/actions/
     - assets/icons/status/

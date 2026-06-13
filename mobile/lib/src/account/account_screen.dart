@@ -9,6 +9,7 @@ import '../family/family_settings_screen.dart';
 import '../monetization/paywall_screen.dart';
 import '../referral/referral_screen.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_ui.dart';
 import 'delete_account_screen.dart';
 import 'user_profile.dart';
 
@@ -50,42 +51,60 @@ class AccountScreen extends ConsumerWidget {
     final email = ref.watch(supabaseClientProvider).auth.currentUser?.email ?? '';
     final profile = ref.watch(userProfileProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Account')),
+    return PawBackground(
+      variant: PawSurface.dark,
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('Account'),
+      ),
       body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
         children: [
           // Profile header.
           Padding(
-            padding: const EdgeInsets.all(AppSpace.s20),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: scheme.primaryContainer,
-                  child: Icon(Icons.person_rounded, color: scheme.primary),
-                ),
-                const SizedBox(width: AppSpace.s16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(email.isEmpty ? 'Signed in' : email,
-                          style: Theme.of(context).textTheme.titleMedium),
-                      profile.maybeWhen(
-                        data: (p) => Text(
-                          p.isPremium ? 'Premium' : 'Free plan',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurfaceVariant),
-                        ),
-                        orElse: () => const SizedBox.shrink(),
-                      ),
-                    ],
+            padding: const EdgeInsets.fromLTRB(
+                AppSpace.s16, AppSpace.s8, AppSpace.s16, AppSpace.s8),
+            child: PawCard(
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: PawPalette.teal.withValues(alpha: 0.18),
+                    child:
+                        const Icon(Icons.person_rounded, color: PawPalette.mint),
                   ),
-                ),
-              ],
+                  const SizedBox(width: AppSpace.s16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(email.isEmpty ? 'Signed in' : email,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(color: AppColors.ink50)),
+                        profile.maybeWhen(
+                          data: (p) => Text(
+                            p.isPremium
+                                ? 'Premium'
+                                : 'Free plan · ${p.freeRemaining} of 3 free checks left',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: AppColors.ink300),
+                          ),
+                          orElse: () => const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const Divider(height: 1),
 
           // Subscription.
           profile.maybeWhen(
@@ -162,6 +181,7 @@ class AccountScreen extends ConsumerWidget {
           const SizedBox(height: AppSpace.s24),
         ],
       ),
+      ),
     );
   }
 }
@@ -186,12 +206,50 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: iconColor),
-      title: Text(title, style: titleColor == null ? null : TextStyle(color: titleColor)),
-      subtitle: subtitle == null ? null : Text(subtitle!),
-      trailing: onTap == null ? null : const Icon(Icons.chevron_right_rounded),
-      onTap: onTap,
+    final tColor = titleColor ?? AppColors.ink50;
+    final iColor = iconColor ?? PawPalette.mint;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s16, vertical: AppSpace.s4),
+      child: PawCard(
+        onTap: onTap,
+        radius: AppRadius.md,
+        padding: const EdgeInsets.all(AppSpace.s12),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: iColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Icon(icon, size: 20, color: iColor),
+            ),
+            const SizedBox(width: AppSpace.s12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(color: tColor)),
+                  if (subtitle != null)
+                    Text(subtitle!,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppColors.ink300)),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              const Icon(Icons.chevron_right_rounded, color: AppColors.ink300),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -8,6 +8,7 @@ import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_ui.dart';
 import 'add_pet_flow.dart';
 import 'pet.dart';
 import 'pet_form_screen.dart';
@@ -78,8 +79,15 @@ class PetsListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pets = ref.watch(petsListProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('My pets')),
+    return PawBackground(
+      variant: PawSurface.dark,
+      child: Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text('My pets'),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('add_pet_fab'),
         // Tier-gated (Free/Premium = 2, Family = unlimited) + fires multi_pet_added.
@@ -147,6 +155,7 @@ class PetsListScreen extends ConsumerWidget {
             },
           );
         },
+      ),
       ),
     );
   }
