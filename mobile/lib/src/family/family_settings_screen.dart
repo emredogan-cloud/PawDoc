@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart'; // E9 manual-invite context.push (E12 dropped it as unused)
 
 import '../account/user_profile.dart';
 import '../core/app_motion_asset.dart';

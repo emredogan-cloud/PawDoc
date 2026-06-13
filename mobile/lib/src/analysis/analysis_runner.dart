@@ -138,7 +138,7 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
           _phase = _Phase.error;
         });
       }
-
+    }
   }
 
   /// GAP-A5: the free-tier upgrade prompt (replaces the silent retry loop). For
