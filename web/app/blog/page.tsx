@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Blog",
-  description: "Practical, vet-reviewed guidance for common pet-health questions.",
+  description: "Practical guidance for common pet-health questions.",
   alternates: { canonical: "/blog" },
 };
 

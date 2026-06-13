@@ -7,13 +7,6 @@ const STORE = {
   googlePlay: "https://play.google.com/store/apps/details?id=app.pawdoc", // TODO: real Play URL
 };
 
-// TODO(cms): replace with real, approved testimonials before any paid push.
-const testimonials = [
-  { quote: "PawDoc helped me decide to get my dog to the vet that night.", author: "Sarah M., dog parent" },
-  { quote: "Less panic at 2am. Clear, calm guidance in seconds.", author: "Diego R., cat parent" },
-  { quote: "The peace of mind is worth it.", author: "Priya K., two dogs" },
-];
-
 export default function Home() {
   return (
     <main>
@@ -49,21 +42,24 @@ export default function Home() {
       </section>
 
       <section className="section container">
-        <h2>Pet parents trust PawDoc</h2>
+        <h2>Built to put safety first</h2>
         <div className="cards">
-          {testimonials.map((t) => (
-            <div className="card" key={t.author}>
-              <p className="quote">&ldquo;{t.quote}&rdquo;</p>
-              <p className="note">— {t.author}</p>
-            </div>
-          ))}
+          <div className="card">
+            <p className="quote">Possible emergencies are flagged before anything else — and emergency guidance is never behind a paywall.</p>
+          </div>
+          <div className="card">
+            <p className="quote">When the AI isn&rsquo;t confident, PawDoc says so instead of guessing.</p>
+          </div>
+          <div className="card">
+            <p className="quote">Private by design — delete your account and data anytime, right in the app.</p>
+          </div>
         </div>
       </section>
 
       <section className="section container">
         <h2>From the PawDoc blog</h2>
         <p style={{ textAlign: "center" }}>
-          Practical, vet-reviewed guidance for common pet-health questions.{" "}
+          Practical guidance for common pet-health questions.{" "}
           <Link href="/blog/">Read the blog &rarr;</Link>
         </p>
       </section>
@@ -73,7 +69,7 @@ export default function Home() {
           <Link href="/blog/">Blog</Link>
           <a href="mailto:support@pawdoc.app">Support</a>
           <span className="note">
-            Terms &amp; Privacy are published at pawdoc.app/terms and /privacy (attorney-reviewed; Phase 2.2 gate).
+            Terms &amp; Privacy are published at pawdoc.app/terms and /privacy.
           </span>
         </div>
       </footer>

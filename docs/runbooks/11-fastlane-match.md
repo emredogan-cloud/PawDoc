@@ -45,3 +45,26 @@ Once `mobile/ios` exists (1.1): push a tag and confirm a TestFlight build appear
 ```bash
 git tag v0.1.0 && git push origin v0.1.0   # triggers release.yml
 ```
+
+## 6. Release lanes (GAP-B4)
+
+The runnable lanes live under the Flutter platform dirs (where `release.yml`
+runs them from — `working-directory: mobile/ios`):
+
+| Platform | `build` | `beta` | `release` |
+|----------|---------|--------|-----------|
+| `mobile/ios/fastlane`     | `flutter build ipa` (signed, no upload) | match + **TestFlight** (`pilot`) | match + **App Store review** (`deliver`, manual release) |
+| `mobile/android/fastlane` | `flutter build appbundle` (no upload) | **Play internal** track | **Play production** (staged 10% rollout) |
+
+Run a lane: `cd mobile/<ios|android> && bundle exec fastlane <lane>`.
+List lanes (safe dry verification): `bundle exec fastlane lanes`.
+`build` lanes are upload-free; `beta`/`release` upload and are tag-gated in CI.
+
+**Required secrets** (GitHub repo secrets; never hardcode):
+`MATCH_PASSWORD`, `MATCH_GIT_URL`, `MATCH_GIT_BASIC_AUTHORIZATION`,
+`APP_STORE_CONNECT_API_KEY_KEY_ID`, `APP_STORE_CONNECT_API_KEY_ISSUER_ID`,
+`APP_STORE_CONNECT_API_KEY_KEY`, `FASTLANE_APPLE_ID`, `APPLE_DEVELOPER_TEAM_ID`
+(iOS); `GOOGLE_PLAY_JSON_KEY_FILE` (Android).
+
+> The root `fastlane/` is the historical Phase-0.4 scaffold; its `README.md` is
+> gitignored, so this runbook is the canonical secrets/lane reference.

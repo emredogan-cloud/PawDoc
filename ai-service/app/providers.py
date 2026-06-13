@@ -69,23 +69,41 @@ class GeminiProvider:
         if pet_context_block:
             sections.append(pet_context_block)
         sections.append(user_prompt)
-        contents = "\n\n".join(sections)
+        text = "\n\n".join(sections)
         try:
             from google import genai  # lazy
             from google.genai import types
 
-            client = genai.Client(api_key=self._api_key)
+            from .media import gather_media  # lazy (avoids import cycle)
+
+            # GAP-A1: attach REAL pixels — up to 6 video frames or one image —
+            # as multimodal parts, not a text claim that an image exists.
+            parts = [
+                types.Part.from_bytes(data=data, mime_type=mime)
+                for data, mime in gather_media(image_url, frame_urls)
+            ]
+            contents = [*parts, text] if parts else text
+
+            # GAP-A4: hard request timeout (ms) + bounded output so a hung/slow
+            # Gemini call can't pin a thread or run up cost.
+            client = genai.Client(
+                api_key=self._api_key,
+                http_options=types.HttpOptions(timeout=8000),
+            )
             resp = client.models.generate_content(
                 model=model,
                 contents=contents,
                 config=types.GenerateContentConfig(
                     temperature=config.ANALYSIS_TEMPERATURE,
                     response_mime_type="application/json",
+                    max_output_tokens=1024,
                 ),
             )
             import json
 
             return json.loads(resp.text)
+        except ProviderError:  # incl. MediaFetchError — propagate for safe degrade
+            raise
         except Exception as exc:  # noqa: BLE001 — normalize all SDK errors
             raise ProviderError(f"gemini: {exc}") from exc
 
@@ -131,9 +149,38 @@ class ClaudeProvider:
         pet_context_block: str | None = None,
     ) -> dict:
         try:
+            import base64
+
             import anthropic  # lazy
 
-            client = anthropic.Anthropic(api_key=self._api_key)
+            from .media import gather_media  # lazy (avoids import cycle)
+
+            # GAP-A1: attach REAL pixels as image content blocks before the text
+            # (up to 6 video frames or one image); text-only requests keep the
+            # plain-string content exactly as before.
+            media = gather_media(image_url, frame_urls)
+            if media:
+                content: list | str = [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": mime,
+                            "data": base64.standard_b64encode(data).decode("ascii"),
+                        },
+                    }
+                    for data, mime in media
+                ]
+                content.append({"type": "text", "text": user_prompt})
+            else:
+                content = user_prompt
+
+            # GAP-A4: 8s hard timeout + no SDK-level retries (the pipeline owns
+            # the single retry / failover). The Anthropic default is 600s, which
+            # would pin a thread and starve /health on the shared pool.
+            client = anthropic.Anthropic(
+                api_key=self._api_key, timeout=8.0, max_retries=0
+            )
             message = client.messages.create(
                 model=self._model,
                 max_tokens=1024,
@@ -145,7 +192,7 @@ class ClaudeProvider:
                 system=self.build_system_blocks(system_prompt, pet_context_block),
                 tools=[_ANALYSIS_TOOL],
                 tool_choice={"type": "tool", "name": "report_triage"},
-                messages=[{"role": "user", "content": user_prompt}],
+                messages=[{"role": "user", "content": content}],
             )
             for block in message.content:
                 if getattr(block, "type", None) == "tool_use":

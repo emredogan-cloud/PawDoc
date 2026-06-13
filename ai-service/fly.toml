@@ -3,7 +3,9 @@
 # keep exactly one machine always warm so there is NO cold start. Cold starts
 # would later blow the P95 < 10s analysis latency budget.
 app = "pawdoc-ai"
-primary_region = "iad"  # adjust to sit near the prod Supabase region (0.2)
+# GAP-D3: the live deployment runs in fra (2 machines) — config now reflects
+# reality (was "iad", a drift). Near the prod Supabase region (Frankfurt).
+primary_region = "fra"
 
 [build]
 
@@ -13,6 +15,13 @@ primary_region = "iad"  # adjust to sit near the prod Supabase region (0.2)
   auto_start_machines = true
   auto_stop_machines = "off"
   min_machines_running = 1
+
+  # GAP-A4: cap in-flight requests per machine so a burst can't exhaust the
+  # thread pool and starve /health (which shares it). Excess queues/sheds.
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 20
+    hard_limit = 25
 
 [[http_service.checks]]
   grace_period = "5s"

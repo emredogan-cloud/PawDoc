@@ -43,7 +43,12 @@ CompressionResult compressForUpload(
     throw const FormatException('Unsupported or corrupt image data');
   }
 
-  img.Image working = decoded;
+  // E8b (CR #7): bake the EXIF orientation into the pixels BEFORE stripping
+  // metadata. Decoding does NOT auto-apply the orientation flag, so clearing
+  // EXIF without baking first would upload a sideways photo. (copyResize bakes
+  // too, but only the large-image path resizes — a small oriented photo would
+  // skip it — so bake explicitly here for every image.)
+  img.Image working = img.bakeOrientation(decoded);
   if (working.width > maxDimension || working.height > maxDimension) {
     working = working.width >= working.height
         ? img.copyResize(working, width: maxDimension)

@@ -15,6 +15,10 @@ import { containsEmergencyKeyword } from "../_shared/emergency_keywords.mjs";
 import { formatVector, isCacheEligible, selectCacheHit } from "../_shared/semantic_cache.mjs";
 // deno-lint-ignore no-import-assertions
 import { aiServiceHeaders } from "../_shared/ai_service.mjs";
+// deno-lint-ignore no-import-assertions
+import { isOwnUploadKey } from "../_shared/upload_key.mjs";
+// deno-lint-ignore no-import-assertions
+import { blockAfterAi, blockBeforeAi, countsAgainstQuota } from "../_shared/quota_gate.mjs";
 
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
 // Phase A — trust-boundary credential presented to the internal AI service.
@@ -89,7 +93,9 @@ Deno.serve(async (req: Request) => {
   } catch {
     return json({ error: "invalid JSON body" }, 400);
   }
-  const { pet_id, input_type, text_description, image_url } = body ?? {};
+  // GAP-A2: `image_url` is NO LONGER accepted from the client (it was a blind-SSRF
+  // vector). Media is addressed only by storage keys, presigned server-side below.
+  const { pet_id, input_type, text_description } = body ?? {};
   if (!pet_id || !input_type) return json({ error: "pet_id and input_type are required" }, 400);
   if (!["photo", "video", "text"].includes(input_type)) {
     return json({ error: "invalid input_type" }, 400);
@@ -123,7 +129,13 @@ Deno.serve(async (req: Request) => {
     isPremium,
     bonus: profile?.bonus_analyses ?? 0, // Phase 3.3 referral reward pool
   });
-  if (!isEmergencyText && !decision.allowed) {
+  // GAP-A3: EMERGENCY is never paywalled — for the VISUAL half too. Block TEXT
+  // out-of-quota up front; a PHOTO/VIDEO out-of-quota request runs the AI (so an
+  // image emergency can surface) and is blocked only AFTER, and only if the
+  // verdict is not EMERGENCY (see the post-AI block below).
+  const quotaExceeded = !isEmergencyText && !decision.allowed;
+  const isVisual = input_type === "photo" || input_type === "video";
+  if (blockBeforeAi(quotaExceeded, isVisual)) {
     return json({
       error: "free_limit_reached",
       message:
@@ -180,13 +192,18 @@ Deno.serve(async (req: Request) => {
     // best-effort (see above)
   }
 
-  // Presign a GET URL for the uploaded image (Phase 1.2 produced the key).
-  const imageUrl = (image_url as string | null) ??
-    (body.input_storage_key ? await presignGet(body.input_storage_key) : null);
+  // GAP-A2: presign a GET URL ONLY for a storage key that belongs to the caller
+  // (uploads/<own-uid>/<uuid>.<ext>). A forged/foreign/arbitrary key is rejected
+  // here, so the AI service can only ever be pointed at the user's own R2 object.
+  const inputKey: string | null =
+    isOwnUploadKey(body.input_storage_key, user.id) ? body.input_storage_key : null;
+  const imageUrl = inputKey ? await presignGet(inputKey) : null;
 
-  // Video (Phase 3.2): presign each client-extracted keyframe (4–6) so the AI
-  // service can read them with short-lived GET URLs.
-  const frameKeys: string[] = Array.isArray(body.frame_storage_keys) ? body.frame_storage_keys : [];
+  // Video (Phase 3.2): presign each client-extracted keyframe — own-namespace
+  // only, capped at 6 (mirrors the AI-service frame cap, A4).
+  const frameKeys: string[] = (Array.isArray(body.frame_storage_keys) ? body.frame_storage_keys : [])
+    .filter((k: unknown) => isOwnUploadKey(k, user.id))
+    .slice(0, 6);
   const frameUrls: string[] = [];
   for (const k of frameKeys) {
     const u = await presignGet(k);
@@ -276,9 +293,9 @@ Deno.serve(async (req: Request) => {
 
     // CR #8: moderation rejected the image — delete the stored object, don't persist.
     if (meta.moderation_rejected === true) {
-      if (body.input_storage_key) {
+      if (inputKey) {
         try {
-          await deleteR2Object(body.input_storage_key);
+          await deleteR2Object(inputKey);
         } catch (_err) {
           // best effort
         }
@@ -287,12 +304,26 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // GAP-A3: an out-of-quota visual the AI did NOT flag as EMERGENCY → block here
+  // (uncounted, unstored) with only the triage chip + upgrade message. An
+  // EMERGENCY falls through and is returned + stored below, free.
+  if (blockAfterAi(quotaExceeded, result.triage_level)) {
+    return json({
+      error: "free_limit_reached",
+      quota_exceeded: true,
+      triage_level: result.triage_level,
+      message:
+        "You've used your free analyses this month. Upgrade to see the full result. " +
+        "If this seems urgent, contact a veterinarian now.",
+    }, 402);
+  }
+
   // Persist the analysis (service role).
   const { data: stored, error: storeErr } = await admin.from("analyses").insert({
     user_id: user.id,
     pet_id,
     input_type,
-    input_storage_key: body.input_storage_key ?? null,
+    input_storage_key: inputKey,
     text_description: text_description ?? null,
     triage_level: result.triage_level,
     primary_concern: result.primary_concern,
@@ -308,8 +339,18 @@ Deno.serve(async (req: Request) => {
   }).select("id").single();
   if (storeErr) console.error("analyze: failed to store analysis", requestId, storeErr.message);
 
-  // Increment only after a successful, NON-emergency analysis (emergencies are free).
-  if (!isPremium && !isEmergencyText) {
+  // Count only a REAL, surfaced, non-emergency analysis. The GAP-E7 degraded
+  // guard (tier_used === 0) and the GAP-A3 emergency/quota guards all live in
+  // countsAgainstQuota (unit-tested).
+  if (
+    countsAgainstQuota({
+      isPremium,
+      isEmergencyText,
+      quotaExceeded,
+      triageLevel: result.triage_level,
+      tierUsed: meta.tier_used,
+    })
+  ) {
     await admin.from("users").update({
       free_analyses_used_this_month: decision.newUsed,
       free_analyses_reset_at: decision.resetAt,

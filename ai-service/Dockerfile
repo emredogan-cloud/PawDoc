@@ -20,5 +20,6 @@ USER appuser
 
 EXPOSE 8080
 
-# Single worker is sufficient for a /health placeholder; concurrency is tuned in Phase 1.3.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+# GAP-A4: --limit-concurrency sheds load (503) past the cap instead of letting
+# the thread pool pin under a burst, keeping /health answerable.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--limit-concurrency", "32"]

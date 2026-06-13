@@ -1,0 +1,4 @@
+# PawDoc iOS app identifiers for Fastlane. Values via env — never hardcode.
+app_identifier("app.pawdoc")            # iOS bundle id (canonical — ENVIRONMENT_VARS.md)
+apple_id(ENV["FASTLANE_APPLE_ID"])      # owning Apple ID email
+team_id(ENV["APPLE_DEVELOPER_TEAM_ID"]) # Apple Developer Team ID (runbook 01)
