@@ -44,6 +44,7 @@ docker exec -i "$CT" psql -U postgres -d postgres -v ON_ERROR_STOP=1 \
   -f /repo/supabase/migrations/20260528030000_family_sharing.sql \
   -f /repo/supabase/migrations/20260528040000_family_invites.sql \
   -f /repo/supabase/migrations/20260609160000_family_deletion_cascade.sql \
+  -f /repo/supabase/migrations/20260613130000_family_update_boundary.sql \
   -f /repo/supabase/tests/rls_isolation.sql \
   -f /repo/supabase/tests/account_deletion.sql \
   -f /repo/supabase/tests/family_sharing.sql \

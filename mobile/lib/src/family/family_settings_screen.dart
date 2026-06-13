@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../account/user_profile.dart';
 import '../core/app_motion_asset.dart';
 import '../core/motion.dart';
+import '../monetization/paywall_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import 'family_repository.dart';
@@ -66,7 +66,12 @@ class FamilySettingsScreen extends ConsumerWidget {
                           'Sitters get access too.'),
                       trailing: FilledButton(
                         key: const Key('family_invite_upgrade_button'),
-                        onPressed: () => context.push('/onboarding'), // existing upgrade path
+                        // GAP-E12: send the upgrade CTA to the paywall (the real
+                        // purchase surface), not the onboarding flow.
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => const PaywallScreen()),
+                        ),
                         child: const Text('Upgrade'),
                       ),
                     ),
