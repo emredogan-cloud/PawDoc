@@ -84,7 +84,9 @@ need fly
 need supabase
 
 echo "Pushing Fly secrets ($FLY_APP)…"
-# shellcheck disable=SC2086
+# SC2016: the single quotes are intentional — ${!k} must expand inside the inner
+# `bash -c` at runtime, while $FLY_KEYS is injected via the '"..."' concatenation.
+# shellcheck disable=SC2086,SC2016
 doppler run --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" -- \
   bash -c 'for k in '"$FLY_KEYS"'; do v="${!k:-}"; [ -n "$v" ] && printf "%s=%s\n" "$k" "$v"; done' \
   | fly secrets import --app "$FLY_APP"
@@ -94,7 +96,8 @@ ref_arg=""
 if [ -n "$SUPABASE_REF" ]; then
   ref_arg="--project-ref $SUPABASE_REF"
 fi
-# shellcheck disable=SC2086
+# SC2016: intentional — see the Fly block above (${!k} expands in the inner shell).
+# shellcheck disable=SC2086,SC2016
 doppler run --project "$DOPPLER_PROJECT" --config "$DOPPLER_CONFIG" -- \
   bash -c 'for k in '"$SUPABASE_KEYS"'; do v="${!k:-}"; [ -n "$v" ] && printf "%s=%s\n" "$k" "$v"; done' \
   | supabase secrets set $ref_arg --env-file /dev/stdin
