@@ -2,15 +2,15 @@
 // min-length gate ("No choking-style emergency message is blocked").
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pawdoc/src/core/motion.dart';
 import 'package:pawdoc/src/text_input/symptom_text_screen.dart';
+import 'package:pawdoc/src/theme/paw_ui.dart';
 
 void main() {
   Future<void> pump(WidgetTester t) =>
       t.pumpWidget(const MaterialApp(home: SymptomTextScreen(petName: 'Rex')));
 
-  AppButton button(WidgetTester t) =>
-      t.widget<AppButton>(find.byKey(const Key('symptom_continue_button')));
+  PawPrimaryButton button(WidgetTester t) =>
+      t.widget<PawPrimaryButton>(find.byKey(const Key('symptom_continue_button')));
 
   Future<void> type(WidgetTester t, String s) async {
     await t.enterText(find.byKey(const Key('symptom_text_field')), s);

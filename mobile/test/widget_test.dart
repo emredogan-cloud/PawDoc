@@ -83,6 +83,10 @@ void main() {
     );
     final forgot = find.byKey(const Key('forgot_password_button'));
     expect(forgot, findsOneWidget);
+    // New UI: the form lives in a SingleChildScrollView taller than the test
+    // viewport, so the entry can sit below the fold — scroll it in before tap.
+    await tester.ensureVisible(forgot);
+    await tester.pumpAndSettle();
     await tester.tap(forgot);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('reset_email_field')), findsOneWidget);
