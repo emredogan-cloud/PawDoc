@@ -1,11 +1,19 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Network for Supabase/R2; camera + photos for pet capture (Phase 1.2). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Network for Supabase/R2; camera for pet capture (Phase 1.2). -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.CAMERA"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <!-- GAP-E2: vet-finder uses location to surface nearby clinics in an emergency. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!-- GAP-B3 permission diet: capture is camera-only (enableAudio: false) and
+         the app never reads the photo library, so strip the storage/audio
+         permissions that the camera / image / video plugins merge in by default.
+         tools:node="remove" deletes them from the final merged manifest. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <!-- GAP-E6: allowBackup=false — keep the Supabase auth session and the
          OneSignal push state out of Android cloud backup, so they can't be
