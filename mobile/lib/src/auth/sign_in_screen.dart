@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -54,6 +55,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       if (mounted) setState(() => _busy = false);
     }
   }
+
+  // GAP-E3: native Sign in with Apple only works on iOS/macOS. Elsewhere the
+  // button is a dead, misleading control, so it's hidden.
+  bool get _appleAvailable =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS);
 
   Future<void> _appleSignIn() async {
     setState(() {
@@ -184,7 +192,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         prefixIcon: Icon(Icons.lock_outline_rounded),
                       ),
                       validator: (v) =>
-                          (v == null || v.length < 6) ? 'At least 6 characters' : null,
+                          (v == null || v.length < 8) ? 'At least 8 characters' : null,
                     ),
                     const SizedBox(height: AppSpace.s16),
                     if (_error != null) _errorBanner(_error!),
@@ -218,22 +226,26 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               _emailController.text.trim(), _passwordController.text)),
                       child: const Text('Create account'),
                     ),
-                    const SizedBox(height: AppSpace.s24),
-                    const Row(children: [
-                      Expanded(child: Divider()),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: AppSpace.s8),
-                        child: Text('or'),
+                    // GAP-E3: native Sign in with Apple is iOS/macOS only —
+                    // hide the divider + button on platforms where it can't work.
+                    if (_appleAvailable) ...[
+                      const SizedBox(height: AppSpace.s24),
+                      const Row(children: [
+                        Expanded(child: Divider()),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: AppSpace.s8),
+                          child: Text('or'),
+                        ),
+                        Expanded(child: Divider()),
+                      ]),
+                      const SizedBox(height: AppSpace.s16),
+                      OutlinedButton.icon(
+                        key: const Key('apple_sign_in_button'),
+                        onPressed: _busy ? null : _appleSignIn,
+                        icon: const Icon(Icons.apple),
+                        label: const Text('Continue with Apple'),
                       ),
-                      Expanded(child: Divider()),
-                    ]),
-                    const SizedBox(height: AppSpace.s16),
-                    OutlinedButton.icon(
-                      key: const Key('apple_sign_in_button'),
-                      onPressed: _busy ? null : _appleSignIn,
-                      icon: const Icon(Icons.apple),
-                      label: const Text('Continue with Apple'),
-                    ),
+                    ],
                     const SizedBox(height: AppSpace.s32),
                     _trustFooter(),
                   ],
