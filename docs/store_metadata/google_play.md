@@ -54,7 +54,7 @@ HOW IT WORKS
 WHY PET PARENTS TRUST PAWDOC
 • Safety first: possible emergencies are flagged before anything else
 • Honest guidance — when we're not confident, we say so instead of guessing
-• Built with veterinary input and reviewed for quality
+• Emergency guidance is always free — never hidden behind a paywall
 • Private by design — delete your account and data anytime, right in the app
 
 WHAT YOU CAN DO
@@ -75,7 +75,7 @@ Subscription: your first few checks are free. An optional subscription unlocks u
 - **Feature graphic:** 1024×500 (required to be featured).
 - **Phone screenshots (2–8):** same ordered story as iOS —
   <!-- VISIBLE-COPY:START -->
-  (1) "Know exactly what your pet needs." + result · (2) "How it works": camera → AI → result · (3) "No more 2am anxiety spirals." + LIKELY NORMAL result · (4) "Reviewed by veterinary experts" · (5) "Everything in one place": multi-pet, history, reminders.
+  (1) "Know exactly what your pet needs." + result · (2) "How it works": camera → AI → result · (3) "No more 2am anxiety spirals." + LIKELY NORMAL result · (4) "Emergency guidance, always free." (safety promise) · (5) "Everything in one place": multi-pet, history, reminders.
   <!-- VISIBLE-COPY:END -->
 - 7-inch & 10-inch tablet screenshots optional but recommended.
 
