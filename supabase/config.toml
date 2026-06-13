@@ -387,10 +387,12 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
-# /auth-webhook is called by a Supabase Auth Hook (no end-user JWT); it
-# authenticates via the standardwebhooks signature instead (CR #21).
-[functions.auth-webhook]
-verify_jwt = false
+# GAP-D3: /auth-webhook is REMOVED from config — the DB trigger (migration
+# 20260609150000_auth_user_profile_trigger) creates the profile row more robustly,
+# and the deployed webhook was live-500ing ("server misconfigured", its secret was
+# never set). Founder step to drop the deployed function:
+#   supabase functions delete auth-webhook --project-ref <ref>
+# (CR #21 history: it authenticated via a standardwebhooks signature, verify_jwt=false.)
 
 # /revenuecat-webhook is called by RevenueCat (no user JWT); it authenticates
 # via the shared Authorization secret instead (CR #21).

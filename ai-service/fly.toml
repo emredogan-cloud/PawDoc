@@ -3,7 +3,9 @@
 # keep exactly one machine always warm so there is NO cold start. Cold starts
 # would later blow the P95 < 10s analysis latency budget.
 app = "pawdoc-ai"
-primary_region = "iad"  # adjust to sit near the prod Supabase region (0.2)
+# GAP-D3: the live deployment runs in fra (2 machines) — config now reflects
+# reality (was "iad", a drift). Near the prod Supabase region (Frankfurt).
+primary_region = "fra"
 
 [build]
 
