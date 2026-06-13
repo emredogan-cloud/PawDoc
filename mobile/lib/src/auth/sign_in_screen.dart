@@ -75,6 +75,50 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     setState(() => _error = message);
   }
 
+  /// GAP-E1: send a password-reset link. Initiation only — the email delivery
+  /// needs SMTP (founder); the recovery deep link drives the set-new-password
+  /// screen. Feedback is neutral ("if an account exists…") to avoid disclosing
+  /// whether an email is registered.
+  Future<void> _forgotPassword() async {
+    final emailCtrl = TextEditingController(text: _emailController.text.trim());
+    final email = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset password'),
+        content: TextField(
+          key: const Key('reset_email_field'),
+          controller: emailCtrl,
+          keyboardType: TextInputType.emailAddress,
+          autofillHints: const [AutofillHints.email],
+          decoration: const InputDecoration(labelText: 'Email'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            key: const Key('reset_send_button'),
+            onPressed: () => Navigator.pop(ctx, emailCtrl.text.trim()),
+            child: const Text('Send reset link'),
+          ),
+        ],
+      ),
+    );
+    emailCtrl.dispose();
+    if (email == null || email.isEmpty || !mounted) return;
+    try {
+      await ref.read(authControllerProvider).resetPassword(email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('If an account exists, a reset link is on its way.'),
+        ));
+      }
+    } on AuthException catch (e) {
+      _showError(e.message);
+    } catch (_) {
+      _showError("Couldn't send a reset link. Please try again.");
+    }
+  }
+
   Future<void> _openLegal(String path) async {
     try {
       await launchUrl(Uri.parse('https://pawdoc.app/$path'),
@@ -156,6 +200,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                               width: 18,
                               child: CircularProgressIndicator(strokeWidth: 2))
                           : const Text('Sign in'),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        key: const Key('forgot_password_button'),
+                        onPressed: _busy ? null : _forgotPassword,
+                        child: const Text('Forgot password?'),
+                      ),
                     ),
                     const SizedBox(height: AppSpace.s8),
                     OutlinedButton(
