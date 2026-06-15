@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../config/legal_urls.dart';
+
 import '../core/app_image.dart';
 import '../core/app_motion_asset.dart';
 import '../theme/app_assets.dart';
@@ -132,7 +134,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   Future<void> _openLegal(String path) async {
     try {
-      await launchUrl(Uri.parse('https://pawdoc.app/$path'),
+      await launchUrl(Uri.parse('${LegalUrls.base}/$path'),
           mode: LaunchMode.externalApplication);
     } catch (_) {}
   }

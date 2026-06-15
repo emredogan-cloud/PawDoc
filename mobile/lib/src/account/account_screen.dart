@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../config/legal_urls.dart';
+
 import '../auth/auth_controller.dart';
 import '../auth/supabase_providers.dart';
 import '../family/family_settings_screen.dart';
@@ -22,7 +24,7 @@ class AccountScreen extends ConsumerWidget {
 
   Future<void> _openLegal(String path) async {
     try {
-      await launchUrl(Uri.parse('https://pawdoc.app/$path'),
+      await launchUrl(Uri.parse('${LegalUrls.base}/$path'),
           mode: LaunchMode.externalApplication);
     } catch (_) {}
   }
@@ -152,6 +154,16 @@ class AccountScreen extends ConsumerWidget {
             icon: Icons.description_outlined,
             title: 'Terms of Service',
             onTap: () => _openLegal('terms'),
+          ),
+          _Tile(
+            icon: Icons.smart_toy_outlined,
+            title: 'AI Transparency',
+            onTap: () => _openLegal('ai-transparency'),
+          ),
+          _Tile(
+            icon: Icons.mail_outline_rounded,
+            title: 'Contact & Legal',
+            onTap: () => _openLegal('contact'),
           ),
           _Tile(
             key: const Key('account_sign_out'),
