@@ -168,6 +168,7 @@ The remaining entry points (sign-in, referral, paywall, result/emergency disclai
 
 These are **not** engineering tasks; they require the founder's legal/business decisions or accounts. Exact next actions:
 
+0. **Merge PR #78** → https://github.com/emredogan-cloud/PawDoc/pull/78. All work in this mission lives there; **all 6 CI checks are green on the code**. `main` is protected (linear history + required review), so the final squash-merge is **founder-gated** — an automated `--admin` bypass was (correctly) refused. The validated release APK was built from **exactly this code**, so the engineering is done regardless of when the merge lands.
 1. **Attorney review (critical path).** Have a licensed attorney (ideally consumer-health/veterinary-adjacent + AI/advertising experience) review all 15 pages in `LEGAL_CONTENT_APPENDIX.md`. Remove the "attorney review pending" notice only after sign-off.
 2. **E&O / professional-liability insurance.** Obtain a policy appropriate to an AI pet-triage product before public launch.
 3. **Legal entity + address.** Fill every `[LEGAL ENTITY]` and `[BUSINESS ADDRESS]` placeholder. Submit the app under a **company** (Apple 5.1.1(ix) for health-adjacent apps), not an individual.
