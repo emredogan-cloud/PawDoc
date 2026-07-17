@@ -33,12 +33,14 @@ else
   fail "RLS migration: corrected policies missing"
 fi
 
-# --- Edge Function verifies its signature (CR #21) ---------------------------
-fn="$ROOT/supabase/functions/auth-webhook/index.ts"
-if [ -f "$fn" ] && grep -q 'wh.verify' "$fn" && grep -q 'invalid signature' "$fn"; then
-  pass "auth-webhook verifies signature before provisioning (CR #21)"
+# --- User provisioning is the DB trigger; auth-webhook must stay deleted -----
+# GAP-D3/BE-03: the in-transaction trigger supersedes the webhook. The function
+# directory must NOT exist (an accidental redeploy would race the trigger).
+if [ ! -d "$ROOT/supabase/functions/auth-webhook" ] \
+   && ls "$ROOT"/supabase/migrations/*auth_user_profile_trigger.sql >/dev/null 2>&1; then
+  pass "user provisioning via DB trigger; auth-webhook absent (BE-03)"
 else
-  fail "auth-webhook missing signature verification"
+  fail "auth-webhook resurrected or provisioning trigger migration missing"
 fi
 
 # --- AnalysisResult contract frozen (Dart + doc) -----------------------------
@@ -78,7 +80,7 @@ fi
 
 # --- MANUAL ------------------------------------------------------------------
 manual "App runs to a signed-in state on a real iOS simulator + Android emulator (needs --dart-define Supabase config)."
-manual "Email + Apple sign-in each create a public.users row via /auth-webhook (runbook 13)."
+manual "Email + Apple sign-in each create a public.users row via the DB trigger (runbook 13 is superseded)."
 manual "Sentry receives a deliberately-thrown test exception."
 
 hr
