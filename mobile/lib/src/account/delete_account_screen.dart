@@ -6,6 +6,7 @@ import '../core/motion.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
+import '../config/legal_urls.dart';
 import 'account_service.dart';
 
 /// In-app account deletion (CR #9 / Apple 5.1.1(v)). Clear, requires an explicit
@@ -71,6 +72,14 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           title: const Text('Delete account'),
+          actions: [
+            IconButton(
+              key: const Key('delete_policy_link'),
+              tooltip: 'How deletion works & your data rights',
+              icon: const Icon(Icons.help_outline_rounded),
+              onPressed: () => LegalUrls.open(LegalUrls.deletion),
+            ),
+          ],
         ),
         body: ListView(
           padding: const EdgeInsets.all(20),

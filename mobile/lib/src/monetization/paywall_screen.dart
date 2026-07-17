@@ -10,6 +10,7 @@ import '../experiments/feature_flags.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
+import '../config/legal_urls.dart';
 import 'paywall_copy.dart';
 
 /// Annual-first paywall (Variant A control). Phase 4.2 adds layout variants via
@@ -187,6 +188,10 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
             const _PremiumComingSoon()
           else
             ..._plans(annual, monthly),
+          // Apple 3.1.2 / Google Play: auto-renew disclosure + functional links
+          // to Subscription Terms, Terms of Service, and Privacy Policy, shown
+          // near the purchase CTAs whenever real plans are offered.
+          if (_offering != null) const _SubscriptionLegal(),
           const SizedBox(height: AppSpace.s16),
           TextButton(
             onPressed: () async {
@@ -203,6 +208,58 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           ),
         ],
       ),
+      ),
+    );
+  }
+}
+
+/// Subscription legal disclosure shown on the paywall, near the plan CTAs.
+/// Required by Apple guideline 3.1.2 and Google Play subscription policy:
+/// state the auto-renew terms and provide functional links to the Subscription
+/// Terms, Terms of Service, and Privacy Policy before purchase.
+class _SubscriptionLegal extends StatelessWidget {
+  const _SubscriptionLegal();
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context)
+        .textTheme
+        .bodySmall
+        ?.copyWith(color: AppColors.ink300, fontSize: 11, height: 1.45);
+    final linkStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: PawPalette.mint, fontSize: 11, fontWeight: FontWeight.w600);
+
+    Widget link(String label, String url) => GestureDetector(
+          onTap: () => LegalUrls.open(url),
+          child: Text(label, style: linkStyle),
+        );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpace.s20, AppSpace.s8, AppSpace.s20, 0),
+      child: Column(
+        children: [
+          Text(
+            'Subscriptions auto-renew until cancelled. Manage or cancel anytime '
+            'in the App Store or Google Play; payment is charged to your store '
+            'account at confirmation. Emergency results are never paywalled.',
+            textAlign: TextAlign.center,
+            style: muted,
+          ),
+          const SizedBox(height: AppSpace.s8),
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AppSpace.s8,
+            children: [
+              link('Subscription Terms', LegalUrls.subscriptions),
+              Text('·', style: muted),
+              link('Terms', LegalUrls.terms),
+              Text('·', style: muted),
+              link('Privacy', LegalUrls.privacy),
+            ],
+          ),
+        ],
       ),
     );
   }

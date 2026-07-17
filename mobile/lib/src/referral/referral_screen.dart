@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../config/legal_urls.dart';
+
 import '../account/user_profile.dart';
 import '../analytics/analytics.dart';
 import '../auth/supabase_providers.dart';
@@ -93,7 +95,22 @@ class ReferralScreen extends ConsumerWidget {
 
                 // ── How it works row ─────────────────────────────────────────
                 const _HowItWorks(),
-                const SizedBox(height: AppSpace.s20),
+                const SizedBox(height: AppSpace.s12),
+
+                // Referral program legal terms (no cash value; anti-fraud).
+                Center(
+                  child: TextButton(
+                    onPressed: () => LegalUrls.open(LegalUrls.referrals),
+                    child: Text(
+                      'Referral terms apply',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.ink300,
+                            decoration: TextDecoration.underline,
+                          ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.s8),
 
                 // ── Claim code section ───────────────────────────────────────
                 const _ClaimCodeCard(),

@@ -16,6 +16,7 @@ import '../monetization/telehealth_button.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
+import '../config/legal_urls.dart';
 import '../vet_finder/vet_finder_screen.dart';
 import 'emergency_result_screen.dart';
 
@@ -275,33 +276,44 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
           _section('When to seek a vet (${r.urgencyTimeframe})', [for (final e in _escalationTriggers) '• $e']),
           if (r.disclaimerRequired) ...[
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(AppSpace.s12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: AppRadius.brSm,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.info_outline_rounded,
-                      size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  const SizedBox(width: AppSpace.s8),
-                  Expanded(
-                    child: Text(
-                      // GAP-E13: localized (en/de) via the existing l10n system.
-                      // Null-safe EN fallback so this safety string is NEVER
-                      // empty if delegates are absent. The server still forces
-                      // WHETHER it shows (r.disclaimerRequired) — unchanged.
-                      AppLocalizations.of(context)?.resultDisclaimer ??
-                          'PawDoc provides information, not a veterinary diagnosis. When in doubt, contact your vet.',
-                      // AA contrast (onSurface on the raised container).
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: Theme.of(context).colorScheme.onSurface),
+            // The disclaimer card is tappable and opens the full Veterinary
+            // Disclaimer page. Wrapped in a zero-height GestureDetector (no extra
+            // row) so the action buttons below stay within the list build extent.
+            GestureDetector(
+              onTap: () => LegalUrls.open(LegalUrls.vetDisclaimer),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                padding: const EdgeInsets.all(AppSpace.s12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: AppRadius.brSm,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(width: AppSpace.s8),
+                    Expanded(
+                      child: Text(
+                        // GAP-E13: localized (en/de) via the existing l10n system.
+                        // Null-safe EN fallback so this safety string is NEVER
+                        // empty if delegates are absent. The server still forces
+                        // WHETHER it shows (r.disclaimerRequired) — unchanged.
+                        AppLocalizations.of(context)?.resultDisclaimer ??
+                            'PawDoc provides information, not a veterinary diagnosis. When in doubt, contact your vet.',
+                        // AA contrast (onSurface on the raised container).
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.onSurface),
+                      ),
                     ),
-                  ),
-                ],
+                    Icon(Icons.chevron_right_rounded,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  ],
+                ),
               ),
             ),
           ],

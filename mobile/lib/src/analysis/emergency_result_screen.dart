@@ -8,6 +8,7 @@ import '../monetization/insurance_affiliate_cta.dart';
 import '../monetization/telehealth_button.dart';
 import '../theme/design_tokens.dart';
 import '../vet_finder/vet_finder_screen.dart';
+import '../config/legal_urls.dart';
 import 'result_l10n.dart';
 
 /// EMERGENCY result: warm red, urgent copy, a vet-finder deep link, and an
@@ -113,6 +114,22 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                       l.emergencyDisclaimer,
                       textAlign: TextAlign.center,
                       style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                if (r.disclaimerRequired)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: GestureDetector(
+                      onTap: () => LegalUrls.open(LegalUrls.emergency),
+                      child: const Text(
+                        'Read the full Emergency Disclaimer',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
                     ),
                   ),
                 const SizedBox(height: 16),
