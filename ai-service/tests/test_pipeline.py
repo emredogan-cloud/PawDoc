@@ -14,9 +14,10 @@ class FakeProvider:
         self.fail = fail
         self.calls = 0
 
-    def analyze(self, system_prompt, user_prompt, image_url=None,
+    def analyze(self, system_prompt, user_prompt, media=None,
                 pet_context_block=None):
         self.calls += 1
+        self.last_media = media
         self.last_pet_context = pet_context_block
         if self.fail:
             raise ProviderError(f"{self.name} forced failure")
@@ -97,13 +98,24 @@ def test_low_tier2_confidence_escalates_to_tier3():
     assert out.result.action is ActionLevel.WATCH_AND_RECHECK
 
 
-def test_emergency_classification_is_cross_verified():
+def test_emergency_classification_schedules_async_cross_verify():
+    # B6 (evolution): the verify never delays the response. With a synchronous
+    # test executor we can assert BOTH: the outcome returns GET_HELP_NOW and
+    # exactly one background verify job ran against Tier 3.
     t2 = FakeProvider("gemini", 2, res("NORMAL", 0.4))
     t3 = FakeProvider("claude", 3, res("EMERGENCY", 0.9))
-    out = build(t2, t3).run(req("very lethargic"))  # no hardcoded keyword
+    jobs = []
+    pipe = AnalysisPipeline(
+        tier2=t2, tier3=t3, cache=InMemoryCache(),
+        cross_verify_executor=jobs.append,
+    )
+    out = pipe.run(req("very lethargic"))  # no hardcoded keyword
     assert out.result.action is ActionLevel.GET_HELP_NOW
-    assert out.cross_verified is True
-    assert t3.calls == 2  # primary + cross-verify
+    assert out.cross_verify_scheduled is True
+    assert len(jobs) == 1
+    calls_before = t3.calls
+    jobs[0]()  # run the deferred verify deterministically
+    assert t3.calls == calls_before + 1  # the verify hit Tier 3 exactly once
 
 
 def test_low_confidence_returns_insufficient_information():
@@ -160,16 +172,21 @@ def test_tier2_failure_fails_over_to_tier3():
     assert t3.calls >= 1                  # then Claude served the result
 
 
-def test_failover_result_still_emergency_cross_verified():
-    # A failed-over Tier-3 EMERGENCY must still go through the safety gates
-    # (cross-verification), not bypass them.
+def test_failover_result_still_schedules_cross_verify():
+    # A failed-over Tier-3 GET_HELP_NOW must still schedule the async verify,
+    # not bypass the telemetry gate.
     t2 = FakeProvider("gemini", 2, fail=True)
     t3 = FakeProvider("claude", 3, res("EMERGENCY", 0.9))
-    out = build(t2, t3).run(req("very lethargic"))
+    jobs = []
+    pipe = AnalysisPipeline(
+        tier2=t2, tier3=t3, cache=InMemoryCache(),
+        cross_verify_executor=jobs.append,
+    )
+    out = pipe.run(req("very lethargic"))
     assert out.degraded is False
     assert out.result.action is ActionLevel.GET_HELP_NOW
-    assert out.cross_verified is True
-    assert t3.calls == 2  # failover primary + EMERGENCY cross-verify
+    assert out.cross_verify_scheduled is True
+    assert len(jobs) == 1
 
 
 def test_tier3_escalation_failure_still_degrades():
@@ -194,7 +211,7 @@ class FakeModerator:
     def __init__(self, safe):
         self.safe = safe
 
-    def is_safe(self, image_url):
+    def is_safe_bytes(self, data, mime_type):
         return self.safe
 
 
@@ -206,7 +223,9 @@ def _photo_req():
     )
 
 
-def test_cr8_unsafe_image_rejected_before_analysis():
+def test_cr8_unsafe_image_rejected_before_analysis(monkeypatch):
+    import app.pipeline as pl
+    monkeypatch.setattr(pl, "gather_media", lambda url: [(b"x", "image/png")])
     t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
     t3 = FakeProvider("claude", 3, res("NORMAL", 0.9))
     pipeline = AnalysisPipeline(
@@ -218,7 +237,9 @@ def test_cr8_unsafe_image_rejected_before_analysis():
     assert out.result.action is ActionLevel.WATCH_AND_RECHECK
 
 
-def test_cr8_safe_image_proceeds_to_analysis():
+def test_cr8_safe_image_proceeds_to_analysis(monkeypatch):
+    import app.pipeline as pl
+    monkeypatch.setattr(pl, "gather_media", lambda url: [(b"x", "image/png")])
     t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
     pipeline = AnalysisPipeline(
         tier2=t2,
@@ -229,6 +250,29 @@ def test_cr8_safe_image_proceeds_to_analysis():
     out = pipeline.run(_photo_req())
     assert out.moderation_rejected is False
     assert t2.calls == 1
+    # AI-03: the SAME prefetched bytes reach the model — one fetch total.
+    assert t2.last_media == [(b"x", "image/png")]
+
+
+def test_ai03_moderator_receives_true_mime(monkeypatch):
+    """A PNG moderates as image/png — the hardcoded-jpeg wrong-reject is dead."""
+    import app.pipeline as pl
+    monkeypatch.setattr(pl, "gather_media", lambda url: [(b"png-bytes", "image/png")])
+    seen = []
+
+    class RecordingModerator:
+        def is_safe_bytes(self, data, mime_type):
+            seen.append((data, mime_type))
+            return True
+
+    pipeline = AnalysisPipeline(
+        tier2=FakeProvider("gemini", 2, res("NORMAL", 0.99)),
+        tier3=FakeProvider("claude", 3, res("NORMAL", 0.9)),
+        cache=InMemoryCache(),
+        moderator=RecordingModerator(),
+    )
+    pipeline.run(_photo_req())
+    assert seen == [(b"png-bytes", "image/png")]
 
 
 class PerUrlModerator:

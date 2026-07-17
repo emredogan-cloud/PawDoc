@@ -317,7 +317,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           const _OrDivider(),
           const SizedBox(height: AppSpace.s12),
           // LEG-03: the assent checkbox — account creation requires it.
-          CheckboxListTile(
+          // (Own transparent Material: a ListTile inside the sheet's colored
+          // DecoratedBox trips a framework assert on newer Flutter.)
+          Material(
+            type: MaterialType.transparency,
+            child: CheckboxListTile(
             key: const Key('accept_terms_checkbox'),
             value: _acceptedTerms,
             dense: true,
@@ -346,8 +350,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               ],
             ),
           ),
+          ),
           // I2: OPTIONAL analytics consent — default OFF; revocable in Account.
-          CheckboxListTile(
+          Material(
+            type: MaterialType.transparency,
+            child: CheckboxListTile(
             key: const Key('analytics_opt_in_checkbox'),
             value: _analyticsOptIn,
             dense: true,
@@ -358,6 +365,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               'Help improve PawDoc with anonymous usage analytics (optional)',
               style: TextStyle(fontSize: 13),
             ),
+          ),
           ),
           PawSecondaryButton(
             key: const Key('sign_up_button'),

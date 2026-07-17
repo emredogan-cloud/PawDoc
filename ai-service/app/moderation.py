@@ -3,6 +3,12 @@
 The pipeline calls a moderator BEFORE the main analysis. If the image is unsafe,
 analysis is refused and the Edge Function deletes the stored R2 object.
 
+Evolution AI-03: the moderator now receives the ALREADY-FETCHED bytes + the
+TRUE mime type (the pipeline fetches each image exactly once through
+media.fetch_media's SSRF/size/timeout guards). The old shape hardcoded
+image/jpeg — a legitimate PNG/WebP photo could be wrongly rejected — and
+fetched every image a second time outside the guarded fetcher.
+
 Moderators are injectable so the gate is unit-testable with a fake; the real
 GeminiModerator does a cheap vision safety check (lazy SDK import)."""
 from __future__ import annotations
@@ -13,13 +19,13 @@ from . import config
 
 
 class ImageModerator(Protocol):
-    def is_safe(self, image_url: str) -> bool: ...
+    def is_safe_bytes(self, data: bytes, mime_type: str) -> bool: ...
 
 
 class AllowAllModerator:
     """Default when no image / no provider key (text-only analyses are unaffected)."""
 
-    def is_safe(self, image_url: str) -> bool:
+    def is_safe_bytes(self, data: bytes, mime_type: str) -> bool:
         return True
 
 
@@ -32,18 +38,16 @@ class GeminiModerator:
         self._api_key = api_key
         self._model = model
 
-    def is_safe(self, image_url: str) -> bool:
+    def is_safe_bytes(self, data: bytes, mime_type: str) -> bool:
         try:
-            import httpx  # lazy
-            from google import genai
+            from google import genai  # lazy
             from google.genai import types
 
-            image_bytes = httpx.get(image_url, timeout=5.0).content
             client = genai.Client(api_key=self._api_key)
             resp = client.models.generate_content(
                 model=self._model,
                 contents=[
-                    types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"),
+                    types.Part.from_bytes(data=data, mime_type=mime_type),
                     "Answer only YES if this is a non-explicit photo of an animal or pet, "
                     "otherwise NO.",
                 ],

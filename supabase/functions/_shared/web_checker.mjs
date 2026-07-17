@@ -15,8 +15,16 @@ export function clientIp(headers) {
 }
 
 /** Fixed-window rate-limit key (one 24h window per IP). */
-export function rateLimitKey(ip) {
-  return `anon_checker:${ip}`;
+/** F6 (evolution): the raw IP never lands in storage — an unkeyed SHA-256 of
+ *  (salt + ip) namespaces the counter instead. The salt is an env secret so
+ *  stored keys can't be reversed by rainbow-tabling IPv4 space. */
+export async function rateLimitKey(ip, salt = "") {
+  const data = new TextEncoder().encode(`${salt}:${ip}`);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  const hex = Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return `anon_checker:${hex.slice(0, 32)}`;
 }
 
 /** True once the IP has exceeded `max` requests in the window. */

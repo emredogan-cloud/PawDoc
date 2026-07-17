@@ -2,7 +2,7 @@
   1. kill-switch (CR #19) -> degraded fallback (CR #5)
   2. hardcoded emergency override, BEFORE any AI call -> GET_HELP_NOW
   3. Tier 2 (Gemini); confidence > 0.85 -> accept, else escalate to Tier 3 (Claude)
-  4. cross-verify any GET_HELP_NOW with a second Tier-3 call
+  4. cross-verify any GET_HELP_NOW asynchronously (telemetry — never delays)
   5. confidence < 0.60 -> "insufficient information" (never fabricate)
   6. ladder-floor re-check (CR #4): a risky WATCH_AND_RECHECK escalates/tightens
   7. force disclaimer_required at the API level
@@ -16,13 +16,15 @@
 """
 from __future__ import annotations
 
+import threading
 import time
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 
 from . import config
 from .cache import Cache, is_ai_disabled
 from .logging_setup import get_logger
-from .media import MediaFetchError
+from .media import MediaFetchError, gather_media
 from .models import (
     ActionLevel,
     AnalysisParseError,
@@ -43,16 +45,26 @@ from .safety import (
 log = get_logger("pipeline")
 
 
+def _daemon_thread(job: Callable[[], None]) -> None:
+    threading.Thread(target=job, daemon=True).start()
+
+
 @dataclass
 class AnalysisOutcome:
     result: AnalysisResult
     tier_used: int  # 0 = override/degraded, 2 = Gemini, 3 = Claude
     model_used: str
     emergency_override_applied: bool
-    cross_verified: bool
+    # B6 (evolution): cross-verification is ASYNC telemetry now — it could
+    # never change the outcome (GET_HELP_NOW was kept regardless), so it no
+    # longer doubles latency on the most time-critical path. This flag means
+    # "a background verify was scheduled", and (dis)agreement is LOGGED.
+    cross_verify_scheduled: bool
     degraded: bool
     moderation_rejected: bool
     latency_ms: int
+    # R4 cost telemetry: summed provider token usage for this analysis.
+    usage: dict = field(default_factory=dict)
 
 
 def _degraded_result() -> AnalysisResult:
@@ -123,19 +135,34 @@ def _media_unreadable_result() -> AnalysisResult:
 
 class AnalysisPipeline:
     def __init__(self, tier2: AIProvider, tier3: AIProvider, cache: Cache,
-                 moderator: ImageModerator | None = None) -> None:
+                 moderator: ImageModerator | None = None,
+                 cross_verify_executor: Callable[[Callable[[], None]], None] | None = None) -> None:
         self.tier2 = tier2
         self.tier3 = tier3
         self.cache = cache
         self.moderator = moderator or AllowAllModerator()
+        # Injectable so tests run the verify job synchronously/deterministically.
+        self.cross_verify_executor = cross_verify_executor or _daemon_thread
+        self._usage_total: dict = {}
 
-    def _call(self, provider: AIProvider, request: AnalyzeRequest) -> AnalysisResult:
+    def _track_usage(self, provider: AIProvider) -> None:
+        u = getattr(provider, "last_usage", None)
+        if not u:
+            return
+        for k in ("input_tokens", "output_tokens"):
+            v = u.get(k)
+            if isinstance(v, int):
+                self._usage_total[k] = self._usage_total.get(k, 0) + v
+
+    def _call(self, provider: AIProvider, request: AnalyzeRequest,
+              media: list[tuple[bytes, str]] | None) -> AnalysisResult:
         """One retry on failure (roadmap), then give up (caller degrades).
 
         Phase 6.1 — also builds the per-pet personalization block (breed/age +
         last 30d history) and passes it as a cache-able prefix; providers that
         support prompt caching (Anthropic) will reuse it on the cross-verify
-        and on repeat checks for the same pet within 5 minutes.
+        and on repeat checks for the same pet within 5 minutes. Media bytes are
+        PREFETCHED once by run() — no per-attempt refetch.
         """
         user_prompt = build_user_prompt(request)
         pet_context = build_personalization_block(
@@ -147,12 +174,11 @@ class AnalysisPipeline:
                 raw = provider.analyze(
                     SYSTEM_PROMPT_V1,
                     user_prompt,
-                    request.image_url,
+                    media,
                     pet_context_block=pet_context,
                 )
+                self._track_usage(provider)
                 return parse_analysis_result(raw)
-            except MediaFetchError:
-                raise  # don't retry — re-fetching an unreadable URL won't help
             except (ProviderError, AnalysisParseError) as exc:
                 last = exc
                 log.warning("provider %s attempt %d failed: %s", provider.name, attempt, exc)
@@ -167,14 +193,16 @@ class AnalysisPipeline:
             tier_used=tier,
             model_used=model,
             emergency_override_applied=override,
-            cross_verified=cross,
+            cross_verify_scheduled=cross,
             degraded=degraded,
             moderation_rejected=moderation_rejected,
             latency_ms=int((time.monotonic() - start) * 1000),
+            usage=dict(self._usage_total),
         )
 
     def run(self, request: AnalyzeRequest) -> AnalysisOutcome:
         start = time.monotonic()
+        self._usage_total = {}
 
         # 1. Kill-switch (CR #19).
         if is_ai_disabled(self.cache):
@@ -193,11 +221,25 @@ class AnalysisPipeline:
                 emergency_override_result(matched), 0, "override", override=True, start=start
             )
 
-        # CR #8 + Phase C (RF-7): moderate the image BEFORE any analysis; an
-        # unsafe item -> refuse (the Edge Function deletes the stored R2 object
-        # on a moderation reject). is_safe fails closed (errors/blocks ->
+        # AI-03 (evolution): fetch the image EXACTLY ONCE through the guarded
+        # fetcher (SSRF/size/timeout), then moderate the bytes with the TRUE
+        # mime and reuse the same bytes for every model call — no second fetch,
+        # no hardcoded image/jpeg, and PNG/WebP photos moderate correctly.
+        media: list[tuple[bytes, str]] | None = None
+        if request.image_url:
+            try:
+                media = gather_media(request.image_url)
+            except MediaFetchError as exc:
+                log.warning("media unreadable (%s) — safe degrade (never below the floor)", exc)
+                return self._outcome(
+                    _media_unreadable_result(), 0, "media_error", degraded=True, start=start
+                )
+
+        # CR #8 + Phase C (RF-7): moderate BEFORE any analysis; an unsafe item
+        # -> refuse (the Edge Function deletes the stored R2 object on a
+        # moderation reject). is_safe_bytes fails closed (errors/blocks ->
         # unsafe), so a moderation outage rejects too.
-        if request.image_url and not self.moderator.is_safe(request.image_url):
+        if media and not all(self.moderator.is_safe_bytes(d, m) for d, m in media):
             log.warning("media rejected by content moderation")
             rejected = AnalysisResult(
                 action=ActionLevel.WATCH_AND_RECHECK,
@@ -223,17 +265,12 @@ class AnalysisPipeline:
         #    Tier 3 as before, and if THAT escalation call fails we degrade
         #    (unchanged — a low-confidence read is never surfaced as the final answer).
         try:
-            result = self._call(self.tier2, request)
+            result = self._call(self.tier2, request, media)
             tier, model = 2, self.tier2.name
-        except MediaFetchError as exc:
-            log.warning("media unreadable (%s) — safe degrade (never NORMAL)", exc)
-            return self._outcome(
-                _media_unreadable_result(), 0, "media_error", degraded=True, start=start
-            )
         except ProviderError as exc:
             log.warning("Tier 2 (%s) failed: %s — failing over to Tier 3", self.tier2.name, exc)
             try:
-                result = self._call(self.tier3, request)
+                result = self._call(self.tier3, request, media)
                 tier, model = 3, self.tier3.name
             except ProviderError as exc2:
                 log.error("pipeline degraded after both tiers failed: %s", exc2)
@@ -241,25 +278,33 @@ class AnalysisPipeline:
         else:
             if result.confidence <= config.CONFIDENCE_ROUTE_THRESHOLD:
                 try:
-                    result = self._call(self.tier3, request)
+                    result = self._call(self.tier3, request, media)
                     tier, model = 3, self.tier3.name
                 except ProviderError as exc:
                     log.error("pipeline degraded after Tier-3 escalation failure: %s", exc)
                     return self._outcome(_degraded_result(), 0, "degraded", degraded=True, start=start)
 
-        # 4. Cross-verify any GET_HELP_NOW with a second Tier-3 call. The rung
-        #    is kept regardless (safe); we record whether the second call agreed.
-        cross_verified = False
+        # 4. B6 (evolution): cross-verify GET_HELP_NOW ASYNCHRONOUSLY. The
+        #    second Tier-3 call could never change the outcome (the rung is
+        #    kept regardless) — it is pure telemetry, so it must not double
+        #    latency on the most time-critical path. Respond NOW; verify in
+        #    the background; LOG (dis)agreement for the accuracy dashboard.
         if result.action is ActionLevel.GET_HELP_NOW:
-            try:
-                second = self._call(self.tier3, request)
-                cross_verified = second.action is ActionLevel.GET_HELP_NOW
-                tier, model = 3, self.tier3.name
-                if not cross_verified:
-                    log.warning("GET_HELP_NOW cross-verify disagreed; keeping it (safe)")
-            except ProviderError:
-                log.warning("GET_HELP_NOW cross-verify call failed; keeping it")
-            return self._outcome(result, tier, model, cross=cross_verified, start=start)
+            def _verify_job(req=request, med=media):
+                try:
+                    second = self._call(self.tier3, req, med)
+                    if second.action is ActionLevel.GET_HELP_NOW:
+                        log.info("GET_HELP_NOW cross-verify (async): agreed")
+                    else:
+                        log.warning(
+                            "GET_HELP_NOW cross-verify (async) DISAGREED "
+                            "(second=%s); outcome already returned (safe)",
+                            second.action.value,
+                        )
+                except ProviderError as exc:
+                    log.warning("GET_HELP_NOW cross-verify (async) failed: %s", exc)
+            self.cross_verify_executor(_verify_job)
+            return self._outcome(result, tier, model, cross=True, start=start)
 
         # 5. Confidence gate — never fabricate a confident answer.
         if result.confidence < config.CONFIDENCE_FLOOR:
@@ -274,7 +319,7 @@ class AnalysisPipeline:
             log.info("floor read with risk signals — re-checking (tier_used=%d)", tier)
             if tier == 2:
                 try:
-                    result = self._call(self.tier3, request)
+                    result = self._call(self.tier3, request, media)
                     tier, model = 3, self.tier3.name
                 except ProviderError:
                     pass  # fall through to the tighten below

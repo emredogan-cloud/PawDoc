@@ -127,10 +127,6 @@ flutter:
     - assets/illustrations/pets/
     - assets/illustrations/premium/
     - assets/illustrations/results/
-    - assets/icons/species/
-    - assets/icons/actions/
-    - assets/icons/status/
-    - assets/icons/avatars/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

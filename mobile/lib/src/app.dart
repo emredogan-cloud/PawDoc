@@ -24,6 +24,19 @@ class PawDocApp extends ConsumerWidget {
       // Phase 5.4 — i18n: English + German (CR #11). The same locale is also
       // sent to the Edge / AI service so the safety-critical emergency-keyword
       // override matches the UI language.
+      // UX-03: clamp OS text scaling so accessibility sizes grow text without
+      // shattering fixed-height cards; 1.6x keeps large-font (often older)
+      // pet owners readable and layouts intact.
+      builder: (context, child) {
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(
+            textScaler: mq.textScaler
+                .clamp(minScaleFactor: 1.0, maxScaleFactor: 1.6),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       // Locale fallback: a device locale outside en/de must fall back to

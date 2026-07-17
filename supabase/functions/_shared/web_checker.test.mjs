@@ -18,8 +18,13 @@ test("rateLimitExceeded fires strictly above max (3/day)", () => {
   assert.equal(rateLimitExceeded(4, 3), true); // 4th blocked
 });
 
-test("rateLimitKey namespaces by ip", () => {
-  assert.equal(rateLimitKey("1.2.3.4"), "anon_checker:1.2.3.4");
+test("rateLimitKey hashes the ip (F6: no raw IP in storage)", async () => {
+  const k = await rateLimitKey("1.2.3.4", "salt");
+  assert.match(k, /^anon_checker:[0-9a-f]{32}$/);
+  assert.ok(!k.includes("1.2.3.4"));
+  // Deterministic per (salt, ip); different ips diverge.
+  assert.equal(k, await rateLimitKey("1.2.3.4", "salt"));
+  assert.notEqual(k, await rateLimitKey("5.6.7.8", "salt"));
 });
 
 test("simplifyResult exposes only action + observation (no 'what to do')", () => {

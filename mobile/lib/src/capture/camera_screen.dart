@@ -82,22 +82,18 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
       final shot = await controller.takePicture();
       final raw = await shot.readAsBytes();
 
-      // Compress + strip EXIF off the UI thread.
-      final result = await compute(_compress, raw);
-
-      // Blur/lighting check on the captured frame.
-      final decoded = img.decodeJpg(result.bytes);
-      if (decoded != null) {
-        final report = assessQuality(decoded);
-        if (report.hints.isNotEmpty && mounted) {
-          final useAnyway = await _qualityDialog(report.hints);
-          if (useAnyway != true) {
-            await controller.startImageStream(_onFrame);
-            if (mounted) setState(() => _busy = false);
-            return;
-          }
+      // ENG-03: compress + strip EXIF + decode + quality-check ALL off the UI
+      // thread in one isolate hop — only the dialog decision runs on main.
+      final prepared = await compute(_compressAndAssess, raw);
+      if (prepared.hints.isNotEmpty && mounted) {
+        final useAnyway = await _qualityDialog(prepared.hints);
+        if (useAnyway != true) {
+          await controller.startImageStream(_onFrame);
+          if (mounted) setState(() => _busy = false);
+          return;
         }
       }
+      final result = prepared.result;
 
       final upload = await ref.read(uploadServiceProvider).uploadJpeg(result.bytes);
       if (mounted) Navigator.of(context).pop(upload.storageKey);
@@ -281,4 +277,16 @@ class _PrivacyNote extends StatelessWidget {
 }
 
 // Top-level so it can run in a background isolate via compute().
-CompressionResult _compress(Uint8List bytes) => compressForUpload(bytes);
+class _PreparedCapture {
+  const _PreparedCapture(this.result, this.hints);
+  final CompressionResult result;
+  final List<String> hints;
+}
+
+_PreparedCapture _compressAndAssess(Uint8List bytes) {
+  final result = compressForUpload(bytes);
+  final decoded = img.decodeJpg(result.bytes);
+  final hints =
+      decoded == null ? const <String>[] : assessQuality(decoded).hints;
+  return _PreparedCapture(result, hints);
+}

@@ -241,7 +241,9 @@ class _AnalyticsConsentTileState extends State<_AnalyticsConsentTile> {
       child: PawCard(
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpace.s12, vertical: AppSpace.s4),
-        child: SwitchListTile(
+        child: Material(
+          type: MaterialType.transparency,
+          child: SwitchListTile(
           key: const Key('analytics_consent_toggle'),
           contentPadding: EdgeInsets.zero,
           title: const Text('Usage analytics',
@@ -250,6 +252,7 @@ class _AnalyticsConsentTileState extends State<_AnalyticsConsentTile> {
               style: TextStyle(color: AppColors.ink300, fontSize: 12)),
           value: _enabled ?? false,
           onChanged: _enabled == null ? null : _set,
+          ),
         ),
       ),
     );

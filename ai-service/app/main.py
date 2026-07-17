@@ -156,16 +156,29 @@ def get_pipeline() -> AnalysisPipeline:
 @app.post("/analyze", dependencies=[Depends(require_service_auth)])
 def analyze(req: AnalyzeRequest, pipeline: AnalysisPipeline = Depends(get_pipeline)) -> dict:
     outcome = pipeline.run(req)
+    # R4 cost telemetry: one structured line per analysis — the first spend
+    # visibility this codebase has ever had. Aggregate in logs; alert upstream.
+    log.info(
+        "analysis_telemetry action=%s tier=%d model=%s input_tokens=%s output_tokens=%s latency_ms=%d degraded=%s",
+        outcome.result.action.value,
+        outcome.tier_used,
+        outcome.model_used,
+        outcome.usage.get("input_tokens"),
+        outcome.usage.get("output_tokens"),
+        outcome.latency_ms,
+        outcome.degraded,
+    )
     return {
         "result": outcome.result.model_dump(),
         "meta": {
             "tier_used": outcome.tier_used,
             "model_used": outcome.model_used,
             "emergency_override_applied": outcome.emergency_override_applied,
-            "cross_verified": outcome.cross_verified,
+            "cross_verify_scheduled": outcome.cross_verify_scheduled,
             "degraded": outcome.degraded,
             "moderation_rejected": outcome.moderation_rejected,
             "latency_ms": outcome.latency_ms,
+            "usage": outcome.usage,
             "request_id": get_request_id(),
         },
     }

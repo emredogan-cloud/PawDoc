@@ -102,7 +102,7 @@ Deno.serve(async (req: Request) => {
 
   // 2. IP rate limit (fixed 24h window). INCR is the gate.
   try {
-    const key = rateLimitKey(ip);
+    const key = await rateLimitKey(ip, Deno.env.get("ANON_IP_SALT") ?? "");
     const count = await upstash(upstashUrl, upstashToken, "incr", key);
     if (count === 1) await upstash(upstashUrl, upstashToken, "expire", key, String(WINDOW_SECONDS));
     if (rateLimitExceeded(count, MAX_PER_DAY)) {

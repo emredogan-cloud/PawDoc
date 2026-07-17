@@ -22,7 +22,7 @@ class AIProvider(Protocol):
         self,
         system_prompt: str,
         user_prompt: str,
-        image_url: str | None = None,
+        media: list[tuple[bytes, str]] | None = None,
         pet_context_block: str | None = None,
     ) -> dict:
         ...
@@ -42,32 +42,29 @@ class GeminiProvider:
         self,
         system_prompt: str,
         user_prompt: str,
-        image_url: str | None = None,
+        media: list[tuple[bytes, str]] | None = None,
         pet_context_block: str | None = None,
     ) -> dict:
         model = self._model
-        # Gemini has no equivalent of Anthropic's ephemeral prompt cache, so we
-        # concatenate the static + per-pet + per-check parts into one stream.
-        # Static parts still go first so they hit the model's implicit KV cache
-        # when the SDK / server side optimizes for repeated prefixes.
-        sections = [system_prompt]
+        # B10 (evolution): TRUE role separation. The safety contract + per-pet
+        # context ride in system_instruction; ONLY the owner-controlled text is
+        # user content — 4,000 chars of untrusted input no longer shares a
+        # string with the safety contract on the primary tier.
+        system_sections = [system_prompt]
         if pet_context_block:
-            sections.append(pet_context_block)
-        sections.append(user_prompt)
-        text = "\n\n".join(sections)
+            system_sections.append(pet_context_block)
+        system_text = "\n\n".join(system_sections)
         try:
             from google import genai  # lazy
             from google.genai import types
 
-            from .media import gather_media  # lazy (avoids import cycle)
-
-            # GAP-A1: attach REAL pixels (the image) as a multimodal part,
-            # not a text claim that an image exists.
+            # GAP-A1: attach REAL pixels (prefetched ONCE by the pipeline
+            # through the guarded fetcher) as multimodal parts.
             parts = [
                 types.Part.from_bytes(data=data, mime_type=mime)
-                for data, mime in gather_media(image_url)
+                for data, mime in (media or [])
             ]
-            contents = [*parts, text] if parts else text
+            contents = [*parts, user_prompt] if parts else user_prompt
 
             # GAP-A4: hard request timeout (ms) + bounded output so a hung/slow
             # Gemini call can't pin a thread or run up cost.
@@ -79,11 +76,18 @@ class GeminiProvider:
                 model=model,
                 contents=contents,
                 config=types.GenerateContentConfig(
+                    system_instruction=system_text,
                     temperature=config.ANALYSIS_TEMPERATURE,
                     response_mime_type="application/json",
                     max_output_tokens=1024,
                 ),
             )
+            # Cost telemetry (R4): capture token usage when the SDK reports it.
+            usage = getattr(resp, "usage_metadata", None)
+            self.last_usage = {
+                "input_tokens": getattr(usage, "prompt_token_count", None),
+                "output_tokens": getattr(usage, "candidates_token_count", None),
+            } if usage else None
             import json
 
             return json.loads(resp.text)
@@ -129,7 +133,7 @@ class ClaudeProvider:
         self,
         system_prompt: str,
         user_prompt: str,
-        image_url: str | None = None,
+        media: list[tuple[bytes, str]] | None = None,
         pet_context_block: str | None = None,
     ) -> dict:
         try:
@@ -137,11 +141,9 @@ class ClaudeProvider:
 
             import anthropic  # lazy
 
-            from .media import gather_media  # lazy (avoids import cycle)
-
-            # GAP-A1: attach REAL pixels as an image content block before the
-            # text; text-only requests keep the plain-string content as before.
-            media = gather_media(image_url)
+            # GAP-A1: attach REAL pixels (prefetched once by the pipeline) as
+            # an image content block before the text; text-only requests keep
+            # the plain-string content as before.
             if media:
                 content: list | str = [
                     {
@@ -177,6 +179,11 @@ class ClaudeProvider:
                 tool_choice={"type": "tool", "name": "report_triage"},
                 messages=[{"role": "user", "content": content}],
             )
+            usage = getattr(message, "usage", None)
+            self.last_usage = {
+                "input_tokens": getattr(usage, "input_tokens", None),
+                "output_tokens": getattr(usage, "output_tokens", None),
+            } if usage else None
             for block in message.content:
                 if getattr(block, "type", None) == "tool_use":
                     return dict(block.input)

@@ -71,7 +71,6 @@
       "category": "EMERGENCY",
       "description": "No hardcoded keyword fires; Tier 2 + Tier 3 both classify EMERGENCY at high confidence.",
       "expected_override": false,
-      "expected_cross_verified": true,
       "request": {
         "input_type": "text",
         "text_description": "very pale and weak after a tick bite",
@@ -91,14 +90,14 @@
         "action": "GET_HELP_NOW",
         "observation": "tick paralysis suspected"
       },
-      "expected_action": "GET_HELP_NOW"
+      "expected_action": "GET_HELP_NOW",
+      "expected_cross_verify_scheduled": true
     },
     {
       "id": "emergency_kept_when_cross_verify_disagrees",
       "category": "EMERGENCY",
-      "description": "Cross-verify safety rule — Tier 3 disagrees but the EMERGENCY classification is kept (the safer choice).",
+      "description": "Cross-verify safety rule — the async Tier-3 verify is scheduled and may disagree, but the GET_HELP_NOW outcome is already returned (the safer choice).",
       "expected_override": false,
-      "expected_cross_verified": false,
       "request": {
         "input_type": "text",
         "text_description": "shaking and refusing to move",
@@ -118,7 +117,8 @@
         "action": "WATCH_AND_RECHECK",
         "observation": "stress reaction"
       },
-      "expected_action": "GET_HELP_NOW"
+      "expected_action": "GET_HELP_NOW",
+      "expected_cross_verify_scheduled": true
     },
     {
       "id": "emergency_with_personalized_history",

@@ -97,6 +97,35 @@ Deno.serve(async (req: Request) => {
   // Service-role client for the counter + storing results (bypasses RLS by design).
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
+  // BE-01 residual: per-user burst limit (30/h) so no single account can hammer
+  // the AI service even within quota. Upstash INCR+EXPIRE; FAIL-OPEN on infra
+  // errors (photo quota already bounds cost; availability beats strictness).
+  try {
+    const rlUrl = Deno.env.get("UPSTASH_REDIS_REST_URL");
+    const rlTok = Deno.env.get("UPSTASH_REDIS_REST_TOKEN");
+    if (rlUrl && rlTok) {
+      const key = `analyze_rl:${user.id}:${Math.floor(Date.now() / 3_600_000)}`;
+      const r = await fetch(`${rlUrl}/pipeline`, {
+        method: "POST",
+        signal: AbortSignal.timeout(2_000),
+        headers: { Authorization: `Bearer ${rlTok}`, "content-type": "application/json" },
+        body: JSON.stringify([["INCR", key], ["EXPIRE", key, "3600"]]),
+      });
+      if (r.ok) {
+        const [{ result: count }] = await r.json();
+        if (typeof count === "number" && count > 30) {
+          return json({
+            error: "rate_limited",
+            message: "Too many checks in a short time — please wait a bit and try again. " +
+              "If this is urgent, use Emergency help.",
+          }, 429);
+        }
+      }
+    }
+  } catch (_err) {
+    // fail-open
+  }
+
   // Pet must belong to the caller (RLS enforces this on the user-scoped client).
   const { data: pet, error: petErr } = await userClient
     .from("pets").select("*").eq("id", pet_id).single();
@@ -199,6 +228,8 @@ Deno.serve(async (req: Request) => {
     try {
       const resp = await fetch(`${AI_SERVICE_URL}/analyze`, {
         method: "POST",
+        // BE-02: a hung upstream must not pin this function — hard deadline.
+        signal: AbortSignal.timeout(25_000),
         headers: aiServiceHeaders(requestId, AI_SERVICE_TOKEN),
         body: JSON.stringify({
           input_type,

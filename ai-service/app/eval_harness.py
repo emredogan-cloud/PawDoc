@@ -64,7 +64,7 @@ class _StubModerator:
     def __init__(self, safe: bool) -> None:
         self.safe = safe
 
-    def is_safe(self, image_url: str) -> bool:  # noqa: ARG002
+    def is_safe_bytes(self, data: bytes, mime_type: str) -> bool:  # noqa: ARG002
         return self.safe
 
 
@@ -164,7 +164,12 @@ def _build_pipeline_for_case(case: dict[str, Any]) -> AnalysisPipeline:
         if case.get("moderation_safe") is False
         else AllowAllModerator()
     )
-    return AnalysisPipeline(tier2=tier2, tier3=tier3, cache=cache, moderator=moderator)
+    # Deterministic harness: the async cross-verify job runs SYNCHRONOUSLY so
+    # a case can assert it was scheduled without threads.
+    return AnalysisPipeline(
+        tier2=tier2, tier3=tier3, cache=cache, moderator=moderator,
+        cross_verify_executor=lambda job: job(),
+    )
 
 
 def _evaluate_case(case: dict[str, Any]) -> CaseResult:
@@ -172,7 +177,15 @@ def _evaluate_case(case: dict[str, Any]) -> CaseResult:
     category = case["category"]
     expected = case["expected_action"]
     pipeline = _build_pipeline_for_case(case)
-    outcome = pipeline.run(_build_request(case["request"]))
+    # The harness is provider-free AND network-free: stub the guarded media
+    # fetcher so image cases exercise moderation/analysis without any fetch.
+    from unittest.mock import patch
+
+    with patch(
+        "app.pipeline.gather_media",
+        lambda url: [(b"stub-bytes", "image/jpeg")] if url else [],
+    ):
+        outcome = pipeline.run(_build_request(case["request"]))
     actual_level: ActionLevel = outcome.result.action
     actual = actual_level.value
 
@@ -186,11 +199,12 @@ def _evaluate_case(case: dict[str, Any]) -> CaseResult:
             notes.append(
                 f"override={outcome.emergency_override_applied} expected {case['expected_override']}"
             )
-    if "expected_cross_verified" in case:
-        if outcome.cross_verified != case["expected_cross_verified"]:
+    if "expected_cross_verify_scheduled" in case:
+        if outcome.cross_verify_scheduled != case["expected_cross_verify_scheduled"]:
             passed = False
             notes.append(
-                f"cross_verified={outcome.cross_verified} expected {case['expected_cross_verified']}"
+                f"cross_verify_scheduled={outcome.cross_verify_scheduled} "
+                f"expected {case['expected_cross_verify_scheduled']}"
             )
     if case.get("expected_degraded") and not outcome.degraded:
         passed = False
