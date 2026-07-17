@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../core/app_image.dart';
+import '../core/connectivity.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../theme/app_theme.dart';
@@ -105,6 +106,10 @@ class _SymptomTextScreenState extends State<SymptomTextScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // QA-06: surface offline BEFORE the user types and
+                      // submits into a spinner (the emergency router still
+                      // works fully offline).
+                      const OfflineBanner(),
                       // ── Hero row: headline + puppy illustration ──────────
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,

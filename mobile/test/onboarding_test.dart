@@ -50,7 +50,8 @@ void main() {
   testWidgets('Symptom text Continue is gated by minimum character guidance',
       (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(home: SymptomTextScreen(petName: 'Rex')),
+      const ProviderScope(
+          child: MaterialApp(home: SymptomTextScreen(petName: 'Rex'))),
     );
     // Too short initially.
     expect(find.textContaining('Add a little more detail'), findsOneWidget);

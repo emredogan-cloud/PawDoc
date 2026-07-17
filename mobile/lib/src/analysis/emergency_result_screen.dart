@@ -9,6 +9,7 @@ import '../analytics/analytics.dart';
 import '../models/analysis_result.dart';
 import '../theme/design_tokens.dart';
 import '../config/legal_urls.dart';
+import '../emergency/emergency_help_screen.dart';
 import '../vet_finder/maps_links.dart';
 import 'result_l10n.dart';
 
@@ -97,7 +98,22 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                 ),
                 // NEVER add monetization, affiliates, or upsells to this
                 // screen. The emergency path contains exactly: the concern,
-                // the vet CTA, the disclaimer, and the acknowledgment gate.
+                // the vet CTA, first aid, the disclaimer, and the
+                // acknowledgment gate.
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  key: const Key('emergency_first_aid'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white70),
+                    shape: const StadiumBorder(),
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const EmergencyHelpScreen())),
+                  icon: const Icon(Icons.medical_services_outlined),
+                  label: const Text('First aid while you get help'),
+                ),
                 const SizedBox(height: 24),
                 if (r.disclaimerRequired)
                   Container(

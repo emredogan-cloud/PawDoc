@@ -17,6 +17,8 @@ import '../core/last_check.dart';
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
+import '../emergency/emergency_help_screen.dart';
+import '../emergency/emergency_keywords.dart';
 import '../feedback/followup_banner.dart';
 import '../health/breed_insight_card.dart';
 import '../health/health_event_form_screen.dart';
@@ -62,6 +64,20 @@ class HomeScreen extends ConsumerWidget {
         MaterialPageRoute(builder: (_) => SymptomTextScreen(petName: pet.name)),
       );
       if (text != null && context.mounted) {
+        // OFFLINE EMERGENCY ROUTER (evolution Phase 3): the same keyword lists
+        // the server runs, executed CLIENT-side first — a match lands on the
+        // red help screen instantly, before any network call, so a dead zone
+        // can never turn "my dog is choking" into a spinner. The server list
+        // stays authoritative for anything submitted online.
+        final locale = Localizations.maybeLocaleOf(context)?.languageCode;
+        final matched = matchEmergencyKeyword(text,
+            species: pet.species, locale: locale);
+        if (matched != null) {
+          await Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => EmergencyHelpScreen(matchedKeyword: matched),
+          ));
+          return;
+        }
         await Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => AnalysisRunnerScreen(
             petId: pet.id!, petName: pet.name, petSpecies: pet.species, inputType: 'text',
@@ -162,6 +178,8 @@ class HomeScreen extends ConsumerWidget {
                 // secondary → quota (the billing meter is demoted to the bottom).
                 final content = <Widget>[
                   _PetHeroCard(pet: pet, onCheck: () => _check(context, ref, pet, isPremium)),
+                  const SizedBox(height: AppSpace.s8),
+                  const EmergencyHelpButton(),
                   const SizedBox(height: AppSpace.s12),
                   BreedInsightCard(
                     key: ValueKey('breed_${pet.id}'),

@@ -43,7 +43,8 @@ supabase functions deploy <name> --project-ref <ref>
 - **RLS on EVERY user table**, with `USING` **and** `WITH CHECK` + explicit per-op policies. Verify with `scripts/test-rls.sh`.
 - **AI output is structured JSON only** (Pydantic `AnalysisResult` / Claude tool_use / Gemini JSON). Off-schema → reject + log + retry/degrade.
 - **Temperature = 0.1** on every health-analysis call.
-- **Emergency override runs BEFORE any AI call** (hardcoded keywords); EMERGENCY is cross-verified; confidence < 0.60 → "insufficient information", never fabricate.
+- **Emergency override runs BEFORE any AI call** (hardcoded keywords, mirrored client-side as the offline router); GET_HELP_NOW is cross-verified; confidence < 0.60 → "insufficient information", never fabricate. The keyword lists are triplicated (`safety.py` ≡ `emergency_keywords.mjs` ≡ `emergency_keywords.dart`) and parity-tested.
+- **The action ladder has no "do nothing" rung** (contract v2): no output may terminate without an action and a timeframe; never render "normal", never name a condition, `confidence` is never shown to users.
 - **Disclaimers are API-injected** (`disclaimer_required` forced server-side; UI only gates on the flag). Verify with `scripts/verify-disclaimers.sh`.
 - Model IDs only (`claude-sonnet-4-6`, `gemini-2.0-flash`) — never marketing names.
 - The `AnalysisResult` contract (`docs/contracts/ANALYSIS_RESULT.md`) is frozen across Dart/Python/TS — change all three together.
@@ -51,7 +52,8 @@ supabase functions deploy <name> --project-ref <ref>
 
 ## NEVER do these (safety/security gates)
 - **NEVER ship R2 write keys in the client.** Uploads use short-lived **presigned PUT URLs** from an Edge Function.
-- **NEVER paywall / free-tier-block an EMERGENCY result.** Enforced server-side (Edge Function bypasses the gate on emergency text) AND client-side (`paywall_policy`).
+- **NEVER paywall / free-tier-block a GET_HELP_NOW result.** Enforced server-side (Edge Function bypasses the gate on emergency text) AND client-side (`paywall_policy`).
+- **NEVER add anything to the emergency surfaces** (`EmergencyHelpScreen`, `EmergencyResultScreen`) beyond help contacts, first aid, the disclaimer, and the acknowledgment gate — no monetization, no affiliates, no upsells, no AI-driven content, no meter. The red path stays offline-capable and model-free.
 - **NEVER use `service_role` for user-data reads.** Reads go through the user's JWT + RLS; `service_role` is server-only for writes/admin.
 - **NEVER commit secrets.** Real values live in Doppler; only `*.example`/placeholders in git. `.gitignore` + gitleaks CI guard this.
 - **NEVER strip the disclaimer** or weaken the emergency/safety path to ship faster.

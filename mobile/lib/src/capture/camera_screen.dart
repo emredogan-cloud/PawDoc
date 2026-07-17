@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 
+import '../core/connectivity.dart';
 import '../theme/design_tokens.dart';
 import 'image_compressor.dart';
 import 'image_quality.dart';
@@ -148,6 +149,11 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
         children: [
           Positioned.fill(child: Center(child: CameraPreview(controller))),
           const Positioned.fill(child: _FramingOverlay()),
+          // QA-06: a photo captured offline can't upload — say so up front.
+          const Positioned(
+            top: 0, left: AppSpace.s16, right: AppSpace.s16,
+            child: OfflineBanner(),
+          ),
           Positioned(
             top: AppSpace.s16,
             left: 0,
