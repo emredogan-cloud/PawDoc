@@ -20,6 +20,7 @@ import '../theme/paw_ui.dart';
 import 'health_event_form_screen.dart';
 import 'pdf_report_service.dart';
 import 'timeline.dart';
+import '../prep/vet_visit_prep_screen.dart';
 import 'weight_trend_card.dart';
 
 /// The combined health-history timeline for the **active** pet (analyses +
@@ -129,6 +130,9 @@ class HealthHistoryScreen extends ConsumerWidget {
               color: const Color(0xFF1A2220),
               onSelected: (v) {
                 switch (v) {
+                  case 'prep':
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => VetVisitPrepScreen(pet: pet)));
                   case 'share':
                     _shareMarkdown(context, ref, pet);
                   case 'pdf':
@@ -140,6 +144,15 @@ class HealthHistoryScreen extends ConsumerWidget {
                 }
               },
               itemBuilder: (_) => const [
+                PopupMenuItem(
+                  key: Key('open_vet_prep'),
+                  value: 'prep',
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.assignment_outlined),
+                    title: Text('Vet visit prep'),
+                  ),
+                ),
                 PopupMenuItem(
                   key: Key('export_health_report'),
                   value: 'share',

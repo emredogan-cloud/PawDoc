@@ -27,6 +27,7 @@ import '../pets/active_pet.dart';
 import '../pets/add_pet_flow.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
+import '../prep/vet_visit_prep_screen.dart';
 import '../text_input/symptom_text_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
@@ -207,6 +208,17 @@ class HomeScreen extends ConsumerWidget {
                         ),
                       ),
                     ],
+                  ),
+                  // Phase 5: the record product's centerpiece gets a first-
+                  // class home entry (it was buried in an overflow menu).
+                  OutlinedButton.icon(
+                    key: const Key('home_vet_prep'),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => VetVisitPrepScreen(pet: pet)),
+                    ),
+                    icon: const Icon(Icons.assignment_outlined),
+                    label: const Text('Prepare for a vet visit'),
                   ),
                   TextButton.icon(
                     onPressed: () => context.push('/pets'),
