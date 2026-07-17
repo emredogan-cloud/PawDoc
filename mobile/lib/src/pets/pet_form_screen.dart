@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
-import '../monetization/insurance_affiliate_cta.dart';
 import '../theme/design_tokens.dart';
 import 'pet.dart';
 import 'pets_repository.dart';
@@ -183,10 +182,6 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
               onPressed: _saving ? null : _save,
               child: Text(_saving ? 'Saving…' : (_isEdit ? 'Save changes' : 'Add pet')),
             ),
-            // Phase 6.3 — soft-sell pet insurance on the pet-profile screen.
-            // Self-hides when PET_INSURANCE_AFFILIATE_URL is empty.
-            const SizedBox(height: AppSpace.s24),
-            const InsuranceAffiliateCta(source: 'pet_profile'),
           ],
         ),
       ),

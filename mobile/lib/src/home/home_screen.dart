@@ -22,7 +22,6 @@ import '../feedback/followup_banner.dart';
 import '../health/breed_insight_card.dart';
 import '../health/health_event_form_screen.dart';
 import '../health/timeline.dart';
-import '../monetization/telehealth_button.dart';
 import '../pets/active_pet.dart';
 import '../pets/add_pet_flow.dart';
 import '../pets/pet.dart';
@@ -218,9 +217,6 @@ class HomeScreen extends ConsumerWidget {
                     icon: const Icon(Icons.pets),
                     label: const Text('Manage pets'),
                   ),
-                  // Phase 5.4 — embedded telehealth (Airvet-style affiliate).
-                  // Self-hides when AIRVET_AFFILIATE_URL isn't configured.
-                  const TelehealthButton(source: 'home'),
                   const SizedBox(height: AppSpace.s8),
                   profile.maybeWhen(
                     data: (p) => _QuotaStrip(

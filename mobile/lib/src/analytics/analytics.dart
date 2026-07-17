@@ -69,18 +69,10 @@ class Analytics {
   // Phase 5.3 — AI Health Journal.
   static Future<void> journalViewed() => capture('journal_viewed');
 
-  // Phase 5.4 — Embedded telehealth (Airvet-style affiliate). `source` tags
-  // where the user tapped from (emergency_result | monitor_result | home).
-  static Future<void> telehealthClicked(String source) =>
-      capture('telehealth_clicked', {'source': source});
-
-  // Phase 6.3 — PDF Health Report add-on + Pet Insurance affiliate links.
+  // Phase 6.3 — PDF Health Report (premium-included).
   static Future<void> pdfReportRequested(String entitlement) =>
       capture('pdf_report_requested', {'entitlement': entitlement});
   static Future<void> pdfReportGenerated() => capture('pdf_report_generated');
-  static Future<void> pdfReportPurchased() => capture('pdf_report_purchased');
-  static Future<void> insuranceAffiliateClicked(String source) =>
-      capture('insurance_affiliate_clicked', {'source': source});
 
   // Phase 6.3.1 — Family Sharing.
   static Future<void> familyInviteSent() => capture('family_invite_sent');

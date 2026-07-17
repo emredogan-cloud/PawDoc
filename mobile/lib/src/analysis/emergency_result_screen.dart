@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../analytics/analytics.dart';
 import '../models/analysis_result.dart';
-import '../monetization/insurance_affiliate_cta.dart';
-import '../monetization/telehealth_button.dart';
 import '../theme/design_tokens.dart';
 import '../vet_finder/vet_finder_screen.dart';
 import '../config/legal_urls.dart';
@@ -94,14 +92,9 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                   icon: const Icon(Icons.local_hospital),
                   label: Text(l.emergencyFindVet),
                 ),
-                const SizedBox(height: 12),
-                // Phase 5.4 — Airvet-style telehealth deep-link, prominently
-                // placed on the emergency screen (revenue-share affiliate).
-                const TelehealthButton(source: 'emergency_result'),
-                const SizedBox(height: 8),
-                // Phase 6.3 — pet-insurance affiliate CTA. Self-hides if
-                // PET_INSURANCE_AFFILIATE_URL isn't configured.
-                const InsuranceAffiliateCta(source: 'emergency_result'),
+                // NEVER add monetization, affiliates, or upsells to this
+                // screen. The emergency path contains exactly: the concern,
+                // the vet CTA, the disclaimer, and the acknowledgment gate.
                 const SizedBox(height: 24),
                 if (r.disclaimerRequired)
                   Container(

@@ -49,14 +49,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get actionContinue => 'Weiter';
-
-  @override
-  String get telehealthTitle => 'Jetzt mit einem Tierarzt sprechen';
-
-  @override
-  String get telehealthSubtitle =>
-      'Video-Konsultation auf Abruf mit einem zugelassenen Tierarzt.';
-
-  @override
-  String get telehealthCta => 'Tierarzt konsultieren';
 }

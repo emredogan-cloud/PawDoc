@@ -11,8 +11,6 @@ import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../feedback/result_feedback_widget.dart';
 import '../models/analysis_result.dart';
-import '../monetization/insurance_affiliate_cta.dart';
-import '../monetization/telehealth_button.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
@@ -329,9 +327,6 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
               icon: const Icon(Icons.local_hospital_outlined),
               label: const Text('Find a nearby vet'),
             ),
-            const SizedBox(height: 8),
-            // Phase 5.4 — telehealth deep link as a parallel option on MONITOR.
-            const TelehealthButton(source: 'monitor_result'),
           ],
           if (r.triageLevel == TriageLevel.normal)
             OutlinedButton.icon(
@@ -340,12 +335,6 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
               icon: const Icon(Icons.share),
               label: const Text('Share this result'),
             ),
-          // Phase 6.3 — Pet-insurance affiliate CTA on the standard result.
-          // Self-hides if PET_INSURANCE_AFFILIATE_URL isn't configured.
-          const SizedBox(height: 8),
-          InsuranceAffiliateCta(source: r.triageLevel == TriageLevel.monitor
-              ? 'monitor_result'
-              : 'normal_result'),
           // In-app feedback (Phase 4.1) — only when the analysis was stored.
           if (widget.analysisId != null) ...[
             const SizedBox(height: 16),
