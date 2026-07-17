@@ -22,7 +22,10 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _breed;
+  late final TextEditingController _weight;
+  late final TextEditingController _medicalNotes;
   late String _species;
+  String? _sex;
   DateTime? _birthDate;
   bool _saving = false;
 
@@ -33,7 +36,12 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
     super.initState();
     _name = TextEditingController(text: widget.pet?.name ?? '');
     _breed = TextEditingController(text: widget.pet?.breed ?? '');
+    _weight = TextEditingController(
+        text: widget.pet?.weightKg?.toString() ?? '');
+    _medicalNotes =
+        TextEditingController(text: widget.pet?.medicalNotes ?? '');
     _species = widget.pet?.species ?? kSpecies.first;
+    _sex = widget.pet?.sex;
     _birthDate = widget.pet?.birthDate;
   }
 
@@ -41,6 +49,8 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   void dispose() {
     _name.dispose();
     _breed.dispose();
+    _weight.dispose();
+    _medicalNotes.dispose();
     super.dispose();
   }
 
@@ -55,6 +65,11 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
       species: _species,
       breed: _breed.text.trim().isEmpty ? null : _breed.text.trim(),
       birthDate: _birthDate,
+      sex: _sex,
+      weightKg: double.tryParse(_weight.text.trim().replaceAll(',', '.')),
+      medicalNotes: _medicalNotes.text.trim().isEmpty
+          ? null
+          : _medicalNotes.text.trim(),
     );
     try {
       if (_isEdit) {
@@ -124,6 +139,45 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
               decoration: const InputDecoration(labelText: 'Breed (optional)', filled: true),
             ),
             const SizedBox(height: AppSpace.s8),
+            // E5: the record fields the vet report reads (sex/weight) are now
+            // actually editable — they existed in the DB with no UI for months.
+            Text('Sex', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: AppSpace.s8),
+            Wrap(
+              spacing: AppSpace.s8,
+              children: [
+                for (final (value, label) in const [
+                  ('male', 'Male'),
+                  ('female', 'Female'),
+                ])
+                  ChoiceChip(
+                    key: Key('pet_sex_$value'),
+                    label: Text(label),
+                    selected: _sex == value,
+                    onSelected: (sel) =>
+                        setState(() => _sex = sel ? value : null),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpace.s16),
+            TextFormField(
+              key: const Key('pet_weight_field'),
+              controller: _weight,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                  labelText: 'Weight in kg (optional)', filled: true),
+              validator: (v) {
+                final t = (v ?? '').trim();
+                if (t.isEmpty) return null;
+                final n = double.tryParse(t.replaceAll(',', '.'));
+                if (n == null || n <= 0 || n > 200) {
+                  return 'Enter a weight in kg (e.g. 12.5)';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: AppSpace.s8),
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Date of birth (optional)'),
@@ -141,6 +195,20 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                 );
                 if (picked != null) setState(() => _birthDate = picked);
               },
+            ),
+            const SizedBox(height: AppSpace.s16),
+            TextFormField(
+              key: const Key('pet_medical_notes_field'),
+              controller: _medicalNotes,
+              maxLines: 3,
+              maxLength: 500,
+              decoration: const InputDecoration(
+                labelText: 'Medical notes (optional)',
+                helperText:
+                    'Allergies, chronic conditions, medications — appears in the vet report.',
+                helperMaxLines: 2,
+                filled: true,
+              ),
             ),
             const SizedBox(height: AppSpace.s24),
             AppButton(

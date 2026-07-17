@@ -20,6 +20,7 @@ import '../theme/paw_ui.dart';
 import 'health_event_form_screen.dart';
 import 'pdf_report_service.dart';
 import 'timeline.dart';
+import 'weight_trend_card.dart';
 
 /// The combined health-history timeline for the **active** pet (analyses +
 /// manual events, newest first). Watches [activePetProvider], so switching the
@@ -200,8 +201,15 @@ class HealthHistoryScreen extends ConsumerWidget {
                     if (items.isEmpty) {
                       return _HistoryEmptyState(petName: pet.name);
                     }
-                    // Date-grouped status-node timeline.
-                    final children = <Widget>[];
+                    // Weight trend on top (E4 — the metadata is finally read
+                    // back), then the date-grouped status-node timeline.
+                    final children = <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s16, vertical: AppSpace.s8),
+                        child: WeightTrendCard(petId: pet.id!),
+                      ),
+                    ];
                     String? lastBucket;
                     for (var i = 0; i < items.length; i++) {
                       final bucket = _dateBucket(items[i].date);

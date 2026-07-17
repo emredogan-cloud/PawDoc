@@ -7,6 +7,7 @@ import '../pets/active_pet.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
+import '../notifications/local_notifications.dart';
 import 'reminder_form_screen.dart';
 import 'reminders_repository.dart';
 
@@ -139,6 +140,13 @@ class _RemindersBody extends StatelessWidget {
                       await ref
                           .read(remindersRepositoryProvider)
                           .delete(r.id!);
+                      ref.invalidate(remindersForPetProvider(petId));
+                    },
+                    onEdit: () async {
+                      await Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => ReminderFormScreen(
+                            petId: petId, petName: petName, existing: r),
+                      ));
                       ref.invalidate(remindersForPetProvider(petId));
                     },
                   ),
@@ -288,11 +296,15 @@ class _ReminderCard extends StatelessWidget {
     required this.reminder,
     required this.isCompleted,
     required this.onDelete,
+    this.onEdit,
   });
 
   final dynamic reminder;
   final bool isCompleted;
   final VoidCallback onDelete;
+
+  /// Upcoming reminders open the edit form on tap (J6 — delete-only is gone).
+  final VoidCallback? onEdit;
 
   IconData _iconForType(String type) {
     final t = type.toLowerCase();
@@ -319,6 +331,7 @@ class _ReminderCard extends StatelessWidget {
     final subtitleColor = AppColors.ink300;
 
     return PawCard(
+      onTap: onEdit, // upcoming rows open the edit form; completed rows inert
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpace.s12, vertical: AppSpace.s12),
       child: Row(
@@ -358,14 +371,6 @@ class _ReminderCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const Spacer(),
-                    if (!isCompleted)
-                      Text(
-                        _formatTime(reminder.dueDate),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: AppColors.ink300,
-                        ),
-                      ),
                   ],
                 ),
                 const SizedBox(height: AppSpace.s4),
@@ -379,7 +384,7 @@ class _ReminderCard extends StatelessWidget {
                 if (isCompleted) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'Sent',
+                    'Done',
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: subtitleColor),
                   ),
@@ -418,26 +423,15 @@ class _ReminderCard extends StatelessWidget {
     );
   }
 
-  /// Format a DateTime as "HH:MM AM/PM". Falls back to empty if time is midnight
-  /// (treat as date-only reminder).
-  String _formatTime(DateTime dt) {
-    final h = dt.hour;
-    final m = dt.minute;
-    if (h == 0 && m == 0) return '';
-    final period = h < 12 ? 'AM' : 'PM';
-    final hour = h == 0 ? 12 : (h > 12 ? h - 12 : h);
-    final min = m.toString().padLeft(2, '0');
-    return '$hour:$min $period';
-  }
 }
 
 // ---------------------------------------------------------------------------
 // Notification tip card
 // ---------------------------------------------------------------------------
 
-class _NotificationTipCard extends StatelessWidget {
+class _NotificationTipCard extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     return PawCard(
       padding: const EdgeInsets.all(AppSpace.s12),
@@ -466,9 +460,17 @@ class _NotificationTipCard extends StatelessWidget {
           ),
           const SizedBox(width: AppSpace.s8),
           GestureDetector(
-            onTap: () {
-              // No-op: notification permission flow is handled by the
-              // notifications provider; this card is decorative/informational.
+            key: const Key('reminders_enable_notifications'),
+            onTap: () async {
+              // J6: this used to be a decorative no-op — it now actually asks.
+              final granted = await ref
+                  .read(localNotificationsProvider)
+                  .ensurePermission();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(granted
+                      ? 'Notifications are on.'
+                      : 'Enable notifications in system settings to get reminded.')));
             },
             child: const Text(
               'Enable now',

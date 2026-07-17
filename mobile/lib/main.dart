@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'src/app.dart';
 import 'src/config/env.dart';
+import 'src/notifications/local_notifications.dart';
 import 'src/core/boot_error_app.dart';
 import 'src/theme/design_tokens.dart';
 
@@ -19,6 +20,10 @@ Future<void> main() async {
   // over the network. First launch renders correct type offline, and no
   // pre-consent request to fonts.gstatic.com ever fires.
   GoogleFonts.config.allowRuntimeFetching = false;
+
+  // On-device reminder notifications (H2 — no push vendor). Init only; the
+  // permission ask is contextual at first reminder creation.
+  await LocalNotifications.instance.initialize();
 
   // In release, replace Flutter's raw red error box for any in-tree build/render
   // failure with a calm placeholder — a user must never see a stack trace. Debug

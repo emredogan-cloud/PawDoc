@@ -19,7 +19,20 @@ class HealthEventsRepository {
         .insert(event.toColumns())
         .select()
         .single();
-    return HealthEvent.fromJson(row);
+    final created = HealthEvent.fromJson(row);
+    // E4: a weight log also refreshes the profile's current weight, so the
+    // vet report and AI pet-context stay accurate without a second edit.
+    final kg = (event.metadata?['weight_kg'] as num?)?.toDouble();
+    if (event.eventType == 'weight' && kg != null) {
+      try {
+        await _client
+            .from('pets')
+            .update({'weight_kg': kg}).eq('id', event.petId);
+      } catch (_) {
+        // Best-effort: the event row is the source of truth for the trend.
+      }
+    }
+    return created;
   }
 
   Future<List<HealthEvent>> listForPet(String petId) async {
