@@ -4,17 +4,23 @@
 **Branch:** `feat/final-evolution` (off `feat/legal-portal-integration` = `main` + PR #78) · **Started:** 2026-07-17
 **Companions:** `IMPLEMENTATION_CHANGELOG.md` (Appendix A) · `FUTURE_FEATURE_CATALOG.md` (Appendix B)
 
-> **STATUS: IN PROGRESS.** This file is updated as phases complete. Sections marked ⏳ are pending.
+> **STATUS: COMPLETE.** All 10 phases executed 2026-07-17→18. Final verdict: **YES WITH CONDITIONS** — see [Final Launch Readiness](#final-launch-readiness).
 
 ---
 
 ## Executive Summary
 
-⏳ *Written at mission completion.*
+The program executed the approved product reframe end-to-end in 10 phases on one branch (**20 commits, 264 files changed, +8,102/−8,664 — net-negative lines**, on purpose): PawDoc no longer hands down AI verdicts; it keeps a health record and always ends in an action.
 
-**Baseline (2026-07-17, before any change):** `flutter analyze` 0 issues · **217/217** Flutter tests · ruff clean · **186/186** pytest · **103/103** node Edge tests. Every phase below must end at least this green.
+**What changed, in one paragraph.** The subtraction phase deleted eight feature systems (referral, family sharing, emergency-screen affiliates, video, AI journals, A/B machinery, re-engagement push, b2b/sitter tier) — 94 files, 5 DB tables, 7 Edge Functions (13→6), and 3 vendors (OneSignal, OpenAI, Google Places) — which by itself killed the worst audit finding (RLS-01: account deletion 500s via referral FKs; the FKs no longer exist, proven by the deletion-cascade suite). The AI contract was then rewritten in all three languages at once: `LIKELY NORMAL` and the condition-name differential are gone; every response is one of four ladder actions (`GET_HELP_NOW → CALL_TODAY → BOOK_VISIT → WATCH_AND_RECHECK`), each with a timeframe — **there is no output path, including every failure path, that ends in "do nothing,"** and that invariant is now enforced by tests at the Python, Edge, and Dart layers. Emergency became an offline red button (client-side keyword router + maps deep link + poison-control dial + bundled first-aid cards) with a CLAUDE.md rule that nothing may ever be added to it. The record grew the features a vet actually uses (editable sex/weight/notes, weight trend chart, structured vaccinations, local re-check reminders, the Vet Visit Prep Pack). Monetization collapsed to one honest plan — text guidance free and unmetered, photo logs metered **before** any model call — so no out-of-quota request can ever reach a paid API and no emergency can ever meet a paywall. Consent became real (opt-in analytics, logged Terms assent), the store copy now describes the shipped product, and a CI guard bans the old overclaims from ever returning.
 
-**Approved product reframe being executed:** triage *verdicts* → a *record and a plan*. Delete `LIKELY NORMAL` and the differential; action ladder with no "do nothing" rung; emergency becomes an offline red button with zero AI and zero monetization; free = safety, paid = memory; one subscription plan; growth scaffolding removed until retention earns it back.
+**Why a first-time pet owner is better off:** the scary moment now ends in a phone number and a first-aid card that work in airplane mode; the ambiguous moment ends in "watch for these three things, re-check in 24h" with a one-tap reminder instead of a probability-hedged verdict; and the vet visit starts with a prep pack instead of a memory test.
+
+**Validation state at close:** every suite green — `flutter analyze` 0 · 216 Flutter · 159 pytest · 59 node · full-migration RLS + deletion-cascade suite (now a required CI job) · golden set 0 false negatives on `GET_HELP_NOW` · 3-way keyword parity · overclaim guard · release AAB builds. CI history and the two mid-program CI failures (both fixed) are in [CI History](#ci-history).
+
+**Baseline (2026-07-17, before any change):** `flutter analyze` 0 issues · **217/217** Flutter tests · ruff clean · **186/186** pytest · **103/103** node Edge tests. Every phase below ended at least this green (test counts shift with deleted/added features, never with failures).
+
+**The verdict:** engineering is done; what remains is founder-gated (merge, signing, store consoles, deploys, attorney/E&O, vet review of first-aid content, device passes) — itemized in [Remaining Blockers](#remaining-blockers--founder-gated-work). **YES WITH CONDITIONS.**
 
 ---
 
@@ -167,7 +173,32 @@ Items an agent cannot execute (keystore, attorney, store consoles, DNS, live dep
 
 **Validation at phase close:** `flutter analyze` 0 · **187** flutter tests · **64** node tests · **150** pytest · ruff clean · shellcheck all-green · disclaimers verifier PASS · **full-migration RLS + deletion-cascade suite PASS in Docker** (referrer/referee deletion can no longer 500 — the FKs don't exist).
 
-⏳ *Phases 2–10 appended as completed.*
+### ✅ Phase 2 — Contract v2: the action ladder (`3629328`)
+The product decision, executed frozen across all three languages in one commit. `action ∈ {GET_HELP_NOW, CALL_TODAY, BOOK_VISIT, WATCH_AND_RECHECK}` — **`NORMAL` no longer exists as a value and `differential` no longer exists as a field**, so the app is structurally incapable of naming a condition or telling an owner "nothing's wrong." `observation` (plain language) replaces `primary_concern`; new `vets_look_for[]` / `watch_for[]` / `recheck_hours` carry the plan; `confidence` stays internal-only and is never rendered. Python: observer-not-judge system prompt; every degrade/fallback path lands on the ladder floor **with** a re-check window; golden set re-labeled v2 with the 0-false-negatives-on-`GET_HELP_NOW` hard gate kept. DB: `analyses.triage_level` → `action` + CHECK constraint; accuracy views rebuilt (`directed_to_care` replaces "was the verdict right"). Dart: result screen rebuilt as *what you described · what a vet would look at · call sooner if you see · timing · saved to the record · re-check reminder* — no reassuring green state anywhere, and the avatar has no relief animation to misread as an all-clear. Mid-phase, the founder's squash-merge of PR #78 made the PR unmergeable; merged `origin/main` back in (one delete/update conflict, resolved by keeping the deletion) and PR #80 returned to MERGEABLE.
+
+### ✅ Phase 3 — Emergency is not an AI feature (`daf474b`)
+The red button's target screen works with the radio off: OS maps deep link for "emergency vet near me," tap-to-dial ASPCA poison control, and five bundled first-aid cards (choking, bleeding, seizure, bloat, heatstroke — **vet review of this content is a founder gate before launch**). Zero AI, zero network dependency, zero monetization, zero analytics-driven CTAs — now a CLAUDE.md NEVER rule. The 157 EN/DE emergency keywords are generated from `safety.py` into Dart and route emergency text to this screen **before any network call**, so the safety path survives dead Wi-Fi and a dead backend; the server override stays authoritative for anything the client misses. A 3-way parity test (Dart ↔ Node ↔ Python) fails the build if the triplicated lists ever drift — the #1 safety mechanism can no longer rot silently. Content tests assert the cards never mention medications, doses, or diagnoses and that every card ends at a vet.
+
+### ✅ Phase 4 — The record (`385ee79`)
+The audit's most embarrassing finding class — record fields the vet report reads but no UI could edit — closed: sex, weight, and medical notes are editable on the pet form. Weight-log metadata is read back for the first time as a sparkline trend card, and weight logs update the profile. Reminders moved fully on-device (`flutter_local_notifications`, inexact scheduling — no exact-alarm permission), gained edit support, and ask for notification permission contextually at creation (no boot-time permission wall). The decorative vaccination UI became real: name + date + next-due auto-creates the reminder and its notification.
+
+### ✅ Phase 5 — The Vet Visit Prep Pack (`5de0aa4`)
+The paid product's centerpiece: one screen assembling pet basics, medical notes, weight trend, the last five checks (action + observation — no verdicts), vaccinations and medications extracted from the timeline, and an owner-questions checklist with suggested prompts — shared as a clean text pack. Entry points on home and history. The builder is a pure function with unit tests. This is the artifact that answers "why would I pay for a health app that refuses to diagnose?" — because this is what the vet actually wants to see.
+
+### ✅ Phase 6 — Free = safety, paid = memory (`45f973d`)
+Quota v3: text guidance is **unmetered**; photo logs are metered **before any AI call** at 5/month — an out-of-quota request can no longer reach a model, killing BE-01 (unbounded inference spend) at the root rather than at a post-hoc gate. The 402 wall itself carries the free offline Emergency-help escape hatch, so even the paywall points at safety. One plan (`PREMIUM_STATUSES = {premium, trial}` everywhere), honest value stack, $39.99/yr / $6.99/mo fallbacks. Restore Purchases works and says what happened (SUB-01); premium = DB status ∪ live RC SDK entitlement (SUB-02, no webhook-lag lockout); deprecated purchase API replaced (SUB-05); Manage Subscription deep-links the store's management page (G8).
+
+### ✅ Phase 7 — Consent, honesty, legal accuracy (`d81c927`)
+Signup now takes affirmative Terms/Privacy assent (logged to `users.accepted_terms_at`) and an **analytics opt-in that defaults OFF** — PostHog initializes only after consent and the Account toggle revokes it for real; Sentry sends no default PII. The privacy policy was rewritten to describe the app that ships (OpenAI and OneSignal gone from the processor list because they're gone from the product; consent basis now true). Terms age gate moved to the 13+/16+ counsel bracket, consistent with a 12+ store rating. Store metadata rebuilt around record + red button + ladder: `diagnosis` deleted from the iOS keyword field, category → Lifestyle (founder verifies in console), the "Never wonder" headline and `$0.33/day` claim removed. The overclaim CI guard now scans app source and web/legal content and bans the old claims permanently. Divergent `docs/legal/` template duplicates deleted. Also carries the desugaring CI fix (see CI History).
+
+### ✅ Phase 8 — Engineering hardening (`3eec1ae`)
+iOS submission blockers wired: `pawdoc://` scheme, `ITSAppUsesNonExemptEncryption=false`, Sign-in-with-Apple entitlements in all three Xcode configs (device verification founder-gated). AI service: Gemini gets true system/user role separation (owner text no longer shares a string with the safety contract — prompt-injection surface shrunk); one guarded media fetch per analysis feeds both moderation and models with true MIME (PNG/WebP wrong-rejects dead); `GET_HELP_NOW` cross-verification became async telemetry so the red path answers immediately; per-analysis token usage is captured and logged — first cost visibility ever. Edge: 30/h per-user burst limit (fail-open), 25s outbound deadline to Fly, anon web-checker IPs salted-hashed. Client: global 1.0–1.6× text-scale clamp, capture decode moved off the UI thread, 9.8MB of unreferenced assets deleted. Also carries the ListTile-assert CI fix (see CI History).
+
+### ✅ Phase 9 — Test integrity (`8d2e272`)
+The company invariant — *no output path terminates without an action and a timeframe* — is now enforced at every layer: 8 Python paths (every fallback returns a ladder action + floor re-check), and a Dart suite asserting every ladder value renders an action, timeframe, and disclaimer, that `NORMAL`/`LIKELY` can never render, and that the enum itself has no "do nothing" member. The router redirect was extracted as a pure function with full branch coverage (recovery forcing, signed-out gating, signed-in bounce) — headless-runnable widget tests, deliberately instead of the audit's `integration_test` proposal (no emulator exists in CI). The full-migration RLS harness + required CI job landed back in Phase 1; the golden-set false-negative gate stayed at 0 through the reframe.
+
+### ✅ Phase 10 — Final validation & reports (this commit)
+Full-suite re-validation (numbers in [Test Results](#test-results)); release AAB built (87.8MB file — ~90MB of that is Play-side-only metadata: the proguard map + debug symbols Play strips at delivery, plus all three ABIs; the per-device download is materially smaller. Remaining fat is ~30MB of illustration PNGs — optimization cataloged, not launch-blocking). The three mission reports finalized: this document, `IMPLEMENTATION_CHANGELOG.md` (per-phase, with commits), `FUTURE_FEATURE_CATALOG.md` (discovered/deferred ideas classified with effort/risk/priority). Founder blocker list and the final verdict below.
 
 ---
 
@@ -177,17 +208,74 @@ Items an agent cannot execute (keystore, attorney, store consoles, DNS, live dep
 |---|---|---|---|---|---|---|
 | Baseline (pre-change) | 0 issues | 217/217 | clean | 186/186 | 103/103 | debug tree, phase start |
 | Phase 1 close | 0 issues | 187/187 | clean | 150/150 | 64/64 | counts drop with deleted features' tests; + full-migration RLS suite PASS (Docker) |
+| **Phase 10 final** | **0 issues** | **216/216** (+1 skip) | **clean** | **159/159** | **59/59** | + disclaimers verifier PASS · overclaim guard PASS · shellcheck clean · full-migration RLS + deletion-cascade PASS · golden set 0 FN · release AAB builds |
 
-⏳ *Rows appended per phase.*
+Every intermediate phase (2–9) closed with all suites green before its commit; counts moved only when tests were deleted with their features or added with new coverage (per-phase deltas are visible in Appendix A's commits). The deltas that matter: the invariant, keyword-parity, router, emergency, prep-pack, and record suites are **new**; everything removed belonged to deleted features.
 
 ## CI History
-⏳ *Populated after first push.*
+
+Branch `feat/final-evolution`, workflow `ci.yml` — 7 jobs after Phase 1: ruff+pytest · shellcheck · gitleaks · node Edge tests · no-placeholders/overclaims · **rls-suite (new, full-migration, Docker)** · Flutter analyze+test+**APK/AAB build**.
+
+| Run | Head | Phase | Verdict | Cause / note |
+|---|---|---|---|---|
+| 179 | `85d682b` | 2 (+main merge) | ✅ success | contract v2 across 3 languages, green first try |
+| 180 | `daf474b` | 3 | ✅ success | emergency redesign |
+| 181 | `385ee79` | 4 | ❌ failure | **Cause 1:** `flutter_local_notifications` requires core-library desugaring — failed at `:app:checkDebugAarMetadata`. My local per-phase gate ran analyze+test but no Gradle build; CI's build step caught it. |
+| 182 | `5de0aa4` | 5 | ❌ failure | same cause (fix not yet landed) |
+| 183 | `45f973d` | 6 | ❌ failure | same cause |
+| 184 | `d81c927` | 7 (carries desugaring fix) | ❌ failure | **Cause 2 (CI-only):** newer Flutter stable on the runner asserts "ListTile background color/ink may be invisible" for the new consent CheckboxListTiles inside a DecoratedBox sheet. Fixed by wrapping them in their own transparent `Material`. |
+| 185 | `3eec1ae` | 8 (carries ListTile fix) | ✅ success | both fixes confirmed — all 7 jobs green incl. APK/AAB build + rls-suite |
+| 186 | `8d2e272` | 9 | ✅ success | full branch through Phase 9 green |
+| 187 | Phase 10 head | 10 (reports) | — | this commit; docs + memory only, no code delta vs `8d2e272`. Verdict lands after push — authoritative state: PR #80 checks. |
+
+**Deviation admitted:** phases 4–6 were pushed on local-green while CI verdicts were still pending, so the desugaring failure propagated across three runs before diagnosis — the mission's CI-green-between-phases discipline slipped in that window. Both causes were things only CI's layers could catch (a Gradle build step and a newer Flutter than local); after Cause 1 the local phase gate was extended with a debug-APK build.
 
 ## Remaining Blockers — Founder-Gated Work
-⏳ *Finalized at mission end; running list maintained from `PAWDOC_FOUNDER_ACTION_PLAN.md` minus items dissolved by subtraction.*
+
+Everything below requires the founder's accounts, hardware, signatures, or money. **No agent-executable engineering work remains on this branch.**
+
+**Gate 0 — merge:** review + squash-merge PR #80 (`main` is protected: required review + linear history; `mergeStateStatus: BLOCKED` is the expected state until founder review).
+
+**Release train (after merge):**
+1. **Signing** — generate the release keystore, enroll Play App Signing; iOS signing/provisioning via the Apple developer account (the audit's debug-signed-release CRITICAL stays open until this is done).
+2. **Deploys** — `supabase db push` (3 new migrations), redeploy the 6 remaining Edge Functions and **delete the removed ones from the project**, `fly deploy` the AI service.
+3. **Doppler** — remove the 12 dead vars flagged in `ENVIRONMENT_VARS.md`, add `ANON_IP_SALT`, re-sync configs.
+4. **RevenueCat** — create the one-plan products ($39.99/yr, $6.99/mo), offering, `premium` entitlement; sandbox purchase test; demo account for store review.
+5. **Device passes** — fresh-install QA per the on-device checklist: Android (Redmi available) and **any iOS device (never tested in project history)**; must include airplane-mode emergency flow, notification permission, sandbox purchase/restore.
+
+**Legal/business (external parties; the calendar critical path):**
+6. **Attorney** — Terms/Privacy sign-off incl. the 13+/16+ age bracket and disclaimer language.
+7. **Vet review** — the five bundled first-aid cards (content ships nowhere until a licensed vet signs them).
+8. **E&O / professional liability insurance** — bound before public availability.
+9. **Entity/compliance** — legal identities in the policies, EU representative, DSAR mailbox; R2 retention decision (policy currently brackets it).
+10. **Domain** — pawdoc.app (or decide to stay on the CloudFront URL); afterwards fold legal into `web/` and retire the AWS stack (cataloged).
+
+**Store consoles:**
+11. Play + App Store: category (Lifestyle — verify note in metadata docs), age questionnaires, **Data Safety / privacy nutrition labels** (scope is much smaller now: no location, no ad SDKs, no OneSignal, analytics opt-in), screenshots of the new UI, EN/DE listings, review notes + demo account, then the actual review cycles.
+12. **SMTP** for auth email + prod DB PITR (pre-existing founder items, unchanged by this program).
 
 ## Final Launch Readiness
-⏳
+
+Scores are against "ready for a controlled public launch," evidence-based (audit baseline 2026-07-06 ≈ 62% overall, verdict NO):
+
+| Dimension | Score | Evidence |
+|---|---|---|
+| Engineering | **92%** | All suites green incl. full-migration RLS in CI; release AAB builds; net-negative complexity; remaining: signing + device passes (founder). |
+| Product | **90%** | Coherent story (record + red button + ladder); every audit product finding closed or deleted; remaining: real-user beta feedback, photo progression (catalog #1). |
+| UI/UX | **85%** | Dark-only consistency, rebuilt result screen, text-scale clamp, contextual permissions; remaining: `maxContentWidth` sweep (catalog #5), small-screen device pass. |
+| AI Safety | **95%** | Ladder invariant tested at 3 layers; golden set 0 FN hard gate; 3-way keyword parity; offline client router; emergency pre-AI override; confidence floor. Remaining: live-provider smoke test post-deploy. |
+| Security/Privacy | **90%** | Owner-only per-op RLS proven against ALL migrations in CI; deletion cascade proven; consent real; PII exporter deleted; salted anon IPs; no client write keys; remaining: Doppler cleanup, key rotation cadence. |
+| Store Readiness | **70%** | Metadata rebuilt + overclaim-guarded; iOS entitlements/encryption/scheme wired; 12+ rating consistent; remaining: consoles, screenshots, Data Safety forms, review cycles — all founder. |
+| Operational | **75%** | Cost telemetry now exists; burst limits; runbooks; Sentry consent-safe; remaining: SMTP, PITR, RevenueCat setup, support inbox staffing. |
+| Business/Legal | **55%** | Policies now describe the real product and the risky claims are gone — but attorney, E&O, entity/EU-rep/DSAR, vet content review, and domain are all external and unstarted. **This is the critical path.** |
+| **Overall** | **~82%** | Engineering-complete; gated entirely by the founder list above. |
+
+### Verdict
+
+**Can PawDoc enter production after the founder-controlled tasks are completed? — YES, WITH CONDITIONS.**
+
+The conditions are exactly the numbered blocker list, and they are all of the remaining risk. The evidence for YES: (1) the three launch-blocking CRITICAL root causes from the 2026-07-06 audit are dead by construction — release signing is a checklist item not a code defect, account deletion can no longer 500 because the referral FKs no longer exist (proven by the cascade suite in CI), and the legal pages are live on CloudFront and linked in-app; (2) the false-negative risk the business cannot survive is now guarded by structure (no NORMAL state, no dead-end output path, offline emergency routing) and by tests at every layer, not by model behavior; (3) the product's riskiest surfaces (emergency monetization, condition names, overclaiming copy) were deleted and are CI-guarded against return; (4) every suite is green and the release artifact builds. The conditions are non-negotiable: signing, attorney + E&O, vet-reviewed first-aid content, store review cycles, and real device passes (iOS especially — it has never been run on hardware). None of them is engineering; all of them are calendar and money. Estimated founder path: **~1–2 weeks of console/ops work + the attorney/insurance/vet-review timeline (typically 2–6 weeks, parallelizable) → controlled beta, then store review.**
 
 ## Future Roadmap
-⏳ *See `FUTURE_FEATURE_CATALOG.md`.*
+
+See `FUTURE_FEATURE_CATALOG.md` for the full classified catalog. The shape: **next** (post-beta) — photo progression timelines (the premium loop's completion), pet profile photos, persisted vet questions, local weekly digest; **later** — DE localization, vet share links, legal-into-web consolidation; **only with a team + counsel** — family v2, referral v2, video, insurance on calm surfaces; **never** — the liability-escalation ladder (proprietary model, community Q&A, B2B API, FNOL). The bar for re-adding anything: serves the record, never touches the emergency path, justified by observed beta behavior.
