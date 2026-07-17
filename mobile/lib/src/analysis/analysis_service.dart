@@ -75,14 +75,14 @@ final latestTriageProvider =
   final client = ref.watch(supabaseClientProvider);
   final rows = await client
       .from('analyses')
-      .select('triage_level, created_at')
+      .select('action, created_at')
       .eq('pet_id', petId)
       .order('created_at', ascending: false)
       .limit(1);
   final list = rows as List;
   if (list.isEmpty) return null;
   final row = list.first as Map;
-  final level = row['triage_level'] as String?;
+  final level = row['action'] as String?;
   if (level == null) return null;
   return LatestTriage(
     level: level,

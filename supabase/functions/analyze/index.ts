@@ -163,7 +163,7 @@ Deno.serve(async (req: Request) => {
   try {
     const { data: a } = await userClient
       .from("analyses")
-      .select("triage_level, primary_concern, created_at")
+      .select("action, observation, created_at")
       .eq("pet_id", pet_id)
       .gte("created_at", SINCE_ISO)
       .order("created_at", { ascending: false })
@@ -244,11 +244,11 @@ Deno.serve(async (req: Request) => {
   // GAP-A3: an out-of-quota visual the AI did NOT flag as EMERGENCY → block here
   // (uncounted, unstored) with only the triage chip + upgrade message. An
   // EMERGENCY falls through and is returned + stored below, free.
-  if (blockAfterAi(quotaExceeded, result.triage_level)) {
+  if (blockAfterAi(quotaExceeded, result.action)) {
     return json({
       error: "free_limit_reached",
       quota_exceeded: true,
-      triage_level: result.triage_level,
+      action: result.action,
       message:
         "You've used your free analyses this month. Upgrade to see the full result. " +
         "If this seems urgent, contact a veterinarian now.",
@@ -262,8 +262,8 @@ Deno.serve(async (req: Request) => {
     input_type,
     input_storage_key: inputKey,
     text_description: text_description ?? null,
-    triage_level: result.triage_level,
-    primary_concern: result.primary_concern,
+    action: result.action,
+    observation: result.observation,
     full_response: result,
     model_used: meta.model_used,
     tier_used: meta.tier_used,
@@ -281,7 +281,7 @@ Deno.serve(async (req: Request) => {
       isPremium,
       isEmergencyText,
       quotaExceeded,
-      triageLevel: result.triage_level,
+      action: result.action,
       tierUsed: meta.tier_used,
     })
   ) {

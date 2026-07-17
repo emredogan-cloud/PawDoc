@@ -397,9 +397,9 @@ class _TimelineNode extends StatelessWidget {
                                 color: AppColors.ink300,
                               ),
                         ),
-                        if (item.triageLevel != null) ...[
+                        if (item.action != null) ...[
                           const SizedBox(height: AppSpace.s4),
-                          _TriageChip(level: item.triageLevel!),
+                          _ActionChip(action: item.action!),
                         ],
                       ],
                     ),
@@ -415,10 +415,11 @@ class _TimelineNode extends StatelessWidget {
 
   Color _nodeColor(BuildContext context) {
     if (item.kind == TimelineKind.analysis) {
-      return switch (item.triageLevel) {
-        'EMERGENCY' => AppColors.emergencyLight,
-        'MONITOR' => AppColors.monitorLight,
-        'NORMAL' => AppColors.normalLight,
+      return switch (item.action) {
+        'GET_HELP_NOW' => AppColors.emergencyLight,
+        'CALL_TODAY' => AppColors.monitorLight,
+        'BOOK_VISIT' => AppColors.actionBookVisit,
+        'WATCH_AND_RECHECK' => AppColors.actionWatch,
         _ => PawPalette.mint,
       };
     }
@@ -427,9 +428,11 @@ class _TimelineNode extends StatelessWidget {
 
   static IconData _iconFor(TimelineItem item) {
     if (item.kind == TimelineKind.analysis) {
-      return switch (item.triageLevel) {
-        'EMERGENCY' => Icons.warning_amber_rounded,
-        'MONITOR' => Icons.visibility_outlined,
+      return switch (item.action) {
+        'GET_HELP_NOW' => Icons.warning_amber_rounded,
+        'CALL_TODAY' => Icons.phone_in_talk_rounded,
+        'BOOK_VISIT' => Icons.event_available_rounded,
+        'WATCH_AND_RECHECK' => Icons.visibility_outlined,
         _ => Icons.health_and_safety_outlined,
       };
     }
@@ -443,17 +446,19 @@ class _TimelineNode extends StatelessWidget {
   }
 }
 
-/// Small status chip shown on triage timeline entries.
-class _TriageChip extends StatelessWidget {
-  const _TriageChip({required this.level});
-  final String level;
+/// Small status chip shown on AI-check timeline entries. Ladder actions only —
+/// deliberately no "Healthy" chip: the record never reassures.
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({required this.action});
+  final String action;
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (level) {
-      'EMERGENCY' => ('Emergency', AppColors.emergencyLight),
-      'MONITOR' => ('Monitor', AppColors.monitorLight),
-      'NORMAL' => ('Healthy', AppColors.normalLight),
+    final (label, color) = switch (action) {
+      'GET_HELP_NOW' => ('Urgent', AppColors.emergencyLight),
+      'CALL_TODAY' => ('Call today', AppColors.monitorLight),
+      'BOOK_VISIT' => ('Book visit', AppColors.actionBookVisit),
+      'WATCH_AND_RECHECK' => ('Watching', AppColors.actionWatch),
       _ => ('Check', PawPalette.mint),
     };
     return Container(

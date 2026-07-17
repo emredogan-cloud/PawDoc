@@ -31,11 +31,13 @@ class AnalysisLoadingView extends StatefulWidget {
   /// Species for the flag-gated pulse-pet variant; null = pulse only.
   final String? pulsePetSpecies;
 
+  // Observer framing (contract v2): the copy narrates noticing + organizing —
+  // never "comparing against conditions" (the app does not diagnose).
   static const messages = [
     'Looking at the details…',
-    'Checking for anything concerning…',
-    'Comparing against common conditions…',
-    'Putting together your guidance…',
+    'Noting what stands out…',
+    'Working out what to watch for…',
+    'Putting together your next steps…',
   ];
 
   @override

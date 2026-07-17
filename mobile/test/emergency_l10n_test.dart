@@ -13,13 +13,15 @@ import 'package:pawdoc/src/models/analysis_result.dart';
 
 AnalysisResult _override(String concern, {String urgency = 'immediately'}) =>
     AnalysisResult(
-      triageLevel: TriageLevel.emergency,
+      action: ActionLevel.getHelpNow,
       confidence: 1.0,
-      primaryConcern: concern,
+      observation: concern,
       visibleSymptoms: const [],
-      differential: const [],
+      vetsLookFor: const [],
+      watchFor: const [],
       recommendedActions: const ['Contact an emergency veterinarian now.'],
       urgencyTimeframe: urgency,
+      recheckHours: null,
       disclaimerRequired: true,
     );
 

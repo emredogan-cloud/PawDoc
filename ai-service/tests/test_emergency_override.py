@@ -1,7 +1,7 @@
 """Emergency override unit tests (roadmap-required: all hardcoded keywords)."""
 import pytest
 
-from app.models import TriageLevel
+from app.models import ActionLevel
 from app.safety import (
     EMERGENCY_KEYWORDS,
     EMERGENCY_KEYWORDS_BY_LOCALE,
@@ -34,10 +34,10 @@ def test_non_emergency_text_does_not_trigger():
 
 def test_override_result_is_emergency_with_disclaimer():
     result = emergency_override_result("seizure")
-    assert result.triage_level is TriageLevel.EMERGENCY
+    assert result.action is ActionLevel.GET_HELP_NOW
     assert result.confidence == 1.0
     assert result.disclaimer_required is True
-    assert "seizure" in result.primary_concern
+    assert "seizure" in result.observation
 
 
 # --- Phase 5.1: species-specific emergency keywords -------------------------

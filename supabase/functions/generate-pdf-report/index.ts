@@ -91,7 +91,7 @@ Deno.serve(async (req: Request) => {
   try {
     const a = await userClient
       .from("analyses")
-      .select("triage_level, primary_concern, created_at")
+      .select("action, observation, created_at")
       .eq("pet_id", petId)
       .gte("created_at", since)
       .order("created_at", { ascending: false })

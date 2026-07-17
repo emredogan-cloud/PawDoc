@@ -14,16 +14,15 @@ import pytest
 from app import media
 from app.cache import InMemoryCache
 from app.media import MediaFetchError
-from app.models import AnalyzeRequest, PetContext, TriageLevel
+from app.models import ActionLevel, AnalyzeRequest, PetContext
 from app.pipeline import AnalysisPipeline
 from app.providers import ClaudeProvider, GeminiProvider
 
 _VALID = {
-    "triage_level": "MONITOR",
+    "action": "WATCH_AND_RECHECK",
     "confidence": 0.9,
-    "primary_concern": "assessment",
+    "observation": "assessment",
     "visible_symptoms": [],
-    "differential": [],
     "recommended_actions": ["follow up if needed"],
     "urgency_timeframe": "routine",
     "disclaimer_required": True,
@@ -99,7 +98,7 @@ def test_claude_photo_attaches_one_image(fake_media, fake_anthropic):
     out = ClaudeProvider(api_key="x").analyze(
         "sys", "user prompt", image_url=f"{_R2}/a.jpg"
     )
-    assert out["triage_level"] == "MONITOR"
+    assert out["action"] == "WATCH_AND_RECHECK"
     content = CAPTURED["claude"]["messages"][0]["content"]
     assert isinstance(content, list), "photo content must be multimodal blocks"
     images = [b for b in content if b.get("type") == "image"]
@@ -119,7 +118,7 @@ def test_claude_text_only_sends_no_image(fake_anthropic):
 # ---------- Gemini payload ----------
 def test_gemini_photo_attaches_image_part(fake_media, fake_genai):
     out = GeminiProvider(api_key="x").analyze("sys", "user", image_url=f"{_R2}/a.jpg")
-    assert out["triage_level"] == "MONITOR"
+    assert out["action"] == "WATCH_AND_RECHECK"
     contents = CAPTURED["gemini"]["contents"]
     assert isinstance(contents, list), "photo contents must be a parts list"
     # last element is the text; everything before is a media Part with bytes.
@@ -154,8 +153,9 @@ def test_pipeline_degrades_safe_when_media_unreadable():
             pet=PetContext(species="dog"),
         )
     )
-    assert out.result.triage_level is TriageLevel.MONITOR
-    assert out.result.triage_level is not TriageLevel.NORMAL
+    assert out.result.action is ActionLevel.WATCH_AND_RECHECK
+    # v2 invariant: a degrade is never a dead end — the floor carries a re-check.
+    assert out.result.recheck_hours is not None
     assert out.degraded is True
     assert out.model_used == "media_error"
 

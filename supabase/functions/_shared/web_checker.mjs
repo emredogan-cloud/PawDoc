@@ -25,12 +25,12 @@ export function rateLimitExceeded(count, max) {
 }
 
 /** Strip the full AI result down to what an ANONYMOUS web user may see: the
- *  triage level + a short concern. The detailed "what to do" stays app-only
+ *  action + a short observation. The detailed "what to do" stays app-only
  *  (conversion funnel) and is never sent over the anonymous endpoint. */
 export function simplifyResult(full) {
   return {
-    triage_level: full?.triage_level ?? "MONITOR",
-    primary_concern: full?.primary_concern ?? "",
+    action: full?.action ?? "WATCH_AND_RECHECK",
+    observation: full?.observation ?? "",
     disclaimer_required: true,
   };
 }

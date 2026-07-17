@@ -48,12 +48,12 @@ test("the profile section reports age + breed + species when present", () => {
   assert.deepEqual(profile.lines.includes("Sex: M"), true);
 });
 
-test("the analyses section uses date + triage + concern per row", () => {
+test("the analyses section uses date + action + observation per row", () => {
   const sections = buildReportSections({
     pet: { name: "Rex", species: "dog" },
     analyses: [
-      { triage_level: "MONITOR", primary_concern: "vomiting", created_at: "2026-05-22T10:00:00Z" },
-      { triage_level: "NORMAL",  primary_concern: "mild ear redness", created_at: "2026-05-15" },
+      { action: "WATCH_AND_RECHECK", observation: "vomiting", created_at: "2026-05-22T10:00:00Z" },
+      { action: "WATCH_AND_RECHECK",  observation: "mild ear redness", created_at: "2026-05-15" },
     ],
     events: [],
     generatedAtIso: "2026-05-28T00:00:00Z",
@@ -61,8 +61,8 @@ test("the analyses section uses date + triage + concern per row", () => {
   const analyses = sections.find((s) => s.heading === "Recent analyses (last 30 days)");
   assert.ok(analyses);
   assert.equal(analyses.lines.length, 2);
-  assert.match(analyses.lines[0], /\[2026-05-22\] MONITOR — vomiting/);
-  assert.match(analyses.lines[1], /\[2026-05-15\] NORMAL — mild ear redness/);
+  assert.match(analyses.lines[0], /\[2026-05-22\] WATCH_AND_RECHECK — vomiting/);
+  assert.match(analyses.lines[1], /\[2026-05-15\] WATCH_AND_RECHECK — mild ear redness/);
 });
 
 test("empty history sections render a friendly placeholder instead of nothing", () => {
@@ -80,8 +80,8 @@ test("empty history sections render a friendly placeholder instead of nothing", 
 
 test("history caps prevent unbounded token / page growth for power users", () => {
   const big = Array.from({ length: 25 }, (_, i) => ({
-    triage_level: "MONITOR",
-    primary_concern: `item ${i}`,
+    action: "WATCH_AND_RECHECK",
+    observation: `item ${i}`,
     created_at: "2026-05-15T12:00:00Z",
   }));
   const sections = buildReportSections({

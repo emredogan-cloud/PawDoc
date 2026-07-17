@@ -8,13 +8,15 @@ import 'package:pawdoc/src/analysis/result_screen.dart';
 import 'package:pawdoc/src/models/analysis_result.dart';
 
 AnalysisResult _monitor() => const AnalysisResult(
-      triageLevel: TriageLevel.monitor,
+      action: ActionLevel.callToday,
       confidence: 0.8,
-      primaryConcern: 'Mild irritation',
+      observation: 'Mild irritation',
       visibleSymptoms: ['redness'],
-      differential: ['contact dermatitis'],
+      vetsLookFor: [],
+      watchFor: [],
       recommendedActions: ['keep the area clean'],
       urgencyTimeframe: 'within 24 hours',
+      recheckHours: null,
       disclaimerRequired: true,
     );
 

@@ -187,25 +187,32 @@ class ClaudeProvider:
             raise ProviderError(f"claude: {exc}") from exc
 
 
-# JSON schema for Claude's structured tool output (mirrors AnalysisResult).
+# JSON schema for Claude's structured tool output (mirrors AnalysisResult v2 —
+# the action ladder; no differential, no condition names anywhere).
 _ANALYSIS_TOOL = {
     "name": "report_triage",
-    "description": "Return the pet-health triage assessment.",
+    "description": "Return the pet-health observation and action guidance.",
     "input_schema": {
         "type": "object",
         "properties": {
-            "triage_level": {"type": "string", "enum": ["EMERGENCY", "MONITOR", "NORMAL"]},
+            "action": {
+                "type": "string",
+                "enum": ["GET_HELP_NOW", "CALL_TODAY", "BOOK_VISIT", "WATCH_AND_RECHECK"],
+            },
             "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
-            "primary_concern": {"type": "string"},
+            "observation": {"type": "string"},
             "visible_symptoms": {"type": "array", "items": {"type": "string"}},
-            "differential": {"type": "array", "items": {"type": "string"}},
+            "vets_look_for": {"type": "array", "items": {"type": "string"}},
+            "watch_for": {"type": "array", "items": {"type": "string"}},
             "recommended_actions": {"type": "array", "items": {"type": "string"}},
             "urgency_timeframe": {"type": "string"},
+            "recheck_hours": {"type": ["integer", "null"], "minimum": 1, "maximum": 336},
             "disclaimer_required": {"type": "boolean"},
         },
         "required": [
-            "triage_level", "confidence", "primary_concern", "visible_symptoms",
-            "differential", "recommended_actions", "urgency_timeframe", "disclaimer_required",
+            "action", "confidence", "observation", "visible_symptoms",
+            "vets_look_for", "watch_for", "recommended_actions",
+            "urgency_timeframe", "disclaimer_required",
         ],
     },
 }

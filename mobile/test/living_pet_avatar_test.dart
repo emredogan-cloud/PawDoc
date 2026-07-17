@@ -114,13 +114,15 @@ void main() {
   testWidgets('NORMAL result carries the avatar slot; level routing correct',
       (tester) async {
     const normal = AnalysisResult(
-      triageLevel: TriageLevel.normal,
+      action: ActionLevel.watchAndRecheck,
       confidence: 0.9,
-      primaryConcern: 'Looks fine',
+      observation: 'Looks fine',
       visibleSymptoms: [],
-      differential: [],
+      vetsLookFor: [],
+      watchFor: [],
       recommendedActions: ['nothing needed'],
       urgencyTimeframe: 'routine',
+      recheckHours: null,
       disclaimerRequired: true,
     );
     await tester.pumpWidget(ProviderScope(

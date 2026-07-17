@@ -1,14 +1,13 @@
 """AI output parser unit tests (roadmap-required: valid / invalid / malformed)."""
 import pytest
 
-from app.models import AnalysisParseError, AnalysisResult, TriageLevel, parse_analysis_result
+from app.models import ActionLevel, AnalysisParseError, AnalysisResult, parse_analysis_result
 
 VALID = {
-    "triage_level": "MONITOR",
+    "action": "WATCH_AND_RECHECK",
     "confidence": 0.7,
-    "primary_concern": "Mild GI upset",
+    "observation": "Mild GI upset",
     "visible_symptoms": ["soft stool"],
-    "differential": ["dietary indiscretion"],
     "recommended_actions": ["Withhold food 12h", "Offer water"],
     "urgency_timeframe": "within 24 hours",
     "disclaimer_required": True,
@@ -18,7 +17,7 @@ VALID = {
 def test_parses_valid_dict():
     r = parse_analysis_result(VALID)
     assert isinstance(r, AnalysisResult)
-    assert r.triage_level is TriageLevel.MONITOR
+    assert r.action is ActionLevel.WATCH_AND_RECHECK
 
 
 def test_parses_valid_json_string():
@@ -30,12 +29,12 @@ def test_parses_valid_json_string():
 
 def test_malformed_json_raises():
     with pytest.raises(AnalysisParseError, match="malformed JSON"):
-        parse_analysis_result('{"triage_level": "MONITOR", ')  # truncated
+        parse_analysis_result('{"action": "WATCH_AND_RECHECK", ')  # truncated
 
 
 def test_off_schema_raises():
     bad = dict(VALID)
-    bad["triage_level"] = "SEVERE"  # not a valid enum value
+    bad["action"] = "SEVERE"  # not a valid enum value
     with pytest.raises(AnalysisParseError, match="off-schema"):
         parse_analysis_result(bad)
 

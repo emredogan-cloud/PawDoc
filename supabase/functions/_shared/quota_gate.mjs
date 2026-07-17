@@ -1,6 +1,6 @@
 // GAP-A3: pure free-tier quota-gate decisions, shared so the safety-critical
 // branching is unit-tested in Node and used verbatim by the Deno /analyze
-// function. The non-negotiable: EMERGENCY is NEVER paywalled — including the
+// function. The non-negotiable: GET_HELP_NOW is NEVER paywalled — including the
 // VISUAL half. A photo/video emergency (pale gums, bloat) can't be detected
 // from text, so an out-of-quota visual request must run the AI and only be
 // blocked AFTER, and only when the verdict is not EMERGENCY.
@@ -20,8 +20,8 @@ export function blockBeforeAi(quotaExceeded, isVisual) {
  * An out-of-quota visual is blocked only when the verdict is NOT EMERGENCY.
  * An EMERGENCY is always returned in full, free.
  */
-export function blockAfterAi(quotaExceeded, triageLevel) {
-  return quotaExceeded && triageLevel !== "EMERGENCY";
+export function blockAfterAi(quotaExceeded, action) {
+  return quotaExceeded && action !== "GET_HELP_NOW";
 }
 
 /**
@@ -30,9 +30,9 @@ export function blockAfterAi(quotaExceeded, triageLevel) {
  * requests, never for premium, never for degraded answers (tier_used === 0).
  */
 export function countsAgainstQuota(
-  { isPremium, isEmergencyText, quotaExceeded, triageLevel, tierUsed },
+  { isPremium, isEmergencyText, quotaExceeded, action, tierUsed },
 ) {
   if (isPremium || isEmergencyText || quotaExceeded) return false;
-  if (triageLevel === "EMERGENCY") return false;
+  if (action === "GET_HELP_NOW") return false;
   return (tierUsed ?? 0) > 0;
 }

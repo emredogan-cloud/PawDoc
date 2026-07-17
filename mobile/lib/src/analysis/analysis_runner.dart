@@ -80,7 +80,7 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
       // the INSTANT cut (hard guardrail: never delay an emergency), and
       // reduce-motion users go straight to the result.
       final resolve =
-          outcome.result.triageLevel != TriageLevel.emergency &&
+          outcome.result.action != ActionLevel.getHelpNow &&
               !reduceMotion(context);
       setState(() {
         _outcome = outcome;
@@ -98,13 +98,13 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
       // the analysis completes so "No checks yet" can never outlive a check.
       ref.invalidate(latestTriageProvider(widget.petId));
       // Side effects must not block or error the result UI.
-      unawaited(Analytics.analysisCompleted(outcome.result.triageLevel.wireValue));
+      unawaited(Analytics.analysisCompleted(outcome.result.action.wireValue));
       // M3 (#17): the one-time-ever "story has begun" toast — NEVER on an
       // EMERGENCY result (no celebration adjacency on the critical path).
       unawaited(PaywallPrefs.markFirstAnalysisCompleted().then((first) {
         if (first &&
             mounted &&
-            outcome.result.triageLevel != TriageLevel.emergency) {
+            outcome.result.action != ActionLevel.getHelpNow) {
           setState(() => _firstCheckEver = true);
         }
       }));
@@ -142,7 +142,7 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
       context: context,
       builder: (sheetCtx) => _QuotaUpgradeSheet(
         message: fe.message ?? "You've used your free analyses this month.",
-        triageLevel: fe.triageLevel,
+        action: fe.action,
         onUpgrade: () {
           Navigator.of(sheetCtx).pop();
           Navigator.of(context).push(
@@ -157,16 +157,17 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
 
   Future<void> _onResultDone() async {
     // EMERGENCY is never paywalled; the trust rule also enforces this.
-    final wasEmergency = _outcome?.result.triageLevel == TriageLevel.emergency;
+    final wasEmergency = _outcome?.result.action == ActionLevel.getHelpNow;
     await maybeShowPaywall(context,
         lastTriageWasEmergency: wasEmergency, isPremium: widget.isPremium);
     if (mounted) Navigator.of(context).pop();
   }
 
-  Color _resolveColor(TriageLevel level) => switch (level) {
-        TriageLevel.emergency => AppColors.emergencyLight, // never reached
-        TriageLevel.monitor => AppColors.monitorLight,
-        TriageLevel.normal => AppColors.normalLight,
+  Color _resolveColor(ActionLevel level) => switch (level) {
+        ActionLevel.getHelpNow => AppColors.emergencyLight, // never reached
+        ActionLevel.callToday => AppColors.monitorLight,
+        ActionLevel.bookVisit => AppColors.actionBookVisit,
+        ActionLevel.watchAndRecheck => AppColors.actionWatch,
       };
 
   @override
@@ -177,7 +178,7 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
       case _Phase.resolving:
         return Scaffold(
           body: AnalysisLoadingView(
-            resolveColor: _resolveColor(_outcome!.result.triageLevel),
+            resolveColor: _resolveColor(_outcome!.result.action),
           ),
         );
       case _Phase.error:
@@ -213,6 +214,7 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
           result: _outcome!.result,
           analysisId: _outcome!.analysisId,
           onDone: _onResultDone,
+          petId: widget.petId,
           petName: widget.petName,
           petSpecies: widget.petSpecies,
           firstCheckToast: _firstCheckEver,
@@ -229,11 +231,11 @@ class _QuotaUpgradeSheet extends StatelessWidget {
     required this.message,
     required this.onUpgrade,
     required this.onDismiss,
-    this.triageLevel,
+    this.action,
   });
 
   final String message;
-  final String? triageLevel;
+  final String? action;
   final VoidCallback onUpgrade;
   final VoidCallback onDismiss;
 
@@ -247,8 +249,8 @@ class _QuotaUpgradeSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (triageLevel != null) ...[
-              Center(child: Chip(label: Text(triageLevel!))),
+            if (action != null) ...[
+              Center(child: Chip(label: Text(action!))),
               const SizedBox(height: AppSpace.s12),
             ],
             Text("You're out of free checks",

@@ -18,8 +18,8 @@ void main() {
     final report = buildHealthReport(
       pet: pet,
       latestAnalysis: const {
-        'triage_level': 'EMERGENCY',
-        'primary_concern': 'Possible bloat',
+        'action': 'GET_HELP_NOW',
+        'observation': 'Possible bloat',
         'created_at': '2026-05-20T10:00:00Z',
         'full_response': {
           'urgency_timeframe': 'immediately',
@@ -35,7 +35,7 @@ void main() {
     expect(report, contains('# PawDoc Health Report — Rex'));
     expect(report, contains('Species: dog'));
     expect(report, contains('Breed: Labrador'));
-    expect(report, contains('Result: EMERGENCY'));
+    expect(report, contains('Result: GET_HELP_NOW'));
     expect(report, contains('Possible bloat'));
     expect(report, contains('Go to a vet now'));
     expect(report, contains('Vaccination'));

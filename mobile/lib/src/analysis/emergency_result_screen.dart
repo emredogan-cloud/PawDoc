@@ -74,7 +74,7 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                 // M0 F-3: dynamic values are display-localized (template +
                 // urgency mapping); unknown values pass through verbatim.
                 // Pure string presentation — gate/logic untouched.
-                Text(localizedPrimaryConcern(l, r.primaryConcern),
+                Text(localizedPrimaryConcern(l, r.observation),
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 18)),
                 const SizedBox(height: 8),

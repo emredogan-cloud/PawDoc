@@ -4,9 +4,9 @@ import '../auth/supabase_providers.dart';
 import 'followup_prefs.dart';
 
 class PendingFollowup {
-  const PendingFollowup({required this.analysisId, required this.triageLevel});
+  const PendingFollowup({required this.analysisId, required this.action});
   final String analysisId;
-  final String triageLevel;
+  final String action;
 }
 
 /// The most recent analysis eligible for the 72h "was this helpful?" prompt
@@ -24,7 +24,7 @@ final pendingFollowupProvider = FutureProvider.autoDispose<PendingFollowup?>((re
       if (id != null) {
         return PendingFollowup(
           analysisId: id,
-          triageLevel: (r['triage_level'] as String?) ?? '',
+          action: (r['action'] as String?) ?? '',
         );
       }
     }

@@ -14,7 +14,7 @@ import '../../l10n/app_localizations.dart';
 final _emergencyIndicatorTemplate =
     RegExp(r"^Emergency indicator detected: '(.+)'\.?$");
 
-/// Localizes the server's templated emergency primary_concern; any other
+/// Localizes the server's templated emergency observation; any other
 /// concern text (free-form AI output) is returned unchanged.
 String localizedPrimaryConcern(AppLocalizations l, String concern) {
   final match = _emergencyIndicatorTemplate.firstMatch(concern.trim());

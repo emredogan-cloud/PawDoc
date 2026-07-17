@@ -29,7 +29,7 @@ void main() {
 
   testWidgets('hero shows "Last check: just now" for a fresh check', (tester) async {
     await tester.pumpWidget(
-        _home(latest: LatestTriage(level: 'MONITOR', checkedAt: DateTime.now())));
+        _home(latest: LatestTriage(level: 'CALL_TODAY', checkedAt: DateTime.now())));
     await tester.pumpAndSettle();
 
     expect(find.text('Last check: just now'), findsOneWidget);
@@ -45,9 +45,9 @@ void main() {
 
   testWidgets('hero falls back to the level when created_at is unparsable', (tester) async {
     await tester.pumpWidget(
-        _home(latest: const LatestTriage(level: 'MONITOR', checkedAt: null)));
+        _home(latest: const LatestTriage(level: 'CALL_TODAY', checkedAt: null)));
     await tester.pumpAndSettle();
 
-    expect(find.text('Last check: MONITOR'), findsOneWidget);
+    expect(find.text('Last check: CALL_TODAY'), findsOneWidget);
   });
 }

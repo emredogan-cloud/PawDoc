@@ -8,10 +8,18 @@ from enum import Enum
 from pydantic import BaseModel, Field, ValidationError
 
 
-class TriageLevel(str, Enum):
-    EMERGENCY = "EMERGENCY"
-    MONITOR = "MONITOR"
-    NORMAL = "NORMAL"
+class ActionLevel(str, Enum):
+    """The action ladder (contract v2). There is deliberately NO terminal
+    "everything is fine" state: the lowest rung prescribes what to watch for
+    and when to re-check — the app never owns the reassurance. See
+    docs/contracts/ANALYSIS_RESULT.md."""
+
+    GET_HELP_NOW = "GET_HELP_NOW"          # life/serious-harm signs — go now
+    CALL_TODAY = "CALL_TODAY"              # speak to a vet practice today
+    BOOK_VISIT = "BOOK_VISIT"              # routine appointment in coming days
+    WATCH_AND_RECHECK = "WATCH_AND_RECHECK"  # lowest rung: watch + re-check
+
+
 
 
 class PetContext(BaseModel):
@@ -46,15 +54,31 @@ class AnalyzeRequest(BaseModel):
 
 
 class AnalysisResult(BaseModel):
-    """Frozen contract. JSON keys ARE these field names (snake_case)."""
+    """Frozen contract v2. JSON keys ARE these field names (snake_case).
 
-    triage_level: TriageLevel
+    v2 (evolution reframe): the diagnostic surface is GONE by design —
+    no `differential` (a ranked differential is the diagnostic act), no
+    disease names in any field, and no output that terminates without an
+    action and a timeframe. `confidence` is INTERNAL routing/storage only
+    and must never be rendered to the user."""
+
+    action: ActionLevel
     confidence: float = Field(ge=0.0, le=1.0)
-    primary_concern: str
+    # Plain-language description of what was observed/reported — NEVER a
+    # suspected condition. "a swollen, firm belly", not "suspected bloat (GDV)".
+    observation: str
     visible_symptoms: list[str] = Field(default_factory=list)
-    differential: list[str] = Field(default_factory=list)
+    # Educational: what a veterinarian typically assesses for THIS KIND of
+    # presentation (general knowledge about the presentation class — never
+    # findings or condition names about this specific animal).
+    vets_look_for: list[str] = Field(default_factory=list)
+    # Signs that mean the owner should escalate sooner than the chosen rung.
+    watch_for: list[str] = Field(default_factory=list)
     recommended_actions: list[str] = Field(default_factory=list)
     urgency_timeframe: str
+    # Hours until a re-check makes sense (drives the client's re-check
+    # reminder CTA). REQUIRED semantics: WATCH_AND_RECHECK must carry one.
+    recheck_hours: int | None = Field(default=None, ge=1, le=336)
     disclaimer_required: bool = True
 
 

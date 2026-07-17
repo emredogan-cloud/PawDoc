@@ -33,7 +33,7 @@ class FunctionError {
 
   /// GAP-A3 teaser: the triage level the server computed for an out-of-quota
   /// VISUAL check (so the upgrade sheet can show the chip). Null otherwise.
-  String? get triageLevel => details?['triage_level'] as String?;
+  String? get action => details?['action'] as String?;
 }
 
 /// Returns a [FunctionError] if [e] is a Supabase [FunctionException], else null

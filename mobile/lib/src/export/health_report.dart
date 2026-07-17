@@ -34,8 +34,8 @@ String buildHealthReport({
     b.writeln('No AI analyses recorded yet.');
   } else {
     final created = DateTime.tryParse((latestAnalysis['created_at'] as String?) ?? '');
-    final level = (latestAnalysis['triage_level'] as String?) ?? 'UNKNOWN';
-    final concern = (latestAnalysis['primary_concern'] as String?) ?? '';
+    final level = (latestAnalysis['action'] as String?) ?? 'UNKNOWN';
+    final concern = (latestAnalysis['observation'] as String?) ?? '';
     if (created != null) b.writeln('- Date: ${shortDate(created)}');
     b.writeln('- Result: $level');
     if (concern.isNotEmpty) b.writeln('- Primary concern: $concern');

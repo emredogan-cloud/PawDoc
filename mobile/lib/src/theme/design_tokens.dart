@@ -33,11 +33,15 @@ class AppColors {
   static const Color coral400Dark = Color(0xFFFF9E80);
 
   // ---- Semantic status (SAFETY-LOCKED — do not repurpose for decoration) ----
-  static const Color emergencyLight = Color(0xFFC62828); // EMERGENCY
+  // Contract v2 action ladder. Deliberately NO reassuring green on any action:
+  // the floor (WATCH_AND_RECHECK) is calm slate, never "all clear".
+  static const Color emergencyLight = Color(0xFFC62828); // GET_HELP_NOW
   static const Color emergencyDark = Color(0xFFFF5A52);
-  static const Color monitorLight = Color(0xFFFFB300); // MONITOR
+  static const Color monitorLight = Color(0xFFFFB300); // CALL_TODAY (urgent amber)
   static const Color monitorDark = Color(0xFFFFC233);
-  static const Color normalLight = Color(0xFF2E7D32); // LIKELY NORMAL / success
+  static const Color actionBookVisit = Color(0xFF1565C0); // BOOK_VISIT (calm blue)
+  static const Color actionWatch = Color(0xFF455A64); // WATCH_AND_RECHECK (slate)
+  static const Color normalLight = Color(0xFF2E7D32); // success (non-triage use only)
   static const Color normalDark = Color(0xFF66BB6A);
   static const Color infoLight = Color(0xFF0277BD); // informational
   static const Color infoDark = Color(0xFF4FC3F7);

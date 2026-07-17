@@ -14,11 +14,10 @@ from app.models import AnalyzeRequest, PetContext
 from app.providers import ClaudeProvider, GeminiProvider
 
 _VALID = {
-    "triage_level": "MONITOR",
+    "action": "WATCH_AND_RECHECK",
     "confidence": 0.9,
-    "primary_concern": "x",
+    "observation": "x",
     "visible_symptoms": [],
-    "differential": [],
     "recommended_actions": ["a"],
     "urgency_timeframe": "soon",
     "disclaimer_required": True,

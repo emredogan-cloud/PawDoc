@@ -23,11 +23,11 @@ on conflict (id) do nothing;
 
 -- A: old + no feedback (ELIGIBLE); old + has feedback (not); recent (not).
 -- B: old + no feedback (cross-user, must be invisible to A).
-insert into public.analyses (id, user_id, pet_id, input_type, triage_level, created_at) values
-  ('f1000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'text', 'MONITOR', now() - interval '100 hours'),
-  ('f2000000-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'text', 'NORMAL',  now() - interval '100 hours'),
-  ('f3000000-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'text', 'NORMAL',  now() - interval '1 hour'),
-  ('f4000000-0000-0000-0000-000000000004', '22222222-2222-2222-2222-222222222222', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'text', 'MONITOR', now() - interval '100 hours');
+insert into public.analyses (id, user_id, pet_id, input_type, action, created_at) values
+  ('f1000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'text', 'WATCH_AND_RECHECK', now() - interval '100 hours'),
+  ('f2000000-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'text', 'WATCH_AND_RECHECK',  now() - interval '100 hours'),
+  ('f3000000-0000-0000-0000-000000000003', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'text', 'WATCH_AND_RECHECK',  now() - interval '1 hour'),
+  ('f4000000-0000-0000-0000-000000000004', '22222222-2222-2222-2222-222222222222', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'text', 'WATCH_AND_RECHECK', now() - interval '100 hours');
 
 -- f2 already has feedback -> excluded.
 insert into public.analysis_feedback (analysis_id, rating) values

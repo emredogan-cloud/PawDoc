@@ -15,18 +15,20 @@ const STORE = {
 
 const SPECIES = ["dog", "cat", "rabbit", "guinea_pig", "bird", "reptile", "other"];
 
-type Result = { triage_level: string; primary_concern: string };
+type Result = { action: string; observation: string };
 
-function triageColor(level: string): string {
-  if (level === "EMERGENCY") return "#C62828";
-  if (level === "NORMAL") return "#2E7D32";
-  return "#FFB300"; // MONITOR / default
+function actionColor(action: string): string {
+  if (action === "GET_HELP_NOW") return "#C62828";
+  if (action === "CALL_TODAY") return "#E65100";
+  if (action === "BOOK_VISIT") return "#1565C0";
+  return "#FFB300"; // WATCH_AND_RECHECK / default
 }
 
-function triageLabel(level: string): string {
-  if (level === "EMERGENCY") return "EMERGENCY — contact a vet now";
-  if (level === "NORMAL") return "LIKELY NORMAL";
-  return "MONITOR — keep an eye out";
+function actionLabel(action: string): string {
+  if (action === "GET_HELP_NOW") return "GET HELP NOW — contact a vet";
+  if (action === "CALL_TODAY") return "CALL YOUR VET TODAY";
+  if (action === "BOOK_VISIT") return "BOOK A ROUTINE VISIT";
+  return "WATCH AND RE-CHECK"; // the floor — never "likely normal"
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -145,17 +147,17 @@ export default function SymptomChecker() {
             style={{
               padding: 16,
               borderRadius: 12,
-              background: triageColor(result.triage_level),
+              background: actionColor(result.action),
               color: "#fff",
               fontWeight: 700,
               textAlign: "center",
             }}
           >
-            {triageLabel(result.triage_level)}
+            {actionLabel(result.action)}
           </div>
-          <p style={{ marginTop: 16, fontWeight: 600 }}>{result.primary_concern}</p>
+          <p style={{ marginTop: 16, fontWeight: 600 }}>{result.observation}</p>
 
-          {result.triage_level === "EMERGENCY" ? (
+          {result.action === "GET_HELP_NOW" ? (
             // SAFETY: never gate the emergency message behind the funnel.
             <p style={{ color: "#C62828" }}>
               This may be an emergency. Contact your veterinarian or an emergency animal hospital now.

@@ -1,77 +1,98 @@
-/// The shared `AnalysisResult` contract — the single source of truth for the
-/// triage payload that flows AI service (Python) -> Edge Function (TS) -> app
-/// (Dart). The field list is FROZEN here in Phase 1.1 (Critical Review #16) so
-/// the three language bindings cannot drift. Canonical spec:
-/// `docs/contracts/ANALYSIS_RESULT.md`.
+/// The shared `AnalysisResult` contract (v2) — the single source of truth for
+/// the payload that flows AI service (Python) -> Edge Function (TS) -> app
+/// (Dart). The field list is FROZEN; the three language bindings cannot drift.
+/// Canonical spec: `docs/contracts/ANALYSIS_RESULT.md`.
 ///
-/// JSON keys are snake_case; `triage_level` is one of EMERGENCY | MONITOR | NORMAL.
+/// v2 (evolution reframe): the triage VERDICT is gone. The wire carries an
+/// action ladder with no terminal "do nothing" state, plus a plain-language
+/// observation. `confidence` crosses the wire for storage/monitoring but is
+/// NEVER rendered to the user anywhere in this app.
 library;
 
-enum TriageLevel {
-  emergency('EMERGENCY'),
-  monitor('MONITOR'),
-  normal('NORMAL');
+enum ActionLevel {
+  getHelpNow('GET_HELP_NOW'),
+  callToday('CALL_TODAY'),
+  bookVisit('BOOK_VISIT'),
+  watchAndRecheck('WATCH_AND_RECHECK');
 
-  const TriageLevel(this.wireValue);
+  const ActionLevel(this.wireValue);
 
-  /// The exact string used on the wire / in the database `triage_level` column.
+  /// The exact string used on the wire / in the database `action` column.
   final String wireValue;
 
-  static TriageLevel fromWire(String value) {
-    return TriageLevel.values.firstWhere(
+  static ActionLevel fromWire(String value) {
+    return ActionLevel.values.firstWhere(
       (level) => level.wireValue == value,
-      orElse: () => throw ArgumentError('Unknown triage_level: $value'),
+      orElse: () => throw ArgumentError('Unknown action: $value'),
     );
   }
 }
 
 class AnalysisResult {
   const AnalysisResult({
-    required this.triageLevel,
+    required this.action,
     required this.confidence,
-    required this.primaryConcern,
+    required this.observation,
     required this.visibleSymptoms,
-    required this.differential,
+    required this.vetsLookFor,
+    required this.watchFor,
     required this.recommendedActions,
     required this.urgencyTimeframe,
+    required this.recheckHours,
     required this.disclaimerRequired,
   });
 
-  final TriageLevel triageLevel;
+  final ActionLevel action;
 
-  /// Model confidence in [0.0, 1.0].
+  /// Model confidence in [0.0, 1.0]. INTERNAL — never rendered to the user.
   final double confidence;
-  final String primaryConcern;
+
+  /// Plain-language description of what was observed/reported — never a
+  /// condition or disease name.
+  final String observation;
   final List<String> visibleSymptoms;
-  final List<String> differential;
+
+  /// Educational: what a vet typically assesses for this kind of presentation.
+  final List<String> vetsLookFor;
+
+  /// Signs that mean the owner should act sooner than the chosen action.
+  final List<String> watchFor;
   final List<String> recommendedActions;
   final String urgencyTimeframe;
 
+  /// Hours until a re-check makes sense; drives the re-check reminder CTA.
+  /// WATCH_AND_RECHECK always carries one (server-backstopped).
+  final int? recheckHours;
+
   /// API-level guarantee: a disclaimer must be shown when true. Never let the
-  /// UI suppress it (disclaimers are injected server-side — see Phase 1.4).
+  /// UI suppress it (disclaimers are injected server-side).
   final bool disclaimerRequired;
 
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
     return AnalysisResult(
-      triageLevel: TriageLevel.fromWire(json['triage_level'] as String),
+      action: ActionLevel.fromWire(json['action'] as String),
       confidence: (json['confidence'] as num).toDouble(),
-      primaryConcern: json['primary_concern'] as String,
+      observation: json['observation'] as String,
       visibleSymptoms: _stringList(json['visible_symptoms']),
-      differential: _stringList(json['differential']),
+      vetsLookFor: _stringList(json['vets_look_for']),
+      watchFor: _stringList(json['watch_for']),
       recommendedActions: _stringList(json['recommended_actions']),
       urgencyTimeframe: json['urgency_timeframe'] as String,
+      recheckHours: (json['recheck_hours'] as num?)?.toInt(),
       disclaimerRequired: json['disclaimer_required'] as bool,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'triage_level': triageLevel.wireValue,
+        'action': action.wireValue,
         'confidence': confidence,
-        'primary_concern': primaryConcern,
+        'observation': observation,
         'visible_symptoms': visibleSymptoms,
-        'differential': differential,
+        'vets_look_for': vetsLookFor,
+        'watch_for': watchFor,
         'recommended_actions': recommendedActions,
         'urgency_timeframe': urgencyTimeframe,
+        'recheck_hours': recheckHours,
         'disclaimer_required': disclaimerRequired,
       };
 

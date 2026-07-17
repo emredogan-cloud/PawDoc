@@ -1,14 +1,18 @@
 """Analysis orchestration. Order matters for safety:
   1. kill-switch (CR #19) -> degraded fallback (CR #5)
-  2. hardcoded emergency override, BEFORE any AI call
+  2. hardcoded emergency override, BEFORE any AI call -> GET_HELP_NOW
   3. Tier 2 (Gemini); confidence > 0.85 -> accept, else escalate to Tier 3 (Claude)
-  4. cross-verify any EMERGENCY with a second Tier-3 call
+  4. cross-verify any GET_HELP_NOW with a second Tier-3 call
   5. confidence < 0.60 -> "insufficient information" (never fabricate)
-  6. borderline-NORMAL re-check (CR #4): escalate / bias to MONITOR
+  6. ladder-floor re-check (CR #4): a risky WATCH_AND_RECHECK escalates/tightens
   7. force disclaimer_required at the API level
   A Tier-2 provider failure fails OVER to Tier 3 (resilience: keeps triage working
   on the healthy provider); degrade to the safe fallback (CR #5) only if BOTH tiers
   fail. One retry per provider call.
+
+  Contract-v2 invariant (the company rule): NO path below returns without an
+  action and a timeframe, and no fallback ever lands below WATCH_AND_RECHECK
+  with an explicit re-check window.
 """
 from __future__ import annotations
 
@@ -20,20 +24,20 @@ from .cache import Cache, is_ai_disabled
 from .logging_setup import get_logger
 from .media import MediaFetchError
 from .models import (
+    ActionLevel,
     AnalysisParseError,
     AnalysisResult,
     AnalyzeRequest,
-    TriageLevel,
     parse_analysis_result,
 )
 from .moderation import AllowAllModerator, ImageModerator
 from .prompts import SYSTEM_PROMPT_V1, build_personalization_block, build_user_prompt
 from .providers import AIProvider, ProviderError
 from .safety import (
-    bias_to_monitor,
     check_emergency_override,
     emergency_override_result,
-    needs_normal_recheck,
+    needs_floor_recheck,
+    tighten_recheck,
 )
 
 log = get_logger("pipeline")
@@ -52,53 +56,67 @@ class AnalysisOutcome:
 
 
 def _degraded_result() -> AnalysisResult:
-    # Safe, non-reassuring fallback (never NORMAL) when we can't analyze (CR #5/#19).
+    # Safe, non-reassuring fallback when we can't analyze (CR #5/#19). Lands on
+    # the ladder floor WITH an explicit re-check — never a dead end.
     return AnalysisResult(
-        triage_level=TriageLevel.MONITOR,
+        action=ActionLevel.WATCH_AND_RECHECK,
         confidence=0.0,
-        primary_concern="We can't analyze this right now.",
+        observation="We can't analyze this right now.",
         visible_symptoms=[],
-        differential=[],
+        vets_look_for=[],
+        watch_for=[
+            "Any worsening, new signs, or your own sense that something is wrong",
+        ],
         recommended_actions=[
             "If this seems urgent, contact a veterinarian or emergency clinic now.",
             "Otherwise, please try again shortly.",
         ],
-        urgency_timeframe="if urgent, contact a vet now",
+        urgency_timeframe="if urgent, contact a vet now; otherwise retry soon",
+        recheck_hours=1,
         disclaimer_required=True,
     )
 
 
 def _insufficient_information_result(confidence: float) -> AnalysisResult:
     return AnalysisResult(
-        triage_level=TriageLevel.MONITOR,
+        action=ActionLevel.WATCH_AND_RECHECK,
         confidence=confidence,
-        primary_concern="Not enough information to assess confidently.",
+        observation="Not enough information to assess confidently.",
         visible_symptoms=[],
-        differential=[],
+        vets_look_for=[],
+        watch_for=[
+            "Symptoms getting worse or new ones appearing",
+            "Your pet stops eating or drinking",
+        ],
         recommended_actions=[
-            "Add a clearer photo/video or more detail and try again.",
+            "Add a clearer photo or more detail and try again.",
             "If your pet seems unwell, contact your veterinarian.",
         ],
-        urgency_timeframe="seek advice if you are concerned",
+        urgency_timeframe="re-check within 24 hours",
+        recheck_hours=24,
         disclaimer_required=True,
     )
 
 
 def _media_unreadable_result() -> AnalysisResult:
     # GAP-A1: the media couldn't be fetched/decoded, so the model saw no pixels.
-    # We must NOT fall back to a text-only "confident" read — degrade to a safe
-    # MONITOR that names the problem (never NORMAL).
+    # We must NOT fall back to a text-only "confident" read — land on the
+    # ladder floor, name the problem, keep an explicit re-check.
     return AnalysisResult(
-        triage_level=TriageLevel.MONITOR,
+        action=ActionLevel.WATCH_AND_RECHECK,
         confidence=0.0,
-        primary_concern="We couldn't read the photo or video.",
+        observation="We couldn't read the photo.",
         visible_symptoms=[],
-        differential=[],
+        vets_look_for=[],
+        watch_for=[
+            "Any worsening while you retake the photo",
+        ],
         recommended_actions=[
-            "Please retake a clear, well-lit photo or video and try again.",
+            "Please retake a clear, well-lit photo and try again.",
             "If your pet seems unwell, contact a veterinarian.",
         ],
-        urgency_timeframe="retake and try again",
+        urgency_timeframe="retake and try again now",
+        recheck_hours=1,
         disclaimer_required=True,
     )
 
@@ -182,16 +200,18 @@ class AnalysisPipeline:
         if request.image_url and not self.moderator.is_safe(request.image_url):
             log.warning("media rejected by content moderation")
             rejected = AnalysisResult(
-                triage_level=TriageLevel.MONITOR,
+                action=ActionLevel.WATCH_AND_RECHECK,
                 confidence=0.0,
-                primary_concern="We couldn't process this media.",
+                observation="We couldn't process this media.",
                 visible_symptoms=[],
-                differential=[],
+                vets_look_for=[],
+                watch_for=["Any worsening while you retake the photo"],
                 recommended_actions=[
                     "Please retake a clear photo of your pet.",
                     "If your pet seems unwell, contact a veterinarian.",
                 ],
-                urgency_timeframe="retake and try again",
+                urgency_timeframe="retake and try again now",
+                recheck_hours=1,
                 disclaimer_required=True,
             )
             return self._outcome(rejected, 0, "moderation", moderation_rejected=True, start=start)
@@ -227,18 +247,18 @@ class AnalysisPipeline:
                     log.error("pipeline degraded after Tier-3 escalation failure: %s", exc)
                     return self._outcome(_degraded_result(), 0, "degraded", degraded=True, start=start)
 
-        # 4. Cross-verify any EMERGENCY with a second Tier-3 call. EMERGENCY is
-        #    kept regardless (safe); we record whether the second call agreed.
+        # 4. Cross-verify any GET_HELP_NOW with a second Tier-3 call. The rung
+        #    is kept regardless (safe); we record whether the second call agreed.
         cross_verified = False
-        if result.triage_level is TriageLevel.EMERGENCY:
+        if result.action is ActionLevel.GET_HELP_NOW:
             try:
                 second = self._call(self.tier3, request)
-                cross_verified = second.triage_level is TriageLevel.EMERGENCY
+                cross_verified = second.action is ActionLevel.GET_HELP_NOW
                 tier, model = 3, self.tier3.name
                 if not cross_verified:
-                    log.warning("EMERGENCY cross-verify disagreed; keeping EMERGENCY (safe)")
+                    log.warning("GET_HELP_NOW cross-verify disagreed; keeping it (safe)")
             except ProviderError:
-                log.warning("EMERGENCY cross-verify call failed; keeping EMERGENCY")
+                log.warning("GET_HELP_NOW cross-verify call failed; keeping it")
             return self._outcome(result, tier, model, cross=cross_verified, start=start)
 
         # 5. Confidence gate — never fabricate a confident answer.
@@ -248,18 +268,23 @@ class AnalysisPipeline:
                 _insufficient_information_result(result.confidence), tier, model, start=start
             )
 
-        # 6. Borderline-NORMAL re-check (CR #4).
-        if needs_normal_recheck(result, request):
-            log.info("borderline NORMAL with risk signals — re-checking (tier_used=%d)", tier)
+        # 6. Ladder-floor re-check (CR #4 reframed): a bottom-rung read with
+        #    risk signals is escalated once; if it persists, tighten the window.
+        if needs_floor_recheck(result, request):
+            log.info("floor read with risk signals — re-checking (tier_used=%d)", tier)
             if tier == 2:
                 try:
                     result = self._call(self.tier3, request)
                     tier, model = 3, self.tier3.name
                 except ProviderError:
-                    pass  # fall through to the MONITOR bias below
-            if result.triage_level is TriageLevel.NORMAL and needs_normal_recheck(result, request):
-                result = bias_to_monitor(
-                    result, "risk signals present despite a NORMAL read"
+                    pass  # fall through to the tighten below
+            if needs_floor_recheck(result, request):
+                result = tighten_recheck(
+                    result, "risk signals present despite a watch-and-recheck read"
                 )
+
+        # v2 invariant backstop: the floor must always carry a re-check window.
+        if result.action is ActionLevel.WATCH_AND_RECHECK and result.recheck_hours is None:
+            result = result.model_copy(update={"recheck_hours": 24})
 
         return self._outcome(result, tier, model, start=start)

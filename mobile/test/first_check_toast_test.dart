@@ -23,14 +23,16 @@ class _Fake implements AnalysisService {
       AnalysisOutcome(result: result, analysisId: 'a1');
 }
 
-AnalysisResult _mk(TriageLevel level) => AnalysisResult(
-      triageLevel: level,
+AnalysisResult _mk(ActionLevel level) => AnalysisResult(
+      action: level,
       confidence: 0.9,
-      primaryConcern: 'Concern',
+      observation: 'Concern',
       visibleSymptoms: const [],
-      differential: const [],
+      vetsLookFor: const [],
+      watchFor: const [],
       recommendedActions: const ['do this'],
       urgencyTimeframe: 'routine',
+      recheckHours: null,
       disclaimerRequired: true,
     );
 
@@ -59,7 +61,7 @@ void main() {
 
   testWidgets('first NORMAL check shows the story toast (text under RM)',
       (tester) async {
-    await tester.pumpWidget(_runner(_mk(TriageLevel.normal)));
+    await tester.pumpWidget(_runner(_mk(ActionLevel.watchAndRecheck)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump(const Duration(milliseconds: 300));
@@ -72,7 +74,7 @@ void main() {
   testWidgets('second check never repeats the toast', (tester) async {
     SharedPreferences.setMockInitialValues(
         {'pawdoc.first_analysis_completed': true});
-    await tester.pumpWidget(_runner(_mk(TriageLevel.normal)));
+    await tester.pumpWidget(_runner(_mk(ActionLevel.watchAndRecheck)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 
@@ -80,7 +82,7 @@ void main() {
   });
 
   testWidgets('EMERGENCY first check NEVER shows the toast', (tester) async {
-    await tester.pumpWidget(_runner(_mk(TriageLevel.emergency)));
+    await tester.pumpWidget(_runner(_mk(ActionLevel.getHelpNow)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 

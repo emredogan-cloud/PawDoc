@@ -22,17 +22,17 @@ test("rateLimitKey namespaces by ip", () => {
   assert.equal(rateLimitKey("1.2.3.4"), "anon_checker:1.2.3.4");
 });
 
-test("simplifyResult exposes only triage + concern (no 'what to do')", () => {
+test("simplifyResult exposes only action + observation (no 'what to do')", () => {
   const full = {
-    triage_level: "MONITOR",
-    primary_concern: "Possible mild GI upset",
+    action: "WATCH_AND_RECHECK",
+    observation: "Possible mild GI upset",
     recommended_actions: ["secret step 1", "secret step 2"],
     differential: ["x", "y"],
     visible_symptoms: ["a"],
   };
   const s = simplifyResult(full);
-  assert.deepEqual(Object.keys(s).sort(), ["disclaimer_required", "primary_concern", "triage_level"]);
-  assert.equal(s.triage_level, "MONITOR");
-  assert.equal(s.primary_concern, "Possible mild GI upset");
+  assert.deepEqual(Object.keys(s).sort(), ["action", "disclaimer_required", "observation"]);
+  assert.equal(s.action, "WATCH_AND_RECHECK");
+  assert.equal(s.observation, "Possible mild GI upset");
   assert.equal("recommended_actions" in s, false); // detail withheld from anon web
 });

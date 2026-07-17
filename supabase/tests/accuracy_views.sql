@@ -21,10 +21,10 @@ do $$
 declare oops boolean := false;
 begin
   begin
-    insert into public.analyses (id, user_id, pet_id, input_type, triage_level)
+    insert into public.analyses (id, user_id, pet_id, input_type, action)
     values ('aaaa0000-0000-0000-0000-000000000001',
             'aa000000-0000-0000-0000-000000000001',
-            'aa000000-0000-0000-0000-0000000000a1', 'text', 'NORMAL');
+            'aa000000-0000-0000-0000-0000000000a1', 'text', 'WATCH_AND_RECHECK');
     insert into public.analysis_feedback (analysis_id, outcome)
     values ('aaaa0000-0000-0000-0000-000000000001', 'this_is_not_a_real_outcome');
     oops := true;
@@ -36,18 +36,18 @@ end
 $$;
 
 -- 2. Seed the four classified signal classes + one explicitly-unclassified.
-insert into public.analyses (id, user_id, pet_id, input_type, triage_level, primary_concern) values
-  -- AI said EMERGENCY but the vet said it was nothing -> FALSE POSITIVE proxy.
-  ('a1000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-0000000000a1', 'text', 'EMERGENCY', 'severe abdominal pain'),
-  -- AI said NORMAL but the vet confirmed a real problem -> FALSE NEGATIVE proxy (the safety-critical case).
-  ('a2000000-0000-0000-0000-000000000002', 'aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-0000000000a1', 'text', 'NORMAL',    'minor ear redness'),
-  -- AI said EMERGENCY and the vet confirmed it -> TRUE POSITIVE proxy.
-  ('a3000000-0000-0000-0000-000000000003', 'aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-0000000000a1', 'text', 'EMERGENCY', 'tick paralysis suspected'),
-  -- AI said NORMAL and it resolved on its own -> TRUE NEGATIVE proxy.
-  ('a4000000-0000-0000-0000-000000000004', 'aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-0000000000a1', 'text', 'NORMAL',    'mild stomach upset'),
-  -- MONITOR row -> outcome present but signal stays NULL (excluded from the view's
+insert into public.analyses (id, user_id, pet_id, input_type, action, observation) values
+  -- AI said GET_HELP_NOW but the vet said it was nothing -> FALSE POSITIVE proxy.
+  ('a1000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-0000000000a1', 'text', 'GET_HELP_NOW', 'severe abdominal pain'),
+  -- Floor read (WATCH_AND_RECHECK) but the vet confirmed a real problem -> FALSE NEGATIVE proxy (the safety-critical case).
+  ('a2000000-0000-0000-0000-000000000002', 'aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-0000000000a1', 'text', 'WATCH_AND_RECHECK', 'minor ear redness'),
+  -- AI said GET_HELP_NOW and the vet confirmed it -> TRUE POSITIVE proxy.
+  ('a3000000-0000-0000-0000-000000000003', 'aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-0000000000a1', 'text', 'GET_HELP_NOW', 'a sudden loss of hind-leg control'),
+  -- Floor read and it resolved on its own -> TRUE NEGATIVE proxy.
+  ('a4000000-0000-0000-0000-000000000004', 'aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-0000000000a1', 'text', 'WATCH_AND_RECHECK', 'mild stomach upset'),
+  -- CALL_TODAY row with still_monitoring -> signal stays NULL (excluded from the
   -- FP/FN/TP/TN classification).
-  ('a5000000-0000-0000-0000-000000000005', 'aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-0000000000a1', 'text', 'MONITOR',   'borderline');
+  ('a5000000-0000-0000-0000-000000000005', 'aa000000-0000-0000-0000-000000000001', 'aa000000-0000-0000-0000-0000000000a1', 'text', 'CALL_TODAY', 'borderline');
 
 insert into public.analysis_feedback (analysis_id, outcome) values
   ('a1000000-0000-0000-0000-000000000001', 'vet_said_nothing'),
@@ -71,7 +71,7 @@ begin
   if tp <> 1 then raise exception 'expected 1 true_positive_proxy, got %', tp; end if;
   if tn <> 1 then raise exception 'expected 1 true_negative_proxy, got %', tn; end if;
   if unclassified <> 1 then
-    raise exception 'expected 1 MONITOR row to land as signal=NULL, got %', unclassified;
+    raise exception 'expected 1 unclassified row (signal=NULL), got %', unclassified;
   end if;
 end
 $$;

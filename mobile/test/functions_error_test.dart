@@ -12,14 +12,14 @@ void main() {
         'error': 'free_limit_reached',
         'message': "You've used your free analyses this month.",
         'quota_exceeded': true,
-        'triage_level': 'MONITOR',
+        'action': 'CALL_TODAY',
       },
     ));
     expect(fe, isNotNull);
     expect(fe!.isQuotaExceeded, isTrue);
     expect(fe.code, 'free_limit_reached');
     expect(fe.message, contains('free analyses'));
-    expect(fe.triageLevel, 'MONITOR');
+    expect(fe.action, 'CALL_TODAY');
   });
 
   test('a text 402 (no triage chip) still maps to the quota wall', () {
@@ -28,7 +28,7 @@ void main() {
       details: {'error': 'free_limit_reached', 'message': 'upgrade'},
     ));
     expect(fe!.isQuotaExceeded, isTrue);
-    expect(fe.triageLevel, isNull);
+    expect(fe.action, isNull);
   });
 
   test('a 5xx is surfaced but is NOT the quota wall (falls through to error)', () {
