@@ -33,7 +33,7 @@ Widget _wrap(Widget child,
 void main() {
   group('kill-switch semantics (device finding D-2)', () {
     FeatureFlags flags(Object? Function() get) =>
-        FeatureFlags((_) async => false, getFlag: (_) async => get());
+        FeatureFlags(getFlag: (_) async => get());
 
     test('absent flag -> ON', () async {
       expect(await flags(() => null).isEnabledUnlessKilled('k'), isTrue);

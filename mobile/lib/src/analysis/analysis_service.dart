@@ -16,10 +16,9 @@ class AnalysisOutcome {
 abstract class AnalysisService {
   Future<AnalysisOutcome> analyze({
     required String petId,
-    required String inputType, // photo | video | text
+    required String inputType, // photo | text
     String? textDescription,
     String? imageStorageKey,
-    List<String>? frameStorageKeys, // Phase 3.2 video keyframes
   });
 }
 
@@ -34,15 +33,12 @@ class SupabaseAnalysisService implements AnalysisService {
     required String inputType,
     String? textDescription,
     String? imageStorageKey,
-    List<String>? frameStorageKeys,
   }) async {
     final res = await _client.functions.invoke('analyze', body: {
       'pet_id': petId,
       'input_type': inputType,
       'text_description': textDescription,
       'input_storage_key': imageStorageKey,
-      if (frameStorageKeys != null && frameStorageKeys.isNotEmpty)
-        'frame_storage_keys': frameStorageKeys,
     });
     final data = res.data;
     if (data is! Map || data['result'] is! Map) {

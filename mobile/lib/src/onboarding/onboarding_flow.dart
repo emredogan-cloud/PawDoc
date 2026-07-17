@@ -9,8 +9,6 @@ import '../core/app_motion_asset.dart';
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
-import '../experiments/feature_flags.dart';
-import '../monetization/paywall_screen.dart';
 import '../notifications/onesignal_service.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
@@ -85,7 +83,6 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             ),
           );
       ref.invalidate(petsListProvider);
-      await _maybeShowOnboardingPaywall();
       await _advance();
     } catch (_) {
       if (mounted) {
@@ -95,24 +92,6 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
-  }
-
-  /// Onboarding Variant B (aggressive): show the paywall right after pet
-  /// creation, before the camera. It is SKIPPABLE and appears BEFORE any
-  /// analysis — so it can never block an analysis or an EMERGENCY result (the
-  /// trust rule only governs the post-analysis paywall, which is unchanged).
-  /// Fail-safe: Variant A (or any unknown flag) shows nothing here.
-  Future<void> _maybeShowOnboardingPaywall() async {
-    final variant = await ref.read(featureFlagsProvider).getVariant(
-          FeatureFlagKeys.onboardingVariant,
-          allowed: FeatureFlagKeys.onboardingVariants,
-        );
-    if (variant != 'B' || !mounted) return;
-    await Analytics.onboardingPaywallShown();
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const PaywallScreen()),
-    );
   }
 
   Future<void> _finish() async {

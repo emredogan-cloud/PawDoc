@@ -10,7 +10,6 @@ import '../account/user_profile.dart';
 import '../analysis/analysis_runner.dart';
 import '../analysis/analysis_service.dart';
 import '../capture/camera_screen.dart';
-import '../capture/video_capture_screen.dart';
 import '../core/app_motion_asset.dart';
 import '../core/app_views.dart';
 import '../core/connectivity.dart';
@@ -54,19 +53,6 @@ class HomeScreen extends ConsumerWidget {
           builder: (_) => AnalysisRunnerScreen(
             petId: pet.id!, petName: pet.name, petSpecies: pet.species, inputType: 'photo',
             imageStorageKey: key, isPremium: isPremium,
-          ),
-        ));
-        ref.invalidate(userProfileProvider);
-      }
-    } else if (mode == 'video') {
-      final frameKeys = await Navigator.of(context).push<List<String>>(
-        MaterialPageRoute(builder: (_) => const VideoCaptureScreen()),
-      );
-      if (frameKeys != null && frameKeys.isNotEmpty && context.mounted) {
-        await Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => AnalysisRunnerScreen(
-            petId: pet.id!, petName: pet.name, petSpecies: pet.species, inputType: 'video',
-            frameStorageKeys: frameKeys, isPremium: isPremium,
           ),
         ));
         ref.invalidate(userProfileProvider);
@@ -550,12 +536,6 @@ class _CaptureSheet extends StatelessWidget {
         title: 'Take a photo',
         hint: 'Best for skin, eyes, wounds',
         onTap: () => Navigator.pop(context, 'photo'),
-      ),
-      _CaptureModeTile(
-        icon: Icons.videocam_rounded,
-        title: 'Record a video',
-        hint: 'Best for limping, breathing, seizures',
-        onTap: () => Navigator.pop(context, 'video'),
       ),
       _CaptureModeTile(
         icon: Icons.edit_note_rounded,

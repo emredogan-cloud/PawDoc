@@ -29,8 +29,7 @@ class Analytics {
   static Future<void> resultViewed(String triageLevel) =>
       capture('result_viewed', {'triage_level': triageLevel});
   static Future<void> emergencyTriggered() => capture('emergency_triggered');
-  static Future<void> paywallShown([String? variant]) =>
-      capture('paywall_shown', {'variant': ?variant}); // variant tags the A/B funnel
+  static Future<void> paywallShown() => capture('paywall_shown');
   static Future<void> trialStarted() => capture('trial_started');
   static Future<void> subscriptionConverted() => capture('subscription_converted');
 
@@ -39,10 +38,6 @@ class Analytics {
       capture('health_event_logged', {'event_type': eventType});
   static Future<void> multiPetAdded(int petCount) =>
       capture('multi_pet_added', {'pet_count': petCount});
-
-  // Phase 3.2 video analysis.
-  static Future<void> videoAnalysisSubmitted(int frameCount) =>
-      capture('video_analysis_submitted', {'frame_count': frameCount});
 
   // Phase 3.3 Part 2 — engagement.
   static Future<void> reminderSet(String reminderType) =>
@@ -56,9 +51,6 @@ class Analytics {
   // Phase 4.1 — experimentation / feedback.
   static Future<void> feedbackSubmitted(String source) =>
       capture('feedback_submitted', {'source': source});
-
-  // Phase 4.2 — onboarding A/B (paywall shown inside onboarding, Variant B).
-  static Future<void> onboardingPaywallShown() => capture('onboarding_paywall_shown');
 
   // Phase 6.3 — PDF Health Report (premium-included).
   static Future<void> pdfReportRequested(String entitlement) =>

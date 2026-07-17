@@ -2,47 +2,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pawdoc/src/experiments/feature_flags.dart';
 
 void main() {
-  test('returns the resolved value when the flag loads', () async {
-    expect(await FeatureFlags((_) async => true).isEnabled(FeatureFlagKeys.paywallTiming), isTrue);
-    expect(await FeatureFlags((_) async => false).isEnabled('x'), isFalse);
-  });
+  group('isEnabledUnlessKilled (operational kill-switch)', () {
+    FeatureFlags withFlag(Object? v) => FeatureFlags(getFlag: (_) async => v);
 
-  test('falls back to CONTROL on any error (PostHog down / offline)', () async {
-    final ff = FeatureFlags((_) async => throw Exception('offline'));
-    expect(await ff.isEnabled('x'), isFalse); // default control
-    expect(await ff.isEnabled('x', defaultValue: true), isTrue); // explicit default honored
-  });
-
-  test('flag keys + variant sets are defined', () {
-    expect(FeatureFlagKeys.paywallTiming, 'paywall-timing');
-    expect(FeatureFlagKeys.onboardingVariant, 'onboarding_variant');
-    expect(FeatureFlagKeys.onboardingVariants, {'A', 'B'});
-    expect(FeatureFlagKeys.paywallVariant, 'paywall_variant');
-    expect(FeatureFlagKeys.paywallVariants, {'A', 'B', 'C'});
-  });
-
-  group('getVariant (multivariate, fail-safe to A)', () {
-    FeatureFlags withFlag(Object? value) =>
-        FeatureFlags((_) async => false, getFlag: (_) async => value);
-
-    test('returns an allowed variant', () async {
-      expect(await withFlag('B').getVariant(FeatureFlagKeys.paywallVariant,
-          allowed: FeatureFlagKeys.paywallVariants), 'B');
-      expect(await withFlag('C').getVariant(FeatureFlagKeys.paywallVariant,
-          allowed: FeatureFlagKeys.paywallVariants), 'C');
+    test('absent flag defaults ON (kill-switches gate incidents, not rollout)', () async {
+      expect(await withFlag(null).isEnabledUnlessKilled('paw_pals_enabled'), isTrue);
     });
 
-    test('falls back to A on null / empty / disallowed / non-string / error', () async {
-      expect(await withFlag(null).getVariant('k'), 'A');
-      expect(await withFlag('').getVariant('k'), 'A');
-      expect(await withFlag('Z').getVariant('k', allowed: {'A', 'B'}), 'A'); // unrecognized
-      expect(await withFlag(42).getVariant('k'), 'A'); // non-string
-      final boom = FeatureFlags((_) async => false, getFlag: (_) async => throw Exception('offline'));
-      expect(await boom.getVariant('k'), 'A'); // error -> control
+    test('explicit false/off/disabled kills the feature', () async {
+      expect(await withFlag(false).isEnabledUnlessKilled('k'), isFalse);
+      expect(await withFlag('false').isEnabledUnlessKilled('k'), isFalse);
+      expect(await withFlag('off').isEnabledUnlessKilled('k'), isFalse);
+      expect(await withFlag('disabled').isEnabledUnlessKilled('k'), isFalse);
     });
 
-    test('default constructor (no getFlag) yields control A', () async {
-      expect(await FeatureFlags((_) async => false).getVariant('k'), 'A');
+    test('truthy values keep the feature on', () async {
+      expect(await withFlag(true).isEnabledUnlessKilled('k'), isTrue);
+      expect(await withFlag('on').isEnabledUnlessKilled('k'), isTrue);
+    });
+
+    test('PostHog failure fails ON (an outage must not kill features)', () async {
+      final boom = FeatureFlags(getFlag: (_) async => throw Exception('down'));
+      expect(await boom.isEnabledUnlessKilled('k'), isTrue);
     });
   });
 }

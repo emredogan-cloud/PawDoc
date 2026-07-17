@@ -6,7 +6,6 @@ import '../analytics/analytics.dart';
 import '../core/app_image.dart';
 import '../core/app_motion_asset.dart';
 import '../core/celebration_overlay.dart';
-import '../experiments/feature_flags.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
@@ -29,7 +28,6 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   Offering? _offering;
   bool _loading = true;
   bool _purchasing = false;
-  String _variant = 'A'; // control until the flag resolves (fail-safe)
 
   @override
   void initState() {
@@ -38,12 +36,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   }
 
   Future<void> _init() async {
-    final variant = await ref.read(featureFlagsProvider).getVariant(
-          FeatureFlagKeys.paywallVariant,
-          allowed: FeatureFlagKeys.paywallVariants,
-        );
-    if (mounted) setState(() => _variant = variant);
-    await Analytics.paywallShown(variant); // variant captured for the A/B funnel
+    await Analytics.paywallShown();
     await _load();
   }
 
@@ -94,34 +87,29 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     }
   }
 
-  // Plan cards in the order/emphasis dictated by the variant.
+  // Annual-first plan cards (the only layout — the A/B arms were removed).
   List<Widget> _plans(Package? annual, Package? monthly) {
-    final annualCard = _PlanCard(
-      key: const Key('paywall_annual'),
-      title: 'Annual',
-      price: annual?.storeProduct.priceString ?? '\$59.99 / year',
-      subtitle: 'About \$5/month, billed yearly',
-      featured: _variant != 'B', // featured in A/C; in B it's the badged secondary
-      badge: _variant == 'B' ? 'Best value' : 'Save 50%',
-      busy: _purchasing,
-      onTap: () => _purchase(annual),
-    );
-    final monthlyCard = _PlanCard(
-      key: const Key('paywall_monthly'),
-      title: 'Monthly',
-      price: monthly?.storeProduct.priceString ?? '\$9.99 / month',
-      subtitle: 'Flexible, cancel anytime',
-      featured: _variant == 'B', // monthly is the hero in Variant B
-      busy: _purchasing,
-      onTap: () => _purchase(monthly),
-    );
-    final cards = _variant == 'B'
-        ? [monthlyCard, annualCard] // monthly first (Variant B)
-        : [annualCard, monthlyCard]; // annual-first (A control + C)
     return [
-      cards.first,
+      _PlanCard(
+        key: const Key('paywall_annual'),
+        title: 'Annual',
+        price: annual?.storeProduct.priceString ?? '\$59.99 / year',
+        subtitle: 'About \$5/month, billed yearly',
+        featured: true,
+        badge: 'Save 50%',
+        busy: _purchasing,
+        onTap: () => _purchase(annual),
+      ),
       const SizedBox(height: 12),
-      cards.last,
+      _PlanCard(
+        key: const Key('paywall_monthly'),
+        title: 'Monthly',
+        price: monthly?.storeProduct.priceString ?? '\$9.99 / month',
+        subtitle: 'Flexible, cancel anytime',
+        featured: false,
+        busy: _purchasing,
+        onTap: () => _purchase(monthly),
+      ),
     ];
   }
 
@@ -167,12 +155,10 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           const _TrustPillars(),
           const SizedBox(height: AppSpace.s16),
           const _ValueStack(),
-          // Variant C: a truthful value/trust card (was a fabricated testimonial;
-          // honesty-fixed in Phase B). Layout-only A/B arm — analytics unchanged.
-          if (_variant == 'C') ...[
-            const SizedBox(height: AppSpace.s16),
-            const _SocialProof(),
-          ],
+          // Truthful value/trust card (was Variant C's arm; now always shown —
+          // the copy survived the honesty rebuild and models the approved tone).
+          const SizedBox(height: AppSpace.s16),
+          const _SocialProof(),
           const SizedBox(height: AppSpace.s24),
           // Plans render only when RevenueCat offerings are configured. When they
           // aren't, we show a production-safe "coming soon" state instead of

@@ -97,7 +97,7 @@ Deno.serve(async (req: Request) => {
   // vector). Media is addressed only by storage keys, presigned server-side below.
   const { pet_id, input_type, text_description } = body ?? {};
   if (!pet_id || !input_type) return json({ error: "pet_id and input_type are required" }, 400);
-  if (!["photo", "video", "text"].includes(input_type)) {
+  if (!["photo", "text"].includes(input_type)) {
     return json({ error: "invalid input_type" }, 400);
   }
 
@@ -198,17 +198,6 @@ Deno.serve(async (req: Request) => {
     isOwnUploadKey(body.input_storage_key, user.id) ? body.input_storage_key : null;
   const imageUrl = inputKey ? await presignGet(inputKey) : null;
 
-  // Video (Phase 3.2): presign each client-extracted keyframe — own-namespace
-  // only, capped at 6 (mirrors the AI-service frame cap, A4).
-  const frameKeys: string[] = (Array.isArray(body.frame_storage_keys) ? body.frame_storage_keys : [])
-    .filter((k: unknown) => isOwnUploadKey(k, user.id))
-    .slice(0, 6);
-  const frameUrls: string[] = [];
-  for (const k of frameKeys) {
-    const u = await presignGet(k);
-    if (u) frameUrls.push(u);
-  }
-
   // deno-lint-ignore no-explicit-any
   let result: any = null;
   // deno-lint-ignore no-explicit-any
@@ -270,7 +259,6 @@ Deno.serve(async (req: Request) => {
           input_type,
           text_description: text_description ?? null,
           image_url: imageUrl,
-          frame_urls: frameUrls,
           low_input_quality: body.low_input_quality ?? false,
           pet: petPayload,
           locale, // Phase 5.4 / CR #11

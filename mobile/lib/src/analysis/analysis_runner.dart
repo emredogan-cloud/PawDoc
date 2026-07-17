@@ -7,7 +7,6 @@ import '../analytics/analytics.dart';
 import '../capture/upload_service.dart';
 import '../core/functions_error.dart';
 import '../core/motion.dart';
-import '../experiments/feature_flags.dart';
 import '../models/analysis_result.dart';
 import '../monetization/maybe_show_paywall.dart';
 import '../monetization/paywall_prefs.dart';
@@ -31,7 +30,6 @@ class AnalysisRunnerScreen extends ConsumerStatefulWidget {
     this.petSpecies,
     this.textDescription,
     this.imageStorageKey,
-    this.frameStorageKeys,
     this.isPremium = false,
   });
 
@@ -43,7 +41,6 @@ class AnalysisRunnerScreen extends ConsumerStatefulWidget {
   final String? petSpecies;
   final String? textDescription;
   final String? imageStorageKey;
-  final List<String>? frameStorageKeys; // Phase 3.2 video keyframes
   final bool isPremium;
 
   @override
@@ -62,9 +59,6 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
   void initState() {
     super.initState();
     Analytics.analysisSubmitted(widget.inputType);
-    if (widget.inputType == 'video') {
-      Analytics.videoAnalysisSubmitted(widget.frameStorageKeys?.length ?? 0);
-    }
     _run();
   }
 
@@ -79,7 +73,6 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
             inputType: widget.inputType,
             textDescription: widget.textDescription,
             imageStorageKey: widget.imageStorageKey,
-            frameStorageKeys: widget.frameStorageKeys,
           );
       if (!mounted) return;
       // M4 (#23, safety-review gated): non-emergency verdicts get one 450ms
@@ -178,24 +171,13 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // M4 (#22) evaluation arm — PostHog 'pulse_pet_variant', control = OFF
-    // (pulse-only). The A/B is decided by data, not taste; flipping the flag
-    // exposes the calm pulse-pet without a release.
-    final pulsePet = ref
-                .watch(featureFlagProvider('pulse_pet_variant'))
-                .maybeWhen(data: (v) => v, orElse: () => false) &&
-            widget.petSpecies != null
-        ? widget.petSpecies
-        : null;
-
     switch (_phase) {
       case _Phase.loading:
-        return Scaffold(body: AnalysisLoadingView(pulsePetSpecies: pulsePet));
+        return const Scaffold(body: AnalysisLoadingView());
       case _Phase.resolving:
         return Scaffold(
           body: AnalysisLoadingView(
             resolveColor: _resolveColor(_outcome!.result.triageLevel),
-            pulsePetSpecies: pulsePet,
           ),
         );
       case _Phase.error:
