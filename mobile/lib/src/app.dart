@@ -14,9 +14,13 @@ class PawDocApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'PawDoc',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
+      // UX-01: PawDoc is a single always-dark visual world (13 screens hard-
+      // code PawSurface.dark). Pin themeMode so a light-mode OS can never pair
+      // light onSurface text with the dark background — that combination made
+      // safety guidance near-invisible for light-mode users.
+      theme: AppTheme.dark(),
       darkTheme: AppTheme.dark(),
-      // themeMode defaults to ThemeMode.system -> dark mode follows the OS.
+      themeMode: ThemeMode.dark,
       // Phase 5.4 — i18n: English + German (CR #11). The same locale is also
       // sent to the Edge / AI service so the safety-critical emergency-keyword
       // override matches the UI language.

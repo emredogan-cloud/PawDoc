@@ -15,7 +15,8 @@ import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
 import '../config/legal_urls.dart';
-import '../vet_finder/vet_finder_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../vet_finder/maps_links.dart';
 import 'emergency_result_screen.dart';
 
 /// Routes to the EMERGENCY screen or the standard result screen. [analysisId]
@@ -321,9 +322,11 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
           if (r.triageLevel == TriageLevel.monitor) ...[
             OutlinedButton.icon(
               key: const Key('result_find_vet'),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const VetFinderScreen()),
-              ),
+              onPressed: () {
+                Analytics.vetFinderOpened();
+                launchUrl(vetSearchMapsUri(),
+                    mode: LaunchMode.externalApplication);
+              },
               icon: const Icon(Icons.local_hospital_outlined),
               label: const Text('Find a nearby vet'),
             ),

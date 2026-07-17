@@ -1,12 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../analytics/analytics.dart';
 import '../models/analysis_result.dart';
 import '../theme/design_tokens.dart';
-import '../vet_finder/vet_finder_screen.dart';
 import '../config/legal_urls.dart';
+import '../vet_finder/maps_links.dart';
 import 'result_l10n.dart';
 
 /// EMERGENCY result: warm red, urgent copy, a vet-finder deep link, and an
@@ -30,12 +33,12 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
     Analytics.resultViewed('EMERGENCY');
   }
 
-  void _findVet() {
-    // Opens the location-aware finder; it falls back to native maps if location
-    // is denied/unavailable, so this always works in an emergency.
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const VetFinderScreen(emergency: true)),
-    );
+  Future<void> _findVet() async {
+    // OS maps deep link: the maps app handles location itself, so this needs
+    // no permission, no network to OUR servers, and works in an emergency.
+    unawaited(Analytics.vetFinderOpened());
+    await launchUrl(emergencyVetSearchMapsUri(),
+        mode: LaunchMode.externalApplication);
   }
 
   @override

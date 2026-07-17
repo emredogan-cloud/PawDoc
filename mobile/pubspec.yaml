@@ -61,10 +61,8 @@ dependencies:
   url_launcher: ^6.3.2
   # Phase 3.4 — vet finder location (permissions handled gracefully; the Places
   # API key stays server-side in the /find-vets Edge Function).
-  geolocator: ^13.0.0
   purchases_flutter: ^10.1.1
   shared_preferences: ^2.5.5
-  onesignal_flutter: ^5.5.5
   connectivity_plus: ^7.1.1
   google_fonts: ^8.1.0
   flutter_animate: ^4.5.2
@@ -110,6 +108,7 @@ flutter:
   # illustration is rendered via AppImage with a code fallback, so a missing
   # asset never breaks the build or the UI.
   assets:
+    - assets/google_fonts/
     - assets/brand/
     - assets/icon/
     - assets/motion/

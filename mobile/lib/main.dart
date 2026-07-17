@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -9,11 +10,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'src/app.dart';
 import 'src/config/env.dart';
 import 'src/core/boot_error_app.dart';
-import 'src/notifications/onesignal_service.dart';
 import 'src/theme/design_tokens.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ENG-01: brand fonts are BUNDLED (assets/google_fonts/) — never fetched
+  // over the network. First launch renders correct type offline, and no
+  // pre-consent request to fonts.gstatic.com ever fires.
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   // In release, replace Flutter's raw red error box for any in-tree build/render
   // failure with a calm placeholder — a user must never see a stack trace. Debug
@@ -73,10 +78,6 @@ Future<void> _initAndRun() async {
     }
   }
 
-  // Push notifications (Phase 2.1). The permission prompt is fired later, on
-  // onboarding Screen 4 (contextual ask).
-  OneSignalService.initialize();
-
   // RevenueCat (Phase 1.4 paywall). Optional in dev/test. The app_user_id is
   // tied to the Supabase user so /revenuecat-webhook updates the right row.
   if (Env.revenueCatPublicKey.isNotEmpty) {
@@ -101,7 +102,6 @@ Future<void> _initAndRun() async {
   if (Env.hasSupabase) {
     Supabase.instance.client.auth.onAuthStateChange.listen((state) async {
       if (state.event != AuthChangeEvent.signedOut) return;
-      await OneSignalService.logout();
       try {
         await Purchases.logOut();
       } catch (_) {}

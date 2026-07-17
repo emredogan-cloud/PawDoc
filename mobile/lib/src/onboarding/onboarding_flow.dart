@@ -9,7 +9,6 @@ import '../core/app_motion_asset.dart';
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
-import '../notifications/onesignal_service.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
 import '../pets/species_chip.dart';
@@ -17,10 +16,11 @@ import '../theme/app_assets.dart';
 import '../theme/app_theme.dart';
 import '../theme/paw_ui.dart';
 
-/// The 5-screen onboarding wizard (roadmap §3.2 / §4.5):
-/// Value Hook → Pet Setup → Trust Signal → Push Permission (UI only) → Activation.
-/// Fires `onboarding_step_completed` per step and `onboarding_completed` at the end.
-/// Push permission is UI only here — OneSignal is wired in Phase 2.1.
+/// The 4-screen onboarding wizard:
+/// Value Hook → Pet Setup → Trust Signal → Activation.
+/// Fires `onboarding_step_completed` per step and `onboarding_completed` at the
+/// end. Notification permission is asked contextually at reminder creation —
+/// never as an upfront onboarding step.
 ///
 /// NEW-UI translation (003–007): the flow now lives in the dark teal-green world
 /// — cuddle-duo hero art, mint→teal pill CTAs, value pills and dark feature
@@ -44,7 +44,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   int _page = 0;
 
   static const _names = [
-    'value_hook', 'pet_setup', 'trust_signal', 'push_permission', 'activation',
+    'value_hook', 'pet_setup', 'trust_signal', 'activation',
   ];
 
   @override
@@ -124,7 +124,6 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                 _valueHook(),
                 _petSetup(),
                 _trustSignal(),
-                _pushPermission(),
                 _activation(),
               ],
             ),
@@ -359,56 +358,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   Widget _trustPillar(IconData icon, String text) =>
       PawFeatureRow(icon: icon, title: text, trailing: const PawCheck());
 
-  // ---- Step 4 · Push Permission Priming (006) ----
-  Widget _pushPermission() => _scrollPage([
-        const Spacer(),
-        Center(
-          child: AppImage(
-            AppAssets.onbBellDuo,
-            height: 150,
-            fallback: const Icon(Icons.notifications_active_rounded,
-                size: 72, color: PawPalette.mint),
-          ),
-        ),
-        const SizedBox(height: AppSpace.s16),
-        Text('Stay ahead of health issues',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppColors.ink50, fontWeight: FontWeight.w700),
-            textAlign: TextAlign.center),
-        const SizedBox(height: AppSpace.s8),
-        Text('Get a heads-up when something about $_petName’s health needs attention.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: AppColors.ink300)),
-        const SizedBox(height: AppSpace.s20),
-        _trustPillar(Icons.notifications_active_rounded, 'Know the moment something needs you'),
-        const SizedBox(height: AppSpace.s8),
-        _trustPillar(Icons.favorite_rounded, 'Catch issues early'),
-        const SizedBox(height: AppSpace.s8),
-        _trustPillar(Icons.nightlight_round, 'Day & night protection'),
-        const Spacer(),
-        const SizedBox(height: AppSpace.s8),
-        // UI only — OneSignal permission request is wired in Phase 2.1.
-        PawPrimaryButton(
-          key: const Key('onb_enable_alerts'),
-          icon: Icons.notifications_active_rounded,
-          onPressed: () async {
-            // Contextual OneSignal permission prompt (Phase 2.1); syncs player_id.
-            await ref.read(oneSignalServiceProvider).requestPermissionAndSync();
-            await _advance();
-          },
-          child: const Text('Enable alerts'),
-        ),
-        const SizedBox(height: AppSpace.s4),
-        Center(
-          child: TextButton(
-              onPressed: _advance, child: const Text('Maybe later')),
-        ),
-      ]);
-
-  // ---- Step 5 · Activation (007) ----
+  // ---- Step 4 · Activation (007) ----
   Widget _activation() => _scrollPage([
         const Spacer(),
         Center(child: _petAvatar()),
