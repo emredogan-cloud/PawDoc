@@ -26,7 +26,7 @@ PawDoc helps you decide **whether and how urgently** to seek veterinary care by 
 
 ## 2. Eligibility
 
-You must be at least **18 years old** and able to form a binding contract to use the App. The App is intended for adults and is not directed to children (see [Children's Privacy](/children/)).
+You must be at least **13 years old** (or at least **16** where the GDPR's Article 8 age of digital consent applies without parental authorization) to use the App, and you must be able to enter these Terms under the law that applies to you — minors need a parent or guardian's permission for any purchase. The App is not directed to children under 13 (see [Children's Privacy](/children/)). **[Counsel to confirm the eligibility age per launch jurisdiction; the store age rating is set to 12+ consistently with this section.]**
 
 ## 3. Your account
 

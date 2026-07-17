@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/legal_urls.dart';
+import '../core/consent_prefs.dart';
 
 import '../auth/auth_controller.dart';
 import '../auth/supabase_providers.dart';
@@ -135,6 +137,8 @@ class AccountScreen extends ConsumerWidget {
             subtitle: 'Manage in system settings',
             onTap: openAppSettings,
           ),
+          // I2: the consent the privacy policy promises — real and revocable.
+          const _AnalyticsConsentTile(),
           const _Tile(
             icon: Icons.language_outlined,
             title: 'Language',
@@ -188,6 +192,65 @@ class AccountScreen extends ConsumerWidget {
           const SizedBox(height: AppSpace.s24),
         ],
       ),
+      ),
+    );
+  }
+}
+
+/// Live analytics-consent toggle (I2). Flipping it updates the stored consent
+/// AND the running SDK immediately (disable() stops capture without a restart;
+/// enabling takes full effect on next launch when setup() runs).
+class _AnalyticsConsentTile extends StatefulWidget {
+  const _AnalyticsConsentTile();
+
+  @override
+  State<_AnalyticsConsentTile> createState() => _AnalyticsConsentTileState();
+}
+
+class _AnalyticsConsentTileState extends State<_AnalyticsConsentTile> {
+  bool? _enabled;
+
+  @override
+  void initState() {
+    super.initState();
+    ConsentPrefs.analyticsEnabled().then((v) {
+      if (mounted) setState(() => _enabled = v);
+    });
+  }
+
+  Future<void> _set(bool v) async {
+    setState(() => _enabled = v);
+    await ConsentPrefs.setAnalyticsEnabled(v);
+    try {
+      if (v) {
+        await Posthog().enable();
+      } else {
+        await Posthog().disable();
+      }
+    } catch (_) {
+      // SDK not configured (no key / consent was off at boot) — the stored
+      // choice still governs the next launch.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s16, vertical: AppSpace.s4),
+      child: PawCard(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s12, vertical: AppSpace.s4),
+        child: SwitchListTile(
+          key: const Key('analytics_consent_toggle'),
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Usage analytics',
+              style: TextStyle(color: AppColors.ink50, fontSize: 15)),
+          subtitle: const Text('Anonymous product analytics — off by default',
+              style: TextStyle(color: AppColors.ink300, fontSize: 12)),
+          value: _enabled ?? false,
+          onChanged: _enabled == null ? null : _set,
+        ),
       ),
     );
   }

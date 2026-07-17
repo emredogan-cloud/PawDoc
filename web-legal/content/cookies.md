@@ -31,7 +31,7 @@ Depending on your choices, the app and its service providers may use identifiers
 
 - **Analytics** (PostHog) — to understand how the app is used and improve it.
 - **Crash/error diagnostics** (Sentry) — to find and fix problems.
-- **Push notifications** (OneSignal) — only if you opt in.
+- **Reminder notifications** — created and delivered on your device only; no push service is involved.
 
 You can opt out of analytics and notifications; see the [Privacy Policy](/privacy/) and your device settings.
 

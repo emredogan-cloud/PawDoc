@@ -32,7 +32,7 @@ PawDoc ("**PawDoc**," "**we**," "**us**") provides an AI-assisted pet-health tri
 - **Inputs you submit for triage** — photos, short videos, and text describing your pet's symptoms. Images are compressed and **EXIF/GPS location metadata is stripped before upload**, and uploads are automatically content-moderated and rejected or deleted if they are not appropriate pet-health content.
 - **Analyses** — the triage result (emergency, monitor, or likely normal), related guidance, and metadata such as timestamps.
 - **Subscription information** — your plan and entitlement status, provided through RevenueCat and the app stores. **We never receive or store your full card number** — payments are handled by Apple and Google.
-- **Device and usage data** — app interaction events, a push-notification token (if you opt in), language/region, and crash diagnostics.
+- **Device and usage data** — app interaction events (ONLY if you opt in to analytics), language/region, and crash diagnostics (PII-stripped). Reminders are delivered by on-device notifications — no push token is created or sent anywhere.
 - **Support communications** — messages you send us and their contents.
 
 ## 2. How we use your information and our legal bases (GDPR)
@@ -44,8 +44,9 @@ Where the EU/UK GDPR applies, we rely on the following legal bases (Art. 6):
 | Create your account; provide triage; store your pet's history | Performance of a contract (Art. 6(1)(b)) |
 | Process the photo/video/text you submit to generate guidance | Performance of a contract (Art. 6(1)(b)) |
 | Operate subscriptions and keep billing/tax records | Contract (Art. 6(1)(b)) and legal obligation (Art. 6(1)(c)) |
-| Product analytics and crash reporting | Your consent (Art. 6(1)(a)), or our legitimate interest in security/debugging where strictly necessary (Art. 6(1)(f)) |
-| Push notifications and any marketing | Your consent (Art. 6(1)(a)) — you can withdraw it at any time |
+| Product analytics | Your consent (Art. 6(1)(a)) — analytics are OFF by default and start only after you opt in (signup checkbox or the in-app toggle); withdraw any time in Account → Usage analytics |
+| Crash reporting (PII-stripped) | Our legitimate interest in keeping the app working and secure (Art. 6(1)(f)) |
+| Reminder notifications | Delivered ON-DEVICE at your request when you create a reminder — no server processing, no push provider |
 | Keep the service secure and prevent abuse | Legitimate interests (Art. 6(1)(f)) |
 
 ## 3. How PawDoc's AI guidance works
@@ -63,7 +64,6 @@ We do not sell your personal information. We share it only with service provider
 | Google (Gemini), Anthropic (Claude) | AI processing of the input you submit, to generate guidance |
 | RevenueCat | Subscription and entitlement management |
 | Apple App Store, Google Play | Payment processing and billing |
-| OneSignal | Push notifications (if you opt in) |
 | PostHog | Product analytics |
 | Sentry | Crash and error diagnostics |
 
@@ -86,7 +86,7 @@ Depending on where you live, you may have some or all of these rights:
 - **Delete** your account and associated data — available in-app and on the web (see [Account Deletion](/deletion/)).
 - **Export / portability** of data you provided.
 - **Restrict or object** to certain processing, and **withdraw consent** at any time (without affecting earlier processing).
-- **Opt out** of analytics and marketing.
+- **Opt out** of analytics at any time: Account → Usage analytics (analytics are off unless you opted in). PawDoc sends no marketing communications.
 - **Lodge a complaint** with your data protection authority.
 
 For details specific to your region, see [Your GDPR Rights](/gdpr/) (EU/UK) and [Your California Privacy Rights](/ccpa/). To exercise any right, use the in-app controls or email [privacy@pawdoc.app](mailto:privacy@pawdoc.app). We will verify your request and respond within the timeframes required by law.

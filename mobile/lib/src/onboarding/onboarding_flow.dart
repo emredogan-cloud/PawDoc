@@ -16,8 +16,8 @@ import '../theme/app_assets.dart';
 import '../theme/app_theme.dart';
 import '../theme/paw_ui.dart';
 
-/// The 4-screen onboarding wizard:
-/// Value Hook → Pet Setup → Trust Signal → Activation.
+/// The 3-screen onboarding wizard (J2):
+/// Value Hook (with the honesty pillars) → Pet Setup → Activation.
 /// Fires `onboarding_step_completed` per step and `onboarding_completed` at the
 /// end. Notification permission is asked contextually at reminder creation —
 /// never as an upfront onboarding step.
@@ -44,7 +44,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   int _page = 0;
 
   static const _names = [
-    'value_hook', 'pet_setup', 'trust_signal', 'activation',
+    'value_hook', 'pet_setup', 'activation',
   ];
 
   @override
@@ -123,7 +123,6 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
               children: [
                 _valueHook(),
                 _petSetup(),
-                _trustSignal(),
                 _activation(),
               ],
             ),
@@ -173,7 +172,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         _onbHero(),
         const SizedBox(height: AppSpace.s20),
         _fadeUp(
-          Text('Never wonder if your pet needs the vet again.',
+          Text('A calm, clear read on your pet\'s symptoms — in seconds.',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: AppColors.ink50, fontWeight: FontWeight.w700),
               textAlign: TextAlign.center),
@@ -184,9 +183,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: const [
-              _ValuePill(icon: Icons.bolt_rounded, label: 'AI triage\nin seconds'),
+              _ValuePill(icon: Icons.bolt_rounded, label: 'Guidance\nin seconds'),
               _ValuePill(icon: Icons.nightlight_round, label: 'Always here,\nday or night'),
-              _ValuePill(icon: Icons.savings_outlined, label: 'Less than\n\$0.33/day'),
+              _ValuePill(icon: Icons.emergency_rounded, label: 'Emergency help,\nalways free'),
             ],
           ),
           1,
@@ -195,20 +194,13 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         _fadeUp(
           PawCard(
             padding: const EdgeInsets.all(AppSpace.s12),
-            child: Row(
+            child: Column(
               children: [
-                const Icon(Icons.verified_user_rounded,
-                    size: 22, color: PawPalette.mint),
-                const SizedBox(width: AppSpace.s12),
-                Expanded(
-                  child: Text(
-                    'Trusted care for your furry family — safe, secure & vet-informed.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: AppColors.ink300),
-                  ),
-                ),
+                _trustPillar(Icons.health_and_safety_rounded,
+                    'Errs on the safe side — flags emergencies first'),
+                const SizedBox(height: AppSpace.s8),
+                _trustPillar(Icons.medical_services_rounded,
+                    'We inform; your vet decides'),
               ],
             ),
           ),
@@ -315,46 +307,6 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
 
   // ---- Step 3 · Trust Signal (005) — honesty rebuild from Phase B ----
   // Truthful, defensible trust pillars (no fabricated ratings/expert claims).
-  Widget _trustSignal() => _scrollPage([
-        const Spacer(),
-        Center(child: _shieldHero()),
-        const SizedBox(height: AppSpace.s16),
-        Text('Built to keep pets safe',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppColors.ink50, fontWeight: FontWeight.w700),
-            textAlign: TextAlign.center),
-        const SizedBox(height: AppSpace.s20),
-        _trustPillar(Icons.verified_user_rounded, 'Vet-informed triage protocols'),
-        const SizedBox(height: AppSpace.s8),
-        _trustPillar(Icons.health_and_safety_rounded,
-            'Errs on the safe side — flags emergencies first'),
-        const SizedBox(height: AppSpace.s8),
-        _trustPillar(Icons.lock_rounded, 'Your photos are private & encrypted'),
-        const SizedBox(height: AppSpace.s8),
-        _trustPillar(Icons.medical_services_rounded, 'We inform; your vet decides'),
-        const Spacer(),
-        const SizedBox(height: AppSpace.s8),
-        PawPrimaryButton(
-            icon: Icons.pets_rounded,
-            onPressed: _advance,
-            child: const Text('Continue')),
-      ]);
-
-  Widget _shieldHero() {
-    final shield = AppImage(
-      AppAssets.onbSafetyDuo,
-      height: 150,
-      fallback: const Icon(Icons.verified_user_rounded,
-          size: 80, color: PawPalette.mint),
-    );
-    if (reduceMotion(context)) return shield;
-    // Gentle draw-in (scale + fade) — calm, no looping shimmer on the hero art.
-    return shield
-        .animate()
-        .scaleXY(begin: 0.9, end: 1.0, duration: AppMotion.hero, curve: AppMotion.emphasized)
-        .fadeIn(duration: AppMotion.hero);
-  }
-
   Widget _trustPillar(IconData icon, String text) =>
       PawFeatureRow(icon: icon, title: text, trailing: const PawCheck());
 

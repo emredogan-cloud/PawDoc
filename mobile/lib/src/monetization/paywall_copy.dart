@@ -3,7 +3,7 @@
 /// values (or repoint them at remote config).
 ///
 /// HONESTY REBUILD (Phase B): pre-launch, PawDoc has NO real customers, so this
-/// card must NOT show a fabricated testimonial ("Sarah M.") or an
+/// card must NOT show a fabricated persona testimonial or an
 /// unsubstantiated "Veterinary Advisory team" claim — both are App Store / FTC
 /// deception risks, the same class of defect as the onboarding "★ 4.8" line.
 /// It now shows truthful value/trust copy instead. Replace [valueLine] with a

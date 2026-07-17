@@ -16,8 +16,8 @@ DO NOT use "diagnose / diagnosis / treat / cure" in visible copy — use
 | Short description | (see below) | 80 | 72 ✓ |
 | Full description | (see below) | 4000 | ✓ |
 | Package name | `app.pawdoc` | — | — |
-| Category | Medical | — | — |
-| Content rating | Everyone (via IARC questionnaire) | — | — |
+| Category | Lifestyle *(evolution I5)* | — | — |
+| Content rating | 12+ / Teen-equivalent via IARC *(consistent with Terms 13+; evolution I6)* | — | — |
 
 > **No keyword field on Play.** Unlike Apple, Play has no hidden keyword field — it
 > ranks on the title + descriptions, which are user-visible. So the SEO term Apple
@@ -33,40 +33,40 @@ PawDoc: AI Pet Health
 ## Short description (visible, 80 max)
 
 <!-- VISIBLE-COPY:START -->
-Know when to call the vet. AI triage for your pet's symptoms in seconds.
+Your pet's health record, organized — symptom guidance in seconds, an emergency button that works offline, and a vet-visit summary in your hand.
 <!-- VISIBLE-COPY:END -->
 (72 / 80 characters.)
 
 ## Full description (visible, 4000 max)
 
 <!-- VISIBLE-COPY:START -->
-Know when to call the vet — in seconds.
+The health record your vet actually wants to see.
 
-When your dog won't eat or your cat is suddenly acting strange, the hardest question is always the same: is this an emergency, or can it wait? PawDoc helps you decide. Add a photo and a few details about your pet, and our AI gives you fast, clear triage guidance — so you can stop the late-night worry and act with confidence.
+When your dog won't eat or your cat is suddenly acting strange, PawDoc helps you notice what matters, decide how soon to involve your vet, and remember everything when you get there. Describe the symptom or add a photo, and you'll get calm, plain-language guidance: what vets look for with this kind of sign, what to watch for at home, and how soon to call — never a verdict, never a diagnosis.
 
-PawDoc is an information and triage tool, not a replacement for your veterinarian. Every result is checked against built-in safety rules and always shows a clear disclaimer. If something looks urgent, PawDoc tells you to contact a vet right away — and that emergency guidance is never hidden behind a paywall.
+EMERGENCY HELP, ALWAYS FREE
+A red button on the home screen works entirely offline: nearby emergency vets, tap-to-dial poison control, and step-by-step first-aid cards for choking, bleeding, seizures, bloat, and overheating. If what you type sounds urgent, PawDoc takes you straight there — before anything else.
 
 HOW IT WORKS
-• Add a photo or describe the symptom you're seeing
-• Tell us about your pet — species, age, and history
-• Get a clear result in seconds — EMERGENCY, MONITOR, or LIKELY NORMAL — with simple guidance on what to do next
+• Describe what you're seeing (free, unlimited) or add a photo
+• Get clear next steps: get help now · call today · book a visit · watch and re-check
+• Everything is saved to your pet's timeline automatically
 
-WHY PET PARENTS TRUST PAWDOC
-• Safety first: possible emergencies are flagged before anything else
-• Honest guidance — when we're not confident, we say so instead of guessing
-• Emergency guidance is always free — never hidden behind a paywall
+THE RECORD DOES THE REMEMBERING
+• Weight trends, vaccinations, medications, and health events in one timeline
+• One-tap re-check reminders, delivered by your phone — no account with a push service
+• The Vet Visit Prep Pack: your pet's story, organized for the exam room
+
+HONEST BY DESIGN
+• PawDoc never tells you your pet is "fine" — it tells you what to watch for and when to act
+• When there isn't enough information, it says so instead of guessing
+• Emergency help is free forever and never behind a paywall
 • Private by design — delete your account and data anytime, right in the app
 
-WHAT YOU CAN DO
-• Triage symptoms for dogs, cats, rabbits, birds, and more
-• Keep all your pets in one place
-• Look back over your past checks
-• Set reminders to monitor an ongoing concern
-
 IMPORTANT
-PawDoc provides general information and triage guidance to help you decide whether, and how urgently, to seek veterinary care. It does not provide veterinary medical advice and is not a substitute for an in-person examination by a licensed veterinarian. In an emergency, contact your veterinarian or a local emergency animal hospital immediately.
+PawDoc provides general information and record-keeping to help you decide whether, and how urgently, to seek veterinary care. It does not diagnose, does not provide veterinary medical advice, and is not a substitute for an in-person examination by a licensed veterinarian. In an emergency, contact your veterinarian or a local emergency animal hospital immediately.
 
-Subscription: your first few checks are free. An optional subscription unlocks unlimited triage; the price and terms are always shown before you buy.
+Subscription: symptom checks by text are free with no limit. An optional subscription keeps the full record — unlimited photo logs, full history, reminders, and the Vet Visit Prep Pack; price and terms are shown before you purchase.
 <!-- VISIBLE-COPY:END -->
 
 ## Graphics checklist (Play requirements)
@@ -75,7 +75,7 @@ Subscription: your first few checks are free. An optional subscription unlocks u
 - **Feature graphic:** 1024×500 (required to be featured).
 - **Phone screenshots (2–8):** same ordered story as iOS —
   <!-- VISIBLE-COPY:START -->
-  (1) "Know exactly what your pet needs." + result · (2) "How it works": camera → AI → result · (3) "No more 2am anxiety spirals." + LIKELY NORMAL result · (4) "Emergency guidance, always free." (safety promise) · (5) "Everything in one place": multi-pet, history, reminders.
+  (1) "Notice. Decide. Remember." + result · (2) "How it works": camera → AI → result · (3) "It never says fine - it says what to watch for." + WATCH AND RE-CHECK result · (4) "Emergency guidance, always free." (safety promise) · (5) "Everything in one place": multi-pet, history, reminders.
   <!-- VISIBLE-COPY:END -->
 - 7-inch & 10-inch tablet screenshots optional but recommended.
 

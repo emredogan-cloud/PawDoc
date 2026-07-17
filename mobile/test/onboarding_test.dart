@@ -10,7 +10,7 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: OnboardingFlow())),
     );
-    expect(find.text('Never wonder if your pet needs the vet again.'), findsOneWidget);
+    expect(find.text('A calm, clear read on your pet\'s symptoms — in seconds.'), findsOneWidget);
     expect(find.byKey(const Key('onb_get_started')), findsOneWidget);
   });
 
@@ -33,13 +33,15 @@ void main() {
       const ProviderScope(child: MaterialApp(home: OnboardingFlow())),
     );
     // Header on step 1: progress label + a reachable Skip.
-    expect(progress('Step 1 of 4'), findsOneWidget);
+    expect(progress('Step 1 of 3'), findsOneWidget);
     expect(find.byKey(const Key('onb_skip')), findsOneWidget);
 
-    // Advancing to pet setup (step 1 -> 2 is provider-free).
+    // Advancing to pet setup (step 1 -> 2 is provider-free). The value hook
+    // grew the honesty pillars, so make sure the CTA is on-screen first.
+    await tester.ensureVisible(find.byKey(const Key('onb_get_started')));
     await tester.tap(find.byKey(const Key('onb_get_started')));
     await tester.pumpAndSettle();
-    expect(progress('Step 2 of 4'), findsOneWidget);
+    expect(progress('Step 2 of 3'), findsOneWidget);
 
     // Custom species chips render with plain-text labels (a11y: emoji gap fixed).
     expect(find.text('Dog'), findsOneWidget);
