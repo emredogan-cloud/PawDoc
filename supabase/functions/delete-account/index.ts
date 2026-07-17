@@ -2,7 +2,7 @@
 // Deletes the CALLING user's account. The user is taken from the verified JWT
 // (never a body param), so a caller can only delete themselves. Deleting the
 // auth user cascades to public.users and onward to pets/analyses/reminders/
-// referrals via the ON DELETE CASCADE FKs from Phase 1.1 (CR #20).
+// children via the ON DELETE CASCADE FKs from Phase 1.1 (CR #20).
 //
 // GAP-A6: the DB cascade alone left the user's R2 media (uploads/<uid>/*) and
 // their third-party subjects (RevenueCat / OneSignal / PostHog) behind — a real

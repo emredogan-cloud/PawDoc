@@ -2,7 +2,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 /// Central registry of PawDoc's public legal pages (the legal portal hosted on
 /// AWS S3 + CloudFront). One source of truth so every entry point — sign-in,
-/// settings, paywall, referral, delete-account, and the result/disclaimer
+/// settings, paywall, delete-account, and the result/disclaimer
 /// screens — links to the same canonical documents.
 ///
 /// The base URL is overridable at build time so the founder can switch to the
@@ -29,7 +29,6 @@ class LegalUrls {
   static String get aiTransparency => _u('ai-transparency');
   static String get acceptableUse => _u('acceptable-use');
   static String get subscriptions => _u('subscriptions');
-  static String get referrals => _u('referrals');
   static String get deletion => _u('deletion');
   static String get dataRetention => _u('data-retention');
   static String get cookies => _u('cookies');

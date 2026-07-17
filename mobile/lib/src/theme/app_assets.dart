@@ -24,8 +24,6 @@ class AppAssets {
   static const String paywallPeace =
       '$_ill/monetization/paywall_peace_of_mind_v1.png';
   static const String familyCircle = '$_ill/growth/family_care_circle_v1.png';
-  static const String referralGift = '$_ill/growth/referral_gift_v1.png';
-  static const String referralGiftOpen = '$_ill/growth/referral_gift_open_v1.png';
   static const String sysError = '$_ill/system/system_error_calm_v1.png';
   static const String sysOffline = '$_ill/system/system_offline_v1.png';
 
@@ -80,9 +78,7 @@ class AppMotionAssets {
   static const String signinHeartbeat = '$_m/signin_heartbeat_v1.json'; // A3, one-shot
   static const String paywallPeaceLoop = '$_m/paywall_peace_loop_v1.json'; // A4
   static const String familyCircleLoop = '$_m/family_circle_loop_v1.json'; // A5
-  static const String referralGiftIdle = '$_m/referral_gift_idle_v1.json'; // A6, settle→loop
   static const String historyEmptyLoop = '$_m/history_empty_loop_v1.json'; // matrix #8
-  static const String referralGiftOpen = '$_m/referral_gift_open_v1.json'; // A7, one-shot (M3)
   static const String premiumWelcome = '$_m/premium_welcome_v1.json'; // A8, one-shot (M3)
   static const String errorNapLoop = '$_m/error_nap_loop_v1.json'; // A9 (M4)
 
@@ -98,9 +94,7 @@ class AppMotionAssets {
     signinHeartbeat: AppAssets.logoMark,
     paywallPeaceLoop: AppAssets.paywallPeace,
     familyCircleLoop: AppAssets.familyCircle,
-    referralGiftIdle: AppAssets.referralGift,
     historyEmptyLoop: AppAssets.emptyHistory,
-    referralGiftOpen: AppAssets.referralGiftOpen,
     premiumWelcome: AppAssets.paywallPeace,
     errorNapLoop: AppAssets.sysError,
   };

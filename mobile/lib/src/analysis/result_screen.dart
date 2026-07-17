@@ -194,7 +194,7 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
     final r = widget.result;
     final text = 'PawDoc check: ${_triageLabel(r.triageLevel)}.\n'
         '${r.primaryConcern}\n\n'
-        'Shared via PawDoc 🐾 — pawdoc.app';
+        'Shared via PawDoc 🐾';
     await SharePlus.instance.share(ShareParams(text: text));
   }
 

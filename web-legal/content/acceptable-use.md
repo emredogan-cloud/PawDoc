@@ -42,7 +42,7 @@ You agree **not** to:
 - use bots or automated means to access the service except as expressly permitted;
 - resell, sublicense, or commercially exploit the service or its output without our permission;
 - impersonate others or misrepresent your identity; or
-- abuse referrals or promotions (see [Referral Program Terms](/referrals/)).
+- abuse promotions or credits.
 
 ## 4. Human safety
 

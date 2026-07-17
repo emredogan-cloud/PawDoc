@@ -33,7 +33,7 @@ const SITE = {
 const CATEGORIES = [
   { id: "essentials", label: "Essentials", blurb: "Start here." },
   { id: "safety", label: "Safety & AI", blurb: "How PawDoc helps — and its limits." },
-  { id: "billing", label: "Billing & Rewards", blurb: "Subscriptions and referrals." },
+  { id: "billing", label: "Billing", blurb: "Subscriptions." },
   { id: "data", label: "Your Data & Rights", blurb: "Privacy controls and regional rights." },
 ];
 

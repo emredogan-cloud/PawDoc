@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// path here so that on successful sign-in the router can `pop()` it and
 /// route directly to the invite acceptance screen without losing the token.
 ///
-/// Same shape / spirit as [ReferralPrefs] from Phase 3.3 P1.
+/// Parks a deep-link across the sign-in detour.
 class PendingInvitePrefs {
   static const _key = 'pending_family_invite_path';
 

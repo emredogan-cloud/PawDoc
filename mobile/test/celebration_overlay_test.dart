@@ -16,8 +16,8 @@ Widget _host({required bool reduceMotion}) => MaterialApp(
                   key: const Key('fire'),
                   onPressed: () => showCelebration(
                     inner,
-                    motionAsset: AppMotionAssets.referralGiftOpen,
-                    fallbackAsset: AppAssets.referralGiftOpen,
+                    motionAsset: AppMotionAssets.premiumWelcome,
+                    fallbackAsset: AppAssets.premiumGiftOpen,
                     message: 'Reward unlocked',
                   ),
                   child: const Text('go'),

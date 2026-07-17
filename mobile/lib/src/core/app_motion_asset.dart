@@ -18,7 +18,7 @@ import 'motion.dart';
 ///
 /// `oneShot` plays once and holds the final frame (sign-in heartbeat).
 /// `loopFromMarker` plays the intro once, then cycles from the named marker to
-/// the end (referral gift "settle" → idle loop).
+/// the end (settle → idle loop).
 class AppMotionAsset extends StatefulWidget {
   const AppMotionAsset(
     this.motionAsset, {

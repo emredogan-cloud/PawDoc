@@ -26,7 +26,6 @@ import '../pets/active_pet.dart';
 import '../pets/add_pet_flow.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
-import '../referral/referral_screen.dart';
 import '../text_input/symptom_text_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
@@ -115,13 +114,6 @@ class HomeScreen extends ConsumerWidget {
           orElse: () => const Text('PawDoc'),
         ),
         actions: [
-          IconButton(
-            tooltip: 'Refer a friend',
-            icon: const Icon(Icons.card_giftcard),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ReferralScreen()),
-            ),
-          ),
           // Account consolidates family / sign-out / delete (roadmap §3.10.2);
           // sign-out now lives there behind a confirm, so it can't be a one-tap
           // AppBar mis-hit. The pet switcher stays in the AppBar title.

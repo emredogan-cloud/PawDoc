@@ -9,14 +9,13 @@ import '../auth/auth_controller.dart';
 import '../auth/supabase_providers.dart';
 import '../family/family_settings_screen.dart';
 import '../monetization/paywall_screen.dart';
-import '../referral/referral_screen.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
 import 'delete_account_screen.dart';
 import 'user_profile.dart';
 
 /// Consolidated account home (roadmap §3.10.2): profile, subscription, family,
-/// referral, notifications, language, legal, **Logout (moved here, with a
+/// notifications, language, legal, **Logout (moved here, with a
 /// confirm)**, and a danger-zone Delete. Replaces the scattered AppBar/overflow
 /// actions. No auth/subscription logic changes — navigation + consolidation only.
 class AccountScreen extends ConsumerWidget {
@@ -125,13 +124,6 @@ class AccountScreen extends ConsumerWidget {
             title: 'Family sharing',
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const FamilySettingsScreen()),
-            ),
-          ),
-          _Tile(
-            icon: Icons.card_giftcard_outlined,
-            title: 'Refer a friend',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ReferralScreen()),
             ),
           ),
           _Tile(

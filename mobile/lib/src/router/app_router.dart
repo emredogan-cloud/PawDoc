@@ -16,7 +16,6 @@ import '../family/pending_invite_prefs.dart';
 import '../health/history_timeline_screen.dart';
 import '../onboarding/onboarding_flow.dart';
 import '../pets/pets_list_screen.dart';
-import '../referral/referral_prefs.dart';
 import '../text_input/symptom_text_screen.dart';
 import 'app_page_transitions.dart';
 
@@ -68,7 +67,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final atSignIn = loc == '/sign-in';
       if (!loggedIn) {
         // Preserve a /invite/:token deep link across the sign-in detour
-        // (same shape as the Phase 3.3 referral capture). Token is restored
+        // Token is restored
         // post-sign-in on the next pass through this redirect.
         if (loc.startsWith('/invite/')) {
           await PendingInvitePrefs.capture(loc);
@@ -144,16 +143,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => AcceptFamilyInviteScreen(
           token: state.pathParameters['token'] ?? '',
         ),
-      ),
-      // Referral deep link (https://pawdoc.app/r/CODE or pawdoc://r/CODE): capture
-      // the code, then fall through to the normal auth-gated flow.
-      GoRoute(
-        path: '/r/:code',
-        redirect: (context, state) async {
-          final code = state.pathParameters['code'];
-          if (code != null && code.isNotEmpty) await ReferralPrefs.capture(code);
-          return '/';
-        },
       ),
     ],
   );

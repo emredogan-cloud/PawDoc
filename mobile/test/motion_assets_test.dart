@@ -23,16 +23,6 @@ void main() {
     });
   }
 
-  test('referral gift carries the settle + loop markers (A6)', () async {
-    final composition = await LottieComposition.fromBytes(
-        File(AppMotionAssets.referralGiftIdle).readAsBytesSync());
-    expect(composition.getMarker('settle'), isNotNull);
-    expect(composition.getMarker('loop'), isNotNull);
-    final loop = composition.getMarker('loop')!;
-    expect(loop.startFrame, greaterThan(composition.startFrame),
-        reason: 'the settle intro must occupy time before the loop point');
-  });
-
   test('sign-in heartbeat is a true one-shot length (~1.2s, never a long loop)',
       () async {
     final composition = await LottieComposition.fromBytes(

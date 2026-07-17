@@ -44,12 +44,6 @@ class Analytics {
   static Future<void> videoAnalysisSubmitted(int frameCount) =>
       capture('video_analysis_submitted', {'frame_count': frameCount});
 
-  // Phase 3.3 referral.
-  static Future<void> referralCodeSubmitted() => capture('referral_code_submitted');
-  static Future<void> referralSuccess() => capture('referral_success');
-  static Future<void> referralFraudPrevented(String reason) =>
-      capture('referral_fraud_prevented', {'reason': reason});
-
   // Phase 3.3 Part 2 — engagement.
   static Future<void> reminderSet(String reminderType) =>
       capture('reminder_set', {'reminder_type': reminderType});
