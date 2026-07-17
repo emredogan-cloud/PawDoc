@@ -156,9 +156,18 @@ Items an agent cannot execute (keystore, attorney, store consoles, DNS, live dep
 - Branch `feat/final-evolution` created at `63a316b`.
 - Baseline validation: **all green** (numbers above) — recorded as the regression floor.
 - CI workflows read; every later push must keep 6 jobs green including APK+AAB build.
-- `auth-webhook` deleted (BE-03).
+- `auth-webhook` deleted (BE-03); `verify-phase-1.1.sh` inverted to fail if it reappears.
 
-⏳ *Phases 1–10 appended as completed.*
+### ✅ Phase 1 — Subtraction (commits `6d48f3b`…)
+**Removed end-to-end, DB included:** affiliates (emergency-screen telehealth + insurance — the R3 reputational risk), referral (the RLS-01 CRITICAL dies with its FKs), family sharing (4 tables, RLS reverted to owner-only per-op policies), AI journals + the OpenAI vendor, b2b_lite/sitter + `client_name`, PDF credit add-on (premium-included now), the 2-pet cap, video capture (client + Edge + AI service), A/B experiment machinery (kill-switch survives), re-engagement push + both crons, vet finder → OS maps deep link (location permissions deleted from both platforms), OneSignal → deleted (local notifications land in Phase 4), semantic cache + `/embed` + `analyses.embedding`, `training_export.py` (unscrubbed PII exporter).
+
+**Added:** dark-only `themeMode` (UX-01 dead); 7 bundled TTFs + `allowRuntimeFetching=false` + gate test (ENG-01/PERF-03 dead); consolidated drop migration `20260717120000_evolution_subtraction.sql`; **`test-rls.sh` now applies EVERY migration** (RLS-02/INF-04 pulled forward — the curated-subset false-confidence is gone) and runs as a new required CI job; paywall value stack reduced to only true claims (R10); one-plan collapse server+client (`PREMIUM_STATUSES = {premium, trial}`).
+
+**Audit findings eliminated by this phase alone:** RLS-01 (CRITICAL) · PRD-01, UX-01, BE-01\* (HIGH; \*cost path shrinks now, meter lands Phase 6) · PRD-04, PRD-05, SUB-03, PLAY-03, QA-03, ENG-01, PERF-03, RLS-02, INF-04, REC-03, UX-04 + Data Safety scope (PLAY-02) materially reduced.
+
+**Validation at phase close:** `flutter analyze` 0 · **187** flutter tests · **64** node tests · **150** pytest · ruff clean · shellcheck all-green · disclaimers verifier PASS · **full-migration RLS + deletion-cascade suite PASS in Docker** (referrer/referee deletion can no longer 500 — the FKs don't exist).
+
+⏳ *Phases 2–10 appended as completed.*
 
 ---
 
@@ -167,6 +176,7 @@ Items an agent cannot execute (keystore, attorney, store consoles, DNS, live dep
 | Checkpoint | flutter analyze | flutter test | ruff | pytest | node | Notes |
 |---|---|---|---|---|---|---|
 | Baseline (pre-change) | 0 issues | 217/217 | clean | 186/186 | 103/103 | debug tree, phase start |
+| Phase 1 close | 0 issues | 187/187 | clean | 150/150 | 64/64 | counts drop with deleted features' tests; + full-migration RLS suite PASS (Docker) |
 
 ⏳ *Rows appended per phase.*
 

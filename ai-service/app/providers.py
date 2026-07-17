@@ -23,44 +23,29 @@ class AIProvider(Protocol):
         system_prompt: str,
         user_prompt: str,
         image_url: str | None = None,
-        frame_urls: list[str] | None = None,
         pet_context_block: str | None = None,
     ) -> dict:
         ...
 
 
 class GeminiProvider:
-    """Tier 2 — Gemini 2.0 Flash with JSON output enforcement. Video (Phase 3.2)
-    routes here and uses the pinned VIDEO_MODEL (CR #17)."""
+    """Tier 2 — Gemini 2.0 Flash with JSON output enforcement."""
 
     name = "gemini"
     tier = 2
 
-    def __init__(
-        self,
-        api_key: str,
-        model: str = config.TIER2_MODEL,
-        video_model: str = config.VIDEO_MODEL,
-    ) -> None:
+    def __init__(self, api_key: str, model: str = config.TIER2_MODEL) -> None:
         self._api_key = api_key
         self._model = model
-        self._video_model = video_model
-
-    def select_model(self, frame_urls: list[str] | None) -> str:
-        """Video keyframes -> the explicitly pinned video model; otherwise the
-        standard Tier-2 model. Pinning prevents version drift (CR #17). Pure, so
-        the routing is unit-tested without invoking the SDK."""
-        return self._video_model if frame_urls else self._model
 
     def analyze(
         self,
         system_prompt: str,
         user_prompt: str,
         image_url: str | None = None,
-        frame_urls: list[str] | None = None,
         pet_context_block: str | None = None,
     ) -> dict:
-        model = self.select_model(frame_urls)
+        model = self._model
         # Gemini has no equivalent of Anthropic's ephemeral prompt cache, so we
         # concatenate the static + per-pet + per-check parts into one stream.
         # Static parts still go first so they hit the model's implicit KV cache
@@ -76,11 +61,11 @@ class GeminiProvider:
 
             from .media import gather_media  # lazy (avoids import cycle)
 
-            # GAP-A1: attach REAL pixels — up to 6 video frames or one image —
-            # as multimodal parts, not a text claim that an image exists.
+            # GAP-A1: attach REAL pixels (the image) as a multimodal part,
+            # not a text claim that an image exists.
             parts = [
                 types.Part.from_bytes(data=data, mime_type=mime)
-                for data, mime in gather_media(image_url, frame_urls)
+                for data, mime in gather_media(image_url)
             ]
             contents = [*parts, text] if parts else text
 
@@ -145,7 +130,6 @@ class ClaudeProvider:
         system_prompt: str,
         user_prompt: str,
         image_url: str | None = None,
-        frame_urls: list[str] | None = None,
         pet_context_block: str | None = None,
     ) -> dict:
         try:
@@ -155,10 +139,9 @@ class ClaudeProvider:
 
             from .media import gather_media  # lazy (avoids import cycle)
 
-            # GAP-A1: attach REAL pixels as image content blocks before the text
-            # (up to 6 video frames or one image); text-only requests keep the
-            # plain-string content exactly as before.
-            media = gather_media(image_url, frame_urls)
+            # GAP-A1: attach REAL pixels as an image content block before the
+            # text; text-only requests keep the plain-string content as before.
+            media = gather_media(image_url)
             if media:
                 content: list | str = [
                     {

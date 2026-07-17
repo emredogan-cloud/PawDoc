@@ -130,7 +130,6 @@ class AnalysisPipeline:
                     SYSTEM_PROMPT_V1,
                     user_prompt,
                     request.image_url,
-                    request.frame_urls,
                     pet_context_block=pet_context,
                 )
                 return parse_analysis_result(raw)
@@ -176,12 +175,11 @@ class AnalysisPipeline:
                 emergency_override_result(matched), 0, "override", override=True, start=start
             )
 
-        # CR #8 + Phase C (RF-7): moderate the still image AND every video
-        # keyframe BEFORE any analysis; ANY unsafe item -> refuse (the Edge
-        # Function deletes the stored R2 objects on a moderation reject). is_safe
-        # fails closed (errors/blocks -> unsafe), so a moderation outage rejects too.
-        media_urls = [u for u in [request.image_url, *request.frame_urls] if u]
-        if media_urls and not all(self.moderator.is_safe(u) for u in media_urls):
+        # CR #8 + Phase C (RF-7): moderate the image BEFORE any analysis; an
+        # unsafe item -> refuse (the Edge Function deletes the stored R2 object
+        # on a moderation reject). is_safe fails closed (errors/blocks ->
+        # unsafe), so a moderation outage rejects too.
+        if request.image_url and not self.moderator.is_safe(request.image_url):
             log.warning("media rejected by content moderation")
             rejected = AnalysisResult(
                 triage_level=TriageLevel.MONITOR,

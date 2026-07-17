@@ -62,14 +62,6 @@ def test_text_at_cap_is_accepted():
     assert r.text_description is not None
 
 
-def test_more_than_six_frames_rejected():
-    with pytest.raises(ValidationError):
-        AnalyzeRequest(
-            input_type="video",
-            frame_urls=[f"https://r2/{i}" for i in range(7)],
-            pet=PetContext(species="dog"),
-        )
-
 
 # ---- provider timeouts / no retry (GAP-A4) ----
 def test_claude_client_constructed_with_timeout_and_no_retries(monkeypatch):

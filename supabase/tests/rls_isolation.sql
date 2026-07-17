@@ -4,21 +4,28 @@
 -- nor WRITE user B's rows, across pets / analyses / health_events.
 -- Any violation RAISEs, so psql (ON_ERROR_STOP) exits non-zero.
 
--- Privileges (RLS still governs which ROWS are visible/insertable).
+-- Privileges (RLS still governs which ROWS are visible/insertable). Table DML
+-- comes from the shim's default privileges (mirroring Supabase's baseline);
+-- re-granting "on all tables" here would also re-open views the migrations
+-- deliberately REVOKEd (the accuracy-views lockdown), so DON'T.
 grant usage on schema public, auth, extensions to authenticated;
 grant execute on function auth.uid() to authenticated;
-grant select, insert, update, delete on all tables in schema public to authenticated;
 
--- Fixtures (seeded as the table owner, so RLS is bypassed here).
+-- Fixtures (seeded as the table owner, so RLS is bypassed here). The auth
+-- provisioning trigger (GAP-D3) auto-creates public.users on the auth insert,
+-- so the explicit public.users seed is idempotent under the FULL migration set.
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'a@test'),
-  ('22222222-2222-2222-2222-222222222222', 'b@test');
+  ('22222222-2222-2222-2222-222222222222', 'b@test')
+on conflict (id) do nothing;
 insert into public.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'a@test'),
-  ('22222222-2222-2222-2222-222222222222', 'b@test');
+  ('22222222-2222-2222-2222-222222222222', 'b@test')
+on conflict (id) do nothing;
 insert into public.pets (id, user_id, name, species) values
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 'Rex', 'dog'),
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '22222222-2222-2222-2222-222222222222', 'Milo', 'cat');
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '22222222-2222-2222-2222-222222222222', 'Milo', 'cat')
+on conflict (id) do nothing;
 insert into public.analyses (id, user_id, pet_id, input_type) values
   ('a1a1a1a1-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'text'),
   ('b1b1b1b1-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '22222222-2222-2222-2222-222222222222', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'text');

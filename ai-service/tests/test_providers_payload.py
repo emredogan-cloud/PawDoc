@@ -109,13 +109,6 @@ def test_claude_photo_attaches_one_image(fake_media, fake_anthropic):
     assert content[-1]["type"] == "text", "the prompt text must follow the image"
 
 
-def test_claude_video_attaches_frames_capped(fake_media, fake_anthropic):
-    frames = [f"{_R2}/f{i}.jpg" for i in range(9)]  # 9 > cap of 6
-    ClaudeProvider(api_key="x").analyze("sys", "user", frame_urls=frames)
-    content = CAPTURED["claude"]["messages"][0]["content"]
-    images = [b for b in content if b.get("type") == "image"]
-    assert len(images) == 6, "video frames must be capped at 6"
-
 
 def test_claude_text_only_sends_no_image(fake_anthropic):
     ClaudeProvider(api_key="x").analyze("sys", "just text, no media")

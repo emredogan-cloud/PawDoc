@@ -7,11 +7,14 @@
 --      `service_role` retains SELECT.
 
 insert into auth.users (id, email) values
-  ('aa000000-0000-0000-0000-000000000001', 'a@test');
+  ('aa000000-0000-0000-0000-000000000001', 'accuracy@test')
+on conflict (id) do nothing;
 insert into public.users (id, email) values
-  ('aa000000-0000-0000-0000-000000000001', 'a@test');
+  ('aa000000-0000-0000-0000-000000000001', 'accuracy@test')
+on conflict (id) do nothing;
 insert into public.pets (id, user_id, name, species) values
-  ('aa000000-0000-0000-0000-0000000000a1', 'aa000000-0000-0000-0000-000000000001', 'Rex', 'dog');
+  ('aa000000-0000-0000-0000-0000000000a1', 'aa000000-0000-0000-0000-000000000001', 'Rex', 'dog')
+on conflict (id) do nothing;
 
 -- 1. CHECK constraint rejects unknown outcome values.
 do $$

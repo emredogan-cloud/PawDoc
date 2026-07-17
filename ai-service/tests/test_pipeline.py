@@ -229,36 +229,3 @@ class PerUrlModerator:
         return image_url not in self.unsafe
 
 
-def _video_req(frame_urls):
-    return AnalyzeRequest(
-        input_type="video",
-        frame_urls=frame_urls,
-        pet=PetContext(species="dog", age_years=3.0),
-    )
-
-
-def test_phase_c_unsafe_video_keyframe_is_rejected():
-    # RF-7: a single unsafe keyframe must reject the whole video (frames were
-    # previously NOT moderated). No analysis runs.
-    t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
-    t3 = FakeProvider("claude", 3, res("NORMAL", 0.9))
-    mod = PerUrlModerator(unsafe={"https://r2/f2.jpg"})
-    pipe = AnalysisPipeline(tier2=t2, tier3=t3, cache=InMemoryCache(), moderator=mod)
-    out = pipe.run(_video_req(["https://r2/f1.jpg", "https://r2/f2.jpg", "https://r2/f3.jpg"]))
-    assert out.moderation_rejected is True
-    assert out.result.triage_level is TriageLevel.MONITOR
-    assert t2.calls == 0 and t3.calls == 0  # no analysis ran
-    assert mod.checked == ["https://r2/f1.jpg", "https://r2/f2.jpg"]  # stopped at the unsafe one
-
-
-def test_phase_c_all_safe_video_keyframes_are_each_moderated_then_proceed():
-    t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
-    mod = PerUrlModerator(unsafe=set())
-    pipe = AnalysisPipeline(
-        tier2=t2, tier3=FakeProvider("claude", 3, res("NORMAL", 0.9)),
-        cache=InMemoryCache(), moderator=mod,
-    )
-    out = pipe.run(_video_req(["https://r2/f1.jpg", "https://r2/f2.jpg"]))
-    assert out.moderation_rejected is False
-    assert t2.calls == 1  # analysis ran
-    assert mod.checked == ["https://r2/f1.jpg", "https://r2/f2.jpg"]  # EVERY frame moderated

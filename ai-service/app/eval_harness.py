@@ -44,7 +44,7 @@ class _StubProvider:
         }
         self.calls = 0
 
-    def analyze(self, system_prompt, user_prompt, image_url=None, frame_urls=None,
+    def analyze(self, system_prompt, user_prompt, image_url=None,
                 pet_context_block=None) -> dict[str, Any]:
         self.calls += 1
         return dict(self.response)

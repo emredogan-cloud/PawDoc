@@ -179,11 +179,6 @@ def build_user_prompt(request: AnalyzeRequest) -> str:
     lines: list[str] = [f"Input type: {request.input_type}"]
     if request.text_description:
         lines.append(f"Owner description: {request.text_description}")
-    if request.frame_urls:
-        lines.append(
-            f"{len(request.frame_urls)} video keyframes are provided (sampled across "
-            "the clip) for visual assessment; reason over the sequence as one event."
-        )
-    elif request.image_url:
+    if request.image_url:
         lines.append("An image is provided for visual assessment.")
     return "\n".join(lines)

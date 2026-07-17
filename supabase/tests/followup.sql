@@ -10,13 +10,16 @@ grant execute on function auth.uid() to authenticated;
 
 insert into auth.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'a@test'),
-  ('22222222-2222-2222-2222-222222222222', 'b@test');
+  ('22222222-2222-2222-2222-222222222222', 'b@test')
+on conflict (id) do nothing;
 insert into public.users (id, email) values
   ('11111111-1111-1111-1111-111111111111', 'a@test'),
-  ('22222222-2222-2222-2222-222222222222', 'b@test');
+  ('22222222-2222-2222-2222-222222222222', 'b@test')
+on conflict (id) do nothing;
 insert into public.pets (id, user_id, name, species) values
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 'Rex',  'dog'),
-  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '22222222-2222-2222-2222-222222222222', 'Milo', 'cat');
+  ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '22222222-2222-2222-2222-222222222222', 'Milo', 'cat')
+on conflict (id) do nothing;
 
 -- A: old + no feedback (ELIGIBLE); old + has feedback (not); recent (not).
 -- B: old + no feedback (cross-user, must be invisible to A).

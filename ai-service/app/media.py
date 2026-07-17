@@ -27,7 +27,6 @@ _EXT_MIME = {
     ".webp": "image/webp",
 }
 MAX_MEDIA_BYTES = 8_000_000  # 8 MB hard cap per item
-MAX_FRAMES = 6  # video keyframe cap (mirrors models.py / A4)
 
 
 class MediaFetchError(ProviderError):
@@ -102,14 +101,10 @@ def fetch_media(
     return data, mime
 
 
-def gather_media(
-    image_url: str | None, frame_urls: list[str] | None
-) -> list[tuple[bytes, str]]:
-    """Fetch all media items for a request: up to [MAX_FRAMES] video frames, or a
-    single image. Returns [] for a text-only request. Any item failing fetch
-    raises [MediaFetchError] (the pipeline turns that into a safe degrade)."""
-    if frame_urls:
-        return [fetch_media(u) for u in frame_urls[:MAX_FRAMES]]
+def gather_media(image_url: str | None) -> list[tuple[bytes, str]]:
+    """Fetch the request's image, if any. Returns [] for a text-only request.
+    A failing fetch raises [MediaFetchError] (the pipeline turns that into a
+    safe degrade)."""
     if image_url:
         return [fetch_media(image_url)]
     return []

@@ -8,16 +8,28 @@ analysis endpoints, presenting `Authorization: Bearer <AI_SERVICE_TOKEN>`.
     correct credential is accepted;
   * production fails CLOSED (503) if the token is unset;
   * dev/test (no token, not prod) stays open so the suite + local run work.
+
+The dependency is exercised through a minimal probe app so the auth contract
+is pinned independently of which product endpoints exist.
 """
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from app import config
-from app.main import app
+from app.main import app, require_service_auth
 
 client = TestClient(app)
 
-# A valid /embed body (species is the only required pet field).
-EMBED_BODY = {"text_description": "vomiting since this morning", "pet": {"species": "dog"}}
+# Minimal app mounting ONLY the auth dependency — the unit under test.
+probe = FastAPI()
+
+
+@probe.post("/probe", dependencies=[Depends(require_service_auth)])
+def _probe() -> dict:
+    return {"ok": True}
+
+
+probe_client = TestClient(probe)
 
 
 def test_health_is_open_without_auth(monkeypatch):
@@ -30,41 +42,37 @@ def test_health_is_open_without_auth(monkeypatch):
 def test_missing_credentials_rejected_when_token_configured(monkeypatch):
     monkeypatch.setattr(config, "AI_SERVICE_TOKEN", "tok-abc")
     monkeypatch.setattr(config, "IS_PRODUCTION", True)
-    resp = client.post("/embed", json=EMBED_BODY)
-    assert resp.status_code == 401
+    assert probe_client.post("/probe").status_code == 401
 
 
 def test_wrong_token_rejected(monkeypatch):
     monkeypatch.setattr(config, "AI_SERVICE_TOKEN", "tok-abc")
     monkeypatch.setattr(config, "IS_PRODUCTION", True)
-    resp = client.post("/embed", json=EMBED_BODY, headers={"Authorization": "Bearer wrong"})
+    resp = probe_client.post("/probe", headers={"Authorization": "Bearer wrong"})
     assert resp.status_code == 401
 
 
 def test_malformed_authorization_header_rejected(monkeypatch):
     monkeypatch.setattr(config, "AI_SERVICE_TOKEN", "tok-abc")
     monkeypatch.setattr(config, "IS_PRODUCTION", True)
-    resp = client.post("/embed", json=EMBED_BODY, headers={"Authorization": "tok-abc"})  # no "Bearer "
+    resp = probe_client.post("/probe", headers={"Authorization": "tok-abc"})  # no "Bearer "
     assert resp.status_code == 401
 
 
 def test_correct_token_accepted(monkeypatch):
     monkeypatch.setattr(config, "AI_SERVICE_TOKEN", "tok-abc")
     monkeypatch.setattr(config, "IS_PRODUCTION", True)
-    resp = client.post("/embed", json=EMBED_BODY, headers={"Authorization": "Bearer tok-abc"})
-    # Auth passes; embed degrades to a null vector without a Google key (still 200).
+    resp = probe_client.post("/probe", headers={"Authorization": "Bearer tok-abc"})
     assert resp.status_code == 200
 
 
 def test_production_fails_closed_when_token_unset(monkeypatch):
     monkeypatch.setattr(config, "AI_SERVICE_TOKEN", "")
     monkeypatch.setattr(config, "IS_PRODUCTION", True)
-    resp = client.post("/embed", json=EMBED_BODY)
-    assert resp.status_code == 503
+    assert probe_client.post("/probe").status_code == 503
 
 
 def test_dev_stays_open_without_token(monkeypatch):
     monkeypatch.setattr(config, "AI_SERVICE_TOKEN", "")
     monkeypatch.setattr(config, "IS_PRODUCTION", False)
-    resp = client.post("/embed", json=EMBED_BODY)
-    assert resp.status_code == 200
+    assert probe_client.post("/probe").status_code == 200
