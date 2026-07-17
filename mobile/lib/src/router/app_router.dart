@@ -33,6 +33,24 @@ class GoRouterRefreshStream extends ChangeNotifier {
   }
 }
 
+/// The auth-redirect decision, extracted PURE so it is unit-testable without
+/// a Supabase client (ENG-02/QA-02: the most brittle navigation logic in the
+/// app used to be exercised only through mocks or not at all).
+/// Returns the location to redirect to, or null to stay.
+String? computeRedirect({
+  required bool inRecovery,
+  required bool loggedIn,
+  required String location,
+}) {
+  // GAP-E1: a recovery session IS a session — handle it before normal routing.
+  if (inRecovery) return location == '/recovery' ? null : '/recovery';
+  if (location == '/recovery') return '/';
+  final atSignIn = location == '/sign-in';
+  if (!loggedIn) return atSignIn ? null : '/sign-in';
+  if (atSignIn) return '/';
+  return null;
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final client = ref.watch(supabaseClientProvider);
   final refresh = GoRouterRefreshStream(client.auth.onAuthStateChange);
@@ -54,18 +72,11 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     refreshListenable: refresh,
-    redirect: (context, state) async {
-      final loc = state.matchedLocation;
-      // GAP-E1: a recovery session IS a session, so handle it before the normal
-      // signed-in / sign-in routing. Manual hits to /recovery without one go home.
-      if (inRecovery) return loc == '/recovery' ? null : '/recovery';
-      if (loc == '/recovery') return '/';
-      final loggedIn = client.auth.currentSession != null;
-      final atSignIn = loc == '/sign-in';
-      if (!loggedIn) return atSignIn ? null : '/sign-in';
-      if (atSignIn) return '/';
-      return null;
-    },
+    redirect: (context, state) async => computeRedirect(
+      inRecovery: inRecovery,
+      loggedIn: client.auth.currentSession != null,
+      location: state.matchedLocation,
+    ),
     routes: [
       // Page transitions standardized via AppPageTransitions (§4.1). Sections
       // use fade-through; pushed modal/detail screens use shared-axis. Reduce-
