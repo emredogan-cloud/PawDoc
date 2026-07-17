@@ -39,18 +39,4 @@ void main() {
     expect(speciesLabel('anything-else'), '🐾 Other');
   });
 
-  test('isJournalEnabled round-trips through JSON (Phase 5.3)', () {
-    final pet = Pet.fromJson(const {
-      'id': 'p1', 'user_id': 'u1', 'name': 'Lily', 'species': 'rabbit',
-      'is_active': true, 'is_journal_enabled': true,
-    });
-    expect(pet.isJournalEnabled, isTrue);
-    expect(pet.toColumns()['is_journal_enabled'], isTrue);
-
-    // Defaults to false when absent from the row.
-    final pet2 = Pet.fromJson(const {
-      'id': 'p2', 'user_id': 'u1', 'name': 'Rex', 'species': 'dog',
-    });
-    expect(pet2.isJournalEnabled, isFalse);
-  });
 }

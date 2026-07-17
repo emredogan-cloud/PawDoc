@@ -60,15 +60,8 @@ class Analytics {
   // Phase 4.2 — onboarding A/B (paywall shown inside onboarding, Variant B).
   static Future<void> onboardingPaywallShown() => capture('onboarding_paywall_shown');
 
-  // Phase 5.3 — AI Health Journal.
-  static Future<void> journalViewed() => capture('journal_viewed');
-
   // Phase 6.3 — PDF Health Report (premium-included).
   static Future<void> pdfReportRequested(String entitlement) =>
       capture('pdf_report_requested', {'entitlement': entitlement});
   static Future<void> pdfReportGenerated() => capture('pdf_report_generated');
-
-  // Phase 6.3.1 — Family Sharing.
-  static Future<void> familyInviteSent() => capture('family_invite_sent');
-  static Future<void> familyInviteAccepted() => capture('family_invite_accepted');
 }

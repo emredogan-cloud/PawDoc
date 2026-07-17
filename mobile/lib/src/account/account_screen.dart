@@ -7,7 +7,6 @@ import '../config/legal_urls.dart';
 
 import '../auth/auth_controller.dart';
 import '../auth/supabase_providers.dart';
-import '../family/family_settings_screen.dart';
 import '../monetization/paywall_screen.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
@@ -118,13 +117,6 @@ class AccountScreen extends ConsumerWidget {
             ),
             orElse: () => const _Tile(
                 icon: Icons.workspace_premium_outlined, title: 'Subscription'),
-          ),
-          _Tile(
-            icon: Icons.group_outlined,
-            title: 'Family sharing',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const FamilySettingsScreen()),
-            ),
           ),
           _Tile(
             icon: Icons.notifications_outlined,

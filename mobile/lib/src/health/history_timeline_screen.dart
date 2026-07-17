@@ -18,7 +18,6 @@ import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
 import 'health_event_form_screen.dart';
-import 'journal_card.dart';
 import 'pdf_report_service.dart';
 import 'timeline.dart';
 
@@ -54,28 +53,19 @@ class HealthHistoryScreen extends ConsumerWidget {
     final navigator = Navigator.of(context);
     final profile = ref.read(userProfileProvider).asData?.value;
     await Analytics.pdfReportRequested(
-      profile?.isPremium == true
-          ? 'premium'
-          : (profile?.pdfReportsRemaining ?? 0) > 0
-              ? 'credits'
-              : 'free',
+      profile?.isPremium == true ? 'premium' : 'free',
     );
     try {
       await ref.read(pdfReportServiceProvider).generateAndShare(petId: petId, petName: petName);
       await Analytics.pdfReportGenerated();
-      ref.invalidate(userProfileProvider); // reflect a consumed credit
     } on PdfReportPaywallException {
-      // GAP-E10: make the 402 actionable. The old snackbar told the user to buy
-      // the add-on but gave them no way to — a dead end. Surface an upsell that
-      // opens the paywall (PDF add-on + Premium) so the gate can convert.
+      // GAP-E10: make the 402 actionable — surface the paywall, not a dead end.
       messenger.showSnackBar(
         SnackBar(
-          content: const Text(
-            'Unlock detailed PDF Health Reports — buy one for \$4.99 or go Premium.',
-          ),
+          content: const Text('PDF Health Reports are part of PawDoc Premium.'),
           duration: const Duration(seconds: 8),
           action: SnackBarAction(
-            label: 'Unlock',
+            label: 'Upgrade',
             onPressed: () => navigator.push(
               MaterialPageRoute(builder: (_) => const PaywallScreen()),
             ),
@@ -210,14 +200,8 @@ class HealthHistoryScreen extends ConsumerWidget {
                     if (items.isEmpty) {
                       return _HistoryEmptyState(petName: pet.name);
                     }
-                    // Journal card on top, then date-grouped status-node timeline.
-                    final children = <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpace.s16, vertical: AppSpace.s8),
-                        child: JournalCard(petId: pet.id!),
-                      ),
-                    ];
+                    // Date-grouped status-node timeline.
+                    final children = <Widget>[];
                     String? lastBucket;
                     for (var i = 0; i < items.length; i++) {
                       final bucket = _dateBucket(items[i].date);

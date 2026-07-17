@@ -42,7 +42,6 @@ function profileLines(pet) {
   if (yrs !== null) lines.push(`Age: ${yrs} years`);
   if (pet?.sex) lines.push(`Sex: ${pet.sex}`);
   if (pet?.weight_kg) lines.push(`Weight: ${pet.weight_kg} kg`);
-  if (pet?.client_name) lines.push(`Client: ${pet.client_name}`);
   return lines;
 }
 

@@ -2,30 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pawdoc/src/health/breed_insights.dart';
 import 'package:pawdoc/src/health/health_event.dart';
 import 'package:pawdoc/src/health/timeline.dart';
-import 'package:pawdoc/src/pets/pet_limits.dart';
 
 void main() {
-  group('pet limits (tier gate)', () {
-    test('Free/trial/Premium cap at 2; Family unlimited', () {
-      expect(petLimitFor('free'), 2);
-      expect(petLimitFor('trial'), 2);
-      expect(petLimitFor('premium'), 2);
-      expect(petLimitFor('family'), isNull);
-    });
-
-    test('canAddPet enforces the cap', () {
-      expect(canAddPet('free', 0), isTrue);
-      expect(canAddPet('free', 1), isTrue);
-      expect(canAddPet('free', 2), isFalse); // 3rd pet blocked
-      expect(canAddPet('premium', 2), isFalse);
-      expect(canAddPet('family', 99), isTrue); // unlimited
-    });
-
-    test('unknown status is treated as most restrictive (free)', () {
-      expect(canAddPet('mystery', 2), isFalse);
-    });
-  });
-
   group('breed insights', () {
     test('exact breed match returns the breed-specific list', () {
       final list = insightsForPet(breed: 'Labrador Retriever', species: 'dog');

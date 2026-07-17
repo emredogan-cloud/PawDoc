@@ -401,8 +401,6 @@ class _ValueStack extends StatelessWidget {
     'Unlimited AI health checks',
     'Full health history',
     'Reminders for every pet',
-    'Weekly AI health journal',
-    'Family & sitter sharing',
   ];
 
   @override

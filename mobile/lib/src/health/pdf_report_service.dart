@@ -35,7 +35,7 @@ class PdfReportService {
     );
     final status = resp.status;
     if (status == 402) {
-      throw const PdfReportPaywallException('PDF report add-on required');
+      throw const PdfReportPaywallException('PDF reports are premium-included');
     }
     if (status < 200 || status >= 300) {
       throw Exception('PDF generation failed (status $status)');

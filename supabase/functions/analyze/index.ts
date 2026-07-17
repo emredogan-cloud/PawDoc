@@ -23,8 +23,8 @@ import { blockAfterAi, blockBeforeAi, countsAgainstQuota } from "../_shared/quot
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
 // Phase A — trust-boundary credential presented to the internal AI service.
 const AI_SERVICE_TOKEN = Deno.env.get("AI_SERVICE_TOKEN") ?? "";
-// Phase 5.4 — `b2b_lite` (sitter, $19.99/mo) joins the unlimited-access tiers.
-const PREMIUM_STATUSES = new Set(["premium", "family", "trial", "b2b_lite"]);
+// One plan: premium (plus the store trial period).
+const PREMIUM_STATUSES = new Set(["premium", "trial"]);
 const SEMANTIC_CACHE_THRESHOLD = 0.90;
 const SEMANTIC_CACHE_ENABLED =
   !["0", "false", "no"].includes((Deno.env.get("SEMANTIC_CACHE_ENABLED") ?? "1").toLowerCase());
