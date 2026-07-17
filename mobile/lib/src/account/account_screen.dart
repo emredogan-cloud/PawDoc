@@ -11,6 +11,7 @@ import '../monetization/paywall_screen.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
 import 'delete_account_screen.dart';
+import 'manage_subscription.dart';
 import 'user_profile.dart';
 
 /// Consolidated account home (roadmap §3.10.2): profile, subscription, family,
@@ -90,7 +91,7 @@ class AccountScreen extends ConsumerWidget {
                           data: (p) => Text(
                             p.isPremium
                                 ? 'Premium'
-                                : 'Free plan · ${p.freeRemaining} of 3 free checks left',
+                                : 'Free plan · text checks free · ${p.photoLogsRemaining} of 5 photo logs left',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -106,14 +107,24 @@ class AccountScreen extends ConsumerWidget {
             ),
           ),
 
-          // Subscription.
+          // Subscription. G8: 'manage' actually manages — a premium user gets
+          // the store's subscription page (RevenueCat managementURL when
+          // available, the platform default otherwise), never the paywall.
           profile.maybeWhen(
             data: (p) => _Tile(
+              key: const Key('account_subscription_tile'),
               icon: Icons.workspace_premium_outlined,
-              title: p.isPremium ? 'Premium — manage' : 'Upgrade to Premium',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PaywallScreen()),
-              ),
+              title: p.isPremium ? 'Manage subscription' : 'Upgrade to Premium',
+              subtitle: p.isPremium ? 'Change plan or cancel anytime' : null,
+              onTap: () async {
+                if (!p.isPremium) {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                  );
+                  return;
+                }
+                await openManageSubscription();
+              },
             ),
             orElse: () => const _Tile(
                 icon: Icons.workspace_premium_outlined, title: 'Subscription'),

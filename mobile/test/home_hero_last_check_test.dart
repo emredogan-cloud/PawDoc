@@ -17,7 +17,7 @@ Widget _home({LatestTriage? latest}) => ProviderScope(
       overrides: [
         petsListProvider.overrideWith((ref) async => const [_pet]),
         userProfileProvider.overrideWith((ref) async => const UserProfile(
-            subscriptionStatus: 'free', freeUsedThisMonth: 1)),
+            subscriptionStatus: 'free', photoLogsUsedThisMonth: 1)),
         connectivityProvider.overrideWith((ref) => Stream.value(true)),
         latestTriageProvider.overrideWith((ref, petId) => latest),
       ],

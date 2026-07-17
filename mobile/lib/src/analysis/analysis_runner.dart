@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../analytics/analytics.dart';
 import '../capture/upload_service.dart';
 import '../core/functions_error.dart';
+import '../emergency/emergency_help_screen.dart';
 import '../core/motion.dart';
 import '../models/analysis_result.dart';
 import '../monetization/maybe_show_paywall.dart';
@@ -141,12 +142,18 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
     await showModalBottomSheet<void>(
       context: context,
       builder: (sheetCtx) => _QuotaUpgradeSheet(
-        message: fe.message ?? "You've used your free analyses this month.",
+        message: fe.message ?? "You've used this month's free photo logs.",
         action: fe.action,
         onUpgrade: () {
           Navigator.of(sheetCtx).pop();
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const PaywallScreen()),
+          );
+        },
+        onEmergencyHelp: () {
+          Navigator.of(sheetCtx).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const EmergencyHelpScreen()),
           );
         },
         onDismiss: () => Navigator.of(sheetCtx).pop(),
@@ -230,6 +237,7 @@ class _QuotaUpgradeSheet extends StatelessWidget {
   const _QuotaUpgradeSheet({
     required this.message,
     required this.onUpgrade,
+    required this.onEmergencyHelp,
     required this.onDismiss,
     this.action,
   });
@@ -237,6 +245,7 @@ class _QuotaUpgradeSheet extends StatelessWidget {
   final String message;
   final String? action;
   final VoidCallback onUpgrade;
+  final VoidCallback onEmergencyHelp;
   final VoidCallback onDismiss;
 
   @override
@@ -253,7 +262,7 @@ class _QuotaUpgradeSheet extends StatelessWidget {
               Center(child: Chip(label: Text(action!))),
               const SizedBox(height: AppSpace.s12),
             ],
-            Text("You're out of free checks",
+            Text("You're out of free photo logs",
                 style: Theme.of(context).textTheme.titleLarge,
                 textAlign: TextAlign.center),
             const SizedBox(height: AppSpace.s8),
@@ -262,7 +271,19 @@ class _QuotaUpgradeSheet extends StatelessWidget {
             FilledButton(
               key: const Key('quota_upgrade_button'),
               onPressed: onUpgrade,
-              child: const Text('Upgrade for unlimited checks'),
+              child: const Text('Upgrade for unlimited photo logs'),
+            ),
+            // v3 safety hatch: the meter can never strand an urgent moment —
+            // the free, offline red path is one tap away from the wall itself.
+            OutlinedButton.icon(
+              key: const Key('quota_emergency_help'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.emergencyLight,
+                side: const BorderSide(color: AppColors.emergencyLight),
+              ),
+              onPressed: onEmergencyHelp,
+              icon: const Icon(Icons.emergency_rounded, size: 18),
+              label: const Text('This is urgent — Emergency help (free)'),
             ),
             TextButton(onPressed: onDismiss, child: const Text('Not now')),
           ],

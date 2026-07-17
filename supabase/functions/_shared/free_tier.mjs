@@ -1,9 +1,14 @@
 // Pure free-tier decision logic. Plain ESM so it runs in BOTH Deno (the Edge
-// Function) and Node (the unit test). Includes the monthly reset the source
-// roadmap omitted (Critical Review #10) — without it, free users get 3 analyses
-// EVER instead of 3 per month.
+// Function) and Node (the unit test). Includes the monthly reset (Critical
+// Review #10) — without it, free users would get their allowance ONCE ever
+// instead of monthly.
+//
+// v3 (evolution Phase 6): the meter applies to PHOTO LOGS only (a record
+// feature). Text guidance is unmetered — see quota_gate.mjs.
 
-export const FREE_TIER_MONTHLY_LIMIT = 3;
+export const FREE_PHOTO_MONTHLY_LIMIT = 5;
+// Back-compat alias for older call sites/tests.
+export const FREE_TIER_MONTHLY_LIMIT = FREE_PHOTO_MONTHLY_LIMIT;
 
 /** First instant of the month after `now` (UTC), ISO string. */
 export function nextMonthStartISO(now) {
@@ -20,7 +25,7 @@ export function evaluateFreeTier({
   resetAt,
   now = new Date().toISOString(),
   isPremium = false,
-  limit = FREE_TIER_MONTHLY_LIMIT,
+  limit = FREE_PHOTO_MONTHLY_LIMIT,
 }) {
   if (isPremium) {
     return { allowed: true, newUsed: usedThisMonth, didReset: false, resetAt };

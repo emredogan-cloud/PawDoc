@@ -166,7 +166,7 @@ class HomeScreen extends ConsumerWidget {
                 if (list.isEmpty) {
                   return _HomeEmptyState(
                     freeRemaining: profile.maybeWhen(
-                      data: (p) => p.isPremium ? null : p.freeRemaining,
+                      data: (p) => p.isPremium ? null : p.photoLogsRemaining,
                       orElse: () => null,
                     ),
                     onAddPet: () => context.push('/onboarding'),
@@ -228,7 +228,8 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpace.s8),
                   profile.maybeWhen(
                     data: (p) => _QuotaStrip(
-                        isPremium: p.isPremium, freeRemaining: p.freeRemaining),
+                        isPremium: p.isPremium,
+                        photoLogsRemaining: p.photoLogsRemaining),
                     orElse: () => const SizedBox.shrink(),
                   ),
                 ];
@@ -398,7 +399,8 @@ class _PetHeroCard extends ConsumerWidget {
 }
 
 /// Warm, illustrated welcome for the first run (replaces the two stranded cards).
-/// Quota is framed positively ("3 free checks ready"), not as a billing meter.
+/// Quota v3 framing: text checks are FREE and unmetered; only photo logs
+/// carry a friendly counter — never a billing meter on safety.
 class _HomeEmptyState extends StatelessWidget {
   const _HomeEmptyState({required this.onAddPet, this.freeRemaining});
   final VoidCallback onAddPet;
@@ -457,8 +459,8 @@ class _FreeChecksChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = freeRemaining == null
-        ? 'Premium — unlimited checks'
-        : '$freeRemaining free checks ready';
+        ? 'Premium — unlimited photo logs'
+        : 'Free text checks · $freeRemaining photo logs ready';
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpace.s16, vertical: AppSpace.s8),
@@ -486,9 +488,10 @@ class _FreeChecksChip extends StatelessWidget {
 /// Slim, low-emphasis quota row at the bottom of the dashboard (demoted from the
 /// top "billing meter"). Care before quota (roadmap §3.3).
 class _QuotaStrip extends StatelessWidget {
-  const _QuotaStrip({required this.isPremium, required this.freeRemaining});
+  const _QuotaStrip(
+      {required this.isPremium, required this.photoLogsRemaining});
   final bool isPremium;
-  final int freeRemaining;
+  final int photoLogsRemaining;
 
   @override
   Widget build(BuildContext context) {
@@ -503,7 +506,7 @@ class _QuotaStrip extends StatelessWidget {
         Icon(Icons.bolt, size: 16, color: scheme.onSurfaceVariant),
         const SizedBox(width: AppSpace.s4),
         if (isPremium)
-          Text('Premium — unlimited checks', style: style)
+          Text('Premium — unlimited photo logs', style: style)
         else
           // M3 (#18): a 300ms count-DOWN tick when the remaining number
           // changes (it's "remaining", so the old value slides up and out);
@@ -522,8 +525,9 @@ class _QuotaStrip extends StatelessWidget {
               ),
             ),
             child: Text(
-              '$freeRemaining of 3 free checks left',
-              key: ValueKey(freeRemaining),
+              // v3: text checks are unmetered — only photo logs count.
+              'Text checks free · $photoLogsRemaining of 5 photo logs left',
+              key: ValueKey(photoLogsRemaining),
               style: style,
             ),
           ),

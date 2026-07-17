@@ -368,7 +368,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                 color: AppColors.ink50, fontWeight: FontWeight.w700),
             textAlign: TextAlign.center),
         const SizedBox(height: AppSpace.s12),
-        Text('Your first 3 analyses are free — no card needed.',
+        Text('Symptom checks are free — no card, no limit.',
             textAlign: TextAlign.center,
             style: Theme.of(context)
                 .textTheme

@@ -10,13 +10,11 @@ import { AwsClient } from "https://esm.sh/aws4fetch@1.0.20";
 // deno-lint-ignore no-import-assertions
 import { evaluateFreeTier } from "../_shared/free_tier.mjs";
 // deno-lint-ignore no-import-assertions
-import { containsEmergencyKeyword } from "../_shared/emergency_keywords.mjs";
-// deno-lint-ignore no-import-assertions
 import { aiServiceHeaders } from "../_shared/ai_service.mjs";
 // deno-lint-ignore no-import-assertions
 import { isOwnUploadKey } from "../_shared/upload_key.mjs";
 // deno-lint-ignore no-import-assertions
-import { blockAfterAi, blockBeforeAi, countsAgainstQuota } from "../_shared/quota_gate.mjs";
+import { blockBeforeAi, countsAgainstQuota, isMetered } from "../_shared/quota_gate.mjs";
 
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
 // Phase A — trust-boundary credential presented to the internal AI service.
@@ -110,31 +108,28 @@ Deno.serve(async (req: Request) => {
     .select("subscription_status, free_analyses_used_this_month, free_analyses_reset_at, preferred_locale")
     .eq("id", user.id).single();
   const isPremium = PREMIUM_STATUSES.has(profile?.subscription_status ?? "free");
-  // CR #11 (Phase 5.4): localize the pre-AI emergency check by the user's
-  // preferred_locale (default 'en'). The Edge body may also override per request.
+  // CR #11: the AI service's authoritative pre-AI override runs in the user's
+  // preferred locale (the client router already handled the instant path).
   const locale = (typeof body?.locale === "string" && body.locale) ||
     profile?.preferred_locale || "en";
-  // EMERGENCY IS NEVER PAYWALLED (trust rule): a text tripping an emergency
-  // keyword bypasses the free-tier gate entirely and is not counted against
-  // the quota. The AI service still runs the authoritative hardcoded override.
-  const isEmergencyText = containsEmergencyKeyword(text_description, pet.species, locale);
+  // Quota v3 (evolution Phase 6): FREE = SAFETY, PAID = MEMORY. Text guidance
+  // is UNMETERED; photo logs (a record feature) are metered PRE-AI, so an
+  // out-of-quota request can never reach a model (BE-01 dead at the root).
+  // Photo quota can't suppress an emergency: the red path is the client
+  // keyword router + the offline red button + the server text override.
   const decision = evaluateFreeTier({
     usedThisMonth: profile?.free_analyses_used_this_month ?? 0,
     resetAt: profile?.free_analyses_reset_at,
     isPremium,
   });
-  // GAP-A3: EMERGENCY is never paywalled — for the VISUAL half too. Block TEXT
-  // out-of-quota up front; a PHOTO/VIDEO out-of-quota request runs the AI (so an
-  // image emergency can surface) and is blocked only AFTER, and only if the
-  // verdict is not EMERGENCY (see the post-AI block below).
-  const quotaExceeded = !isEmergencyText && !decision.allowed;
-  const isVisual = input_type === "photo" || input_type === "video";
-  if (blockBeforeAi(quotaExceeded, isVisual)) {
+  const quotaExceeded = isMetered(input_type) && !decision.allowed;
+  if (blockBeforeAi(input_type, quotaExceeded)) {
     return json({
       error: "free_limit_reached",
       message:
-        "You've used your free analyses this month. Upgrade for unlimited checks. " +
-        "If this seems urgent, contact a veterinarian now.",
+        "You've used this month's free photo logs. Symptom checks by text are " +
+        "always free — or upgrade for unlimited photo logs. If this is urgent, " +
+        "use Emergency help: it never counts and works offline.",
     }, 402);
   }
 
@@ -241,21 +236,8 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // GAP-A3: an out-of-quota visual the AI did NOT flag as EMERGENCY → block here
-  // (uncounted, unstored) with only the triage chip + upgrade message. An
-  // EMERGENCY falls through and is returned + stored below, free.
-  if (blockAfterAi(quotaExceeded, result.action)) {
-    return json({
-      error: "free_limit_reached",
-      quota_exceeded: true,
-      action: result.action,
-      message:
-        "You've used your free analyses this month. Upgrade to see the full result. " +
-        "If this seems urgent, contact a veterinarian now.",
-    }, 402);
-  }
-
-  // Persist the analysis (service role).
+  // Persist the analysis (service role). (v3: there is no post-AI gate — a
+  // request that reached the model is always surfaced and stored.)
   const { data: stored, error: storeErr } = await admin.from("analyses").insert({
     user_id: user.id,
     pet_id,
@@ -273,14 +255,13 @@ Deno.serve(async (req: Request) => {
   }).select("id").single();
   if (storeErr) console.error("analyze: failed to store analysis", requestId, storeErr.message);
 
-  // Count only a REAL, surfaced, non-emergency analysis. The GAP-E7 degraded
-  // guard (tier_used === 0) and the GAP-A3 emergency/quota guards all live in
+  // Count only a REAL, surfaced free PHOTO analysis (v3). The GAP-E7 degraded
+  // guard (tier_used === 0) and the GET_HELP_NOW belt live in
   // countsAgainstQuota (unit-tested).
   if (
     countsAgainstQuota({
       isPremium,
-      isEmergencyText,
-      quotaExceeded,
+      inputType: input_type,
       action: result.action,
       tierUsed: meta.tier_used,
     })

@@ -1,38 +1,41 @@
-// GAP-A3: pure free-tier quota-gate decisions, shared so the safety-critical
-// branching is unit-tested in Node and used verbatim by the Deno /analyze
-// function. The non-negotiable: GET_HELP_NOW is NEVER paywalled — including the
-// VISUAL half. A photo/video emergency (pale gums, bloat) can't be detected
-// from text, so an out-of-quota visual request must run the AI and only be
-// blocked AFTER, and only when the verdict is not EMERGENCY.
+// Quota gate v3 (evolution Phase 6): FREE = SAFETY, PAID = MEMORY.
+//
+// TEXT guidance is UNMETERED for everyone — safety advice is never metered,
+// counted, or blocked, so "never paywall an emergency" stops being a rule we
+// enforce and becomes something the architecture cannot do.
+//
+// PHOTO logs are a RECORD feature and are metered PRE-AI. Vision is no longer
+// an emergency-detection mechanism (the client keyword router + the server
+// text override + the offline red button carry that), so blocking a photo up
+// front can no longer suppress an emergency — and the v2 trap where an
+// out-of-quota photo ran the full paid pipeline "just in case" (BE-01's
+// unbounded free-inference path) is gone at the root: no quota'd request ever
+// reaches a model.
+//
+// Pure ESM so Deno (the Edge Function) and Node (the unit tests) share it.
 
-/**
- * Block BEFORE the AI runs?
- * Text out-of-quota is blocked up front (cheap; no visual emergency to miss).
- * A visual out-of-quota request is NOT blocked here — it must run so an image
- * emergency can surface.
- */
-export function blockBeforeAi(quotaExceeded, isVisual) {
-  return quotaExceeded && !isVisual;
+/** Photos are the only metered input. */
+export function isMetered(inputType) {
+  return inputType === "photo";
 }
 
 /**
- * Block AFTER the AI runs?
- * An out-of-quota visual is blocked only when the verdict is NOT EMERGENCY.
- * An EMERGENCY is always returned in full, free.
+ * Pre-AI gate: block ONLY a metered (photo) request that is out of quota.
+ * Text never blocks. Nothing blocks after the AI — there is no post-AI gate.
  */
-export function blockAfterAi(quotaExceeded, action) {
-  return quotaExceeded && action !== "GET_HELP_NOW";
+export function blockBeforeAi(inputType, quotaExceeded) {
+  return isMetered(inputType) && quotaExceeded;
 }
 
 /**
- * Count this analysis against the free quota?
- * Never for emergencies (text-keyword OR AI-detected), never for out-of-quota
- * requests, never for premium, never for degraded answers (tier_used === 0).
+ * Counting: only a real, surfaced photo analysis by a free user counts.
+ * Degraded answers (tierUsed 0) never count (GAP-E7), and GET_HELP_NOW is
+ * never counted — the belt stays even though photos can't be the only route
+ * to an emergency anymore.
  */
-export function countsAgainstQuota(
-  { isPremium, isEmergencyText, quotaExceeded, action, tierUsed },
-) {
-  if (isPremium || isEmergencyText || quotaExceeded) return false;
+export function countsAgainstQuota({ isPremium, inputType, action, tierUsed }) {
+  if (isPremium) return false;
+  if (!isMetered(inputType)) return false;
   if (action === "GET_HELP_NOW") return false;
   return (tierUsed ?? 0) > 0;
 }

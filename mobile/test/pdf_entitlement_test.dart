@@ -9,7 +9,7 @@ void main() {
     test('premium and trial unlock', () {
       for (final tier in ['premium', 'trial']) {
         expect(
-          UserProfile(subscriptionStatus: tier, freeUsedThisMonth: 0).isPremium,
+          UserProfile(subscriptionStatus: tier, photoLogsUsedThisMonth: 0).isPremium,
           isTrue,
           reason: '$tier should unlock',
         );
@@ -17,14 +17,14 @@ void main() {
     });
 
     test('free is gated (no credit-pack path exists)', () {
-      const u = UserProfile(subscriptionStatus: 'free', freeUsedThisMonth: 0);
+      const u = UserProfile(subscriptionStatus: 'free', photoLogsUsedThisMonth: 0);
       expect(u.isPremium, isFalse);
     });
 
     test('retired tier names no longer unlock premium', () {
       for (final tier in ['family', 'b2b_lite']) {
         expect(
-          UserProfile(subscriptionStatus: tier, freeUsedThisMonth: 0).isPremium,
+          UserProfile(subscriptionStatus: tier, photoLogsUsedThisMonth: 0).isPremium,
           isFalse,
           reason: '$tier was removed in the one-plan collapse',
         );
