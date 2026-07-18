@@ -11,7 +11,7 @@ void main() {
     test('host-lookup / socket failure → calm offline copy, no raw detail', () {
       final msg = friendlyAuthError(const AuthException(
           "ClientException with SocketException: Failed host lookup: "
-          "'zbxrvfunaylkscgvsllm.supabase.co'"));
+          "'example-ref.supabase.co'"));
       expect(msg, "Couldn't reach PawDoc. Check your internet connection and try again.");
       expect(msg.toLowerCase(), isNot(contains('socket')));
       expect(msg, isNot(contains('supabase')));
