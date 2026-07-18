@@ -433,8 +433,9 @@ class _HelperExpander extends StatelessWidget {
                             ?.copyWith(color: AppColors.ink50),
                       ),
                     ),
-                    const Icon(Icons.add_rounded,
-                        size: 16, color: PawPalette.mint),
+                    // These are things to think about and answer in your own
+                    // words — not snippets to insert, so no "+" affordance
+                    // (RC UX: the icon implied a tap action that did nothing).
                   ],
                 ),
               ),

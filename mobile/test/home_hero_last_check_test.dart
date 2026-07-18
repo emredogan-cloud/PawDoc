@@ -48,6 +48,7 @@ void main() {
         _home(latest: const LatestTriage(level: 'CALL_TODAY', checkedAt: null)));
     await tester.pumpAndSettle();
 
-    expect(find.text('Last check: CALL_TODAY'), findsOneWidget);
+    // Friendly ladder label in the rare no-timestamp fallback (RC UX fix).
+    expect(find.text('Last check: Call today'), findsOneWidget);
   });
 }

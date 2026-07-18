@@ -482,12 +482,8 @@ class _VaccinationTipCard extends StatelessWidget {
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: AppColors.ink300),
                 ),
-                const SizedBox(height: AppSpace.s4),
-                Text(
-                  'Learn more',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                      color: PawPalette.mint, fontWeight: FontWeight.w600),
-                ),
+                // (Removed a dead "Learn more" link — it was styled as a link
+                // but had no target; RC UX false-affordance fix.)
               ],
             ),
           ),

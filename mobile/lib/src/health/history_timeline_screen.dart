@@ -4,9 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../account/user_profile.dart';
 import '../analytics/analytics.dart';
+import '../core/action_labels.dart';
 import '../core/app_image.dart';
 import '../core/app_motion_asset.dart';
 import '../core/dates.dart';
+import '../core/friendly_error.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../export/health_report_service.dart';
@@ -205,7 +207,7 @@ class HealthHistoryScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(AppSpace.s24),
                     children: [
                       Text(
-                        'Could not load history:\n$e',
+                        friendlyLoadError(e, noun: 'history'),
                         style: const TextStyle(color: AppColors.ink300),
                       ),
                     ],
@@ -475,13 +477,8 @@ class _ActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (action) {
-      'GET_HELP_NOW' => ('Urgent', AppColors.emergencyLight),
-      'CALL_TODAY' => ('Call today', AppColors.monitorLight),
-      'BOOK_VISIT' => ('Book visit', AppColors.actionBookVisit),
-      'WATCH_AND_RECHECK' => ('Watching', AppColors.actionWatch),
-      _ => ('Check', PawPalette.mint),
-    };
+    final label = actionLabel(action);
+    final color = actionColor(action);
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpace.s8, vertical: AppSpace.s4),

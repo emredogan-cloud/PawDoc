@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_image.dart';
 import '../core/dates.dart';
+import '../core/friendly_error.dart';
 import '../pets/active_pet.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
@@ -69,7 +70,7 @@ class RemindersScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.all(AppSpace.s24),
                   child: Text(
-                    'Could not load reminders:\n$e',
+                    friendlyLoadError(e, noun: 'reminders'),
                     style: const TextStyle(color: AppColors.ink300),
                   ),
                 ),
@@ -306,6 +307,29 @@ class _ReminderCard extends StatelessWidget {
   /// Upcoming reminders open the edit form on tap (J6 — delete-only is gone).
   final VoidCallback? onEdit;
 
+  Future<void> _confirmDelete(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete reminder?'),
+        content: Text(
+            'This removes "${reminder.reminderType}" and cancels its notification.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: AppColors.emergencyLight),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) onDelete();
+  }
+
   IconData _iconForType(String type) {
     final t = type.toLowerCase();
     if (t.contains('vacc') || t.contains('dhpp') || t.contains('booster')) {
@@ -394,19 +418,20 @@ class _ReminderCard extends StatelessWidget {
           ),
           const SizedBox(width: AppSpace.s8),
 
-          // Trailing: bell (upcoming) or delete
+          // Trailing: delete. Was a bell glyph on upcoming rows that deleted
+          // instantly with no confirmation (RC UX finding — a misleading,
+          // unconfirmed destructive control). Now a clear trash icon gated by
+          // a confirm dialog, matching every other delete in the app.
           Column(
             children: [
               IconButton(
                 tooltip: 'Delete reminder',
-                icon: Icon(
-                  isCompleted
-                      ? Icons.delete_outline_rounded
-                      : Icons.notifications_none_rounded,
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
                   size: 20,
                   color: AppColors.ink300,
                 ),
-                onPressed: onDelete,
+                onPressed: () => _confirmDelete(context),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),

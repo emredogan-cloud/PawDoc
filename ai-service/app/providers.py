@@ -67,10 +67,13 @@ class GeminiProvider:
             contents = [*parts, user_prompt] if parts else user_prompt
 
             # GAP-A4: hard request timeout (ms) + bounded output so a hung/slow
-            # Gemini call can't pin a thread or run up cost.
+            # Gemini call can't pin a thread or run up cost. NOTE: the Gemini API
+            # REJECTS deadlines below 10s (400 INVALID_ARGUMENT), so 8s failed
+            # every call — 12s is the floor that both satisfies the API and fits
+            # the Edge's 25s budget with Tier-3 failover headroom.
             client = genai.Client(
                 api_key=self._api_key,
-                http_options=types.HttpOptions(timeout=8000),
+                http_options=types.HttpOptions(timeout=12000),
             )
             resp = client.models.generate_content(
                 model=model,
@@ -160,11 +163,13 @@ class ClaudeProvider:
             else:
                 content = user_prompt
 
-            # GAP-A4: 8s hard timeout + no SDK-level retries (the pipeline owns
-            # the single retry / failover). The Anthropic default is 600s, which
-            # would pin a thread and starve /health on the shared pool.
+            # GAP-A4: hard timeout + no SDK-level retries (the pipeline owns the
+            # single retry / failover). The Anthropic default is 600s, which
+            # would pin a thread and starve /health. 8s was too short for a
+            # Sonnet tool_use response (it timed out every call) — 15s lets the
+            # Tier-3 fallback actually complete while staying under the Edge budget.
             client = anthropic.Anthropic(
-                api_key=self._api_key, timeout=8.0, max_retries=0
+                api_key=self._api_key, timeout=15.0, max_retries=0
             )
             message = client.messages.create(
                 model=self._model,
