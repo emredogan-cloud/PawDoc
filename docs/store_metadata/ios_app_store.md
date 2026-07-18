@@ -85,7 +85,7 @@ App Store allows up to 10 slots per device size; PawDoc's canonical ordered set 
 these five (caption text is visible on the storefront — no banned words appear in it).
 
 <!-- VISIBLE-COPY:START -->
-1. "Know exactly what your pet needs." — hero shot over a completed triage result.
+1. "Notice. Decide. Remember." — hero shot over a completed triage result. (Action-framed, no certainty claim — matches the Play caption.)
 2. "How it works." — the three-step flow: camera → AI → result.
 3. "It never says fine - it says what to watch for." - a calm WATCH AND RE-CHECK result.
 4. "Emergency guidance, always free." — the safety promise: possible emergencies are flagged first and never paywalled.

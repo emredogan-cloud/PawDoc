@@ -17,7 +17,7 @@ These Subscription Terms are part of our [Terms of Service](/terms/) and apply i
 
 ## 1. Free tier and Premium
 
-PawDoc offers a **free tier** with a limited number of analyses per period and an optional **Premium** subscription that unlocks additional usage and features. The current plans, prices, and benefits are shown in the app at the point of purchase.
+PawDoc offers a **free tier** with **unlimited text symptom checks** (photo logs and some record features are limited per period) and an optional **Premium** subscription that unlocks additional usage and features. The current plans, prices, and benefits are shown in the app at the point of purchase.
 
 > [!NOTE] **Emergency results are never paywalled.** If PawDoc identifies a potential emergency, the safety guidance and prompt to seek a veterinarian are always shown — regardless of your plan or how many free checks remain.
 

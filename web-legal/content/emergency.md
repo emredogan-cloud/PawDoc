@@ -43,7 +43,7 @@ When in doubt, **err on the side of caution and contact a veterinarian.**
 
 ## 4. Why we say this
 
-We would rather you act quickly and have it turn out to be nothing than wait on an app. PawDoc's emergency guidance exists to **push you toward professional care faster** — never to delay or replace it. Even when PawDoc suggests "monitor" or "likely normal," trust your own judgment: if your pet seems to be in distress, seek care.
+We would rather you act quickly and have it turn out to be nothing than wait on an app. PawDoc's emergency guidance exists to **push you toward professional care faster** — never to delay or replace it. Even when PawDoc's guidance is low-urgency (such as "watch and re-check"), trust your own judgment: if your pet seems to be in distress, seek care.
 
 ## 5. Related
 

@@ -259,7 +259,7 @@ ${header()}
 </section>
 <main id="main" class="container" style="padding-bottom:80px">
   <div class="index-intro fade-up-2">
-    <div class="notice"><span>${ICONS.stethoscope}</span><div><strong>PawDoc is not a veterinarian and does not diagnose.</strong> It offers general educational information and urgency triage (emergency, monitor, or likely normal) generated with the help of AI, and always directs you to a licensed veterinarian. In an emergency, contact an emergency vet or animal poison control immediately.</div></div>
+    <div class="notice"><span>${ICONS.stethoscope}</span><div><strong>PawDoc is not a veterinarian and does not diagnose.</strong> It offers general educational information and urgency guidance — an action from "get help now" through "watch and re-check," never a statement that your pet is normal — generated with the help of AI, and always directs you to a licensed veterinarian. In an emergency, contact an emergency vet or animal poison control immediately.</div></div>
   </div>
   ${cats}
 </main>

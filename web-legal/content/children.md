@@ -11,7 +11,7 @@ summary: PawDoc is intended for adults and is not directed to children. Here is 
 description: PawDoc Children's Privacy policy — not directed to children, COPPA and GDPR age thresholds, and how we handle children's data.
 ---
 
-PawDoc is intended for **adults** (pet owners 18 and older) and is **not directed to children**. This page explains how we approach children's privacy.
+PawDoc is intended for **pet owners aged 13 and older** (16+ where Article 8 GDPR applies without parental authorization — see our [Terms of Service](/terms/)) and is **not directed to children under 13**. This page explains how we approach children's privacy.
 
 ## 1. Not directed to children
 

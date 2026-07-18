@@ -27,10 +27,10 @@ PawDoc ("**PawDoc**," "**we**," "**us**") provides an AI-assisted pet-health tri
 
 ## 1. Information we collect
 
-- **Account information** — your email address and authentication identifiers (email, or Sign in with Apple / Google).
+- **Account information** — your email address and authentication identifiers (email, or Sign in with Apple).
 - **Pet profiles** — the name, species, breed, age, sex, weight, and notes you enter about your pet.
 - **Inputs you submit for triage** — photos, short videos, and text describing your pet's symptoms. Images are compressed and **EXIF/GPS location metadata is stripped before upload**, and uploads are automatically content-moderated and rejected or deleted if they are not appropriate pet-health content.
-- **Analyses** — the triage result (emergency, monitor, or likely normal), related guidance, and metadata such as timestamps.
+- **Analyses** — the triage result (an urgency action from "get help now" through "watch and re-check"), related guidance, and metadata such as timestamps.
 - **Subscription information** — your plan and entitlement status, provided through RevenueCat and the app stores. **We never receive or store your full card number** — payments are handled by Apple and Google.
 - **Device and usage data** — app interaction events (ONLY if you opt in to analytics), language/region, and crash diagnostics (PII-stripped). Reminders are delivered by on-device notifications — no push token is created or sent anywhere.
 - **Support communications** — messages you send us and their contents.
