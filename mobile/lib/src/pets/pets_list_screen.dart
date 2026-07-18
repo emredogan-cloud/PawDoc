@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../analysis/analysis_service.dart';
+import '../core/action_labels.dart';
 import '../core/app_views.dart';
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
@@ -211,7 +212,9 @@ class _PetListTile extends ConsumerWidget {
             ? null
             : Chip(
                 key: ValueKey('last_check_chip_${pet.id}'),
-                label: Text(t.level, style: Theme.of(context).textTheme.labelSmall),
+                // Friendly ladder label, never the raw `GET_HELP_NOW` wire token.
+                label: Text(actionLabel(t.level),
+                    style: Theme.of(context).textTheme.labelSmall),
                 visualDensity: VisualDensity.compact,
                 side: BorderSide.none,
                 backgroundColor: scheme.secondaryContainer,

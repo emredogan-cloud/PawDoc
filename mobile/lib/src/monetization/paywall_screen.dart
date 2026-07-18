@@ -466,7 +466,13 @@ class _PlanCard extends StatelessWidget {
         contentPadding: const EdgeInsets.all(16),
         title: Row(
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            // Flexible so the title + "Save 52%" badge can't RenderFlex-overflow
+            // at the 1.6× text-scale clamp (RC accessibility fix).
+            Flexible(
+              child: Text(title,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis),
+            ),
             if (badge != null) ...[
               const SizedBox(width: 8),
               Container(

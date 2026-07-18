@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/legal_urls.dart';
 import '../core/consent_prefs.dart';
+import '../core/friendly_error.dart';
 
 import '../core/app_image.dart';
 import '../core/app_motion_asset.dart';
@@ -57,10 +57,11 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
     try {
       await action(ref.read(authControllerProvider));
-    } on AuthException catch (e) {
-      _showError(e.message);
     } catch (e) {
-      _showError('Something went wrong. Please try again.');
+      // Never surface a raw transport/server error to a first-time owner: an RC
+      // on-device test showed a raw SocketException / `{"code":…}` here.
+      if (kDebugMode) debugPrint('auth error: $e');
+      _showError(friendlyAuthError(e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -130,10 +131,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           content: Text('If an account exists, a reset link is on its way.'),
         ));
       }
-    } on AuthException catch (e) {
-      _showError(e.message);
-    } catch (_) {
-      _showError("Couldn't send a reset link. Please try again.");
+    } catch (e) {
+      if (kDebugMode) debugPrint('reset error: $e');
+      _showError(friendlyAuthError(e));
     }
   }
 

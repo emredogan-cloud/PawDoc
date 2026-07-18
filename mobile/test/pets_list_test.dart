@@ -52,7 +52,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('last_check_chip_p1')), findsOneWidget);
-    expect(find.text('CALL_TODAY'), findsOneWidget);
+    // Friendly ladder label, not the raw `CALL_TODAY` wire token (RC UX fix).
+    expect(find.text('Call today'), findsOneWidget);
   });
 
   testWidgets('No chip when the pet has no checks yet', (tester) async {

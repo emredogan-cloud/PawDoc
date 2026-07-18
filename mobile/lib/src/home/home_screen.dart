@@ -10,6 +10,7 @@ import '../account/user_profile.dart';
 import '../analysis/analysis_runner.dart';
 import '../analysis/analysis_service.dart';
 import '../capture/camera_screen.dart';
+import '../core/action_labels.dart';
 import '../core/app_motion_asset.dart';
 import '../core/app_views.dart';
 import '../core/connectivity.dart';
@@ -362,7 +363,7 @@ class _PetHeroCard extends ConsumerWidget {
                         data: (t) => Text(
                           t == null
                               ? 'No checks yet'
-                              : 'Last check: ${t.checkedAt == null ? t.level : lastCheckLabel(t.checkedAt!)}',
+                              : 'Last check: ${t.checkedAt == null ? actionLabel(t.level) : lastCheckLabel(t.checkedAt!)}',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: scheme.onSurfaceVariant),
                         ),

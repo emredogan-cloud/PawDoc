@@ -146,15 +146,18 @@ class _CameraScreenState extends ConsumerState<CameraScreen> {
           Positioned.fill(child: Center(child: CameraPreview(controller))),
           const Positioned.fill(child: _FramingOverlay()),
           // QA-06: a photo captured offline can't upload — say so up front.
-          const Positioned(
-            top: 0, left: AppSpace.s16, right: AppSpace.s16,
-            child: OfflineBanner(),
-          ),
+          // Banner + lighting chip share one top column so they stack instead
+          // of overlapping when both are visible (RC UX fix).
           Positioned(
-            top: AppSpace.s16,
-            left: 0,
-            right: 0,
-            child: Center(child: _LightingChip(hint: _liveHint)),
+            top: AppSpace.s8,
+            left: AppSpace.s16,
+            right: AppSpace.s16,
+            child: Column(
+              children: [
+                const OfflineBanner(),
+                Center(child: _LightingChip(hint: _liveHint)),
+              ],
+            ),
           ),
           Positioned(
             left: 0,
@@ -238,10 +241,12 @@ class _LightingChip extends StatelessWidget {
           Icon(good ? Icons.check_circle_rounded : Icons.wb_sunny_rounded,
               size: 16, color: color),
           const SizedBox(width: AppSpace.s4),
-          Semantics(
-            liveRegion: true,
-            child: Text(good ? 'Lighting looks good' : hint,
-                style: const TextStyle(color: Colors.white)),
+          Flexible(
+            child: Semantics(
+              liveRegion: true,
+              child: Text(good ? 'Lighting looks good' : hint,
+                  style: const TextStyle(color: Colors.white)),
+            ),
           ),
         ],
       ),
@@ -268,8 +273,10 @@ class _PrivacyNote extends StatelessWidget {
         children: [
           Icon(Icons.lock_outline_rounded, size: 14, color: Colors.white70),
           SizedBox(width: AppSpace.s4),
-          Text('Photos are private — location removed',
-              style: TextStyle(color: Colors.white70, fontSize: 12)),
+          Flexible(
+            child: Text('Photos are private — location removed',
+                style: TextStyle(color: Colors.white70, fontSize: 12)),
+          ),
         ],
       ),
     );

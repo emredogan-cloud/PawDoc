@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../analytics/analytics.dart';
 import '../auth/supabase_providers.dart';
+import '../core/action_labels.dart';
 import '../core/dates.dart';
 import '../core/pet_display.dart';
 import '../export/health_report.dart';
@@ -171,8 +172,7 @@ class _VetVisitPrepScreenState extends ConsumerState<VetVisitPrepScreen> {
                                   null)
                                 shortDate(DateTime.parse(
                                     a['created_at'] as String)),
-                              ((a['action'] as String?) ?? '')
-                                  .replaceAll('_', ' '),
+                              actionLabel((a['action'] as String?) ?? ''),
                             ].join(' · '),
                           ),
                       ],
