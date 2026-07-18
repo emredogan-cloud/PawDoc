@@ -204,7 +204,7 @@ class _HeroSection extends StatelessWidget {
         ),
         const SizedBox(height: AppSpace.s16),
         const Text(
-          'Never miss what matters',
+          'Stay on top of what matters',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: AppColors.ink50,

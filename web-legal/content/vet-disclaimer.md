@@ -20,7 +20,7 @@ Please read this disclaimer carefully. It explains exactly what PawDoc does and 
 PawDoc gives two things:
 
 - **General educational information** about pet health, and
-- **Triage (urgency guidance)** — a best estimate of *whether* and *how urgently* your pet may need to be seen by a veterinarian, typically expressed as **emergency**, **monitor**, or **likely normal**.
+- **Triage (urgency guidance)** — a best estimate of *whether* and *how urgently* your pet may need to be seen by a veterinarian, expressed as an action from **get help now** through **watch and re-check** (the lowest level). PawDoc never tells you your pet is "normal" or "fine."
 
 That is the whole of what PawDoc offers. It is a starting point to help you decide what to do next — not an answer about what is wrong with your pet.
 
