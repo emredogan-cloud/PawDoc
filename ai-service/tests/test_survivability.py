@@ -3,7 +3,9 @@
 The failure mode being closed: one hung provider (Anthropic default 600s timeout)
 pins the only machine's threads -> /health (same pool) stops answering -> Fly
 restarts the machine, killing in-flight analyses. We bound inputs (422) and give
-both providers an 8s hard timeout with no SDK-level retry stacking.
+both providers a hard timeout with no SDK-level retry stacking — Gemini 12s (the
+API's 10s floor + headroom), Claude 15s (enough for a Sonnet tool_use response),
+both well under the Edge's 25s budget.
 """
 import json
 
@@ -68,13 +70,17 @@ def test_claude_client_constructed_with_timeout_and_no_retries(monkeypatch):
 
     monkeypatch.setattr(anthropic, "Anthropic", _RecAnthropic)
     ClaudeProvider(api_key="x").analyze("sys", "text only")
-    assert CTOR["anthropic"]["timeout"] == 8.0
+    # 15s (was 8s, which timed out every Sonnet tool_use call). Bounded, no retry.
+    assert CTOR["anthropic"]["timeout"] == 15.0
     assert CTOR["anthropic"]["max_retries"] == 0
 
 
-def test_gemini_client_constructed_with_http_timeout(monkeypatch):
+def test_gemini_http_timeout_meets_api_minimum(monkeypatch):
     from google import genai
 
     monkeypatch.setattr(genai, "Client", _RecGenai)
     GeminiProvider(api_key="x").analyze("sys", "text only")
+    # The Gemini API REJECTS deadlines < 10s (400 INVALID_ARGUMENT); 8s failed
+    # every call. Guard the floor so the regression can't return.
     assert "http_options" in CTOR["genai"]
+    assert CTOR["genai"]["http_options"].timeout >= 10000

@@ -399,48 +399,20 @@ deno_version = 2
 [functions.revenuecat-webhook]
 verify_jwt = false
 
-# /claim-referral is called by the authenticated app; the user's JWT identifies
-# the claimer (the body's code is the only client input). Phase 3.3.
-[functions.claim-referral]
-verify_jwt = true
-
-# /process-reminders is called by pg_cron via pg_net (no user JWT); it
-# authenticates with the x-cron-secret header (== CRON_SECRET). Phase 3.3 Part 2.
-[functions.process-reminders]
-verify_jwt = false
-
-# /find-vets is the Places key-hiding proxy; only signed-in users may call it so
-# the Places quota can't be drained anonymously. Phase 3.4.
-[functions.find-vets]
-verify_jwt = true
-
 # /analyze-anonymous is the ONLY anonymous AI path (web symptom checker). No JWT;
 # protected by Turnstile + an Upstash IP rate limit (fail-closed). Phase 5.2.
 [functions.analyze-anonymous]
 verify_jwt = false
 
-# /generate-journals is the weekly cron-driven Health Journal writer; no user
-# JWT (pg_cron via pg_net), gated by the x-cron-secret == CRON_SECRET header.
-# Phase 5.3.
-[functions.generate-journals]
-verify_jwt = false
-
-# /generate-pdf-report is the $4.99 PDF Health Report add-on (Phase 6.3).
-# Requires a signed-in user (JWT verified by default). Server-side entitlement
-# check + decrement of users.pdf_reports_remaining lives inside the function.
+# /generate-pdf-report is the premium PDF Health Report (premium-included after
+# the evolution). Requires a signed-in user (JWT verified by default).
 [functions.generate-pdf-report]
 verify_jwt = true
 
-# /invite-family-member is called by the family-tier owner to invite a member
-# (Phase 6.3.1). JWT identifies the inviter; server-side enforces tier.
-[functions.invite-family-member]
-verify_jwt = true
-
-# /accept-family-invite is called by the invitee after deep-linking into the
-# app. JWT identifies the accepter; server validates token + expiry + the
-# already-in-a-family rule (Phase 6.3.1).
-[functions.accept-family-invite]
-verify_jwt = true
+# NOTE: claim-referral, process-reminders, find-vets, generate-journals,
+# invite-family-member, accept-family-invite were removed in the 2026-07
+# evolution (referral / crons / vet-finder / journals / family sharing deleted).
+# analyze, delete-account, generate-upload-url use the default (verify_jwt=true).
 
 [analytics]
 enabled = true
