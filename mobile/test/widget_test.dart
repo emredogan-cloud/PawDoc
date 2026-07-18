@@ -74,7 +74,9 @@ void main() {
     expect(find.text('Terms'), findsAtLeastNWidgets(1));
     expect(find.byKey(const Key('accept_terms_checkbox')), findsOneWidget);
     // The reassurance subline is present; no fabricated metrics anywhere.
-    expect(find.textContaining('vet-informed triage'), findsOneWidget);
+    // ("vet-informed" softened to "careful" — RC store-review M2: avoid implying
+    // real-time veterinary involvement before the vet-content review is done.)
+    expect(find.textContaining('careful triage'), findsOneWidget);
   });
 
   // GAP-E1: forgot-password entry point opens a reset dialog (initiation only).

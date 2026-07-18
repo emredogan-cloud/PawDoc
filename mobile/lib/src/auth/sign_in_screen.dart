@@ -218,7 +218,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           ),
           const SizedBox(height: AppSpace.s8),
           Text(
-            'Calm, vet-informed triage for your pet — in seconds.',
+            'Calm, careful triage for your pet — in seconds.',
             textAlign: TextAlign.center,
             style: Theme.of(context)
                 .textTheme

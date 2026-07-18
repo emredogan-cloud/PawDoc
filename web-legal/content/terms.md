@@ -17,7 +17,7 @@ These Terms of Service ("**Terms**") are a binding agreement between you and **[
 
 ## 1. What PawDoc is — and is not
 
-PawDoc helps you decide **whether and how urgently** to seek veterinary care by giving triage guidance — typically **emergency**, **monitor**, or **likely normal** — generated with the help of AI.
+PawDoc helps you decide **whether and how urgently** to seek veterinary care by giving triage guidance about **how soon to see a vet** — an action ranging from **get help now** through **watch and re-check** (the lowest level) — generated with the help of AI. PawDoc never tells you your pet is "normal" or "fine."
 
 - Triage results are **informational only**. They are not a diagnosis, prognosis, treatment plan, or prescription.
 - PawDoc is **not a substitute** for examination, diagnosis, and treatment by a licensed veterinarian.
@@ -38,7 +38,7 @@ You agree to use the App lawfully and as described in our [Acceptable Use Policy
 
 ## 5. Subscriptions and billing
 
-PawDoc offers a free tier with a limited number of analyses and an optional auto-renewing premium subscription. Subscriptions are **billed by the Apple App Store or Google Play** (managed through RevenueCat) — not by us directly — and **auto-renew until cancelled**. Full details, including how to cancel and how refunds work, are in the [Subscription Terms](/subscriptions/).
+PawDoc offers a free tier with **unlimited text symptom checks** (photo logs and some record features are limited on the free tier) and an optional auto-renewing premium subscription. Subscriptions are **billed by the Apple App Store or Google Play** (managed through RevenueCat) — not by us directly — and **auto-renew until cancelled**. Full details, including how to cancel and how refunds work, are in the [Subscription Terms](/subscriptions/).
 
 **Emergency results are never placed behind a paywall.** If the App identifies a potential emergency, the safety guidance and prompt to seek a veterinarian are shown regardless of your plan or remaining free checks.
 

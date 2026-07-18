@@ -17,7 +17,7 @@ We believe you should understand the tool you are trusting with your pet. This p
 
 ## 1. How it works
 
-When you submit a photo, short video, or description along with your pet's profile, PawDoc sends that information to third-party AI models — currently **Google Gemini** and **Anthropic Claude** — which analyze it and return structured guidance. PawDoc organizes that into a simple triage signal (**emergency**, **monitor**, or **likely normal**) plus general information and a recommendation about seeing a veterinarian.
+When you submit a photo, short video, or description along with your pet's profile, PawDoc sends that information to third-party AI models — currently **Google Gemini** and **Anthropic Claude** — which analyze it and return structured guidance. PawDoc organizes that into a simple urgency signal — an action from **get help now** through **watch and re-check** (its lowest level; it never says your pet is "normal" or "fine") — plus general information and a recommendation about seeing a veterinarian.
 
 To keep results as safe and consistent as possible, PawDoc:
 
@@ -30,7 +30,7 @@ To keep results as safe and consistent as possible, PawDoc:
 
 AI is good at quickly surfacing patterns and giving you a sensible starting point. But it has real limitations you must keep in mind:
 
-- **AI can be wrong.** It can miss a serious problem (a false "likely normal") or raise a false alarm.
+- **AI can be wrong.** It can miss a serious problem (a falsely low "watch and re-check") or raise a false alarm.
 - **AI can "hallucinate."** It can produce confident, fluent statements that are simply incorrect.
 - **It is probabilistic.** Results are best estimates, not definitive findings.
 - **It depends entirely on your input.** A blurry photo, a partial video, or an incomplete description can produce a wrong or uncertain result. PawDoc cannot see, touch, smell, or test your pet.
@@ -39,7 +39,7 @@ AI is good at quickly surfacing patterns and giving you a sensible starting poin
 
 ## 3. What this means for you
 
-Use PawDoc as **one input** to your decision, not the decision itself. If your own judgment says something is wrong, trust it and contact a veterinarian — even if PawDoc says "likely normal." In anything that looks like an emergency, seek care immediately and do not rely on the app (see the [Emergency Disclaimer](/emergency/)).
+Use PawDoc as **one input** to your decision, not the decision itself. If your own judgment says something is wrong, trust it and contact a veterinarian — even if PawDoc's guidance is reassuringly low-urgency. In anything that looks like an emergency, seek care immediately and do not rely on the app (see the [Emergency Disclaimer](/emergency/)).
 
 ## 4. Honesty about accuracy
 
