@@ -1,7 +1,7 @@
 """Pipeline orchestration tests with fake providers (no API keys needed)."""
 from app import config
 from app.cache import InMemoryCache
-from app.models import AnalyzeRequest, PetContext, TriageLevel
+from app.models import ActionLevel, AnalyzeRequest, PetContext
 from app.pipeline import AnalysisPipeline
 from app.providers import ProviderError
 
@@ -14,25 +14,36 @@ class FakeProvider:
         self.fail = fail
         self.calls = 0
 
-    def analyze(self, system_prompt, user_prompt, image_url=None, frame_urls=None,
+    def analyze(self, system_prompt, user_prompt, media=None,
                 pet_context_block=None):
         self.calls += 1
-        self.last_frame_urls = frame_urls
+        self.last_media = media
         self.last_pet_context = pet_context_block
         if self.fail:
             raise ProviderError(f"{self.name} forced failure")
         return dict(self.response)
 
 
+# Legacy level names map onto the v2 ladder so the scenario intent of the
+# original tests is preserved: EMERGENCY->GET_HELP_NOW, MONITOR/NORMAL->floor.
+LEVEL_MAP = {
+    "EMERGENCY": "GET_HELP_NOW",
+    "MONITOR": "WATCH_AND_RECHECK",
+    "NORMAL": "WATCH_AND_RECHECK",
+}
+
+
 def res(level, conf, **kw):
     base = {
-        "triage_level": level,
+        "action": LEVEL_MAP.get(level, level),
         "confidence": conf,
-        "primary_concern": "assessment",
+        "observation": "assessment",
         "visible_symptoms": [],
-        "differential": [],
+        "vets_look_for": [],
+        "watch_for": [],
         "recommended_actions": ["follow up if needed"],
-        "urgency_timeframe": "routine",
+        "urgency_timeframe": "re-check in 24h",
+        "recheck_hours": 24,
         "disclaimer_required": True,
     }
     base.update(kw)
@@ -64,7 +75,7 @@ def test_emergency_override_runs_before_any_ai_call():
     t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
     t3 = FakeProvider("claude", 3, res("NORMAL", 0.99))
     out = build(t2, t3).run(req("my dog had a seizure this morning"))
-    assert out.result.triage_level is TriageLevel.EMERGENCY
+    assert out.result.action is ActionLevel.GET_HELP_NOW
     assert out.emergency_override_applied is True
     assert t2.calls == 0 and t3.calls == 0  # no AI was called
 
@@ -74,7 +85,7 @@ def test_tier2_high_confidence_is_accepted_without_tier3():
     t3 = FakeProvider("claude", 3, res("MONITOR", 0.8))
     out = build(t2, t3).run(req())  # benign, no risk signals
     assert out.tier_used == 2
-    assert out.result.triage_level is TriageLevel.NORMAL
+    assert out.result.action is ActionLevel.WATCH_AND_RECHECK
     assert t3.calls == 0
 
 
@@ -84,34 +95,49 @@ def test_low_tier2_confidence_escalates_to_tier3():
     out = build(t2, t3).run(req())
     assert out.tier_used == 3
     assert t3.calls >= 1
-    assert out.result.triage_level is TriageLevel.MONITOR
+    assert out.result.action is ActionLevel.WATCH_AND_RECHECK
 
 
-def test_emergency_classification_is_cross_verified():
+def test_emergency_classification_schedules_async_cross_verify():
+    # B6 (evolution): the verify never delays the response. With a synchronous
+    # test executor we can assert BOTH: the outcome returns GET_HELP_NOW and
+    # exactly one background verify job ran against Tier 3.
     t2 = FakeProvider("gemini", 2, res("NORMAL", 0.4))
     t3 = FakeProvider("claude", 3, res("EMERGENCY", 0.9))
-    out = build(t2, t3).run(req("very lethargic"))  # no hardcoded keyword
-    assert out.result.triage_level is TriageLevel.EMERGENCY
-    assert out.cross_verified is True
-    assert t3.calls == 2  # primary + cross-verify
+    jobs = []
+    pipe = AnalysisPipeline(
+        tier2=t2, tier3=t3, cache=InMemoryCache(),
+        cross_verify_executor=jobs.append,
+    )
+    out = pipe.run(req("very lethargic"))  # no hardcoded keyword
+    assert out.result.action is ActionLevel.GET_HELP_NOW
+    assert out.cross_verify_scheduled is True
+    assert len(jobs) == 1
+    calls_before = t3.calls
+    jobs[0]()  # run the deferred verify deterministically
+    assert t3.calls == calls_before + 1  # the verify hit Tier 3 exactly once
 
 
 def test_low_confidence_returns_insufficient_information():
     t2 = FakeProvider("gemini", 2, res("MONITOR", 0.5))
     t3 = FakeProvider("claude", 3, res("MONITOR", 0.4))  # below 0.60 floor
     out = build(t2, t3).run(req())
-    assert out.result.triage_level is TriageLevel.MONITOR
-    assert "Not enough information" in out.result.primary_concern
+    assert out.result.action is ActionLevel.WATCH_AND_RECHECK
+    assert "Not enough information" in out.result.observation
 
 
-def test_cr4_borderline_normal_with_risk_signals_biases_to_monitor():
-    # Tier 2 confidently says NORMAL, but the owner reports vomiting (a risk signal).
+def test_cr4_floor_read_with_risk_signals_is_escalated_and_tightened():
+    # Tier 2 confidently reads the ladder floor, but the owner reports vomiting
+    # (a risk signal): escalate to Tier 3 once, and when the floor persists,
+    # tighten the re-check window and surface the signals in watch_for.
     t2 = FakeProvider("gemini", 2, res("NORMAL", 0.95))
     t3 = FakeProvider("claude", 3, res("NORMAL", 0.95))
     out = build(t2, t3).run(req("my cat is vomiting and lethargic"))
-    assert out.result.triage_level is TriageLevel.MONITOR  # downgraded for safety
+    assert out.result.action is ActionLevel.WATCH_AND_RECHECK  # floor kept, tightened
     assert out.tier_used == 3  # escalated during the re-check
-    assert any("Monitor closely" in a for a in out.result.recommended_actions)
+    assert out.result.recheck_hours is not None and out.result.recheck_hours <= 12
+    assert any("Risk signals" in w for w in out.result.watch_for)
+    assert any("contact your veterinarian" in a for a in out.result.recommended_actions)
 
 
 def test_cr19_kill_switch_returns_degraded():
@@ -120,7 +146,7 @@ def test_cr19_kill_switch_returns_degraded():
     t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
     out = build(t2, cache=cache).run(req())
     assert out.degraded is True
-    assert out.result.triage_level is TriageLevel.MONITOR
+    assert out.result.action is ActionLevel.WATCH_AND_RECHECK
     assert t2.calls == 0
 
 
@@ -129,7 +155,7 @@ def test_cr5_provider_failure_degrades_gracefully():
     t3 = FakeProvider("claude", 3, fail=True)
     out = build(t2, t3).run(req())
     assert out.degraded is True
-    assert out.result.triage_level is TriageLevel.MONITOR
+    assert out.result.action is ActionLevel.WATCH_AND_RECHECK
     assert t2.calls == 2  # one retry before degrading
 
 
@@ -141,21 +167,26 @@ def test_tier2_failure_fails_over_to_tier3():
     out = build(t2, t3).run(req())
     assert out.degraded is False          # did NOT degrade — failed over
     assert out.tier_used == 3
-    assert out.result.triage_level is TriageLevel.MONITOR
+    assert out.result.action is ActionLevel.WATCH_AND_RECHECK
     assert t2.calls == 2                  # tried Gemini (1 retry) first
     assert t3.calls >= 1                  # then Claude served the result
 
 
-def test_failover_result_still_emergency_cross_verified():
-    # A failed-over Tier-3 EMERGENCY must still go through the safety gates
-    # (cross-verification), not bypass them.
+def test_failover_result_still_schedules_cross_verify():
+    # A failed-over Tier-3 GET_HELP_NOW must still schedule the async verify,
+    # not bypass the telemetry gate.
     t2 = FakeProvider("gemini", 2, fail=True)
     t3 = FakeProvider("claude", 3, res("EMERGENCY", 0.9))
-    out = build(t2, t3).run(req("very lethargic"))
+    jobs = []
+    pipe = AnalysisPipeline(
+        tier2=t2, tier3=t3, cache=InMemoryCache(),
+        cross_verify_executor=jobs.append,
+    )
+    out = pipe.run(req("very lethargic"))
     assert out.degraded is False
-    assert out.result.triage_level is TriageLevel.EMERGENCY
-    assert out.cross_verified is True
-    assert t3.calls == 2  # failover primary + EMERGENCY cross-verify
+    assert out.result.action is ActionLevel.GET_HELP_NOW
+    assert out.cross_verify_scheduled is True
+    assert len(jobs) == 1
 
 
 def test_tier3_escalation_failure_still_degrades():
@@ -166,7 +197,7 @@ def test_tier3_escalation_failure_still_degrades():
     t3 = FakeProvider("claude", 3, fail=True)
     out = build(t2, t3).run(req())
     assert out.degraded is True
-    assert out.result.triage_level is TriageLevel.MONITOR
+    assert out.result.action is ActionLevel.WATCH_AND_RECHECK
     assert t2.calls == 1   # Tier 2 succeeded (no retry needed)
     assert t3.calls == 2   # Tier 3 escalation tried with one retry, then degrade
 
@@ -180,7 +211,7 @@ class FakeModerator:
     def __init__(self, safe):
         self.safe = safe
 
-    def is_safe(self, image_url):
+    def is_safe_bytes(self, data, mime_type):
         return self.safe
 
 
@@ -192,7 +223,9 @@ def _photo_req():
     )
 
 
-def test_cr8_unsafe_image_rejected_before_analysis():
+def test_cr8_unsafe_image_rejected_before_analysis(monkeypatch):
+    import app.pipeline as pl
+    monkeypatch.setattr(pl, "gather_media", lambda url: [(b"x", "image/png")])
     t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
     t3 = FakeProvider("claude", 3, res("NORMAL", 0.9))
     pipeline = AnalysisPipeline(
@@ -201,10 +234,12 @@ def test_cr8_unsafe_image_rejected_before_analysis():
     out = pipeline.run(_photo_req())
     assert out.moderation_rejected is True
     assert t2.calls == 0 and t3.calls == 0  # no analysis ran
-    assert out.result.triage_level is TriageLevel.MONITOR
+    assert out.result.action is ActionLevel.WATCH_AND_RECHECK
 
 
-def test_cr8_safe_image_proceeds_to_analysis():
+def test_cr8_safe_image_proceeds_to_analysis(monkeypatch):
+    import app.pipeline as pl
+    monkeypatch.setattr(pl, "gather_media", lambda url: [(b"x", "image/png")])
     t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
     pipeline = AnalysisPipeline(
         tier2=t2,
@@ -215,6 +250,29 @@ def test_cr8_safe_image_proceeds_to_analysis():
     out = pipeline.run(_photo_req())
     assert out.moderation_rejected is False
     assert t2.calls == 1
+    # AI-03: the SAME prefetched bytes reach the model — one fetch total.
+    assert t2.last_media == [(b"x", "image/png")]
+
+
+def test_ai03_moderator_receives_true_mime(monkeypatch):
+    """A PNG moderates as image/png — the hardcoded-jpeg wrong-reject is dead."""
+    import app.pipeline as pl
+    monkeypatch.setattr(pl, "gather_media", lambda url: [(b"png-bytes", "image/png")])
+    seen = []
+
+    class RecordingModerator:
+        def is_safe_bytes(self, data, mime_type):
+            seen.append((data, mime_type))
+            return True
+
+    pipeline = AnalysisPipeline(
+        tier2=FakeProvider("gemini", 2, res("NORMAL", 0.99)),
+        tier3=FakeProvider("claude", 3, res("NORMAL", 0.9)),
+        cache=InMemoryCache(),
+        moderator=RecordingModerator(),
+    )
+    pipeline.run(_photo_req())
+    assert seen == [(b"png-bytes", "image/png")]
 
 
 class PerUrlModerator:
@@ -229,36 +287,3 @@ class PerUrlModerator:
         return image_url not in self.unsafe
 
 
-def _video_req(frame_urls):
-    return AnalyzeRequest(
-        input_type="video",
-        frame_urls=frame_urls,
-        pet=PetContext(species="dog", age_years=3.0),
-    )
-
-
-def test_phase_c_unsafe_video_keyframe_is_rejected():
-    # RF-7: a single unsafe keyframe must reject the whole video (frames were
-    # previously NOT moderated). No analysis runs.
-    t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
-    t3 = FakeProvider("claude", 3, res("NORMAL", 0.9))
-    mod = PerUrlModerator(unsafe={"https://r2/f2.jpg"})
-    pipe = AnalysisPipeline(tier2=t2, tier3=t3, cache=InMemoryCache(), moderator=mod)
-    out = pipe.run(_video_req(["https://r2/f1.jpg", "https://r2/f2.jpg", "https://r2/f3.jpg"]))
-    assert out.moderation_rejected is True
-    assert out.result.triage_level is TriageLevel.MONITOR
-    assert t2.calls == 0 and t3.calls == 0  # no analysis ran
-    assert mod.checked == ["https://r2/f1.jpg", "https://r2/f2.jpg"]  # stopped at the unsafe one
-
-
-def test_phase_c_all_safe_video_keyframes_are_each_moderated_then_proceed():
-    t2 = FakeProvider("gemini", 2, res("NORMAL", 0.99))
-    mod = PerUrlModerator(unsafe=set())
-    pipe = AnalysisPipeline(
-        tier2=t2, tier3=FakeProvider("claude", 3, res("NORMAL", 0.9)),
-        cache=InMemoryCache(), moderator=mod,
-    )
-    out = pipe.run(_video_req(["https://r2/f1.jpg", "https://r2/f2.jpg"]))
-    assert out.moderation_rejected is False
-    assert t2.calls == 1  # analysis ran
-    assert mod.checked == ["https://r2/f1.jpg", "https://r2/f2.jpg"]  # EVERY frame moderated

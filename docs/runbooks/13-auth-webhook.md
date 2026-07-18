@@ -1,5 +1,7 @@
 # 13 — Auth webhook (create the profile row on signup)
 
+> **SUPERSEDED (GAP-D3 / BE-03):** the webhook was removed from the repo on 2026-07-17. User provisioning runs as an in-transaction DB trigger (`supabase/migrations/*auth_user_profile_trigger.sql`). Do not redeploy this function; `verify-phase-1.1.sh` now fails if the directory reappears.
+
 The `/auth-webhook` Edge Function creates the `public.users` row when someone
 signs up. It verifies a signature before doing anything (CR #21), so only your
 Supabase project can trigger it.

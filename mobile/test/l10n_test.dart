@@ -47,7 +47,6 @@ void main() {
     expect(l!.emergencyDisclaimer, contains('not a diagnosis'));
     expect(l!.emergencyAcknowledge, contains('urgent attention'));
     expect(l!.actionContinue, 'Continue');
-    expect(l!.telehealthCta, contains('vet'));
   });
 
   testWidgets('German safety-critical strings resolve', (tester) async {
@@ -57,7 +56,6 @@ void main() {
     expect(l!.emergencyFindVet, contains('Notfall-Tierarzt'));
     expect(l!.emergencyDisclaimer, contains('keine Diagnose'));
     expect(l!.actionContinue, 'Weiter');
-    expect(l!.telehealthCta, contains('Tierarzt'));
   });
 
   test('Supported locales include en + de', () {

@@ -45,14 +45,14 @@ void main() {
               Pet(id: 'p1', userId: 'u', name: 'rex', species: 'dog', breed: 'Labrador'),
             ]),
         latestTriageProvider.overrideWith((ref, petId) =>
-            LatestTriage(level: 'MONITOR', checkedAt: DateTime.now())),
+            LatestTriage(level: 'CALL_TODAY', checkedAt: DateTime.now())),
       ],
       child: const MaterialApp(home: PetsListScreen()),
     ));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('last_check_chip_p1')), findsOneWidget);
-    expect(find.text('MONITOR'), findsOneWidget);
+    expect(find.text('CALL_TODAY'), findsOneWidget);
   });
 
   testWidgets('No chip when the pet has no checks yet', (tester) async {

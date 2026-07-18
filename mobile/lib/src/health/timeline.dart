@@ -14,7 +14,7 @@ class TimelineItem {
     required this.date,
     required this.title,
     this.subtitle,
-    this.triageLevel,
+    this.action,
     this.eventType,
   });
 
@@ -22,26 +22,27 @@ class TimelineItem {
   final DateTime date;
   final String title;
   final String? subtitle;
-  final String? triageLevel; // analyses only: EMERGENCY | MONITOR | NORMAL
+  final String? action; // analyses only: the contract-v2 ladder value
   final String? eventType; // health events only
 
-  static String _triageTitle(String? level) => switch (level) {
-        'EMERGENCY' => 'Emergency triage',
-        'MONITOR' => 'Monitor at home',
-        'NORMAL' => 'Likely normal',
+  static String _actionTitle(String? action) => switch (action) {
+        'GET_HELP_NOW' => 'Urgent — get help now',
+        'CALL_TODAY' => 'Call your vet today',
+        'BOOK_VISIT' => 'Book a routine visit',
+        'WATCH_AND_RECHECK' => 'Watch and re-check',
         _ => 'AI check',
       };
 
   static TimelineItem? fromAnalysisRow(Map<String, dynamic> r) {
     final created = DateTime.tryParse((r['created_at'] as String?) ?? '');
     if (created == null) return null;
-    final level = r['triage_level'] as String?;
+    final level = r['action'] as String?;
     return TimelineItem(
       kind: TimelineKind.analysis,
       date: created,
-      title: _triageTitle(level),
-      subtitle: (r['primary_concern'] as String?) ?? (r['input_type'] as String?),
-      triageLevel: level,
+      title: _actionTitle(level),
+      subtitle: (r['observation'] as String?) ?? (r['input_type'] as String?),
+      action: level,
     );
   }
 
@@ -80,7 +81,7 @@ final healthTimelineProvider =
   final client = ref.watch(supabaseClientProvider);
   final analyses = await client
       .from('analyses')
-      .select('triage_level, primary_concern, input_type, created_at')
+      .select('action, observation, input_type, created_at')
       .eq('pet_id', petId)
       .order('created_at', ascending: false);
   final events = await client

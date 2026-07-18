@@ -22,67 +22,49 @@ class AIProvider(Protocol):
         self,
         system_prompt: str,
         user_prompt: str,
-        image_url: str | None = None,
-        frame_urls: list[str] | None = None,
+        media: list[tuple[bytes, str]] | None = None,
         pet_context_block: str | None = None,
     ) -> dict:
         ...
 
 
 class GeminiProvider:
-    """Tier 2 — Gemini 2.0 Flash with JSON output enforcement. Video (Phase 3.2)
-    routes here and uses the pinned VIDEO_MODEL (CR #17)."""
+    """Tier 2 — Gemini 2.0 Flash with JSON output enforcement."""
 
     name = "gemini"
     tier = 2
 
-    def __init__(
-        self,
-        api_key: str,
-        model: str = config.TIER2_MODEL,
-        video_model: str = config.VIDEO_MODEL,
-    ) -> None:
+    def __init__(self, api_key: str, model: str = config.TIER2_MODEL) -> None:
         self._api_key = api_key
         self._model = model
-        self._video_model = video_model
-
-    def select_model(self, frame_urls: list[str] | None) -> str:
-        """Video keyframes -> the explicitly pinned video model; otherwise the
-        standard Tier-2 model. Pinning prevents version drift (CR #17). Pure, so
-        the routing is unit-tested without invoking the SDK."""
-        return self._video_model if frame_urls else self._model
 
     def analyze(
         self,
         system_prompt: str,
         user_prompt: str,
-        image_url: str | None = None,
-        frame_urls: list[str] | None = None,
+        media: list[tuple[bytes, str]] | None = None,
         pet_context_block: str | None = None,
     ) -> dict:
-        model = self.select_model(frame_urls)
-        # Gemini has no equivalent of Anthropic's ephemeral prompt cache, so we
-        # concatenate the static + per-pet + per-check parts into one stream.
-        # Static parts still go first so they hit the model's implicit KV cache
-        # when the SDK / server side optimizes for repeated prefixes.
-        sections = [system_prompt]
+        model = self._model
+        # B10 (evolution): TRUE role separation. The safety contract + per-pet
+        # context ride in system_instruction; ONLY the owner-controlled text is
+        # user content — 4,000 chars of untrusted input no longer shares a
+        # string with the safety contract on the primary tier.
+        system_sections = [system_prompt]
         if pet_context_block:
-            sections.append(pet_context_block)
-        sections.append(user_prompt)
-        text = "\n\n".join(sections)
+            system_sections.append(pet_context_block)
+        system_text = "\n\n".join(system_sections)
         try:
             from google import genai  # lazy
             from google.genai import types
 
-            from .media import gather_media  # lazy (avoids import cycle)
-
-            # GAP-A1: attach REAL pixels — up to 6 video frames or one image —
-            # as multimodal parts, not a text claim that an image exists.
+            # GAP-A1: attach REAL pixels (prefetched ONCE by the pipeline
+            # through the guarded fetcher) as multimodal parts.
             parts = [
                 types.Part.from_bytes(data=data, mime_type=mime)
-                for data, mime in gather_media(image_url, frame_urls)
+                for data, mime in (media or [])
             ]
-            contents = [*parts, text] if parts else text
+            contents = [*parts, user_prompt] if parts else user_prompt
 
             # GAP-A4: hard request timeout (ms) + bounded output so a hung/slow
             # Gemini call can't pin a thread or run up cost.
@@ -94,11 +76,18 @@ class GeminiProvider:
                 model=model,
                 contents=contents,
                 config=types.GenerateContentConfig(
+                    system_instruction=system_text,
                     temperature=config.ANALYSIS_TEMPERATURE,
                     response_mime_type="application/json",
                     max_output_tokens=1024,
                 ),
             )
+            # Cost telemetry (R4): capture token usage when the SDK reports it.
+            usage = getattr(resp, "usage_metadata", None)
+            self.last_usage = {
+                "input_tokens": getattr(usage, "prompt_token_count", None),
+                "output_tokens": getattr(usage, "candidates_token_count", None),
+            } if usage else None
             import json
 
             return json.loads(resp.text)
@@ -144,8 +133,7 @@ class ClaudeProvider:
         self,
         system_prompt: str,
         user_prompt: str,
-        image_url: str | None = None,
-        frame_urls: list[str] | None = None,
+        media: list[tuple[bytes, str]] | None = None,
         pet_context_block: str | None = None,
     ) -> dict:
         try:
@@ -153,12 +141,9 @@ class ClaudeProvider:
 
             import anthropic  # lazy
 
-            from .media import gather_media  # lazy (avoids import cycle)
-
-            # GAP-A1: attach REAL pixels as image content blocks before the text
-            # (up to 6 video frames or one image); text-only requests keep the
-            # plain-string content exactly as before.
-            media = gather_media(image_url, frame_urls)
+            # GAP-A1: attach REAL pixels (prefetched once by the pipeline) as
+            # an image content block before the text; text-only requests keep
+            # the plain-string content as before.
             if media:
                 content: list | str = [
                     {
@@ -194,6 +179,11 @@ class ClaudeProvider:
                 tool_choice={"type": "tool", "name": "report_triage"},
                 messages=[{"role": "user", "content": content}],
             )
+            usage = getattr(message, "usage", None)
+            self.last_usage = {
+                "input_tokens": getattr(usage, "input_tokens", None),
+                "output_tokens": getattr(usage, "output_tokens", None),
+            } if usage else None
             for block in message.content:
                 if getattr(block, "type", None) == "tool_use":
                     return dict(block.input)
@@ -204,25 +194,32 @@ class ClaudeProvider:
             raise ProviderError(f"claude: {exc}") from exc
 
 
-# JSON schema for Claude's structured tool output (mirrors AnalysisResult).
+# JSON schema for Claude's structured tool output (mirrors AnalysisResult v2 —
+# the action ladder; no differential, no condition names anywhere).
 _ANALYSIS_TOOL = {
     "name": "report_triage",
-    "description": "Return the pet-health triage assessment.",
+    "description": "Return the pet-health observation and action guidance.",
     "input_schema": {
         "type": "object",
         "properties": {
-            "triage_level": {"type": "string", "enum": ["EMERGENCY", "MONITOR", "NORMAL"]},
+            "action": {
+                "type": "string",
+                "enum": ["GET_HELP_NOW", "CALL_TODAY", "BOOK_VISIT", "WATCH_AND_RECHECK"],
+            },
             "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
-            "primary_concern": {"type": "string"},
+            "observation": {"type": "string"},
             "visible_symptoms": {"type": "array", "items": {"type": "string"}},
-            "differential": {"type": "array", "items": {"type": "string"}},
+            "vets_look_for": {"type": "array", "items": {"type": "string"}},
+            "watch_for": {"type": "array", "items": {"type": "string"}},
             "recommended_actions": {"type": "array", "items": {"type": "string"}},
             "urgency_timeframe": {"type": "string"},
+            "recheck_hours": {"type": ["integer", "null"], "minimum": 1, "maximum": 336},
             "disclaimer_required": {"type": "boolean"},
         },
         "required": [
-            "triage_level", "confidence", "primary_concern", "visible_symptoms",
-            "differential", "recommended_actions", "urgency_timeframe", "disclaimer_required",
+            "action", "confidence", "observation", "visible_symptoms",
+            "vets_look_for", "watch_for", "recommended_actions",
+            "urgency_timeframe", "disclaimer_required",
         ],
     },
 }

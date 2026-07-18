@@ -1,33 +1,15 @@
 {
   "@@locale": "de",
-
   "appTitle": "PawDoc",
-
   "emergencyTitle": "Das könnte ein Notfall sein",
-
   "emergencyRecommendedPrefix": "Empfohlen: {timeframe}.",
-
   "emergencyIndicatorDetected": "Notfall-Anzeichen erkannt: '{indicator}'.",
-
   "urgencyImmediately": "sofort",
-
   "urgencyWithin24Hours": "innerhalb von 24 Stunden",
-
   "urgencyRoutine": "routinemäßig",
-
   "emergencyFindVet": "Sofort einen Notfall-Tierarzt finden",
-
   "emergencyDisclaimer": "PawDoc liefert Informationen, keine Diagnose. Im Notfall sofort einen Tierarzt kontaktieren.",
-
   "resultDisclaimer": "PawDoc liefert Informationen, keine tierärztliche Diagnose. Wenden Sie sich im Zweifel an Ihren Tierarzt.",
-
   "emergencyAcknowledge": "Mir ist klar, dass dies dringend ist",
-
-  "actionContinue": "Weiter",
-
-  "telehealthTitle": "Jetzt mit einem Tierarzt sprechen",
-
-  "telehealthSubtitle": "Video-Konsultation auf Abruf mit einem zugelassenen Tierarzt.",
-
-  "telehealthCta": "Tierarzt konsultieren"
+  "actionContinue": "Weiter"
 }

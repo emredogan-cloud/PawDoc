@@ -18,9 +18,9 @@ DO NOT use "diagnose / diagnosis / treat / cure" in visible copy — use
 | Subtitle | `Know When to Call the Vet` | 30 | 25 ✓ |
 | Keywords | (see KEYWORDS below) | 100 | 80 ✓ |
 | Bundle ID | `app.pawdoc` | — | — |
-| Primary category | Medical | — | — |
+| Primary category | Lifestyle *(evolution I5 — verify against current Apple category guidance before submission; Medical invites 1.4.1-level scrutiny a records app does not need)* | — | — |
 | Secondary category | Lifestyle | — | — |
-| Age rating | 4+ | — | — |
+| Age rating | 12+ *(consistent with Terms 13+; a subscription app that can show a pet emergency is not 4+)* | — | — |
 
 ## Title & Subtitle (visible)
 
@@ -31,51 +31,52 @@ DO NOT use "diagnose / diagnosis / treat / cure" in visible copy — use
 
 ## Keywords (SEO field — NOT shown to users)
 
-The keyword field is comma-separated, counts commas toward the 100-char limit, and
-is invisible to users. "diagnosis" is included **here only**, for search — it must
-never appear in the visible description, subtitle, or screenshots.
+The keyword field is comma-separated and counts commas toward the 100-char
+limit. **`diagnosis` was deliberately REMOVED (evolution I4):** bidding on the
+one word the entire product posture disclaims was a store risk and a
+litigation exhibit — the keyword set now matches what the app actually is.
 
 ```
-symptom,checker,dog,cat,sick,emergency,vet,triage,diagnosis,rabbit,puppy,monitor
+pet,health,record,symptom,checker,dog,cat,vet,visit,tracker,rabbit,puppy
 ```
-(80 / 100 characters.)
+(72 / 100 characters.)
 
 ## Promotional Text (visible, 170 max — updatable without review)
 
 <!-- VISIBLE-COPY:START -->
-Worried about your pet at 2am? Get fast, clear AI triage guidance — and know whether to relax, monitor at home, or call the vet now.
+Your pet's health record, organized — symptom guidance in seconds, an emergency button that works offline, and a vet-visit summary in your hand.
 <!-- VISIBLE-COPY:END -->
 
 ## Description (visible, 4000 max)
 
 <!-- VISIBLE-COPY:START -->
-Know when to call the vet — in seconds.
+The health record your vet actually wants to see.
 
-When your dog won't eat or your cat is suddenly acting strange, the hardest question is the same every time: is this an emergency, or can it wait until morning? PawDoc helps you decide. Add a photo and a few details, and our AI gives you fast, clear triage guidance — so you can stop the late-night anxiety spiral and act with confidence.
+When your dog won't eat or your cat is suddenly acting strange, PawDoc helps you notice what matters, decide how soon to involve your vet, and remember everything when you get there. Describe the symptom or add a photo, and you'll get calm, plain-language guidance: what vets look for with this kind of sign, what to watch for at home, and how soon to call — never a verdict, never a diagnosis.
 
-PawDoc is an information and triage tool, not a replacement for your veterinarian. Every result is checked against built-in safety rules and shows a clear disclaimer. If something looks urgent, PawDoc tells you to contact a vet right away — and that emergency guidance is never hidden behind a paywall.
+EMERGENCY HELP, ALWAYS FREE
+A red button on the home screen works entirely offline: nearby emergency vets, tap-to-dial poison control, and step-by-step first-aid cards for choking, bleeding, seizures, bloat, and overheating. If what you type sounds urgent, PawDoc takes you straight there — before anything else.
 
 HOW IT WORKS
-• Add a photo or describe what you're seeing
-• Tell us about your pet — species, age, and history
-• Get a clear result in seconds — EMERGENCY, MONITOR, or LIKELY NORMAL — with plain-English guidance on what to do next
+• Describe what you're seeing (free, unlimited) or add a photo
+• Get clear next steps: get help now · call today · book a visit · watch and re-check
+• Everything is saved to your pet's timeline automatically
 
-WHY PET PARENTS TRUST PAWDOC
-• Safety first: possible emergencies are flagged before anything else
-• Honest guidance — when we're not confident, we say so instead of guessing
-• Emergency guidance is always free — never hidden behind a paywall
+THE RECORD DOES THE REMEMBERING
+• Weight trends, vaccinations, medications, and health events in one timeline
+• One-tap re-check reminders, delivered by your phone — no account with a push service
+• The Vet Visit Prep Pack: your pet's story, organized for the exam room
+
+HONEST BY DESIGN
+• PawDoc never tells you your pet is "fine" — it tells you what to watch for and when to act
+• When there isn't enough information, it says so instead of guessing
+• Emergency help is free forever and never behind a paywall
 • Private by design — delete your account and data anytime, right in the app
 
-WHAT YOU CAN DO
-• Triage symptoms for dogs, cats, rabbits, birds, and more
-• Keep all your pets in one place
-• Look back over your past checks
-• Set reminders to monitor an ongoing concern
-
 IMPORTANT
-PawDoc provides general information and triage guidance to help you decide whether, and how urgently, to seek veterinary care. It does not provide veterinary medical advice and is not a substitute for an in-person examination by a licensed veterinarian. In an emergency, contact your veterinarian or a local emergency animal hospital immediately.
+PawDoc provides general information and record-keeping to help you decide whether, and how urgently, to seek veterinary care. It does not diagnose, does not provide veterinary medical advice, and is not a substitute for an in-person examination by a licensed veterinarian. In an emergency, contact your veterinarian or a local emergency animal hospital immediately.
 
-Subscription: your first few checks are free. An optional subscription unlocks unlimited triage; price and terms are shown before you purchase and confirmed at submission.
+Subscription: symptom checks by text are free with no limit. An optional subscription keeps the full record — unlimited photo logs, full history, reminders, and the Vet Visit Prep Pack; price and terms are shown before you purchase.
 <!-- VISIBLE-COPY:END -->
 
 ## Screenshots — exact order (slots 1–5)
@@ -86,7 +87,7 @@ these five (caption text is visible on the storefront — no banned words appear
 <!-- VISIBLE-COPY:START -->
 1. "Know exactly what your pet needs." — hero shot over a completed triage result.
 2. "How it works." — the three-step flow: camera → AI → result.
-3. "No more 2am anxiety spirals." — a calm LIKELY NORMAL result.
+3. "It never says fine - it says what to watch for." - a calm WATCH AND RE-CHECK result.
 4. "Emergency guidance, always free." — the safety promise: possible emergencies are flagged first and never paywalled.
 5. "Everything in one place." — feature breadth: multi-pet, history, reminders.
 <!-- VISIBLE-COPY:END -->

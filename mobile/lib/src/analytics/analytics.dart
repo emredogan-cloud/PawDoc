@@ -29,8 +29,7 @@ class Analytics {
   static Future<void> resultViewed(String triageLevel) =>
       capture('result_viewed', {'triage_level': triageLevel});
   static Future<void> emergencyTriggered() => capture('emergency_triggered');
-  static Future<void> paywallShown([String? variant]) =>
-      capture('paywall_shown', {'variant': ?variant}); // variant tags the A/B funnel
+  static Future<void> paywallShown() => capture('paywall_shown');
   static Future<void> trialStarted() => capture('trial_started');
   static Future<void> subscriptionConverted() => capture('subscription_converted');
 
@@ -39,16 +38,6 @@ class Analytics {
       capture('health_event_logged', {'event_type': eventType});
   static Future<void> multiPetAdded(int petCount) =>
       capture('multi_pet_added', {'pet_count': petCount});
-
-  // Phase 3.2 video analysis.
-  static Future<void> videoAnalysisSubmitted(int frameCount) =>
-      capture('video_analysis_submitted', {'frame_count': frameCount});
-
-  // Phase 3.3 referral.
-  static Future<void> referralCodeSubmitted() => capture('referral_code_submitted');
-  static Future<void> referralSuccess() => capture('referral_success');
-  static Future<void> referralFraudPrevented(String reason) =>
-      capture('referral_fraud_prevented', {'reason': reason});
 
   // Phase 3.3 Part 2 — engagement.
   static Future<void> reminderSet(String reminderType) =>
@@ -63,26 +52,8 @@ class Analytics {
   static Future<void> feedbackSubmitted(String source) =>
       capture('feedback_submitted', {'source': source});
 
-  // Phase 4.2 — onboarding A/B (paywall shown inside onboarding, Variant B).
-  static Future<void> onboardingPaywallShown() => capture('onboarding_paywall_shown');
-
-  // Phase 5.3 — AI Health Journal.
-  static Future<void> journalViewed() => capture('journal_viewed');
-
-  // Phase 5.4 — Embedded telehealth (Airvet-style affiliate). `source` tags
-  // where the user tapped from (emergency_result | monitor_result | home).
-  static Future<void> telehealthClicked(String source) =>
-      capture('telehealth_clicked', {'source': source});
-
-  // Phase 6.3 — PDF Health Report add-on + Pet Insurance affiliate links.
+  // Phase 6.3 — PDF Health Report (premium-included).
   static Future<void> pdfReportRequested(String entitlement) =>
       capture('pdf_report_requested', {'entitlement': entitlement});
   static Future<void> pdfReportGenerated() => capture('pdf_report_generated');
-  static Future<void> pdfReportPurchased() => capture('pdf_report_purchased');
-  static Future<void> insuranceAffiliateClicked(String source) =>
-      capture('insurance_affiliate_clicked', {'source': source});
-
-  // Phase 6.3.1 — Family Sharing.
-  static Future<void> familyInviteSent() => capture('family_invite_sent');
-  static Future<void> familyInviteAccepted() => capture('family_invite_accepted');
 }

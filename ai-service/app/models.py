@@ -8,10 +8,18 @@ from enum import Enum
 from pydantic import BaseModel, Field, ValidationError
 
 
-class TriageLevel(str, Enum):
-    EMERGENCY = "EMERGENCY"
-    MONITOR = "MONITOR"
-    NORMAL = "NORMAL"
+class ActionLevel(str, Enum):
+    """The action ladder (contract v2). There is deliberately NO terminal
+    "everything is fine" state: the lowest rung prescribes what to watch for
+    and when to re-check — the app never owns the reassurance. See
+    docs/contracts/ANALYSIS_RESULT.md."""
+
+    GET_HELP_NOW = "GET_HELP_NOW"          # life/serious-harm signs — go now
+    CALL_TODAY = "CALL_TODAY"              # speak to a vet practice today
+    BOOK_VISIT = "BOOK_VISIT"              # routine appointment in coming days
+    WATCH_AND_RECHECK = "WATCH_AND_RECHECK"  # lowest rung: watch + re-check
+
+
 
 
 class PetContext(BaseModel):
@@ -24,14 +32,11 @@ class PetContext(BaseModel):
 
 
 class AnalyzeRequest(BaseModel):
-    input_type: str  # photo | video | text
+    input_type: str  # photo | text
     # GAP-A4: bound the request so a megabyte prompt / frame flood can't pin the
     # service or run up cost. Over-cap input -> 422 (Pydantic ValidationError).
     text_description: str | None = Field(default=None, max_length=4000)
     image_url: str | None = None  # short-lived signed R2 URL (Phase 1.2)
-    # Video (Phase 3.2): short-lived signed R2 URLs for the client-extracted
-    # keyframes (4–6). Empty for photo/text. Capped at 6 (GAP-A4).
-    frame_urls: list[str] = Field(default_factory=list, max_length=6)
     pet: PetContext
     # Set by the Edge Function when client-side quality checks were poor; feeds
     # the borderline-NORMAL re-check (CR #4).
@@ -48,34 +53,32 @@ class AnalyzeRequest(BaseModel):
     recent_events: list[dict] = Field(default_factory=list)
 
 
-class JournalRequest(BaseModel):
-    """Input for the /generate_journal endpoint (AI Health Journal, Phase 5.3).
-    The Edge cron summarizes the pet's last 7 days into these compact entries so
-    the prompt stays small + the cost predictable."""
-
-    pet: PetContext
-    week_start_date: str  # ISO date 'YYYY-MM-DD' (Monday of the week)
-    analyses: list[dict] = Field(default_factory=list)  # {triage_level, primary_concern, created_at}
-    events: list[dict] = Field(default_factory=list)  # {event_type, event_date, notes?}
-
-
-class EmbedRequest(BaseModel):
-    """Input for the /embed endpoint (semantic cache, Phase 3.2)."""
-
-    text_description: str | None = None
-    pet: PetContext
-
-
 class AnalysisResult(BaseModel):
-    """Frozen contract. JSON keys ARE these field names (snake_case)."""
+    """Frozen contract v2. JSON keys ARE these field names (snake_case).
 
-    triage_level: TriageLevel
+    v2 (evolution reframe): the diagnostic surface is GONE by design —
+    no `differential` (a ranked differential is the diagnostic act), no
+    disease names in any field, and no output that terminates without an
+    action and a timeframe. `confidence` is INTERNAL routing/storage only
+    and must never be rendered to the user."""
+
+    action: ActionLevel
     confidence: float = Field(ge=0.0, le=1.0)
-    primary_concern: str
+    # Plain-language description of what was observed/reported — NEVER a
+    # suspected condition. "a swollen, firm belly", not "suspected bloat (GDV)".
+    observation: str
     visible_symptoms: list[str] = Field(default_factory=list)
-    differential: list[str] = Field(default_factory=list)
+    # Educational: what a veterinarian typically assesses for THIS KIND of
+    # presentation (general knowledge about the presentation class — never
+    # findings or condition names about this specific animal).
+    vets_look_for: list[str] = Field(default_factory=list)
+    # Signs that mean the owner should escalate sooner than the chosen rung.
+    watch_for: list[str] = Field(default_factory=list)
     recommended_actions: list[str] = Field(default_factory=list)
     urgency_timeframe: str
+    # Hours until a re-check makes sense (drives the client's re-check
+    # reminder CTA). REQUIRED semantics: WATCH_AND_RECHECK must carry one.
+    recheck_hours: int | None = Field(default=None, ge=1, le=336)
     disclaimer_required: bool = True
 
 

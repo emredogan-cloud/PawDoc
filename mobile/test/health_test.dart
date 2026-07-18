@@ -2,30 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pawdoc/src/health/breed_insights.dart';
 import 'package:pawdoc/src/health/health_event.dart';
 import 'package:pawdoc/src/health/timeline.dart';
-import 'package:pawdoc/src/pets/pet_limits.dart';
 
 void main() {
-  group('pet limits (tier gate)', () {
-    test('Free/trial/Premium cap at 2; Family unlimited', () {
-      expect(petLimitFor('free'), 2);
-      expect(petLimitFor('trial'), 2);
-      expect(petLimitFor('premium'), 2);
-      expect(petLimitFor('family'), isNull);
-    });
-
-    test('canAddPet enforces the cap', () {
-      expect(canAddPet('free', 0), isTrue);
-      expect(canAddPet('free', 1), isTrue);
-      expect(canAddPet('free', 2), isFalse); // 3rd pet blocked
-      expect(canAddPet('premium', 2), isFalse);
-      expect(canAddPet('family', 99), isTrue); // unlimited
-    });
-
-    test('unknown status is treated as most restrictive (free)', () {
-      expect(canAddPet('mystery', 2), isFalse);
-    });
-  });
-
   group('breed insights', () {
     test('exact breed match returns the breed-specific list', () {
       final list = insightsForPet(breed: 'Labrador Retriever', species: 'dog');
@@ -77,11 +55,11 @@ void main() {
     test('interleaves analyses + events, newest first', () {
       final analyses = <Map<String, dynamic>>[
         {
-          'triage_level': 'NORMAL', 'primary_concern': 'Mild limp',
+          'action': 'WATCH_AND_RECHECK', 'observation': 'Mild limp',
           'input_type': 'photo', 'created_at': '2026-01-10T09:00:00Z',
         },
         {
-          'triage_level': 'EMERGENCY', 'primary_concern': 'Bloat',
+          'action': 'GET_HELP_NOW', 'observation': 'Bloat',
           'input_type': 'text', 'created_at': '2026-01-05T09:00:00Z',
         },
       ];
@@ -90,16 +68,16 @@ void main() {
       ];
       final merged = TimelineItem.merge(analyses, events);
       expect(merged.length, 3);
-      expect(merged[0].triageLevel, 'NORMAL'); // 2026-01-10
+      expect(merged[0].action, 'WATCH_AND_RECHECK'); // 2026-01-10
       expect(merged[1].kind, TimelineKind.healthEvent); // 2026-01-08
-      expect(merged[2].triageLevel, 'EMERGENCY'); // 2026-01-05
-      expect(merged[2].title, 'Emergency triage');
+      expect(merged[2].action, 'GET_HELP_NOW'); // 2026-01-05
+      expect(merged[2].title, 'Urgent — get help now');
     });
 
     test('drops rows with invalid/missing dates', () {
       final merged = TimelineItem.merge(
         [
-          {'triage_level': 'NORMAL', 'created_at': null},
+          {'action': 'WATCH_AND_RECHECK', 'created_at': null},
         ],
         [
           {'event_type': 'weight', 'event_date': 'not-a-date'},

@@ -36,3 +36,12 @@ first** for an explicit owner decision. `CR #n` = Critical-Review item from the 
 - **Security/safety additions are always in scope**; new *product* features are not (those wait for their roadmap slot).
 - **No regressions / no silent reversions** of decisions on this page.
 - **Maintain `ENVIRONMENT_VARS.md`** every sub-PR that introduces config.
+
+## 2026-07 Final Evolution Program (approved product reframe — PR #80)
+The three strategy reports (`PAWDOC_PRODUCT_EVOLUTION_MASTERPLAN.md` etc.) were declared the product vision and executed. These decisions supersede conflicting lines above; do not revert without founder sign-off:
+- **Verdicts → record + plan.** Contract v2: `action ∈ GET_HELP_NOW|CALL_TODAY|BOOK_VISIT|WATCH_AND_RECHECK`; `LIKELY NORMAL`/`NORMAL` and `differential` DELETED; `observation` replaces `primary_concern`; `confidence` is internal-only (never rendered). **The invariant: no output path — including every failure path — ends without an action + timeframe** (tested at Python/Edge/Dart layers).
+- **Emergency = offline red button, not an AI feature.** Client-side keyword router (157 EN/DE triplicated `safety.py` ≡ `emergency_keywords.mjs` ≡ `emergency_keywords.dart`, 3-way parity-tested) → `EmergencyHelpScreen` (maps deep link, poison-control dial, bundled first-aid cards). NOTHING may be added to that screen (no AI/meter/monetization/analytics CTA — CLAUDE.md NEVER rule). Server override remains authoritative. Cross-verify on GET_HELP_NOW is now **async telemetry** (amends "cross-verified" above — it no longer blocks the response).
+- **Free = safety, paid = memory.** Text guidance unmetered; photo logs metered PRE-AI (5/mo). One plan: `PREMIUM_STATUSES = {premium, trial}`.
+- **DELETED end-to-end** (re-adding requires founder + catalog case): referral, family sharing, emergency-screen affiliates (telehealth/insurance), video capture, AI journals (+OpenAI vendor), A/B experiments, re-engagement push, b2b_lite/sitter, PDF add-on, semantic cache, training export, 2-pet cap, OneSignal (→ local notifications), Google Places vet finder (→ OS maps deep link).
+- **RLS harness applies ALL migrations** (curated subset banned) and runs as a required CI job; Flutter CI builds APK+AAB; overclaim guard bans `never wonder`/`LIKELY NORMAL`/video-consult claims across app+store+web copy.
+- Full record: `PAWDOC_FINAL_EVOLUTION_REPORT.md` + `IMPLEMENTATION_CHANGELOG.md` + `FUTURE_FEATURE_CATALOG.md`.

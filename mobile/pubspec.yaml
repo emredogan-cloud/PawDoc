@@ -57,14 +57,17 @@ dependencies:
   http: ^1.6.0
   path_provider: ^2.1.5
   permission_handler: ^12.0.1
+  # Local, on-device reminder notifications (replaces OneSignal — no push
+  # vendor, no device token, works offline; evolution H2).
+  flutter_local_notifications: ^18.0.1
+  flutter_timezone: ^4.1.1
+  timezone: ^0.10.1
   share_plus: ^13.1.0
   url_launcher: ^6.3.2
   # Phase 3.4 — vet finder location (permissions handled gracefully; the Places
   # API key stays server-side in the /find-vets Edge Function).
-  geolocator: ^13.0.0
   purchases_flutter: ^10.1.1
   shared_preferences: ^2.5.5
-  onesignal_flutter: ^5.5.5
   connectivity_plus: ^7.1.1
   google_fonts: ^8.1.0
   flutter_animate: ^4.5.2
@@ -110,6 +113,7 @@ flutter:
   # illustration is rendered via AppImage with a code fallback, so a missing
   # asset never breaks the build or the UI.
   assets:
+    - assets/google_fonts/
     - assets/brand/
     - assets/icon/
     - assets/motion/
@@ -123,10 +127,6 @@ flutter:
     - assets/illustrations/pets/
     - assets/illustrations/premium/
     - assets/illustrations/results/
-    - assets/icons/species/
-    - assets/icons/actions/
-    - assets/icons/status/
-    - assets/icons/avatars/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

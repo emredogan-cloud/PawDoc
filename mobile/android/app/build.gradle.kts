@@ -13,6 +13,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // flutter_local_notifications (evolution H2 — on-device reminders)
+        // uses java.time and requires core-library desugaring.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -41,4 +44,10 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Required by isCoreLibraryDesugaringEnabled (flutter_local_notifications
+    // v18 needs desugar_jdk_libs >= 2.1.4).
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

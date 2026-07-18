@@ -169,24 +169,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue'**
   String get actionContinue;
-
-  /// Telehealth CTA title (Airvet-style affiliate).
-  ///
-  /// In en, this message translates to:
-  /// **'Talk to a vet now'**
-  String get telehealthTitle;
-
-  /// Telehealth CTA subtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'On-demand video consult with a licensed vet.'**
-  String get telehealthSubtitle;
-
-  /// Telehealth button label.
-  ///
-  /// In en, this message translates to:
-  /// **'Consult a vet'**
-  String get telehealthCta;
 }
 
 class _AppLocalizationsDelegate

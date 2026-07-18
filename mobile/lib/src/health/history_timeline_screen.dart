@@ -18,9 +18,10 @@ import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
 import 'health_event_form_screen.dart';
-import 'journal_card.dart';
 import 'pdf_report_service.dart';
 import 'timeline.dart';
+import '../prep/vet_visit_prep_screen.dart';
+import 'weight_trend_card.dart';
 
 /// The combined health-history timeline for the **active** pet (analyses +
 /// manual events, newest first). Watches [activePetProvider], so switching the
@@ -54,28 +55,19 @@ class HealthHistoryScreen extends ConsumerWidget {
     final navigator = Navigator.of(context);
     final profile = ref.read(userProfileProvider).asData?.value;
     await Analytics.pdfReportRequested(
-      profile?.isPremium == true
-          ? 'premium'
-          : (profile?.pdfReportsRemaining ?? 0) > 0
-              ? 'credits'
-              : 'free',
+      profile?.isPremium == true ? 'premium' : 'free',
     );
     try {
       await ref.read(pdfReportServiceProvider).generateAndShare(petId: petId, petName: petName);
       await Analytics.pdfReportGenerated();
-      ref.invalidate(userProfileProvider); // reflect a consumed credit
     } on PdfReportPaywallException {
-      // GAP-E10: make the 402 actionable. The old snackbar told the user to buy
-      // the add-on but gave them no way to — a dead end. Surface an upsell that
-      // opens the paywall (PDF add-on + Premium) so the gate can convert.
+      // GAP-E10: make the 402 actionable — surface the paywall, not a dead end.
       messenger.showSnackBar(
         SnackBar(
-          content: const Text(
-            'Unlock detailed PDF Health Reports — buy one for \$4.99 or go Premium.',
-          ),
+          content: const Text('PDF Health Reports are part of PawDoc Premium.'),
           duration: const Duration(seconds: 8),
           action: SnackBarAction(
-            label: 'Unlock',
+            label: 'Upgrade',
             onPressed: () => navigator.push(
               MaterialPageRoute(builder: (_) => const PaywallScreen()),
             ),
@@ -138,6 +130,9 @@ class HealthHistoryScreen extends ConsumerWidget {
               color: const Color(0xFF1A2220),
               onSelected: (v) {
                 switch (v) {
+                  case 'prep':
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => VetVisitPrepScreen(pet: pet)));
                   case 'share':
                     _shareMarkdown(context, ref, pet);
                   case 'pdf':
@@ -149,6 +144,15 @@ class HealthHistoryScreen extends ConsumerWidget {
                 }
               },
               itemBuilder: (_) => const [
+                PopupMenuItem(
+                  key: Key('open_vet_prep'),
+                  value: 'prep',
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.assignment_outlined),
+                    title: Text('Vet visit prep'),
+                  ),
+                ),
                 PopupMenuItem(
                   key: Key('export_health_report'),
                   value: 'share',
@@ -210,12 +214,13 @@ class HealthHistoryScreen extends ConsumerWidget {
                     if (items.isEmpty) {
                       return _HistoryEmptyState(petName: pet.name);
                     }
-                    // Journal card on top, then date-grouped status-node timeline.
+                    // Weight trend on top (E4 — the metadata is finally read
+                    // back), then the date-grouped status-node timeline.
                     final children = <Widget>[
                       Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpace.s16, vertical: AppSpace.s8),
-                        child: JournalCard(petId: pet.id!),
+                        child: WeightTrendCard(petId: pet.id!),
                       ),
                     ];
                     String? lastBucket;
@@ -413,9 +418,9 @@ class _TimelineNode extends StatelessWidget {
                                 color: AppColors.ink300,
                               ),
                         ),
-                        if (item.triageLevel != null) ...[
+                        if (item.action != null) ...[
                           const SizedBox(height: AppSpace.s4),
-                          _TriageChip(level: item.triageLevel!),
+                          _ActionChip(action: item.action!),
                         ],
                       ],
                     ),
@@ -431,10 +436,11 @@ class _TimelineNode extends StatelessWidget {
 
   Color _nodeColor(BuildContext context) {
     if (item.kind == TimelineKind.analysis) {
-      return switch (item.triageLevel) {
-        'EMERGENCY' => AppColors.emergencyLight,
-        'MONITOR' => AppColors.monitorLight,
-        'NORMAL' => AppColors.normalLight,
+      return switch (item.action) {
+        'GET_HELP_NOW' => AppColors.emergencyLight,
+        'CALL_TODAY' => AppColors.monitorLight,
+        'BOOK_VISIT' => AppColors.actionBookVisit,
+        'WATCH_AND_RECHECK' => AppColors.actionWatch,
         _ => PawPalette.mint,
       };
     }
@@ -443,9 +449,11 @@ class _TimelineNode extends StatelessWidget {
 
   static IconData _iconFor(TimelineItem item) {
     if (item.kind == TimelineKind.analysis) {
-      return switch (item.triageLevel) {
-        'EMERGENCY' => Icons.warning_amber_rounded,
-        'MONITOR' => Icons.visibility_outlined,
+      return switch (item.action) {
+        'GET_HELP_NOW' => Icons.warning_amber_rounded,
+        'CALL_TODAY' => Icons.phone_in_talk_rounded,
+        'BOOK_VISIT' => Icons.event_available_rounded,
+        'WATCH_AND_RECHECK' => Icons.visibility_outlined,
         _ => Icons.health_and_safety_outlined,
       };
     }
@@ -459,17 +467,19 @@ class _TimelineNode extends StatelessWidget {
   }
 }
 
-/// Small status chip shown on triage timeline entries.
-class _TriageChip extends StatelessWidget {
-  const _TriageChip({required this.level});
-  final String level;
+/// Small status chip shown on AI-check timeline entries. Ladder actions only —
+/// deliberately no "Healthy" chip: the record never reassures.
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({required this.action});
+  final String action;
 
   @override
   Widget build(BuildContext context) {
-    final (label, color) = switch (level) {
-      'EMERGENCY' => ('Emergency', AppColors.emergencyLight),
-      'MONITOR' => ('Monitor', AppColors.monitorLight),
-      'NORMAL' => ('Healthy', AppColors.normalLight),
+    final (label, color) = switch (action) {
+      'GET_HELP_NOW' => ('Urgent', AppColors.emergencyLight),
+      'CALL_TODAY' => ('Call today', AppColors.monitorLight),
+      'BOOK_VISIT' => ('Book visit', AppColors.actionBookVisit),
+      'WATCH_AND_RECHECK' => ('Watching', AppColors.actionWatch),
       _ => ('Check', PawPalette.mint),
     };
     return Container(

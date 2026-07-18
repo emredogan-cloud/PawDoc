@@ -26,13 +26,15 @@ class _GatedAnalysisService implements AnalysisService {
 }
 
 AnalysisResult _monitor() => const AnalysisResult(
-      triageLevel: TriageLevel.monitor,
+      action: ActionLevel.callToday,
       confidence: 0.8,
-      primaryConcern: 'Mild skin irritation',
+      observation: 'Mild skin irritation',
       visibleSymptoms: [],
-      differential: [],
+      vetsLookFor: [],
+      watchFor: [],
       recommendedActions: ['keep the area clean'],
       urgencyTimeframe: 'within 24 hours',
+      recheckHours: null,
       disclaimerRequired: true,
     );
 
@@ -71,7 +73,7 @@ void main() {
     expect(container.read(latestTriageProvider('p1')).value, isNull);
 
     // The check completes server-side; the runner must trigger a refetch.
-    store = LatestTriage(level: 'MONITOR', checkedAt: DateTime.now());
+    store = LatestTriage(level: 'CALL_TODAY', checkedAt: DateTime.now());
     service.completer
         .complete(AnalysisOutcome(result: _monitor(), analysisId: 'a1'));
     await tester.pump();
@@ -79,7 +81,7 @@ void main() {
 
     expect(fetches, 2,
         reason: 'the runner must invalidate latestTriage on completion (F-2)');
-    expect(container.read(latestTriageProvider('p1')).value?.level, 'MONITOR');
+    expect(container.read(latestTriageProvider('p1')).value?.level, 'CALL_TODAY');
     sub.close();
   });
 }

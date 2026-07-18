@@ -69,8 +69,10 @@ void main() {
       const ProviderScope(child: MaterialApp(home: SignInScreen())),
     );
     expect(find.text('Your data is encrypted.'), findsOneWidget);
-    expect(find.text('Privacy'), findsOneWidget);
-    expect(find.text('Terms'), findsOneWidget);
+    // 'Terms' now appears in the footer AND the LEG-03 assent checkbox.
+    expect(find.text('Privacy'), findsAtLeastNWidgets(1));
+    expect(find.text('Terms'), findsAtLeastNWidgets(1));
+    expect(find.byKey(const Key('accept_terms_checkbox')), findsOneWidget);
     // The reassurance subline is present; no fabricated metrics anywhere.
     expect(find.textContaining('vet-informed triage'), findsOneWidget);
   });

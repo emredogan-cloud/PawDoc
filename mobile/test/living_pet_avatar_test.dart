@@ -33,7 +33,7 @@ Widget _wrap(Widget child,
 void main() {
   group('kill-switch semantics (device finding D-2)', () {
     FeatureFlags flags(Object? Function() get) =>
-        FeatureFlags((_) async => false, getFlag: (_) async => get());
+        FeatureFlags(getFlag: (_) async => get());
 
     test('absent flag -> ON', () async {
       expect(await flags(() => null).isEnabledUnlessKilled('k'), isTrue);
@@ -114,13 +114,15 @@ void main() {
   testWidgets('NORMAL result carries the avatar slot; level routing correct',
       (tester) async {
     const normal = AnalysisResult(
-      triageLevel: TriageLevel.normal,
+      action: ActionLevel.watchAndRecheck,
       confidence: 0.9,
-      primaryConcern: 'Looks fine',
+      observation: 'Looks fine',
       visibleSymptoms: [],
-      differential: [],
+      vetsLookFor: [],
+      watchFor: [],
       recommendedActions: ['nothing needed'],
       urgencyTimeframe: 'routine',
+      recheckHours: null,
       disclaimerRequired: true,
     );
     await tester.pumpWidget(ProviderScope(

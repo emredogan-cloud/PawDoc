@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/legal_urls.dart';
+import '../core/consent_prefs.dart';
 
 import '../core/app_image.dart';
 import '../core/app_motion_asset.dart';
@@ -34,6 +35,10 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _busy = false;
+  // LEG-03 (I2): affirmative Terms/Privacy assent gates ACCOUNT CREATION
+  // (email + Apple). Sign-IN for existing accounts is unaffected.
+  bool _acceptedTerms = false;
+  bool _analyticsOptIn = false;
   bool _obscure = true;
   String? _error;
 
@@ -311,14 +316,69 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           const SizedBox(height: AppSpace.s12),
           const _OrDivider(),
           const SizedBox(height: AppSpace.s12),
+          // LEG-03: the assent checkbox — account creation requires it.
+          // (Own transparent Material: a ListTile inside the sheet's colored
+          // DecoratedBox trips a framework assert on newer Flutter.)
+          Material(
+            type: MaterialType.transparency,
+            child: CheckboxListTile(
+            key: const Key('accept_terms_checkbox'),
+            value: _acceptedTerms,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
+            title: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                const Text('I agree to the ', style: TextStyle(fontSize: 13)),
+                GestureDetector(
+                  onTap: () => LegalUrls.open(LegalUrls.terms),
+                  child: const Text('Terms',
+                      style: TextStyle(
+                          fontSize: 13,
+                          decoration: TextDecoration.underline)),
+                ),
+                const Text(' and ', style: TextStyle(fontSize: 13)),
+                GestureDetector(
+                  onTap: () => LegalUrls.open(LegalUrls.privacy),
+                  child: const Text('Privacy Policy',
+                      style: TextStyle(
+                          fontSize: 13,
+                          decoration: TextDecoration.underline)),
+                ),
+              ],
+            ),
+          ),
+          ),
+          // I2: OPTIONAL analytics consent — default OFF; revocable in Account.
+          Material(
+            type: MaterialType.transparency,
+            child: CheckboxListTile(
+            key: const Key('analytics_opt_in_checkbox'),
+            value: _analyticsOptIn,
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            onChanged: (v) => setState(() => _analyticsOptIn = v ?? false),
+            title: const Text(
+              'Help improve PawDoc with anonymous usage analytics (optional)',
+              style: TextStyle(fontSize: 13),
+            ),
+          ),
+          ),
           PawSecondaryButton(
             key: const Key('sign_up_button'),
             variant: PawSurface.cream,
             icon: Icons.pets_outlined,
-            onPressed: _busy
+            onPressed: (_busy || !_acceptedTerms)
                 ? null
-                : () => _run((c) => c.signUpWithEmail(
-                    _emailController.text.trim(), _passwordController.text)),
+                : () async {
+                    await ConsentPrefs.setAnalyticsEnabled(_analyticsOptIn);
+                    await _run((c) => c.signUpWithEmail(
+                        _emailController.text.trim(),
+                        _passwordController.text));
+                  },
             child: const Text('Create account'),
           ),
           // GAP-E3: native Apple sign-in is iOS/macOS only — hide it elsewhere.
@@ -328,7 +388,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               key: const Key('apple_sign_in_button'),
               variant: PawSurface.cream,
               icon: Icons.apple,
-              onPressed: _busy ? null : _appleSignIn,
+              // A first Apple sign-in also CREATES an account, so the assent
+              // checkbox gates it identically.
+              onPressed: (_busy || !_acceptedTerms) ? null : _appleSignIn,
               child: const Text('Continue with Apple'),
             ),
           ],

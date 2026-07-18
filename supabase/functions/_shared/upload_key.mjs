@@ -2,7 +2,7 @@
 // Edge Function) and Node (the unit test). Namespacing keys under the user id
 // keeps one user's uploads isolated from another's.
 
-const ALLOWED_EXT = new Set(["jpg", "jpeg", "png", "webp", "mp4", "mov"]);
+const ALLOWED_EXT = new Set(["jpg", "jpeg", "png", "webp"]);
 
 /** `uploads/<userId>/<uuid>.<ext>`, with validation/sanitization. Throws on bad input. */
 export function buildStorageKey(userId, ext, uuid) {

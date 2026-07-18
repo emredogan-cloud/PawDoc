@@ -18,21 +18,26 @@ test("rateLimitExceeded fires strictly above max (3/day)", () => {
   assert.equal(rateLimitExceeded(4, 3), true); // 4th blocked
 });
 
-test("rateLimitKey namespaces by ip", () => {
-  assert.equal(rateLimitKey("1.2.3.4"), "anon_checker:1.2.3.4");
+test("rateLimitKey hashes the ip (F6: no raw IP in storage)", async () => {
+  const k = await rateLimitKey("1.2.3.4", "salt");
+  assert.match(k, /^anon_checker:[0-9a-f]{32}$/);
+  assert.ok(!k.includes("1.2.3.4"));
+  // Deterministic per (salt, ip); different ips diverge.
+  assert.equal(k, await rateLimitKey("1.2.3.4", "salt"));
+  assert.notEqual(k, await rateLimitKey("5.6.7.8", "salt"));
 });
 
-test("simplifyResult exposes only triage + concern (no 'what to do')", () => {
+test("simplifyResult exposes only action + observation (no 'what to do')", () => {
   const full = {
-    triage_level: "MONITOR",
-    primary_concern: "Possible mild GI upset",
+    action: "WATCH_AND_RECHECK",
+    observation: "Possible mild GI upset",
     recommended_actions: ["secret step 1", "secret step 2"],
     differential: ["x", "y"],
     visible_symptoms: ["a"],
   };
   const s = simplifyResult(full);
-  assert.deepEqual(Object.keys(s).sort(), ["disclaimer_required", "primary_concern", "triage_level"]);
-  assert.equal(s.triage_level, "MONITOR");
-  assert.equal(s.primary_concern, "Possible mild GI upset");
+  assert.deepEqual(Object.keys(s).sort(), ["action", "disclaimer_required", "observation"]);
+  assert.equal(s.action, "WATCH_AND_RECHECK");
+  assert.equal(s.observation, "Possible mild GI upset");
   assert.equal("recommended_actions" in s, false); // detail withheld from anon web
 });

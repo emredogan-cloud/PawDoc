@@ -6,18 +6,18 @@ import '../analytics/analytics.dart';
 import '../core/app_image.dart';
 import '../core/app_motion_asset.dart';
 import '../core/celebration_overlay.dart';
-import '../experiments/feature_flags.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
 import '../config/legal_urls.dart';
+import '../account/user_profile.dart';
 import 'paywall_copy.dart';
 
-/// Annual-first paywall (Variant A control). Phase 4.2 adds layout variants via
-/// the `paywall_variant` flag — B: monthly featured; C: social proof. The flag
-/// only changes the LAYOUT, never WHEN the paywall is shown, so the EMERGENCY
-/// trust rule (enforced in paywall_policy.dart) is untouched. Fail-safe: an
-/// unknown/missing flag renders Variant A.
+/// Annual-first paywall (evolution Phase 6): ONE plan, record-centric value.
+/// Free = safety (unmetered text guidance + the red button); Premium = memory
+/// (unlimited photo logs, full history, the Vet Visit Prep Pack, reminders,
+/// PDF export). The GET_HELP_NOW trust rule (paywall_policy.dart) is
+/// untouched — nothing here can gate the emergency path.
 class PaywallScreen extends ConsumerStatefulWidget {
   const PaywallScreen({super.key});
 
@@ -29,7 +29,6 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   Offering? _offering;
   bool _loading = true;
   bool _purchasing = false;
-  String _variant = 'A'; // control until the flag resolves (fail-safe)
 
   @override
   void initState() {
@@ -38,12 +37,7 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   }
 
   Future<void> _init() async {
-    final variant = await ref.read(featureFlagsProvider).getVariant(
-          FeatureFlagKeys.paywallVariant,
-          allowed: FeatureFlagKeys.paywallVariants,
-        );
-    if (mounted) setState(() => _variant = variant);
-    await Analytics.paywallShown(variant); // variant captured for the A/B funnel
+    await Analytics.paywallShown();
     await _load();
   }
 
@@ -65,10 +59,13 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       if (pkg.storeProduct.introductoryPrice != null) {
         await Analytics.trialStarted();
       }
-      // ignore: deprecated_member_use
-      final result = await Purchases.purchasePackage(pkg);
+      // SUB-05: current purchase API (purchasePackage is deprecated).
+      final result = await Purchases.purchase(PurchaseParams.package(pkg));
       if (result.customerInfo.entitlements.active.isNotEmpty) {
         await Analytics.subscriptionConverted();
+        // SUB-02: reflect premium immediately from the SDK — never wait on
+        // the webhook round-trip.
+        ref.invalidate(userProfileProvider);
         if (mounted) {
           // M3 (#15): calm welcome moment on a REAL entitlement-active
           // purchase — ≤2.5s, tap-skippable, reduce-motion → text snackbar.
@@ -94,34 +91,30 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     }
   }
 
-  // Plan cards in the order/emphasis dictated by the variant.
+  // Annual-first plan cards. ONE plan, everything included — no tiers, no
+  // add-ons; fallback prices per the founder strategy ($39.99 / $6.99).
   List<Widget> _plans(Package? annual, Package? monthly) {
-    final annualCard = _PlanCard(
-      key: const Key('paywall_annual'),
-      title: 'Annual',
-      price: annual?.storeProduct.priceString ?? '\$59.99 / year',
-      subtitle: 'About \$5/month, billed yearly',
-      featured: _variant != 'B', // featured in A/C; in B it's the badged secondary
-      badge: _variant == 'B' ? 'Best value' : 'Save 50%',
-      busy: _purchasing,
-      onTap: () => _purchase(annual),
-    );
-    final monthlyCard = _PlanCard(
-      key: const Key('paywall_monthly'),
-      title: 'Monthly',
-      price: monthly?.storeProduct.priceString ?? '\$9.99 / month',
-      subtitle: 'Flexible, cancel anytime',
-      featured: _variant == 'B', // monthly is the hero in Variant B
-      busy: _purchasing,
-      onTap: () => _purchase(monthly),
-    );
-    final cards = _variant == 'B'
-        ? [monthlyCard, annualCard] // monthly first (Variant B)
-        : [annualCard, monthlyCard]; // annual-first (A control + C)
     return [
-      cards.first,
+      _PlanCard(
+        key: const Key('paywall_annual'),
+        title: 'Annual',
+        price: annual?.storeProduct.priceString ?? '\$39.99 / year',
+        subtitle: 'About \$3.33/month, billed yearly',
+        featured: true,
+        badge: 'Save 52%',
+        busy: _purchasing,
+        onTap: () => _purchase(annual),
+      ),
       const SizedBox(height: 12),
-      cards.last,
+      _PlanCard(
+        key: const Key('paywall_monthly'),
+        title: 'Monthly',
+        price: monthly?.storeProduct.priceString ?? '\$6.99 / month',
+        subtitle: 'Flexible, cancel anytime',
+        featured: false,
+        busy: _purchasing,
+        onTap: () => _purchase(monthly),
+      ),
     ];
   }
 
@@ -142,12 +135,12 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpace.s20),
         children: [
-          Text('Unlimited peace of mind',
+          Text('The health record your vet actually wants to see',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: AppColors.ink50, fontWeight: FontWeight.w700)),
           const SizedBox(height: AppSpace.s8),
           Text(
-              'Unlimited AI health checks, history, and reminders for all your pets.',
+              'Symptom checks stay free for everyone. Premium keeps the full record — every pet, every photo, every visit.',
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
@@ -167,12 +160,10 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           const _TrustPillars(),
           const SizedBox(height: AppSpace.s16),
           const _ValueStack(),
-          // Variant C: a truthful value/trust card (was a fabricated testimonial;
-          // honesty-fixed in Phase B). Layout-only A/B arm — analytics unchanged.
-          if (_variant == 'C') ...[
-            const SizedBox(height: AppSpace.s16),
-            const _SocialProof(),
-          ],
+          // Truthful value/trust card (was Variant C's arm; now always shown —
+          // the copy survived the honesty rebuild and models the approved tone).
+          const SizedBox(height: AppSpace.s16),
+          const _SocialProof(),
           const SizedBox(height: AppSpace.s24),
           // Plans render only when RevenueCat offerings are configured. When they
           // aren't, we show a production-safe "coming soon" state instead of
@@ -194,10 +185,26 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           if (_offering != null) const _SubscriptionLegal(),
           const SizedBox(height: AppSpace.s16),
           TextButton(
+            key: const Key('paywall_restore'),
             onPressed: () async {
+              // SUB-01: Restore was a silent no-op — Apple requires it to
+              // function. Now it refreshes entitlements and SAYS what happened.
+              final messenger = ScaffoldMessenger.of(context);
+              final navigator = Navigator.of(context);
               try {
-                await Purchases.restorePurchases();
-              } catch (_) {}
+                final info = await Purchases.restorePurchases();
+                final active = info.entitlements.active.isNotEmpty;
+                ref.invalidate(userProfileProvider);
+                messenger.showSnackBar(SnackBar(
+                    content: Text(active
+                        ? 'Premium restored — welcome back!'
+                        : 'No previous purchase found for this store account.')));
+                if (active && mounted) navigator.pop(true);
+              } catch (e) {
+                messenger.showSnackBar(SnackBar(
+                    content:
+                        Text('Could not restore right now. Please try again.')));
+              }
             },
             child: const Text('Restore purchases'),
           ),
@@ -398,11 +405,10 @@ class _ValueStack extends StatelessWidget {
   const _ValueStack();
 
   static const _features = [
-    'Unlimited AI health checks',
-    'Full health history',
-    'Reminders for every pet',
-    'Weekly AI health journal',
-    'Family & sitter sharing',
+    'Unlimited photo logs & progression',
+    'Full health history — every pet, forever',
+    'Vet Visit Prep Pack + PDF export',
+    'Vaccine, medication & re-check reminders',
   ];
 
   @override

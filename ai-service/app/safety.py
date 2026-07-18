@@ -1,15 +1,18 @@
 """Hardcoded safety layer — never AI-dependent.
 
 - Emergency override: runs BEFORE any AI call; if any keyword matches, the
-  result is EMERGENCY regardless of model output (roadmap §Emergency Override).
-- Borderline-NORMAL re-check (CR #4): the stated #1 business risk is a viral
-  false-negative, yet the source pipeline only double-checks EMERGENCY. This
-  flags NORMAL results that carry risk signals so the pipeline escalates to
-  Tier 3 or biases to MONITOR.
+  result is GET_HELP_NOW regardless of model output (roadmap §Emergency
+  Override). The same lists are mirrored client-side as the offline router.
+- Ladder-floor re-check (CR #4, reframed): the stated #1 business risk is a
+  false-negative. v1 guarded a "NORMAL" verdict; v2 has no such verdict — the
+  bottom rung already prescribes watching + a re-check. The residual guard:
+  a WATCH_AND_RECHECK read that carries risk signals is escalated to Tier 3,
+  and if it persists, its re-check window is tightened and the signals are
+  named in watch_for.
 """
 from __future__ import annotations
 
-from .models import AnalysisResult, AnalyzeRequest, TriageLevel
+from .models import ActionLevel, AnalysisResult, AnalyzeRequest
 
 # Verbatim from the source roadmap (23 keywords; the decomposed roadmap's "14"
 # undercounts — using the authoritative source list). Substring match errs
@@ -176,18 +179,20 @@ def check_emergency_override(
 
 
 def emergency_override_result(matched_keyword: str) -> AnalysisResult:
-    """The fixed EMERGENCY result returned when the override fires."""
+    """The fixed GET_HELP_NOW result returned when the override fires."""
     return AnalysisResult(
-        triage_level=TriageLevel.EMERGENCY,
+        action=ActionLevel.GET_HELP_NOW,
         confidence=1.0,
-        primary_concern=f"Emergency indicator detected: '{matched_keyword}'.",
+        observation=f"Emergency indicator detected: '{matched_keyword}'.",
         visible_symptoms=[],
-        differential=[],
+        vets_look_for=[],
+        watch_for=[],
         recommended_actions=[
             "Contact an emergency veterinarian or animal poison control now.",
             "Do not wait for further analysis.",
         ],
         urgency_timeframe="immediately",
+        recheck_hours=None,
         disclaimer_required=True,
     )
 
@@ -211,27 +216,32 @@ def is_sensitive_pet(request: AnalyzeRequest) -> bool:
     return _norm_species(request.pet.species) in {"rabbit", "bird", "reptile", "guinea_pig"}
 
 
-def needs_normal_recheck(result: AnalysisResult, request: AnalyzeRequest) -> bool:
-    """CR #4: a NORMAL result is suspicious if risk signals are present, the
-    input was low quality, or the pet is sensitive. Such results should be
-    escalated to Tier 3 (if not already) or biased to MONITOR."""
-    if result.triage_level is not TriageLevel.NORMAL:
+def needs_floor_recheck(result: AnalysisResult, request: AnalyzeRequest) -> bool:
+    """CR #4 (reframed): a bottom-rung WATCH_AND_RECHECK is suspicious if risk
+    signals are present, the input was low quality, or the pet is sensitive.
+    Such results are escalated to Tier 3 (if not already) or tightened."""
+    if result.action is not ActionLevel.WATCH_AND_RECHECK:
         return False
     return has_risk_signals(request) or request.low_input_quality or is_sensitive_pet(request)
 
 
-def bias_to_monitor(result: AnalysisResult, reason: str) -> AnalysisResult:
-    """Downgrade an unsafe NORMAL to MONITOR (CR #4 fallback when Tier 3 still
-    says NORMAL but risk signals remain)."""
+def tighten_recheck(result: AnalysisResult, reason: str) -> AnalysisResult:
+    """CR #4 fallback when Tier 3 still reads WATCH_AND_RECHECK but risk
+    signals remain: keep the rung (the floor already prescribes monitoring)
+    but tighten the re-check window to <= 12h, surface the reason in
+    watch_for, and make the escalation path explicit."""
+    watch = [f"Risk signals reported: {reason}", *result.watch_for]
+    hours = min(result.recheck_hours or 24, 12)
     return result.model_copy(
         update={
-            "triage_level": TriageLevel.MONITOR,
-            "primary_concern": result.primary_concern,
+            "watch_for": watch,
+            "recheck_hours": hours,
             "recommended_actions": [
-                f"Monitor closely — {reason}.",
                 *result.recommended_actions,
-                "If symptoms worsen or persist, contact your veterinarian.",
+                "If any watch-for sign appears — or you feel something is wrong — "
+                "contact your veterinarian rather than waiting for the re-check.",
             ],
+            "urgency_timeframe": f"re-check within {hours} hours",
             "disclaimer_required": True,
         }
     )

@@ -28,14 +28,16 @@ class _Fake implements AnalysisService {
       AnalysisOutcome(result: result, analysisId: 'a1');
 }
 
-AnalysisResult _mk(TriageLevel level) => AnalysisResult(
-      triageLevel: level,
+AnalysisResult _mk(ActionLevel level) => AnalysisResult(
+      action: level,
       confidence: 0.9,
-      primaryConcern: 'Concern',
+      observation: 'Concern',
       visibleSymptoms: const [],
-      differential: const [],
+      vetsLookFor: const [],
+      watchFor: const [],
       recommendedActions: const ['do this'],
       urgencyTimeframe: 'routine',
+      recheckHours: null,
       disclaimerRequired: true,
     );
 
@@ -66,22 +68,22 @@ void main() {
 
   testWidgets('#23 MONITOR gets the resolve beat, then the result',
       (tester) async {
-    await tester.pumpWidget(_runner(_mk(TriageLevel.monitor), motion: true));
+    await tester.pumpWidget(_runner(_mk(ActionLevel.callToday), motion: true));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
     // Mid-resolve: still the loading surface, result not yet revealed.
     expect(find.byType(AnalysisLoadingView), findsOneWidget);
-    expect(find.text('MONITOR — keep an eye out'), findsNothing);
+    expect(find.text('CALL YOUR VET TODAY'), findsNothing);
 
     await tester.pump(const Duration(milliseconds: 600));
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.text('MONITOR — keep an eye out'), findsOneWidget);
+    expect(find.text('CALL YOUR VET TODAY'), findsOneWidget);
   });
 
   testWidgets('#23 EMERGENCY keeps the INSTANT cut — zero resolve delay',
       (tester) async {
-    await tester.pumpWidget(_runner(_mk(TriageLevel.emergency), motion: true));
+    await tester.pumpWidget(_runner(_mk(ActionLevel.getHelpNow), motion: true));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -92,11 +94,11 @@ void main() {
 
   testWidgets('reduce-motion: straight to the result (no resolve phase)',
       (tester) async {
-    await tester.pumpWidget(_runner(_mk(TriageLevel.monitor), motion: false));
+    await tester.pumpWidget(_runner(_mk(ActionLevel.callToday), motion: false));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('MONITOR — keep an eye out'), findsOneWidget);
+    expect(find.text('CALL YOUR VET TODAY'), findsOneWidget);
   });
 
   testWidgets('error nap view: zero Lottie under reduce-motion, retry intact',

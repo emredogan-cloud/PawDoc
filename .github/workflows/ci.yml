@@ -47,6 +47,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  # RLS-02/INF-04: the RLS + deletion-cascade suite now applies EVERY migration
+  # (a curated subset once let the RLS-01 deletion blocker ship unverified) and
+  # is a required gate. GitHub's ubuntu runners provide Docker.
+  rls-suite:
+    name: RLS + deletion cascade (full migrations, Docker pg)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: test-rls.sh
+        run: ./scripts/test-rls.sh
+
   # GAP-D5: the Edge free-tier / emergency-keyword / quota-gate / SSRF-key logic
   # is covered by node --test but was never gated in CI.
   node-tests:

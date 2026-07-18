@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../analytics/analytics.dart';
 import '../capture/upload_service.dart';
 import '../core/functions_error.dart';
+import '../emergency/emergency_help_screen.dart';
 import '../core/motion.dart';
-import '../experiments/feature_flags.dart';
 import '../models/analysis_result.dart';
 import '../monetization/maybe_show_paywall.dart';
 import '../monetization/paywall_prefs.dart';
@@ -31,7 +31,6 @@ class AnalysisRunnerScreen extends ConsumerStatefulWidget {
     this.petSpecies,
     this.textDescription,
     this.imageStorageKey,
-    this.frameStorageKeys,
     this.isPremium = false,
   });
 
@@ -43,7 +42,6 @@ class AnalysisRunnerScreen extends ConsumerStatefulWidget {
   final String? petSpecies;
   final String? textDescription;
   final String? imageStorageKey;
-  final List<String>? frameStorageKeys; // Phase 3.2 video keyframes
   final bool isPremium;
 
   @override
@@ -62,9 +60,6 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
   void initState() {
     super.initState();
     Analytics.analysisSubmitted(widget.inputType);
-    if (widget.inputType == 'video') {
-      Analytics.videoAnalysisSubmitted(widget.frameStorageKeys?.length ?? 0);
-    }
     _run();
   }
 
@@ -79,7 +74,6 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
             inputType: widget.inputType,
             textDescription: widget.textDescription,
             imageStorageKey: widget.imageStorageKey,
-            frameStorageKeys: widget.frameStorageKeys,
           );
       if (!mounted) return;
       // M4 (#23, safety-review gated): non-emergency verdicts get one 450ms
@@ -87,7 +81,7 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
       // the INSTANT cut (hard guardrail: never delay an emergency), and
       // reduce-motion users go straight to the result.
       final resolve =
-          outcome.result.triageLevel != TriageLevel.emergency &&
+          outcome.result.action != ActionLevel.getHelpNow &&
               !reduceMotion(context);
       setState(() {
         _outcome = outcome;
@@ -105,13 +99,13 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
       // the analysis completes so "No checks yet" can never outlive a check.
       ref.invalidate(latestTriageProvider(widget.petId));
       // Side effects must not block or error the result UI.
-      unawaited(Analytics.analysisCompleted(outcome.result.triageLevel.wireValue));
+      unawaited(Analytics.analysisCompleted(outcome.result.action.wireValue));
       // M3 (#17): the one-time-ever "story has begun" toast — NEVER on an
       // EMERGENCY result (no celebration adjacency on the critical path).
       unawaited(PaywallPrefs.markFirstAnalysisCompleted().then((first) {
         if (first &&
             mounted &&
-            outcome.result.triageLevel != TriageLevel.emergency) {
+            outcome.result.action != ActionLevel.getHelpNow) {
           setState(() => _firstCheckEver = true);
         }
       }));
@@ -148,12 +142,18 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
     await showModalBottomSheet<void>(
       context: context,
       builder: (sheetCtx) => _QuotaUpgradeSheet(
-        message: fe.message ?? "You've used your free analyses this month.",
-        triageLevel: fe.triageLevel,
+        message: fe.message ?? "You've used this month's free photo logs.",
+        action: fe.action,
         onUpgrade: () {
           Navigator.of(sheetCtx).pop();
           Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const PaywallScreen()),
+          );
+        },
+        onEmergencyHelp: () {
+          Navigator.of(sheetCtx).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const EmergencyHelpScreen()),
           );
         },
         onDismiss: () => Navigator.of(sheetCtx).pop(),
@@ -164,38 +164,28 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
 
   Future<void> _onResultDone() async {
     // EMERGENCY is never paywalled; the trust rule also enforces this.
-    final wasEmergency = _outcome?.result.triageLevel == TriageLevel.emergency;
+    final wasEmergency = _outcome?.result.action == ActionLevel.getHelpNow;
     await maybeShowPaywall(context,
         lastTriageWasEmergency: wasEmergency, isPremium: widget.isPremium);
     if (mounted) Navigator.of(context).pop();
   }
 
-  Color _resolveColor(TriageLevel level) => switch (level) {
-        TriageLevel.emergency => AppColors.emergencyLight, // never reached
-        TriageLevel.monitor => AppColors.monitorLight,
-        TriageLevel.normal => AppColors.normalLight,
+  Color _resolveColor(ActionLevel level) => switch (level) {
+        ActionLevel.getHelpNow => AppColors.emergencyLight, // never reached
+        ActionLevel.callToday => AppColors.monitorLight,
+        ActionLevel.bookVisit => AppColors.actionBookVisit,
+        ActionLevel.watchAndRecheck => AppColors.actionWatch,
       };
 
   @override
   Widget build(BuildContext context) {
-    // M4 (#22) evaluation arm — PostHog 'pulse_pet_variant', control = OFF
-    // (pulse-only). The A/B is decided by data, not taste; flipping the flag
-    // exposes the calm pulse-pet without a release.
-    final pulsePet = ref
-                .watch(featureFlagProvider('pulse_pet_variant'))
-                .maybeWhen(data: (v) => v, orElse: () => false) &&
-            widget.petSpecies != null
-        ? widget.petSpecies
-        : null;
-
     switch (_phase) {
       case _Phase.loading:
-        return Scaffold(body: AnalysisLoadingView(pulsePetSpecies: pulsePet));
+        return const Scaffold(body: AnalysisLoadingView());
       case _Phase.resolving:
         return Scaffold(
           body: AnalysisLoadingView(
-            resolveColor: _resolveColor(_outcome!.result.triageLevel),
-            pulsePetSpecies: pulsePet,
+            resolveColor: _resolveColor(_outcome!.result.action),
           ),
         );
       case _Phase.error:
@@ -231,6 +221,7 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
           result: _outcome!.result,
           analysisId: _outcome!.analysisId,
           onDone: _onResultDone,
+          petId: widget.petId,
           petName: widget.petName,
           petSpecies: widget.petSpecies,
           firstCheckToast: _firstCheckEver,
@@ -246,13 +237,15 @@ class _QuotaUpgradeSheet extends StatelessWidget {
   const _QuotaUpgradeSheet({
     required this.message,
     required this.onUpgrade,
+    required this.onEmergencyHelp,
     required this.onDismiss,
-    this.triageLevel,
+    this.action,
   });
 
   final String message;
-  final String? triageLevel;
+  final String? action;
   final VoidCallback onUpgrade;
+  final VoidCallback onEmergencyHelp;
   final VoidCallback onDismiss;
 
   @override
@@ -265,11 +258,11 @@ class _QuotaUpgradeSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (triageLevel != null) ...[
-              Center(child: Chip(label: Text(triageLevel!))),
+            if (action != null) ...[
+              Center(child: Chip(label: Text(action!))),
               const SizedBox(height: AppSpace.s12),
             ],
-            Text("You're out of free checks",
+            Text("You're out of free photo logs",
                 style: Theme.of(context).textTheme.titleLarge,
                 textAlign: TextAlign.center),
             const SizedBox(height: AppSpace.s8),
@@ -278,7 +271,19 @@ class _QuotaUpgradeSheet extends StatelessWidget {
             FilledButton(
               key: const Key('quota_upgrade_button'),
               onPressed: onUpgrade,
-              child: const Text('Upgrade for unlimited checks'),
+              child: const Text('Upgrade for unlimited photo logs'),
+            ),
+            // v3 safety hatch: the meter can never strand an urgent moment —
+            // the free, offline red path is one tap away from the wall itself.
+            OutlinedButton.icon(
+              key: const Key('quota_emergency_help'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.emergencyLight,
+                side: const BorderSide(color: AppColors.emergencyLight),
+              ),
+              onPressed: onEmergencyHelp,
+              icon: const Icon(Icons.emergency_rounded, size: 18),
+              label: const Text('This is urgent — Emergency help (free)'),
             ),
             TextButton(onPressed: onDismiss, child: const Text('Not now')),
           ],

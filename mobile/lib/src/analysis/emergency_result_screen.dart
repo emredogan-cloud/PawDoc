@@ -1,14 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../analytics/analytics.dart';
 import '../models/analysis_result.dart';
-import '../monetization/insurance_affiliate_cta.dart';
-import '../monetization/telehealth_button.dart';
 import '../theme/design_tokens.dart';
-import '../vet_finder/vet_finder_screen.dart';
 import '../config/legal_urls.dart';
+import '../emergency/emergency_help_screen.dart';
+import '../vet_finder/maps_links.dart';
 import 'result_l10n.dart';
 
 /// EMERGENCY result: warm red, urgent copy, a vet-finder deep link, and an
@@ -32,12 +34,12 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
     Analytics.resultViewed('EMERGENCY');
   }
 
-  void _findVet() {
-    // Opens the location-aware finder; it falls back to native maps if location
-    // is denied/unavailable, so this always works in an emergency.
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const VetFinderScreen(emergency: true)),
-    );
+  Future<void> _findVet() async {
+    // OS maps deep link: the maps app handles location itself, so this needs
+    // no permission, no network to OUR servers, and works in an emergency.
+    unawaited(Analytics.vetFinderOpened());
+    await launchUrl(emergencyVetSearchMapsUri(),
+        mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -73,7 +75,7 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                 // M0 F-3: dynamic values are display-localized (template +
                 // urgency mapping); unknown values pass through verbatim.
                 // Pure string presentation — gate/logic untouched.
-                Text(localizedPrimaryConcern(l, r.primaryConcern),
+                Text(localizedPrimaryConcern(l, r.observation),
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white, fontSize: 18)),
                 const SizedBox(height: 8),
@@ -94,14 +96,24 @@ class _EmergencyResultScreenState extends ConsumerState<EmergencyResultScreen> {
                   icon: const Icon(Icons.local_hospital),
                   label: Text(l.emergencyFindVet),
                 ),
+                // NEVER add monetization, affiliates, or upsells to this
+                // screen. The emergency path contains exactly: the concern,
+                // the vet CTA, first aid, the disclaimer, and the
+                // acknowledgment gate.
                 const SizedBox(height: 12),
-                // Phase 5.4 — Airvet-style telehealth deep-link, prominently
-                // placed on the emergency screen (revenue-share affiliate).
-                const TelehealthButton(source: 'emergency_result'),
-                const SizedBox(height: 8),
-                // Phase 6.3 — pet-insurance affiliate CTA. Self-hides if
-                // PET_INSURANCE_AFFILIATE_URL isn't configured.
-                const InsuranceAffiliateCta(source: 'emergency_result'),
+                OutlinedButton.icon(
+                  key: const Key('emergency_first_aid'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white70),
+                    shape: const StadiumBorder(),
+                    minimumSize: const Size.fromHeight(48),
+                  ),
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const EmergencyHelpScreen())),
+                  icon: const Icon(Icons.medical_services_outlined),
+                  label: const Text('First aid while you get help'),
+                ),
                 const SizedBox(height: 24),
                 if (r.disclaimerRequired)
                   Container(

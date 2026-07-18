@@ -2,10 +2,10 @@
 // Deletes the CALLING user's account. The user is taken from the verified JWT
 // (never a body param), so a caller can only delete themselves. Deleting the
 // auth user cascades to public.users and onward to pets/analyses/reminders/
-// referrals via the ON DELETE CASCADE FKs from Phase 1.1 (CR #20).
+// children via the ON DELETE CASCADE FKs from Phase 1.1 (CR #20).
 //
 // GAP-A6: the DB cascade alone left the user's R2 media (uploads/<uid>/*) and
-// their third-party subjects (RevenueCat / OneSignal / PostHog) behind — a real
+// their third-party subjects (RevenueCat / PostHog) behind — a real
 // erasure gap (GDPR/KVKK + Apple 5.1.1(v); pet photos can contain people/homes).
 // We now purge those FIRST, log compliance evidence (uid hash only), then delete
 // the auth user. verify_jwt stays default (true).
@@ -64,19 +64,6 @@ async function deleteThirdParties(uid: string): Promise<Record<string, string>> 
       out.revenuecat = String(r.status);
     } catch (e) {
       out.revenuecat = `error:${e}`;
-    }
-  }
-  const osKey = Deno.env.get("ONESIGNAL_REST_API_KEY");
-  const osApp = Deno.env.get("ONESIGNAL_APP_ID");
-  if (osKey && osApp) {
-    try {
-      const r = await fetch(
-        `https://api.onesignal.com/apps/${osApp}/users/by/external_id/${uid}`,
-        { method: "DELETE", headers: { Authorization: `Key ${osKey}` } },
-      );
-      out.onesignal = String(r.status);
-    } catch (e) {
-      out.onesignal = `error:${e}`;
     }
   }
   const phKey = Deno.env.get("POSTHOG_PERSONAL_API_KEY");

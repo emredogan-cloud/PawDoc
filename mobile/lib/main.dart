@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -8,12 +9,22 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'src/app.dart';
 import 'src/config/env.dart';
+import 'src/core/consent_prefs.dart';
+import 'src/notifications/local_notifications.dart';
 import 'src/core/boot_error_app.dart';
-import 'src/notifications/onesignal_service.dart';
 import 'src/theme/design_tokens.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ENG-01: brand fonts are BUNDLED (assets/google_fonts/) — never fetched
+  // over the network. First launch renders correct type offline, and no
+  // pre-consent request to fonts.gstatic.com ever fires.
+  GoogleFonts.config.allowRuntimeFetching = false;
+
+  // On-device reminder notifications (H2 — no push vendor). Init only; the
+  // permission ask is contextual at first reminder creation.
+  await LocalNotifications.instance.initialize();
 
   // In release, replace Flutter's raw red error box for any in-tree build/render
   // failure with a calm placeholder — a user must never see a stack trace. Debug
@@ -55,8 +66,10 @@ Future<void> _initAndRun() async {
     );
   }
 
-  // Product analytics (Phase 1.2 onboarding events). Optional in dev/test.
-  if (Env.posthogApiKey.isNotEmpty) {
+  // Product analytics — CONSENT-GATED (evolution I2): the privacy policy
+  // names consent as the legal basis, so PostHog initializes only after the
+  // user opted in (signup checkbox / Account toggle). No consent, no SDK.
+  if (Env.posthogApiKey.isNotEmpty && await ConsentPrefs.analyticsEnabled()) {
     final config = PostHogConfig(Env.posthogApiKey)..host = Env.posthogHost;
     await Posthog().setup(config);
     // Deterministic, stable A/B bucketing (Phase 4.1): tie PostHog's distinct_id
@@ -72,10 +85,6 @@ Future<void> _initAndRun() async {
       });
     }
   }
-
-  // Push notifications (Phase 2.1). The permission prompt is fired later, on
-  // onboarding Screen 4 (contextual ask).
-  OneSignalService.initialize();
 
   // RevenueCat (Phase 1.4 paywall). Optional in dev/test. The app_user_id is
   // tied to the Supabase user so /revenuecat-webhook updates the right row.
@@ -101,7 +110,6 @@ Future<void> _initAndRun() async {
   if (Env.hasSupabase) {
     Supabase.instance.client.auth.onAuthStateChange.listen((state) async {
       if (state.event != AuthChangeEvent.signedOut) return;
-      await OneSignalService.logout();
       try {
         await Purchases.logOut();
       } catch (_) {}
@@ -132,6 +140,9 @@ Future<void> _initAndRun() async {
         // GAP-D2: tag every event with environment + release so prod issues are
         // filterable and regressions are attributable to a specific build.
         options.environment = kReleaseMode ? 'prod' : 'dev';
+        // Crash reports carry no default PII (matches the AI service's
+        // send_default_pii=False + the privacy policy's disclosure).
+        options.sendDefaultPii = false;
         options.release =
             'pawdoc@${const String.fromEnvironment('APP_VERSION', defaultValue: '1.0.0+1')}';
       },

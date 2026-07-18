@@ -49,14 +49,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get actionContinue => 'Continue';
-
-  @override
-  String get telehealthTitle => 'Talk to a vet now';
-
-  @override
-  String get telehealthSubtitle =>
-      'On-demand video consult with a licensed vet.';
-
-  @override
-  String get telehealthCta => 'Consult a vet';
 }

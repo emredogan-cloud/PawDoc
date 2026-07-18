@@ -10,24 +10,17 @@ import { AwsClient } from "https://esm.sh/aws4fetch@1.0.20";
 // deno-lint-ignore no-import-assertions
 import { evaluateFreeTier } from "../_shared/free_tier.mjs";
 // deno-lint-ignore no-import-assertions
-import { containsEmergencyKeyword } from "../_shared/emergency_keywords.mjs";
-// deno-lint-ignore no-import-assertions
-import { formatVector, isCacheEligible, selectCacheHit } from "../_shared/semantic_cache.mjs";
-// deno-lint-ignore no-import-assertions
 import { aiServiceHeaders } from "../_shared/ai_service.mjs";
 // deno-lint-ignore no-import-assertions
 import { isOwnUploadKey } from "../_shared/upload_key.mjs";
 // deno-lint-ignore no-import-assertions
-import { blockAfterAi, blockBeforeAi, countsAgainstQuota } from "../_shared/quota_gate.mjs";
+import { blockBeforeAi, countsAgainstQuota, isMetered } from "../_shared/quota_gate.mjs";
 
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
 // Phase A — trust-boundary credential presented to the internal AI service.
 const AI_SERVICE_TOKEN = Deno.env.get("AI_SERVICE_TOKEN") ?? "";
-// Phase 5.4 — `b2b_lite` (sitter, $19.99/mo) joins the unlimited-access tiers.
-const PREMIUM_STATUSES = new Set(["premium", "family", "trial", "b2b_lite"]);
-const SEMANTIC_CACHE_THRESHOLD = 0.90;
-const SEMANTIC_CACHE_ENABLED =
-  !["0", "false", "no"].includes((Deno.env.get("SEMANTIC_CACHE_ENABLED") ?? "1").toLowerCase());
+// One plan: premium (plus the store trial period).
+const PREMIUM_STATUSES = new Set(["premium", "trial"]);
 
 // Presign a short-lived GET URL so the AI service can read the uploaded image
 // (Phase 1.2 stored it and handed the client only the key).
@@ -97,12 +90,41 @@ Deno.serve(async (req: Request) => {
   // vector). Media is addressed only by storage keys, presigned server-side below.
   const { pet_id, input_type, text_description } = body ?? {};
   if (!pet_id || !input_type) return json({ error: "pet_id and input_type are required" }, 400);
-  if (!["photo", "video", "text"].includes(input_type)) {
+  if (!["photo", "text"].includes(input_type)) {
     return json({ error: "invalid input_type" }, 400);
   }
 
   // Service-role client for the counter + storing results (bypasses RLS by design).
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
+  // BE-01 residual: per-user burst limit (30/h) so no single account can hammer
+  // the AI service even within quota. Upstash INCR+EXPIRE; FAIL-OPEN on infra
+  // errors (photo quota already bounds cost; availability beats strictness).
+  try {
+    const rlUrl = Deno.env.get("UPSTASH_REDIS_REST_URL");
+    const rlTok = Deno.env.get("UPSTASH_REDIS_REST_TOKEN");
+    if (rlUrl && rlTok) {
+      const key = `analyze_rl:${user.id}:${Math.floor(Date.now() / 3_600_000)}`;
+      const r = await fetch(`${rlUrl}/pipeline`, {
+        method: "POST",
+        signal: AbortSignal.timeout(2_000),
+        headers: { Authorization: `Bearer ${rlTok}`, "content-type": "application/json" },
+        body: JSON.stringify([["INCR", key], ["EXPIRE", key, "3600"]]),
+      });
+      if (r.ok) {
+        const [{ result: count }] = await r.json();
+        if (typeof count === "number" && count > 30) {
+          return json({
+            error: "rate_limited",
+            message: "Too many checks in a short time — please wait a bit and try again. " +
+              "If this is urgent, use Emergency help.",
+          }, 429);
+        }
+      }
+    }
+  } catch (_err) {
+    // fail-open
+  }
 
   // Pet must belong to the caller (RLS enforces this on the user-scoped client).
   const { data: pet, error: petErr } = await userClient
@@ -112,39 +134,35 @@ Deno.serve(async (req: Request) => {
   // Free-tier evaluation (server-side; CR #10 reset).
   const { data: profile } = await admin
     .from("users")
-    .select("subscription_status, free_analyses_used_this_month, free_analyses_reset_at, bonus_analyses, preferred_locale")
+    .select("subscription_status, free_analyses_used_this_month, free_analyses_reset_at, preferred_locale")
     .eq("id", user.id).single();
   const isPremium = PREMIUM_STATUSES.has(profile?.subscription_status ?? "free");
-  // CR #11 (Phase 5.4): localize the pre-AI emergency check by the user's
-  // preferred_locale (default 'en'). The Edge body may also override per request.
+  // CR #11: the AI service's authoritative pre-AI override runs in the user's
+  // preferred locale (the client router already handled the instant path).
   const locale = (typeof body?.locale === "string" && body.locale) ||
     profile?.preferred_locale || "en";
-  // EMERGENCY IS NEVER PAYWALLED (trust rule): a text tripping an emergency
-  // keyword bypasses the free-tier gate entirely and is not counted against
-  // the quota. The AI service still runs the authoritative hardcoded override.
-  const isEmergencyText = containsEmergencyKeyword(text_description, pet.species, locale);
+  // Quota v3 (evolution Phase 6): FREE = SAFETY, PAID = MEMORY. Text guidance
+  // is UNMETERED; photo logs (a record feature) are metered PRE-AI, so an
+  // out-of-quota request can never reach a model (BE-01 dead at the root).
+  // Photo quota can't suppress an emergency: the red path is the client
+  // keyword router + the offline red button + the server text override.
   const decision = evaluateFreeTier({
     usedThisMonth: profile?.free_analyses_used_this_month ?? 0,
     resetAt: profile?.free_analyses_reset_at,
     isPremium,
-    bonus: profile?.bonus_analyses ?? 0, // Phase 3.3 referral reward pool
   });
-  // GAP-A3: EMERGENCY is never paywalled — for the VISUAL half too. Block TEXT
-  // out-of-quota up front; a PHOTO/VIDEO out-of-quota request runs the AI (so an
-  // image emergency can surface) and is blocked only AFTER, and only if the
-  // verdict is not EMERGENCY (see the post-AI block below).
-  const quotaExceeded = !isEmergencyText && !decision.allowed;
-  const isVisual = input_type === "photo" || input_type === "video";
-  if (blockBeforeAi(quotaExceeded, isVisual)) {
+  const quotaExceeded = isMetered(input_type) && !decision.allowed;
+  if (blockBeforeAi(input_type, quotaExceeded)) {
     return json({
       error: "free_limit_reached",
       message:
-        "You've used your free analyses this month. Upgrade for unlimited checks. " +
-        "If this seems urgent, contact a veterinarian now.",
+        "You've used this month's free photo logs. Symptom checks by text are " +
+        "always free — or upgrade for unlimited photo logs. If this is urgent, " +
+        "use Emergency help: it never counts and works offline.",
     }, 402);
   }
 
-  // Pet context shared by /embed and /analyze.
+  // Pet context for /analyze.
   const petPayload = {
     species: pet.species,
     breed: pet.breed,
@@ -169,7 +187,7 @@ Deno.serve(async (req: Request) => {
   try {
     const { data: a } = await userClient
       .from("analyses")
-      .select("triage_level, primary_concern, created_at")
+      .select("action, observation, created_at")
       .eq("pet_id", pet_id)
       .gte("created_at", SINCE_ISO)
       .order("created_at", { ascending: false })
@@ -199,79 +217,24 @@ Deno.serve(async (req: Request) => {
     isOwnUploadKey(body.input_storage_key, user.id) ? body.input_storage_key : null;
   const imageUrl = inputKey ? await presignGet(inputKey) : null;
 
-  // Video (Phase 3.2): presign each client-extracted keyframe — own-namespace
-  // only, capped at 6 (mirrors the AI-service frame cap, A4).
-  const frameKeys: string[] = (Array.isArray(body.frame_storage_keys) ? body.frame_storage_keys : [])
-    .filter((k: unknown) => isOwnUploadKey(k, user.id))
-    .slice(0, 6);
-  const frameUrls: string[] = [];
-  for (const k of frameKeys) {
-    const u = await presignGet(k);
-    if (u) frameUrls.push(u);
-  }
-
   // deno-lint-ignore no-explicit-any
   let result: any = null;
   // deno-lint-ignore no-explicit-any
   let meta: any = {};
-  // Only text inputs get an embedding (stored on the row), so the cache only
-  // ever matches text→text — photo/video are never served from cache.
-  let embeddingLiteral: string | null = null;
-  let cacheHit = false;
 
-  // --- Semantic cache (Phase 3.2) -------------------------------------------
-  // Text-only, non-emergency: embed the symptom text + pet context and look for
-  // a same-user, same-species near-duplicate (>= 0.90). A hit skips the LLM.
-  if (isCacheEligible(input_type, isEmergencyText, SEMANTIC_CACHE_ENABLED)) {
-    try {
-      const embResp = await fetch(`${AI_SERVICE_URL}/embed`, {
-        method: "POST",
-        headers: aiServiceHeaders(requestId, AI_SERVICE_TOKEN),
-        body: JSON.stringify({ text_description: text_description ?? null, pet: petPayload }),
-      });
-      if (embResp.ok) {
-        const emb = await embResp.json();
-        embeddingLiteral = formatVector(emb.embedding);
-        if (embeddingLiteral) {
-          const { data: rows } = await admin.rpc("match_analyses", {
-            query_embedding: embeddingLiteral,
-            match_user_id: user.id,
-            match_species: pet.species,
-            match_threshold: SEMANTIC_CACHE_THRESHOLD,
-            match_count: 1,
-          });
-          const hit = selectCacheHit(rows ?? [], SEMANTIC_CACHE_THRESHOLD);
-          if (hit) {
-            result = hit.full_response;
-            meta = {
-              model_used: "semantic_cache",
-              tier_used: 2,
-              cache_hit: true,
-              similarity: hit.similarity,
-              latency_ms: 0,
-            };
-            cacheHit = true;
-          }
-        }
-      }
-    } catch (_err) {
-      // The cache must never break a request — fall through to a fresh analysis.
-    }
-  }
-
-  // --- Fresh analysis (cache miss / ineligible) ------------------------------
-  if (!cacheHit) {
+  {
     // deno-lint-ignore no-explicit-any
     let ai: any;
     try {
       const resp = await fetch(`${AI_SERVICE_URL}/analyze`, {
         method: "POST",
+        // BE-02: a hung upstream must not pin this function — hard deadline.
+        signal: AbortSignal.timeout(25_000),
         headers: aiServiceHeaders(requestId, AI_SERVICE_TOKEN),
         body: JSON.stringify({
           input_type,
           text_description: text_description ?? null,
           image_url: imageUrl,
-          frame_urls: frameUrls,
           low_input_quality: body.low_input_quality ?? false,
           pet: petPayload,
           locale, // Phase 5.4 / CR #11
@@ -304,59 +267,41 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // GAP-A3: an out-of-quota visual the AI did NOT flag as EMERGENCY → block here
-  // (uncounted, unstored) with only the triage chip + upgrade message. An
-  // EMERGENCY falls through and is returned + stored below, free.
-  if (blockAfterAi(quotaExceeded, result.triage_level)) {
-    return json({
-      error: "free_limit_reached",
-      quota_exceeded: true,
-      triage_level: result.triage_level,
-      message:
-        "You've used your free analyses this month. Upgrade to see the full result. " +
-        "If this seems urgent, contact a veterinarian now.",
-    }, 402);
-  }
-
-  // Persist the analysis (service role).
+  // Persist the analysis (service role). (v3: there is no post-AI gate — a
+  // request that reached the model is always surfaced and stored.)
   const { data: stored, error: storeErr } = await admin.from("analyses").insert({
     user_id: user.id,
     pet_id,
     input_type,
     input_storage_key: inputKey,
     text_description: text_description ?? null,
-    triage_level: result.triage_level,
-    primary_concern: result.primary_concern,
+    action: result.action,
+    observation: result.observation,
     full_response: result,
     model_used: meta.model_used,
     tier_used: meta.tier_used,
     confidence_score: result.confidence,
     ai_latency_ms: meta.latency_ms,
     emergency_override_applied: meta.emergency_override_applied ?? false,
-    // Phase 3.2: store the embedding (text inputs only) so the semantic cache
-    // grows; null for photo/video keeps them out of the cache entirely.
-    embedding: embeddingLiteral,
   }).select("id").single();
   if (storeErr) console.error("analyze: failed to store analysis", requestId, storeErr.message);
 
-  // Count only a REAL, surfaced, non-emergency analysis. The GAP-E7 degraded
-  // guard (tier_used === 0) and the GAP-A3 emergency/quota guards all live in
+  // Count only a REAL, surfaced free PHOTO analysis (v3). The GAP-E7 degraded
+  // guard (tier_used === 0) and the GET_HELP_NOW belt live in
   // countsAgainstQuota (unit-tested).
   if (
     countsAgainstQuota({
       isPremium,
-      isEmergencyText,
-      quotaExceeded,
-      triageLevel: result.triage_level,
+      inputType: input_type,
+      action: result.action,
       tierUsed: meta.tier_used,
     })
   ) {
     await admin.from("users").update({
       free_analyses_used_this_month: decision.newUsed,
       free_analyses_reset_at: decision.resetAt,
-      bonus_analyses: decision.newBonus, // decremented only when a bonus credit was spent
     }).eq("id", user.id);
   }
 
-  return json({ result, analysis_id: stored?.id ?? null, cache_hit: cacheHit, request_id: requestId });
+  return json({ result, analysis_id: stored?.id ?? null, request_id: requestId });
 });

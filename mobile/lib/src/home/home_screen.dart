@@ -10,7 +10,6 @@ import '../account/user_profile.dart';
 import '../analysis/analysis_runner.dart';
 import '../analysis/analysis_service.dart';
 import '../capture/camera_screen.dart';
-import '../capture/video_capture_screen.dart';
 import '../core/app_motion_asset.dart';
 import '../core/app_views.dart';
 import '../core/connectivity.dart';
@@ -18,16 +17,17 @@ import '../core/last_check.dart';
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
+import '../emergency/emergency_help_screen.dart';
+import '../emergency/emergency_keywords.dart';
 import '../feedback/followup_banner.dart';
 import '../health/breed_insight_card.dart';
 import '../health/health_event_form_screen.dart';
 import '../health/timeline.dart';
-import '../monetization/telehealth_button.dart';
 import '../pets/active_pet.dart';
 import '../pets/add_pet_flow.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
-import '../referral/referral_screen.dart';
+import '../prep/vet_visit_prep_screen.dart';
 import '../text_input/symptom_text_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
@@ -60,24 +60,25 @@ class HomeScreen extends ConsumerWidget {
         ));
         ref.invalidate(userProfileProvider);
       }
-    } else if (mode == 'video') {
-      final frameKeys = await Navigator.of(context).push<List<String>>(
-        MaterialPageRoute(builder: (_) => const VideoCaptureScreen()),
-      );
-      if (frameKeys != null && frameKeys.isNotEmpty && context.mounted) {
-        await Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => AnalysisRunnerScreen(
-            petId: pet.id!, petName: pet.name, petSpecies: pet.species, inputType: 'video',
-            frameStorageKeys: frameKeys, isPremium: isPremium,
-          ),
-        ));
-        ref.invalidate(userProfileProvider);
-      }
     } else {
       final text = await Navigator.of(context).push<String>(
         MaterialPageRoute(builder: (_) => SymptomTextScreen(petName: pet.name)),
       );
       if (text != null && context.mounted) {
+        // OFFLINE EMERGENCY ROUTER (evolution Phase 3): the same keyword lists
+        // the server runs, executed CLIENT-side first — a match lands on the
+        // red help screen instantly, before any network call, so a dead zone
+        // can never turn "my dog is choking" into a spinner. The server list
+        // stays authoritative for anything submitted online.
+        final locale = Localizations.maybeLocaleOf(context)?.languageCode;
+        final matched = matchEmergencyKeyword(text,
+            species: pet.species, locale: locale);
+        if (matched != null) {
+          await Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => EmergencyHelpScreen(matchedKeyword: matched),
+          ));
+          return;
+        }
         await Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => AnalysisRunnerScreen(
             petId: pet.id!, petName: pet.name, petSpecies: pet.species, inputType: 'text',
@@ -116,13 +117,6 @@ class HomeScreen extends ConsumerWidget {
           orElse: () => const Text('PawDoc'),
         ),
         actions: [
-          IconButton(
-            tooltip: 'Refer a friend',
-            icon: const Icon(Icons.card_giftcard),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ReferralScreen()),
-            ),
-          ),
           // Account consolidates family / sign-out / delete (roadmap §3.10.2);
           // sign-out now lives there behind a confirm, so it can't be a one-tap
           // AppBar mis-hit. The pet switcher stays in the AppBar title.
@@ -172,7 +166,7 @@ class HomeScreen extends ConsumerWidget {
                 if (list.isEmpty) {
                   return _HomeEmptyState(
                     freeRemaining: profile.maybeWhen(
-                      data: (p) => p.isPremium ? null : p.freeRemaining,
+                      data: (p) => p.isPremium ? null : p.photoLogsRemaining,
                       orElse: () => null,
                     ),
                     onAddPet: () => context.push('/onboarding'),
@@ -185,6 +179,8 @@ class HomeScreen extends ConsumerWidget {
                 // secondary → quota (the billing meter is demoted to the bottom).
                 final content = <Widget>[
                   _PetHeroCard(pet: pet, onCheck: () => _check(context, ref, pet, isPremium)),
+                  const SizedBox(height: AppSpace.s8),
+                  const EmergencyHelpButton(),
                   const SizedBox(height: AppSpace.s12),
                   BreedInsightCard(
                     key: ValueKey('breed_${pet.id}'),
@@ -213,18 +209,27 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  // Phase 5: the record product's centerpiece gets a first-
+                  // class home entry (it was buried in an overflow menu).
+                  OutlinedButton.icon(
+                    key: const Key('home_vet_prep'),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => VetVisitPrepScreen(pet: pet)),
+                    ),
+                    icon: const Icon(Icons.assignment_outlined),
+                    label: const Text('Prepare for a vet visit'),
+                  ),
                   TextButton.icon(
                     onPressed: () => context.push('/pets'),
                     icon: const Icon(Icons.pets),
                     label: const Text('Manage pets'),
                   ),
-                  // Phase 5.4 — embedded telehealth (Airvet-style affiliate).
-                  // Self-hides when AIRVET_AFFILIATE_URL isn't configured.
-                  const TelehealthButton(source: 'home'),
                   const SizedBox(height: AppSpace.s8),
                   profile.maybeWhen(
                     data: (p) => _QuotaStrip(
-                        isPremium: p.isPremium, freeRemaining: p.freeRemaining),
+                        isPremium: p.isPremium,
+                        photoLogsRemaining: p.photoLogsRemaining),
                     orElse: () => const SizedBox.shrink(),
                   ),
                 ];
@@ -394,7 +399,8 @@ class _PetHeroCard extends ConsumerWidget {
 }
 
 /// Warm, illustrated welcome for the first run (replaces the two stranded cards).
-/// Quota is framed positively ("3 free checks ready"), not as a billing meter.
+/// Quota v3 framing: text checks are FREE and unmetered; only photo logs
+/// carry a friendly counter — never a billing meter on safety.
 class _HomeEmptyState extends StatelessWidget {
   const _HomeEmptyState({required this.onAddPet, this.freeRemaining});
   final VoidCallback onAddPet;
@@ -453,8 +459,8 @@ class _FreeChecksChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = freeRemaining == null
-        ? 'Premium — unlimited checks'
-        : '$freeRemaining free checks ready';
+        ? 'Premium — unlimited photo logs'
+        : 'Free text checks · $freeRemaining photo logs ready';
     return Container(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpace.s16, vertical: AppSpace.s8),
@@ -482,9 +488,10 @@ class _FreeChecksChip extends StatelessWidget {
 /// Slim, low-emphasis quota row at the bottom of the dashboard (demoted from the
 /// top "billing meter"). Care before quota (roadmap §3.3).
 class _QuotaStrip extends StatelessWidget {
-  const _QuotaStrip({required this.isPremium, required this.freeRemaining});
+  const _QuotaStrip(
+      {required this.isPremium, required this.photoLogsRemaining});
   final bool isPremium;
-  final int freeRemaining;
+  final int photoLogsRemaining;
 
   @override
   Widget build(BuildContext context) {
@@ -499,7 +506,7 @@ class _QuotaStrip extends StatelessWidget {
         Icon(Icons.bolt, size: 16, color: scheme.onSurfaceVariant),
         const SizedBox(width: AppSpace.s4),
         if (isPremium)
-          Text('Premium — unlimited checks', style: style)
+          Text('Premium — unlimited photo logs', style: style)
         else
           // M3 (#18): a 300ms count-DOWN tick when the remaining number
           // changes (it's "remaining", so the old value slides up and out);
@@ -518,8 +525,9 @@ class _QuotaStrip extends StatelessWidget {
               ),
             ),
             child: Text(
-              '$freeRemaining of 3 free checks left',
-              key: ValueKey(freeRemaining),
+              // v3: text checks are unmetered — only photo logs count.
+              'Text checks free · $photoLogsRemaining of 5 photo logs left',
+              key: ValueKey(photoLogsRemaining),
               style: style,
             ),
           ),
@@ -562,12 +570,6 @@ class _CaptureSheet extends StatelessWidget {
         title: 'Take a photo',
         hint: 'Best for skin, eyes, wounds',
         onTap: () => Navigator.pop(context, 'photo'),
-      ),
-      _CaptureModeTile(
-        icon: Icons.videocam_rounded,
-        title: 'Record a video',
-        hint: 'Best for limping, breathing, seizures',
-        onTap: () => Navigator.pop(context, 'video'),
       ),
       _CaptureModeTile(
         icon: Icons.edit_note_rounded,

@@ -42,7 +42,6 @@ function profileLines(pet) {
   if (yrs !== null) lines.push(`Age: ${yrs} years`);
   if (pet?.sex) lines.push(`Sex: ${pet.sex}`);
   if (pet?.weight_kg) lines.push(`Weight: ${pet.weight_kg} kg`);
-  if (pet?.client_name) lines.push(`Client: ${pet.client_name}`);
   return lines;
 }
 
@@ -52,9 +51,9 @@ function analysesLines(analyses) {
   }
   return analyses.slice(0, MAX_RECENT_ANALYSES).map((a) => {
     const date = fmtDate(a?.created_at);
-    const triage = (a?.triage_level ?? "").toUpperCase() || "—";
-    const concern = a?.primary_concern || "(no concern recorded)";
-    return `[${date || "earlier"}] ${triage} — ${concern}`;
+    const action = (a?.action ?? "").toUpperCase() || "—";
+    const concern = a?.observation || "(no concern recorded)";
+    return `[${date || "earlier"}] ${action} — ${concern}`;
   });
 }
 

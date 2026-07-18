@@ -18,7 +18,7 @@ from typing import Any
 
 from . import config
 from .cache import InMemoryCache
-from .models import AnalyzeRequest, PetContext, TriageLevel
+from .models import ActionLevel, AnalyzeRequest, PetContext
 from .moderation import AllowAllModerator
 from .pipeline import AnalysisPipeline
 from .providers import ProviderError
@@ -33,18 +33,20 @@ class _StubProvider:
         self.name = name
         self.tier = tier
         self.response = response or {
-            "triage_level": "NORMAL",
+            "action": "WATCH_AND_RECHECK",
             "confidence": 0.9,
-            "primary_concern": "no concerning signs",
+            "observation": "no concerning signs described",
             "visible_symptoms": [],
-            "differential": [],
+            "vets_look_for": [],
+            "watch_for": ["any change"],
             "recommended_actions": ["follow up if needed"],
-            "urgency_timeframe": "routine",
+            "urgency_timeframe": "re-check in 24h",
+            "recheck_hours": 24,
             "disclaimer_required": True,
         }
         self.calls = 0
 
-    def analyze(self, system_prompt, user_prompt, image_url=None, frame_urls=None,
+    def analyze(self, system_prompt, user_prompt, image_url=None,
                 pet_context_block=None) -> dict[str, Any]:
         self.calls += 1
         return dict(self.response)
@@ -62,7 +64,7 @@ class _StubModerator:
     def __init__(self, safe: bool) -> None:
         self.safe = safe
 
-    def is_safe(self, image_url: str) -> bool:  # noqa: ARG002
+    def is_safe_bytes(self, data: bytes, mime_type: str) -> bool:  # noqa: ARG002
         return self.safe
 
 
@@ -72,13 +74,15 @@ def _hydrate_response(stub: dict[str, Any] | None) -> dict[str, Any] | None:
     if not stub:
         return None
     return {
-        "triage_level": stub.get("triage_level", "NORMAL"),
+        "action": stub.get("action", "WATCH_AND_RECHECK"),
         "confidence": stub.get("confidence", 0.9),
-        "primary_concern": stub.get("primary_concern", "stub"),
+        "observation": stub.get("observation", "stub"),
         "visible_symptoms": stub.get("visible_symptoms", []),
-        "differential": stub.get("differential", []),
+        "vets_look_for": stub.get("vets_look_for", []),
+        "watch_for": stub.get("watch_for", []),
         "recommended_actions": stub.get("recommended_actions", ["follow up if needed"]),
-        "urgency_timeframe": stub.get("urgency_timeframe", "routine"),
+        "urgency_timeframe": stub.get("urgency_timeframe", "re-check in 24h"),
+        "recheck_hours": stub.get("recheck_hours", 24),
         "disclaimer_required": True,
     }
 
@@ -111,12 +115,12 @@ class EvalReport:
 
     @property
     def false_negatives_on_emergency(self) -> int:
-        """An EMERGENCY case where the pipeline did NOT return EMERGENCY. This
-        is the strict safety contract: must be zero."""
+        """An EMERGENCY-category case where the pipeline did NOT return
+        GET_HELP_NOW. This is the strict safety contract: must be zero."""
         return sum(
             1
             for c in self.cases
-            if c.category == "EMERGENCY" and c.actual != "EMERGENCY"
+            if c.category == "EMERGENCY" and c.actual != "GET_HELP_NOW"
         )
 
 
@@ -135,7 +139,6 @@ def _build_request(payload: dict[str, Any]) -> AnalyzeRequest:
         input_type=payload.get("input_type", "text"),
         text_description=payload.get("text_description"),
         image_url=payload.get("image_url"),
-        frame_urls=payload.get("frame_urls", []),
         pet=pet,
         low_input_quality=payload.get("low_input_quality", False),
         locale=payload.get("locale", "en"),
@@ -161,16 +164,29 @@ def _build_pipeline_for_case(case: dict[str, Any]) -> AnalysisPipeline:
         if case.get("moderation_safe") is False
         else AllowAllModerator()
     )
-    return AnalysisPipeline(tier2=tier2, tier3=tier3, cache=cache, moderator=moderator)
+    # Deterministic harness: the async cross-verify job runs SYNCHRONOUSLY so
+    # a case can assert it was scheduled without threads.
+    return AnalysisPipeline(
+        tier2=tier2, tier3=tier3, cache=cache, moderator=moderator,
+        cross_verify_executor=lambda job: job(),
+    )
 
 
 def _evaluate_case(case: dict[str, Any]) -> CaseResult:
     case_id = case["id"]
     category = case["category"]
-    expected = case["expected_triage"]
+    expected = case["expected_action"]
     pipeline = _build_pipeline_for_case(case)
-    outcome = pipeline.run(_build_request(case["request"]))
-    actual_level: TriageLevel = outcome.result.triage_level
+    # The harness is provider-free AND network-free: stub the guarded media
+    # fetcher so image cases exercise moderation/analysis without any fetch.
+    from unittest.mock import patch
+
+    with patch(
+        "app.pipeline.gather_media",
+        lambda url: [(b"stub-bytes", "image/jpeg")] if url else [],
+    ):
+        outcome = pipeline.run(_build_request(case["request"]))
+    actual_level: ActionLevel = outcome.result.action
     actual = actual_level.value
 
     notes: list[str] = []
@@ -183,11 +199,12 @@ def _evaluate_case(case: dict[str, Any]) -> CaseResult:
             notes.append(
                 f"override={outcome.emergency_override_applied} expected {case['expected_override']}"
             )
-    if "expected_cross_verified" in case:
-        if outcome.cross_verified != case["expected_cross_verified"]:
+    if "expected_cross_verify_scheduled" in case:
+        if outcome.cross_verify_scheduled != case["expected_cross_verify_scheduled"]:
             passed = False
             notes.append(
-                f"cross_verified={outcome.cross_verified} expected {case['expected_cross_verified']}"
+                f"cross_verify_scheduled={outcome.cross_verify_scheduled} "
+                f"expected {case['expected_cross_verify_scheduled']}"
             )
     if case.get("expected_degraded") and not outcome.degraded:
         passed = False
@@ -195,11 +212,11 @@ def _evaluate_case(case: dict[str, Any]) -> CaseResult:
     if case.get("expected_moderation_rejected") and not outcome.moderation_rejected:
         passed = False
         notes.append("moderation_rejected=False expected True")
-    expected_concern = case.get("expected_primary_contains")
-    if expected_concern and expected_concern not in outcome.result.primary_concern:
+    expected_obs = case.get("expected_observation_contains")
+    if expected_obs and expected_obs not in outcome.result.observation:
         passed = False
         notes.append(
-            f"primary_concern={outcome.result.primary_concern!r} missing {expected_concern!r}"
+            f"observation={outcome.result.observation!r} missing {expected_obs!r}"
         )
 
     return CaseResult(
@@ -224,7 +241,7 @@ def run_eval(cases: list[dict[str, Any]] | None = None) -> EvalReport:
                 CaseResult(
                     case_id=case.get("id", "?"),
                     category=case.get("category", "?"),
-                    expected=case.get("expected_triage", "?"),
+                    expected=case.get("expected_action", "?"),
                     actual="ERROR",
                     passed=False,
                     notes=f"{type(exc).__name__}: {exc}",

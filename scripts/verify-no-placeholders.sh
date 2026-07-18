@@ -30,10 +30,10 @@ if [ "${1:-}" = "--strict" ]; then
   STRICT=1
 fi
 
-ROOTS=(docs/store_metadata docs/legal web/app)
+ROOTS=(docs/store_metadata web-legal/content web/app mobile/lib/src)
 
 # Fabricated / unsubstantiated claims — must never appear in launch copy.
-OVERCLAIMS='reviewed by veterinary experts|veterinary input|reviewed for quality|vet-approved|vet approved|vet-reviewed|vet reviewed|approved by (a )?vet|clinically (proven|tested|validated)|\bFDA\b|[0-9]{1,3}% accura|guaranteed (diagnosis|accuracy|results?)|never wrong|100% (accurate|reliable)|Sarah M\.|Diego R\.|Priya K\.|trusted by [0-9]'
+OVERCLAIMS='reviewed by veterinary experts|veterinary input|reviewed for quality|vet-approved|vet approved|vet-reviewed|vet reviewed|approved by (a )?vet|clinically (proven|tested|validated)|\bFDA\b|[0-9]{1,3}% accura|guaranteed (diagnosis|accuracy|results?)|never wrong|never wonder|100% (accurate|reliable)|on-demand video consult|Sarah M\.|Diego R\.|Priya K\.|trusted by [0-9]|LIKELY NORMAL'
 
 # Placeholders / fill-ins — founder/attorney completes these before launch.
 PLACEHOLDERS='\[(DATE|LEGAL ENTITY|ADDRESS|COMPANY|NAME|TBD|TEMPLATE|PLACEHOLDER|REVIEWER_DEMO_[A-Z]+)|to be drafted|\bTODO\b|\bTBD\b|lorem ipsum|XXXX'

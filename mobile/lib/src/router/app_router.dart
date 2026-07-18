@@ -10,13 +10,9 @@ import '../auth/sign_in_screen.dart';
 import '../auth/supabase_providers.dart';
 import '../capture/camera_screen.dart';
 import '../core/root_shell.dart';
-import '../family/accept_family_invite_screen.dart';
-import '../family/family_settings_screen.dart';
-import '../family/pending_invite_prefs.dart';
 import '../health/history_timeline_screen.dart';
 import '../onboarding/onboarding_flow.dart';
 import '../pets/pets_list_screen.dart';
-import '../referral/referral_prefs.dart';
 import '../text_input/symptom_text_screen.dart';
 import 'app_page_transitions.dart';
 
@@ -35,6 +31,24 @@ class GoRouterRefreshStream extends ChangeNotifier {
     _subscription.cancel();
     super.dispose();
   }
+}
+
+/// The auth-redirect decision, extracted PURE so it is unit-testable without
+/// a Supabase client (ENG-02/QA-02: the most brittle navigation logic in the
+/// app used to be exercised only through mocks or not at all).
+/// Returns the location to redirect to, or null to stay.
+String? computeRedirect({
+  required bool inRecovery,
+  required bool loggedIn,
+  required String location,
+}) {
+  // GAP-E1: a recovery session IS a session — handle it before normal routing.
+  if (inRecovery) return location == '/recovery' ? null : '/recovery';
+  if (location == '/recovery') return '/';
+  final atSignIn = location == '/sign-in';
+  if (!loggedIn) return atSignIn ? null : '/sign-in';
+  if (atSignIn) return '/';
+  return null;
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -58,31 +72,11 @@ final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     refreshListenable: refresh,
-    redirect: (context, state) async {
-      final loc = state.matchedLocation;
-      // GAP-E1: a recovery session IS a session, so handle it before the normal
-      // signed-in / sign-in routing. Manual hits to /recovery without one go home.
-      if (inRecovery) return loc == '/recovery' ? null : '/recovery';
-      if (loc == '/recovery') return '/';
-      final loggedIn = client.auth.currentSession != null;
-      final atSignIn = loc == '/sign-in';
-      if (!loggedIn) {
-        // Preserve a /invite/:token deep link across the sign-in detour
-        // (same shape as the Phase 3.3 referral capture). Token is restored
-        // post-sign-in on the next pass through this redirect.
-        if (loc.startsWith('/invite/')) {
-          await PendingInvitePrefs.capture(loc);
-        }
-        return atSignIn ? null : '/sign-in';
-      }
-      // Signed in: if a pending invite is parked, route there once.
-      if (atSignIn || loc == '/') {
-        final pending = await PendingInvitePrefs.pop();
-        if (pending != null) return pending;
-      }
-      if (atSignIn) return '/';
-      return null;
-    },
+    redirect: (context, state) async => computeRedirect(
+      inRecovery: inRecovery,
+      loggedIn: client.auth.currentSession != null,
+      location: state.matchedLocation,
+    ),
     routes: [
       // Page transitions standardized via AppPageTransitions (§4.1). Sections
       // use fade-through; pushed modal/detail screens use shared-axis. Reduce-
@@ -128,32 +122,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/symptom-text',
         pageBuilder: (context, state) =>
             AppPageTransitions.sharedAxisVertical(context, const SymptomTextScreen()),
-      ),
-      // Phase 6.3.1 — Family Sharing settings + deep link.
-      GoRoute(
-        path: '/family',
-        pageBuilder: (context, state) =>
-            AppPageTransitions.sharedAxisVertical(context, const FamilySettingsScreen()),
-      ),
-      // Invite acceptance — handles both pawdoc://invite/:token (custom scheme)
-      // and https://pawdoc.app/invite/:token (Universal / App Link). The auth
-      // redirect above bounces unsigned-in users to /sign-in first; go_router
-      // restores this route on return so the token isn't lost.
-      GoRoute(
-        path: '/invite/:token',
-        builder: (_, state) => AcceptFamilyInviteScreen(
-          token: state.pathParameters['token'] ?? '',
-        ),
-      ),
-      // Referral deep link (https://pawdoc.app/r/CODE or pawdoc://r/CODE): capture
-      // the code, then fall through to the normal auth-gated flow.
-      GoRoute(
-        path: '/r/:code',
-        redirect: (context, state) async {
-          final code = state.pathParameters['code'];
-          if (code != null && code.isNotEmpty) await ReferralPrefs.capture(code);
-          return '/';
-        },
       ),
     ],
   );

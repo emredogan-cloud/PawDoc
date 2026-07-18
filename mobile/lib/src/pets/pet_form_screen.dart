@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
-import '../monetization/insurance_affiliate_cta.dart';
 import '../theme/design_tokens.dart';
 import 'pet.dart';
 import 'pets_repository.dart';
@@ -23,11 +22,12 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _breed;
-  late final TextEditingController _clientName;
+  late final TextEditingController _weight;
+  late final TextEditingController _medicalNotes;
   late String _species;
+  String? _sex;
   DateTime? _birthDate;
   bool _saving = false;
-  bool _journalEnabled = false;
 
   bool get _isEdit => widget.pet != null;
 
@@ -36,17 +36,21 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
     super.initState();
     _name = TextEditingController(text: widget.pet?.name ?? '');
     _breed = TextEditingController(text: widget.pet?.breed ?? '');
-    _clientName = TextEditingController(text: widget.pet?.clientName ?? '');
+    _weight = TextEditingController(
+        text: widget.pet?.weightKg?.toString() ?? '');
+    _medicalNotes =
+        TextEditingController(text: widget.pet?.medicalNotes ?? '');
     _species = widget.pet?.species ?? kSpecies.first;
+    _sex = widget.pet?.sex;
     _birthDate = widget.pet?.birthDate;
-    _journalEnabled = widget.pet?.isJournalEnabled ?? false;
   }
 
   @override
   void dispose() {
     _name.dispose();
     _breed.dispose();
-    _clientName.dispose();
+    _weight.dispose();
+    _medicalNotes.dispose();
     super.dispose();
   }
 
@@ -61,8 +65,11 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
       species: _species,
       breed: _breed.text.trim().isEmpty ? null : _breed.text.trim(),
       birthDate: _birthDate,
-      isJournalEnabled: _journalEnabled,
-      clientName: _clientName.text.trim().isEmpty ? null : _clientName.text.trim(),
+      sex: _sex,
+      weightKg: double.tryParse(_weight.text.trim().replaceAll(',', '.')),
+      medicalNotes: _medicalNotes.text.trim().isEmpty
+          ? null
+          : _medicalNotes.text.trim(),
     );
     try {
       if (_isEdit) {
@@ -132,6 +139,45 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
               decoration: const InputDecoration(labelText: 'Breed (optional)', filled: true),
             ),
             const SizedBox(height: AppSpace.s8),
+            // E5: the record fields the vet report reads (sex/weight) are now
+            // actually editable — they existed in the DB with no UI for months.
+            Text('Sex', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: AppSpace.s8),
+            Wrap(
+              spacing: AppSpace.s8,
+              children: [
+                for (final (value, label) in const [
+                  ('male', 'Male'),
+                  ('female', 'Female'),
+                ])
+                  ChoiceChip(
+                    key: Key('pet_sex_$value'),
+                    label: Text(label),
+                    selected: _sex == value,
+                    onSelected: (sel) =>
+                        setState(() => _sex = sel ? value : null),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpace.s16),
+            TextFormField(
+              key: const Key('pet_weight_field'),
+              controller: _weight,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                  labelText: 'Weight in kg (optional)', filled: true),
+              validator: (v) {
+                final t = (v ?? '').trim();
+                if (t.isEmpty) return null;
+                final n = double.tryParse(t.replaceAll(',', '.'));
+                if (n == null || n <= 0 || n > 200) {
+                  return 'Enter a weight in kg (e.g. 12.5)';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: AppSpace.s8),
             ListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Date of birth (optional)'),
@@ -150,32 +196,19 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
                 if (picked != null) setState(() => _birthDate = picked);
               },
             ),
-            const SizedBox(height: AppSpace.s24),
-            _section(context, 'Sharing'),
-            // Phase 5.4 — B2B-Lite sitter mode: free-text client label. Useful
-            // for sitters managing several owners' pets under one account.
+            const SizedBox(height: AppSpace.s16),
             TextFormField(
-              key: const Key('pet_client_name_field'),
-              controller: _clientName,
+              key: const Key('pet_medical_notes_field'),
+              controller: _medicalNotes,
+              maxLines: 3,
+              maxLength: 500,
               decoration: const InputDecoration(
-                labelText: 'Client name (optional — sitter mode)',
-                helperText: 'Tag whose pet this is, e.g. "Smith family". Visible only to you.',
-                // Without this the privacy note ellipsizes to "Visible onl…",
-                // undercutting the very reassurance it offers (roadmap S12).
-                helperMaxLines: 3,
+                labelText: 'Medical notes (optional)',
+                helperText:
+                    'Allergies, chronic conditions, medications — appears in the vet report.',
+                helperMaxLines: 2,
                 filled: true,
               ),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: AppSpace.s8),
-            SwitchListTile(
-              key: const Key('pet_journal_toggle'),
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Weekly AI Health Journal'),
-              subtitle: const Text(
-                  'Get an AI-written summary of your pet’s week every Sunday (Premium / Family).'),
-              value: _journalEnabled,
-              onChanged: (v) => setState(() => _journalEnabled = v),
             ),
             const SizedBox(height: AppSpace.s24),
             AppButton(
@@ -183,10 +216,6 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
               onPressed: _saving ? null : _save,
               child: Text(_saving ? 'Saving…' : (_isEdit ? 'Save changes' : 'Add pet')),
             ),
-            // Phase 6.3 — soft-sell pet insurance on the pet-profile screen.
-            // Self-hides when PET_INSURANCE_AFFILIATE_URL is empty.
-            const SizedBox(height: AppSpace.s24),
-            const InsuranceAffiliateCta(source: 'pet_profile'),
           ],
         ),
       ),

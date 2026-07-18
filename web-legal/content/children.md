@@ -30,7 +30,7 @@ Minimum ages for online services vary:
 - **United States (COPPA):** the children's-privacy threshold is **under 13**.
 - **EU/EEA (GDPR Art. 8):** the age of digital consent is **16 by default**, though individual countries may set it as low as 13.
 
-Because PawDoc requires users to be **18 or older** (see our [Terms of Service](/terms/)), these thresholds are addressed by our eligibility requirement together with the "we do not knowingly collect" commitment above.
+Because PawDoc requires users to be **13 or older** (16+ where Article 8 GDPR applies without parental authorization — see our [Terms of Service](/terms/)), these thresholds are addressed by our eligibility requirement together with the "we do not knowingly collect" commitment above. The store listings carry a consistent 12+ age rating.
 
 ## 4. Parents and guardians
 

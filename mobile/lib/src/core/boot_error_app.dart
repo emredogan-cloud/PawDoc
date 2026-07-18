@@ -18,8 +18,9 @@ class BootErrorApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
+      theme: AppTheme.dark(),
       darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.dark,
       home: Scaffold(
         body: SafeArea(
           child: AppErrorView(

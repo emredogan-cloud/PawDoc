@@ -1,4 +1,4 @@
-// Phase 6.3 — /generate-pdf-report Edge Function ($4.99 add-on, premium-free).
+// Phase 6.3 — /generate-pdf-report Edge Function (premium-included).
 //
 // PRIVACY LIFECYCLE — see the report (§3 of SUBPR_PHASE_6.3.md):
 //   * NO SERVER STORAGE. The PDF is rendered in memory and streamed to the
@@ -8,13 +8,10 @@
 //     ever logged.
 //   * The data fetched to build the PDF is read under the USER'S JWT
 //     (RLS-scoped); the service-role admin client is used ONLY to look up
-//     the entitlement counter and decrement it after success.
+//     the subscription status.
 //
-// ENTITLEMENT — server-side enforced:
-//   * Premium tiers (premium / family / trial / b2b_lite) get unlimited PDFs.
-//   * Free users must have pdf_reports_remaining > 0 (purchased via the
-//     pdf_report_addon RevenueCat consumable). The counter is decremented
-//     atomically after the PDF is rendered.
+// ENTITLEMENT — server-side enforced: PDF reports are premium-included
+// (no consumable credits, no add-on products).
 //
 // verify_jwt = true (Edge Functions default) — the user's JWT identifies them.
 
@@ -23,7 +20,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { buildReportSections, reportFilename } from "../_shared/pdf_report.mjs";
 import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 
-const PREMIUM_STATUSES = new Set(["premium", "family", "trial", "b2b_lite"]);
+const PREMIUM_STATUSES = new Set(["premium", "trial"]);
 
 Deno.serve(async (req: Request) => {
   const requestId = req.headers.get("x-request-id") ?? crypto.randomUUID();
@@ -58,19 +55,19 @@ Deno.serve(async (req: Request) => {
     return json({ error: "pet_id required" }, 400);
   }
 
-  // RLS-scoped reads: only succeed for a pet in the user's family group.
+  // RLS-scoped reads: only succeed for the caller's own pet.
   const { data: pet, error: petErr } = await userClient
     .from("pets")
-    .select("id, name, species, breed, sex, weight_kg, birth_date, client_name")
+    .select("id, name, species, breed, sex, weight_kg, birth_date")
     .eq("id", petId)
     .single();
   if (petErr || !pet) return json({ error: "pet not found" }, 404);
 
-  // Entitlement check: premium tiers are unlimited; free users need a credit.
+  // Entitlement check: PDF reports are a premium feature.
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
   const { data: profile, error: profileErr } = await admin
     .from("users")
-    .select("subscription_status, pdf_reports_remaining")
+    .select("subscription_status")
     .eq("id", user.id)
     .single();
   if (profileErr) {
@@ -78,11 +75,10 @@ Deno.serve(async (req: Request) => {
     return json({ error: "profile lookup failed" }, 500);
   }
   const isPremium = PREMIUM_STATUSES.has(profile?.subscription_status ?? "free");
-  const credits = profile?.pdf_reports_remaining ?? 0;
-  if (!isPremium && credits <= 0) {
+  if (!isPremium) {
     return json({
-      error: "addon_required",
-      message: "Buy a PDF Health Report ($4.99) or upgrade to Premium to unlock.",
+      error: "premium_required",
+      message: "PDF Health Reports are part of PawDoc Premium.",
     }, 402);
   }
 
@@ -95,7 +91,7 @@ Deno.serve(async (req: Request) => {
   try {
     const a = await userClient
       .from("analyses")
-      .select("triage_level, primary_concern, created_at")
+      .select("action, observation, created_at")
       .eq("pet_id", petId)
       .gte("created_at", since)
       .order("created_at", { ascending: false })
@@ -126,19 +122,6 @@ Deno.serve(async (req: Request) => {
   });
 
   const pdfBytes = await renderPdf(sections);
-
-  // Atomic-ish decrement on success. Premium tiers skip the counter.
-  if (!isPremium) {
-    const { error: decErr } = await admin
-      .from("users")
-      .update({ pdf_reports_remaining: credits - 1 })
-      .eq("id", user.id);
-    if (decErr) {
-      console.error("generate-pdf-report: decrement failed", requestId, decErr.message);
-      // Still return the PDF — we'd rather give the user what they paid for
-      // than fail-closed on a counter glitch.
-    }
-  }
 
   const filename = reportFilename(pet, new Date().toISOString());
   // SECURITY HEADERS for an ephemeral PDF response:

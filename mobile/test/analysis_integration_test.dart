@@ -25,14 +25,16 @@ class FakeAnalysisService implements AnalysisService {
       AnalysisOutcome(result: _result, analysisId: 'fake-id');
 }
 
-AnalysisResult mk(TriageLevel level) => AnalysisResult(
-      triageLevel: level,
+AnalysisResult mk(ActionLevel level) => AnalysisResult(
+      action: level,
       confidence: 0.8,
-      primaryConcern: 'Primary concern',
+      observation: 'Primary concern',
       visibleSymptoms: const [],
-      differential: const [],
+      vetsLookFor: const [],
+      watchFor: const [],
       recommendedActions: const ['do this'],
       urgencyTimeframe: 'within 24 hours',
+      recheckHours: null,
       disclaimerRequired: true,
     );
 
@@ -50,14 +52,14 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   testWidgets('mocked MONITOR analysis flows loading -> result', (tester) async {
-    await tester.pumpWidget(_runner(mk(TriageLevel.monitor)));
+    await tester.pumpWidget(_runner(mk(ActionLevel.callToday)));
     await tester.pump(); // resolve the analyze future
     await tester.pump(const Duration(milliseconds: 100)); // resolve prefs + rebuild
-    expect(find.text('MONITOR — keep an eye out'), findsOneWidget);
+    expect(find.text('CALL YOUR VET TODAY'), findsOneWidget);
   });
 
   testWidgets('mocked EMERGENCY analysis flows to the emergency screen', (tester) async {
-    await tester.pumpWidget(_runner(mk(TriageLevel.emergency)));
+    await tester.pumpWidget(_runner(mk(ActionLevel.getHelpNow)));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('This may be an emergency'), findsOneWidget);

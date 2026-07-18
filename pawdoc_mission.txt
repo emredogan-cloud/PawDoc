@@ -1,0 +1,473 @@
+# MASTER PROMPT — PAWDOC FINAL PRE-LAUNCH PRODUCT AUDIT
+
+You are entering the FINAL PRE-LAUNCH AUDIT.
+
+This is the final comprehensive review before PawDoc is submitted to:
+
+* Google Play Internal Testing
+* Google Play Closed Testing
+* Apple App Store Review
+
+This is NOT a coding sprint.
+
+This is NOT a feature sprint.
+
+This is NOT a bug-fixing sprint.
+
+This is a complete product audit.
+
+Assume that after this report the founder will execute the remaining roadmap and then submit PawDoc for store review.
+
+Your responsibility is to discover EVERYTHING that could:
+
+* cause App Store rejection,
+* cause Google Play rejection,
+* reduce user trust,
+* reduce conversions,
+* reduce retention,
+* create legal risk,
+* create UX friction,
+* create technical debt,
+* create launch embarrassment.
+
+Optimize for truth.
+
+Do not defend previous reports.
+
+Challenge every assumption.
+
+---
+
+# SOURCES OF TRUTH
+
+Read and use:
+
+* the entire current repository,
+* all source code,
+* Flutter project,
+* AI service,
+* Supabase,
+* Terraform,
+* legal portal,
+* latest merged main branch,
+* runtime artifacts,
+* screenshots,
+* previous FINAL reports,
+* roadmap,
+* device validation evidence,
+* CI configuration,
+* AWS deployment,
+* legal pages.
+
+Do not rely on old conclusions.
+
+Re-verify everything yourself.
+
+---
+
+# REVIEW PERSPECTIVES
+
+Audit PawDoc from ALL of these viewpoints simultaneously:
+
+1. Senior Flutter Engineer
+2. Senior Backend Engineer
+3. Staff QA Engineer
+4. Senior DevOps Engineer
+5. AWS Architect
+6. Senior Security Engineer
+7. Senior Product Manager
+8. Senior UI Designer
+9. Senior UX Researcher
+10. Veterinary Safety Reviewer
+11. Apple App Store Reviewer
+12. Google Play Reviewer
+13. Privacy/GDPR Reviewer
+14. RevenueCat Reviewer
+15. Founder
+
+---
+
+# REVIEW CATEGORIES
+
+Audit every category.
+
+## Product
+
+* onboarding
+* activation
+* first-use experience
+* empty states
+* premium conversion
+* referral
+* retention
+* trust
+
+---
+
+## UI / UX
+
+Review every screen.
+
+Evaluate:
+
+* spacing
+* typography
+* colors
+* consistency
+* animations
+* navigation
+* accessibility
+* responsiveness
+* emotional impact
+* premium feel
+
+Recommend improvements even if technically correct.
+
+---
+
+## Engineering
+
+Review:
+
+* architecture
+* code quality
+* maintainability
+* performance
+* state management
+* scalability
+* testability
+
+---
+
+## AI
+
+Review:
+
+* prompt quality
+* safety
+* emergency handling
+* hallucination risks
+* image analysis
+* fallback behaviour
+* quota
+* observability
+
+---
+
+## Security
+
+Review:
+
+* secrets
+* auth
+* permissions
+* uploads
+* SSRF
+* RLS
+* encryption
+* dependency risks
+
+---
+
+## Infrastructure
+
+Review:
+
+* AWS
+* Terraform
+* CloudFront
+* CI/CD
+* Supabase
+* Fly
+* release process
+
+---
+
+## Legal
+
+Review:
+
+* privacy
+* terms
+* disclaimers
+* AI transparency
+* subscriptions
+* deletion
+* GDPR
+* App Store requirements
+
+---
+
+## Performance
+
+Review:
+
+* startup
+* animations
+* scrolling
+* memory
+* APK size
+* battery
+* network
+
+---
+
+## Device Experience
+
+Review:
+
+* onboarding
+* sign-up
+* sign-in
+* pet creation
+* analysis
+* emergency
+* premium
+* settings
+* delete account
+* offline
+
+---
+
+## Store Readiness
+
+Review against:
+
+Apple
+
+Google
+
+RevenueCat
+
+OneSignal
+
+Supabase
+
+AWS
+
+---
+
+# FOR EVERY FINDING
+
+Every finding must contain:
+
+* Severity
+* Evidence
+* Root cause
+* User impact
+* Business impact
+* Store impact
+* Exact solution
+* Acceptance criteria
+
+Never simply say:
+
+"Improve UI."
+
+Always explain HOW.
+
+---
+
+# EXECUTION PHASES
+
+After all findings are collected:
+
+Organize everything into execution phases.
+
+Example:
+
+Phase 0
+
+Critical launch blockers
+
+Phase 1
+
+Store approval blockers
+
+Phase 2
+
+Security
+
+Phase 3
+
+Infrastructure
+
+Phase 4
+
+Onboarding
+
+Phase 5
+
+UI Polish
+
+Phase 6
+
+Animations
+
+Phase 7
+
+Performance
+
+Phase 8
+
+Premium Optimization
+
+Phase 9
+
+Growth
+
+Phase 10
+
+Nice-to-have
+
+Every phase must include:
+
+* priority,
+* estimated effort,
+* dependencies,
+* expected impact,
+* exact implementation roadmap.
+
+---
+
+# HONESTY REQUIREMENT
+
+If you discover previous reports were incomplete:
+
+Say so.
+
+If previous assumptions were wrong:
+
+Say so.
+
+If a feature should be redesigned:
+
+Say so.
+
+Truth is more important than consistency.
+
+---
+
+# REPORT LIMIT
+
+Generate ONLY:
+
+## MAIN REPORT
+
+PAWDOC_PRELAUNCH_FINAL_AUDIT.md
+
+This must include:
+
+* executive summary,
+* overall readiness score,
+* every finding,
+* execution phases,
+* launch verdict,
+* final roadmap.
+
+---
+
+## APPENDIX A
+
+PAWDOC_STORE_REVIEW_CHECKLIST.md
+
+Only:
+
+Apple
+
+Google Play
+
+Required screenshots
+
+Required metadata
+
+Privacy
+
+Subscriptions
+
+Permissions
+
+Health declarations
+
+Data safety
+
+Anything still required before submission.
+
+---
+
+## APPENDIX B
+
+PAWDOC_FOUNDER_ACTION_PLAN.md
+
+Only founder-controlled work.
+
+Provide:
+
+* exact steps,
+* order,
+* external services,
+* accounts,
+* legal,
+* deployment,
+* production rollout,
+* beta rollout,
+* public launch checklist.
+
+Do NOT generate any additional reports.
+
+---
+
+# FINAL VERDICT
+
+Provide:
+
+Engineering Readiness
+
+Product Readiness
+
+UI Readiness
+
+Security Readiness
+
+Infrastructure Readiness
+
+Store Readiness
+
+Legal Readiness
+
+Founder Readiness
+
+Overall Launch Readiness
+
+Use percentages.
+
+Finally answer:
+
+Can PawDoc be submitted today?
+
+YES
+
+YES WITH CONDITIONS
+
+NO
+
+Justify the answer.
+
+---
+
+# STOP CONDITION
+
+You may stop only when:
+
+* every reachable part of the project has been reviewed,
+* every finding has been categorized,
+* every solution has been phased,
+* the founder has a complete execution roadmap.
+
+This is the final product audit before store submission.
+
+Optimize for truth.
+
+Optimize for launch quality.
+
+Optimize for building a product users will love.

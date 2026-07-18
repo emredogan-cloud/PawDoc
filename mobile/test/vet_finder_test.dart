@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pawdoc/src/vet_finder/maps_links.dart';
-import 'package:pawdoc/src/vet_finder/vet.dart';
 
 void main() {
   group('maps_links', () {
@@ -26,25 +25,4 @@ void main() {
     });
   });
 
-  group('Vet.fromJson', () {
-    test('parses the clean proxy JSON', () {
-      final v = Vet.fromJson(const {
-        'name': 'Happy Paws',
-        'phone': '+1 555',
-        'openNow': true,
-        'address': '1 Main St',
-        'lat': 40.7,
-        'lng': -74.0,
-        'distanceMeters': 500,
-      });
-      expect(v.name, 'Happy Paws');
-      expect(v.openNow, true);
-      expect(v.distanceMeters, 500);
-      expect(v.lat, 40.7);
-    });
-
-    test('defaults a missing name', () {
-      expect(Vet.fromJson(const {}).name, 'Veterinary clinic');
-    });
-  });
 }

@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:posthog_flutter/posthog_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/legal_urls.dart';
+import '../core/consent_prefs.dart';
 
 import '../auth/auth_controller.dart';
 import '../auth/supabase_providers.dart';
-import '../family/family_settings_screen.dart';
 import '../monetization/paywall_screen.dart';
-import '../referral/referral_screen.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
 import 'delete_account_screen.dart';
+import 'manage_subscription.dart';
 import 'user_profile.dart';
 
 /// Consolidated account home (roadmap §3.10.2): profile, subscription, family,
-/// referral, notifications, language, legal, **Logout (moved here, with a
+/// notifications, language, legal, **Logout (moved here, with a
 /// confirm)**, and a danger-zone Delete. Replaces the scattered AppBar/overflow
 /// actions. No auth/subscription logic changes — navigation + consolidation only.
 class AccountScreen extends ConsumerWidget {
@@ -92,7 +93,7 @@ class AccountScreen extends ConsumerWidget {
                           data: (p) => Text(
                             p.isPremium
                                 ? 'Premium'
-                                : 'Free plan · ${p.freeRemaining} of 3 free checks left',
+                                : 'Free plan · text checks free · ${p.photoLogsRemaining} of 5 photo logs left',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -108,31 +109,27 @@ class AccountScreen extends ConsumerWidget {
             ),
           ),
 
-          // Subscription.
+          // Subscription. G8: 'manage' actually manages — a premium user gets
+          // the store's subscription page (RevenueCat managementURL when
+          // available, the platform default otherwise), never the paywall.
           profile.maybeWhen(
             data: (p) => _Tile(
+              key: const Key('account_subscription_tile'),
               icon: Icons.workspace_premium_outlined,
-              title: p.isPremium ? 'Premium — manage' : 'Upgrade to Premium',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PaywallScreen()),
-              ),
+              title: p.isPremium ? 'Manage subscription' : 'Upgrade to Premium',
+              subtitle: p.isPremium ? 'Change plan or cancel anytime' : null,
+              onTap: () async {
+                if (!p.isPremium) {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                  );
+                  return;
+                }
+                await openManageSubscription();
+              },
             ),
             orElse: () => const _Tile(
                 icon: Icons.workspace_premium_outlined, title: 'Subscription'),
-          ),
-          _Tile(
-            icon: Icons.group_outlined,
-            title: 'Family sharing',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const FamilySettingsScreen()),
-            ),
-          ),
-          _Tile(
-            icon: Icons.card_giftcard_outlined,
-            title: 'Refer a friend',
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ReferralScreen()),
-            ),
           ),
           _Tile(
             icon: Icons.notifications_outlined,
@@ -140,6 +137,8 @@ class AccountScreen extends ConsumerWidget {
             subtitle: 'Manage in system settings',
             onTap: openAppSettings,
           ),
+          // I2: the consent the privacy policy promises — real and revocable.
+          const _AnalyticsConsentTile(),
           const _Tile(
             icon: Icons.language_outlined,
             title: 'Language',
@@ -193,6 +192,68 @@ class AccountScreen extends ConsumerWidget {
           const SizedBox(height: AppSpace.s24),
         ],
       ),
+      ),
+    );
+  }
+}
+
+/// Live analytics-consent toggle (I2). Flipping it updates the stored consent
+/// AND the running SDK immediately (disable() stops capture without a restart;
+/// enabling takes full effect on next launch when setup() runs).
+class _AnalyticsConsentTile extends StatefulWidget {
+  const _AnalyticsConsentTile();
+
+  @override
+  State<_AnalyticsConsentTile> createState() => _AnalyticsConsentTileState();
+}
+
+class _AnalyticsConsentTileState extends State<_AnalyticsConsentTile> {
+  bool? _enabled;
+
+  @override
+  void initState() {
+    super.initState();
+    ConsentPrefs.analyticsEnabled().then((v) {
+      if (mounted) setState(() => _enabled = v);
+    });
+  }
+
+  Future<void> _set(bool v) async {
+    setState(() => _enabled = v);
+    await ConsentPrefs.setAnalyticsEnabled(v);
+    try {
+      if (v) {
+        await Posthog().enable();
+      } else {
+        await Posthog().disable();
+      }
+    } catch (_) {
+      // SDK not configured (no key / consent was off at boot) — the stored
+      // choice still governs the next launch.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s16, vertical: AppSpace.s4),
+      child: PawCard(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s12, vertical: AppSpace.s4),
+        child: Material(
+          type: MaterialType.transparency,
+          child: SwitchListTile(
+          key: const Key('analytics_consent_toggle'),
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Usage analytics',
+              style: TextStyle(color: AppColors.ink50, fontSize: 15)),
+          subtitle: const Text('Anonymous product analytics — off by default',
+              style: TextStyle(color: AppColors.ink300, fontSize: 12)),
+          value: _enabled ?? false,
+          onChanged: _enabled == null ? null : _set,
+          ),
+        ),
       ),
     );
   }

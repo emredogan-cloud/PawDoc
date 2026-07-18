@@ -14,16 +14,15 @@ import pytest
 from app import media
 from app.cache import InMemoryCache
 from app.media import MediaFetchError
-from app.models import AnalyzeRequest, PetContext, TriageLevel
+from app.models import ActionLevel, AnalyzeRequest, PetContext
 from app.pipeline import AnalysisPipeline
 from app.providers import ClaudeProvider, GeminiProvider
 
 _VALID = {
-    "triage_level": "MONITOR",
+    "action": "WATCH_AND_RECHECK",
     "confidence": 0.9,
-    "primary_concern": "assessment",
+    "observation": "assessment",
     "visible_symptoms": [],
-    "differential": [],
     "recommended_actions": ["follow up if needed"],
     "urgency_timeframe": "routine",
     "disclaimer_required": True,
@@ -73,14 +72,6 @@ class _FakeGenaiClient:
 
 
 @pytest.fixture
-def fake_media(monkeypatch):
-    """gather_media -> one fake JPEG per url, no network."""
-    monkeypatch.setattr(
-        media, "fetch_media", lambda url, **kw: (b"\xff\xd8\xff\x00fakejpeg", "image/jpeg")
-    )
-
-
-@pytest.fixture
 def fake_anthropic(monkeypatch):
     import anthropic
 
@@ -95,11 +86,11 @@ def fake_genai(monkeypatch):
 
 
 # ---------- Claude payload ----------
-def test_claude_photo_attaches_one_image(fake_media, fake_anthropic):
+def test_claude_photo_attaches_one_image(fake_anthropic):
     out = ClaudeProvider(api_key="x").analyze(
-        "sys", "user prompt", image_url=f"{_R2}/a.jpg"
+        "sys", "user prompt", media=[(b"\xff\xd8\xff\x00fakejpeg", "image/jpeg")]
     )
-    assert out["triage_level"] == "MONITOR"
+    assert out["action"] == "WATCH_AND_RECHECK"
     content = CAPTURED["claude"]["messages"][0]["content"]
     assert isinstance(content, list), "photo content must be multimodal blocks"
     images = [b for b in content if b.get("type") == "image"]
@@ -109,13 +100,6 @@ def test_claude_photo_attaches_one_image(fake_media, fake_anthropic):
     assert content[-1]["type"] == "text", "the prompt text must follow the image"
 
 
-def test_claude_video_attaches_frames_capped(fake_media, fake_anthropic):
-    frames = [f"{_R2}/f{i}.jpg" for i in range(9)]  # 9 > cap of 6
-    ClaudeProvider(api_key="x").analyze("sys", "user", frame_urls=frames)
-    content = CAPTURED["claude"]["messages"][0]["content"]
-    images = [b for b in content if b.get("type") == "image"]
-    assert len(images) == 6, "video frames must be capped at 6"
-
 
 def test_claude_text_only_sends_no_image(fake_anthropic):
     ClaudeProvider(api_key="x").analyze("sys", "just text, no media")
@@ -124,9 +108,10 @@ def test_claude_text_only_sends_no_image(fake_anthropic):
 
 
 # ---------- Gemini payload ----------
-def test_gemini_photo_attaches_image_part(fake_media, fake_genai):
-    out = GeminiProvider(api_key="x").analyze("sys", "user", image_url=f"{_R2}/a.jpg")
-    assert out["triage_level"] == "MONITOR"
+def test_gemini_photo_attaches_image_part(fake_genai):
+    out = GeminiProvider(api_key="x").analyze(
+        "sys", "user", media=[(b"\xff\xd8\xff\x00fakejpeg", "image/jpeg")])
+    assert out["action"] == "WATCH_AND_RECHECK"
     contents = CAPTURED["gemini"]["contents"]
     assert isinstance(contents, list), "photo contents must be a parts list"
     # last element is the text; everything before is a media Part with bytes.
@@ -137,8 +122,11 @@ def test_gemini_photo_attaches_image_part(fake_media, fake_genai):
 
 
 def test_gemini_text_only_is_plain_string(fake_genai):
+    # B10: the safety contract rides in system_instruction; ONLY the owner
+    # text is user content. No shared string on the primary tier anymore.
     GeminiProvider(api_key="x").analyze("sys", "only text")
-    assert CAPTURED["gemini"]["contents"] == "sys\n\nonly text"
+    assert CAPTURED["gemini"]["contents"] == "only text"
+    assert CAPTURED["gemini"]["config"].system_instruction == "sys"
 
 
 # ---------- safe degrade + fetcher guards ----------
@@ -161,19 +149,32 @@ def test_pipeline_degrades_safe_when_media_unreadable():
             pet=PetContext(species="dog"),
         )
     )
-    assert out.result.triage_level is TriageLevel.MONITOR
-    assert out.result.triage_level is not TriageLevel.NORMAL
+    assert out.result.action is ActionLevel.WATCH_AND_RECHECK
+    # v2 invariant: a degrade is never a dead end — the floor carries a re-check.
+    assert out.result.recheck_hours is not None
     assert out.degraded is True
     assert out.model_used == "media_error"
 
 
-def test_provider_propagates_media_fetch_error(monkeypatch, fake_anthropic):
+def test_pipeline_prefetch_propagates_media_fetch_error(monkeypatch):
+    # AI-03: the fetch now happens ONCE in the pipeline; an unreadable URL
+    # degrades safely before any provider or moderator runs.
     def _boom(url, **kw):
         raise MediaFetchError("boom")
 
     monkeypatch.setattr(media, "fetch_media", _boom)
-    with pytest.raises(MediaFetchError):
-        ClaudeProvider(api_key="x").analyze("sys", "user", image_url=f"{_R2}/a.jpg")
+    pipe = AnalysisPipeline(
+        tier2=_MediaErrProvider(), tier3=_MediaErrProvider(), cache=InMemoryCache()
+    )
+    out = pipe.run(
+        AnalyzeRequest(
+            input_type="photo",
+            image_url=f"{_R2}/a.jpg",
+            pet=PetContext(species="dog"),
+        )
+    )
+    assert out.degraded is True
+    assert out.model_used == "media_error"
 
 
 def test_fetch_media_refuses_non_https():

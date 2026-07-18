@@ -4,24 +4,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../analytics/analytics.dart';
 import '../core/dates.dart';
 import '../core/pet_display.dart';
+import '../notifications/local_notifications.dart';
 import 'reminder.dart';
 import 'reminders_repository.dart';
 
-/// Create a health reminder for a pet (type/label + due date). Writes to the
-/// `reminders` table (RLS-scoped); the cron job pushes it on the due day.
+/// Create or edit a health reminder for a pet (type/label + due date). Writes
+/// to the `reminders` table (RLS-scoped); delivery is an ON-DEVICE local
+/// notification scheduled at save (evolution H2 — no push vendor, no cron).
+/// The notification permission is asked contextually on first save.
 class ReminderFormScreen extends ConsumerStatefulWidget {
-  const ReminderFormScreen({super.key, required this.petId, required this.petName});
+  const ReminderFormScreen(
+      {super.key, required this.petId, required this.petName, this.existing});
 
   final String petId;
   final String petName;
+
+  /// When set, the form edits this reminder instead of creating one (J6).
+  final Reminder? existing;
 
   @override
   ConsumerState<ReminderFormScreen> createState() => _ReminderFormScreenState();
 }
 
 class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
-  final _label = TextEditingController();
-  DateTime _dueDate = DateTime.now().add(const Duration(days: 30));
+  late final TextEditingController _label =
+      TextEditingController(text: widget.existing?.reminderType ?? '');
+  late DateTime _dueDate = widget.existing?.dueDate ??
+      DateTime.now().add(const Duration(days: 30));
   bool _saving = false;
 
   @override
@@ -39,9 +48,17 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
     }
     setState(() => _saving = true);
     try {
-      await ref.read(remindersRepositoryProvider).create(
-            Reminder(petId: widget.petId, reminderType: type, dueDate: _dueDate),
-          );
+      // Contextual permission ask (never upfront). A denial doesn't block the
+      // save — the reminder still lists in-app; only the notification is lost.
+      await ref.read(localNotificationsProvider).ensurePermission();
+      final repo = ref.read(remindersRepositoryProvider);
+      final draft =
+          Reminder(petId: widget.petId, reminderType: type, dueDate: _dueDate);
+      if (widget.existing?.id != null) {
+        await repo.update(widget.existing!.id!, draft, petName: widget.petName);
+      } else {
+        await repo.create(draft, petName: widget.petName);
+      }
       await Analytics.reminderSet(type);
       ref.invalidate(remindersForPetProvider(widget.petId));
       if (mounted) Navigator.of(context).pop(true);
@@ -58,7 +75,9 @@ class _ReminderFormScreenState extends ConsumerState<ReminderFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('New reminder · ${petDisplayName(widget.petName)}')),
+      appBar: AppBar(
+          title: Text(
+              '${widget.existing == null ? 'New' : 'Edit'} reminder · ${petDisplayName(widget.petName)}')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

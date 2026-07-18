@@ -7,6 +7,9 @@ import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
+import '../notifications/local_notifications.dart';
+import '../reminders/reminder.dart';
+import '../reminders/reminders_repository.dart';
 import 'health_event.dart';
 import 'health_events_repository.dart';
 import 'timeline.dart';
@@ -30,6 +33,9 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
   DateTime _date = DateTime.now();
   final _notes = TextEditingController();
   final _weight = TextEditingController();
+  // E7: structured vaccination — name + optional next-due (auto-reminder).
+  final _vaccineName = TextEditingController();
+  DateTime? _vaccineNextDue;
   bool _saving = false;
   bool _saved = false;
 
@@ -37,6 +43,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
   void dispose() {
     _notes.dispose();
     _weight.dispose();
+    _vaccineName.dispose();
     super.dispose();
   }
 
@@ -44,8 +51,18 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
     setState(() => _saving = true);
     Map<String, dynamic>? metadata;
     if (_type == 'weight') {
-      final kg = double.tryParse(_weight.text.trim());
+      final kg = double.tryParse(_weight.text.trim().replaceAll(',', '.'));
       if (kg != null) metadata = {'weight_kg': kg};
+    }
+    if (_type == 'vaccination') {
+      final name = _vaccineName.text.trim();
+      metadata = {
+        if (name.isNotEmpty) 'vaccine_name': name,
+        if (_vaccineNextDue != null)
+          'next_due':
+              _vaccineNextDue!.toIso8601String().split('T').first,
+      };
+      if (metadata.isEmpty) metadata = null;
     }
     final event = HealthEvent(
       petId: widget.petId,
@@ -56,6 +73,26 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
     );
     try {
       await ref.read(healthEventsRepositoryProvider).create(event);
+      // E7: a vaccination with a next-due date auto-creates the reminder (and
+      // its on-device notification) — the record drives the retention spine.
+      if (_type == 'vaccination' && _vaccineNextDue != null) {
+        final label = _vaccineName.text.trim().isEmpty
+            ? 'Vaccine due'
+            : 'Vaccine: ${_vaccineName.text.trim()}';
+        try {
+          await ref.read(localNotificationsProvider).ensurePermission();
+          await ref.read(remindersRepositoryProvider).create(
+                Reminder(
+                    petId: widget.petId,
+                    reminderType: label,
+                    dueDate: _vaccineNextDue!),
+                petName: widget.petName,
+              );
+          await Analytics.reminderSet('vaccination_next_due');
+        } catch (_) {
+          // The event saved; a reminder hiccup must not fail the flow.
+        }
+      }
       await Analytics.healthEventLogged(_type);
       ref.invalidate(healthTimelineProvider(widget.petId));
       if (!mounted) return;
@@ -218,9 +255,9 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
               ),
               const SizedBox(height: AppSpace.s8),
               _DarkTextField(
-                fieldKey: null,
-                controller: null,
-                labelText: 'Select vaccine',
+                fieldKey: const Key('event_vaccine_name_field'),
+                controller: _vaccineName,
+                labelText: 'Vaccine name (e.g. Rabies, DHPP)',
                 prefixIcon: Icons.edit_outlined,
               ),
               const SizedBox(height: AppSpace.s16),
@@ -231,6 +268,20 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
               ),
               const SizedBox(height: AppSpace.s8),
               PawCard(
+                key: const Key('event_vaccine_next_due'),
+                onTap: () async {
+                  final now = DateTime.now();
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _vaccineNextDue ??
+                        now.add(const Duration(days: 365)),
+                    firstDate: now,
+                    lastDate: DateTime(now.year + 5),
+                  );
+                  if (picked != null) {
+                    setState(() => _vaccineNextDue = picked);
+                  }
+                },
                 padding: const EdgeInsets.symmetric(
                     horizontal: AppSpace.s16, vertical: AppSpace.s12),
                 child: Row(
@@ -240,9 +291,13 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
                     const SizedBox(width: AppSpace.s12),
                     Expanded(
                       child: Text(
-                        'Select next due date',
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(color: AppColors.ink300),
+                        _vaccineNextDue == null
+                            ? 'Select next due date — sets a reminder'
+                            : 'Next due: ${_vaccineNextDue!.toIso8601String().split('T').first} (reminder will be set)',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                            color: _vaccineNextDue == null
+                                ? AppColors.ink300
+                                : AppColors.ink50),
                       ),
                     ),
                     const Icon(Icons.keyboard_arrow_down_rounded,

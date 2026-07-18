@@ -68,9 +68,19 @@
 		</array>
 		<key>NSCameraUsageDescription</key>
 		<string>PawDoc uses the camera so you can take a photo of your pet for an AI health check.</string>
-		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>PawDoc uses your location to find nearby veterinary clinics in an emergency.</string>
-		<key>UIStatusBarHidden</key>
 		<false/>
-	</dict>
+		<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>app.pawdoc</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>pawdoc</string>
+			</array>
+		</dict>
+	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+</dict>
 </plist>

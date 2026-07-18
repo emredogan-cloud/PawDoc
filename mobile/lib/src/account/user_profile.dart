@@ -1,43 +1,62 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../auth/supabase_providers.dart';
 
 class UserProfile {
   const UserProfile({
     required this.subscriptionStatus,
-    required this.freeUsedThisMonth,
-    this.pdfReportsRemaining = 0,
+    required this.photoLogsUsedThisMonth,
+    this.sdkEntitlementActive = false,
   });
   final String subscriptionStatus;
-  final int freeUsedThisMonth;
-  /// Phase 6.3 — credits purchased via the $4.99 pdf_report_addon. Premium
-  /// tiers ignore this; the server enforces both paths.
-  final int pdfReportsRemaining;
 
-  /// Tiers that unlock all premium features. Phase 5.4 adds `b2b_lite` (sitter).
-  static const _premiumTiers = {'premium', 'family', 'trial', 'b2b_lite'};
+  /// Quota v3: the meter is PHOTO LOGS only (5/month free). Text guidance is
+  /// unmetered — safety is never counted.
+  final int photoLogsUsedThisMonth;
 
-  bool get isPremium => _premiumTiers.contains(subscriptionStatus);
-  int get freeRemaining => (3 - freeUsedThisMonth).clamp(0, 3);
+  /// SUB-02: true when the RevenueCat SDK reports an active entitlement on
+  /// this device. Premium recognition no longer depends 100% on the webhook —
+  /// a paid user is premium the moment the store confirms, even if the
+  /// webhook is delayed or misconfigured.
+  final bool sdkEntitlementActive;
 
-  /// Phase 6.3 — true when the user can request a PDF Health Report without
-  /// having to buy a credit first. Mirrors the server-side check in
-  /// /generate-pdf-report.
-  bool get canRequestPdfReport => isPremium || pdfReportsRemaining > 0;
+  static const freePhotoLogsPerMonth = 5;
+
+  /// One plan: `premium` (plus the store trial period).
+  static const _premiumTiers = {'premium', 'trial'};
+
+  bool get isPremium =>
+      _premiumTiers.contains(subscriptionStatus) || sdkEntitlementActive;
+  int get photoLogsRemaining =>
+      (freePhotoLogsPerMonth - photoLogsUsedThisMonth)
+          .clamp(0, freePhotoLogsPerMonth);
 }
 
-/// The signed-in user's subscription + free-tier counter (RLS: own row only).
+/// The signed-in user's subscription + photo-log counter (RLS: own row only).
+/// Merges the DB status (webhook-written) with the RevenueCat SDK entitlement
+/// (device truth) so neither path alone can lock a paying user out.
 final userProfileProvider = FutureProvider.autoDispose<UserProfile>((ref) async {
   final client = ref.watch(supabaseClientProvider);
   final uid = client.auth.currentUser!.id;
   final row = await client
       .from('users')
-      .select('subscription_status, free_analyses_used_this_month, pdf_reports_remaining')
+      .select('subscription_status, free_analyses_used_this_month')
       .eq('id', uid)
       .single();
+
+  // Best-effort SDK read (SUB-02). Never throws: unconfigured SDK (tests,
+  // dev builds without a key) or a store hiccup simply yields false.
+  var sdkActive = false;
+  try {
+    final info = await Purchases.getCustomerInfo();
+    sdkActive = info.entitlements.active.isNotEmpty;
+  } catch (_) {}
+
   return UserProfile(
     subscriptionStatus: (row['subscription_status'] as String?) ?? 'free',
-    freeUsedThisMonth: (row['free_analyses_used_this_month'] as int?) ?? 0,
-    pdfReportsRemaining: (row['pdf_reports_remaining'] as int?) ?? 0,
+    photoLogsUsedThisMonth:
+        (row['free_analyses_used_this_month'] as int?) ?? 0,
+    sdkEntitlementActive: sdkActive,
   );
 });

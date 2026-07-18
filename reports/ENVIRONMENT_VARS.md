@@ -8,6 +8,17 @@
 
 **Status legend:** ✅ slot live in Doppler · ⏳ slot created with placeholder, real value minted later · 🔒 server-only (never reaches the mobile/web client).
 
+> ### ⚠️ Removed in the 2026-07-17 evolution subtraction (`feat/final-evolution`)
+> These variables no longer exist in any code path — **delete their Doppler slots** and any platform copies; phase-history notes below that mention them are historical:
+> `AIRVET_AFFILIATE_URL`, `PET_INSURANCE_AFFILIATE_URL` (affiliates removed) ·
+> `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY` (OneSignal removed; reminders go on-device) ·
+> `OPENAI_API_KEY`, `OPENAI_MODEL` (AI journal removed — no OpenAI processor) ·
+> `RESEND_API_KEY`, `RESEND_FROM` (family invites removed) ·
+> `GOOGLE_PLACES_API_KEY` (vet finder is now an OS maps deep link) ·
+> `GEMINI_VIDEO_MODEL` (video capture removed) ·
+> `GEMINI_EMBEDDING_MODEL`, `SEMANTIC_CACHE_ENABLED` (semantic cache removed) ·
+> `CRON_SECRET` (both crons — reminders push, journals — are gone).
+
 ---
 
 ## Phase 0.1 backbone (created now, as placeholders)

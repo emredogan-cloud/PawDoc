@@ -30,7 +30,7 @@ def test_personalization_block_injects_rabbit_guidance():
     # first call within the 5-min ephemeral cache window.
     block = build_personalization_block(PetContext(species="rabbit"))
     assert "Species: rabbit" in block
-    assert "GI stasis" in block
+    assert "GET_HELP_NOW" in block  # species note escalates, never the floor
 
 
 def test_personalization_block_no_species_note_for_dog():
@@ -60,9 +60,9 @@ def test_user_prompt_is_dynamic_only():
 def test_personalization_block_renders_recent_analyses_and_events():
     pet = PetContext(species="dog", breed="Golden Retriever", age_years=4.0)
     analyses = [
-        {"triage_level": "MONITOR", "primary_concern": "intermittent vomiting",
+        {"action": "WATCH_AND_RECHECK", "observation": "intermittent vomiting",
          "created_at": "2026-05-22T10:00:00Z"},
-        {"triage_level": "NORMAL", "primary_concern": "mild ear redness",
+        {"action": "WATCH_AND_RECHECK", "observation": "mild ear redness",
          "created_at": "2026-05-15T12:00:00Z"},
     ]
     events = [
@@ -70,7 +70,7 @@ def test_personalization_block_renders_recent_analyses_and_events():
     ]
     block = build_personalization_block(pet, analyses, events)
     assert "Recent analyses" in block
-    assert "MONITOR: intermittent vomiting" in block
+    assert "WATCH_AND_RECHECK: intermittent vomiting" in block
     assert "[2026-05-22]" in block
     assert "Recent health events" in block
     assert "vaccine: DHPP booster" in block
@@ -82,7 +82,7 @@ def test_personalization_block_caps_long_histories():
     """A power user with 50 events should not blow up the prompt — the cap
     keeps the cost bounded."""
     big_analyses = [
-        {"triage_level": "MONITOR", "primary_concern": f"item {i}",
+        {"action": "WATCH_AND_RECHECK", "observation": f"item {i}",
          "created_at": "2026-05-15T12:00:00Z"}
         for i in range(50)
     ]
@@ -112,8 +112,8 @@ def test_personalization_block_tolerates_missing_fields_in_history_rows():
     # it should fall back to a safe placeholder.
     block = build_personalization_block(
         PetContext(species="dog"),
-        recent_analyses=[{"triage_level": "MONITOR", "created_at": "2026-05-22T10:00:00Z"}],
+        recent_analyses=[{"action": "WATCH_AND_RECHECK", "created_at": "2026-05-22T10:00:00Z"}],
         recent_events=[{"event_type": "weight_check"}],
     )
-    assert "no concern recorded" in block
+    assert "no observation recorded" in block
     assert "weight_check" in block

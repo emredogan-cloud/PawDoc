@@ -16,13 +16,15 @@ import 'package:pawdoc/src/models/analysis_result.dart';
 import 'package:rive/rive.dart' show Rive;
 
 AnalysisResult _emergency() => const AnalysisResult(
-      triageLevel: TriageLevel.emergency,
+      action: ActionLevel.getHelpNow,
       confidence: 1.0,
-      primaryConcern: "Emergency indicator detected: 'not breathing'.",
+      observation: "Emergency indicator detected: 'not breathing'.",
       visibleSymptoms: [],
-      differential: [],
+      vetsLookFor: [],
+      watchFor: [],
       recommendedActions: ['Contact an emergency veterinarian now.'],
       urgencyTimeframe: 'immediately',
+      recheckHours: null,
       disclaimerRequired: true,
     );
 

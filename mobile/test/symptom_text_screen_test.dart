@@ -1,13 +1,15 @@
 // GAP-E16: a short message naming a critical sign must NEVER be blocked by the
 // min-length gate ("No choking-style emergency message is blocked").
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pawdoc/src/text_input/symptom_text_screen.dart';
 import 'package:pawdoc/src/theme/paw_ui.dart';
 
 void main() {
   Future<void> pump(WidgetTester t) =>
-      t.pumpWidget(const MaterialApp(home: SymptomTextScreen(petName: 'Rex')));
+      t.pumpWidget(const ProviderScope(
+          child: MaterialApp(home: SymptomTextScreen(petName: 'Rex'))));
 
   PawPrimaryButton button(WidgetTester t) =>
       t.widget<PawPrimaryButton>(find.byKey(const Key('symptom_continue_button')));

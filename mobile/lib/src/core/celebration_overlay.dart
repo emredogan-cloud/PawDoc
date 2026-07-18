@@ -13,7 +13,7 @@ import 'motion.dart';
 /// * auto-dismisses at [duration] (≤2.5s) — never blocks navigation;
 /// * skippable: any tap dismisses immediately;
 /// * reduce-motion: NO overlay at all — a plain text snackbar instead;
-/// * never used on EMERGENCY-adjacent flows (call sites are referral claim
+/// * never used on EMERGENCY-adjacent flows (call sites are the premium
 ///   and the paywall purchase result; the guard test keeps motion off the
 ///   emergency tree).
 Future<void> showCelebration(

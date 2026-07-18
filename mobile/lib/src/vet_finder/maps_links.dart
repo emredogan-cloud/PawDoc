@@ -29,3 +29,9 @@ String distanceLabel(int? meters) {
   if (meters < 1000) return '$meters m';
   return '${(meters / 1000).toStringAsFixed(1)} km';
 }
+
+/// Emergency variant — searches specifically for emergency clinics. Opens the
+/// OS maps app, which handles location itself: PawDoc requests NO location
+/// permission and never sees coordinates.
+Uri emergencyVetSearchMapsUri() => Uri.parse(
+    'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('emergency veterinarian near me')}');

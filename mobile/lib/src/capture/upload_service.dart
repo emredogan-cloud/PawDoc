@@ -126,18 +126,6 @@ class UploadService {
     }
     return UploadResult(storageKey: key);
   }
-
-  /// Upload several JPEG keyframes (Phase 3.2 video), each via its own presigned
-  /// PUT URL. Returns the storage keys in order. Same no-client-credentials
-  /// guarantee and per-frame resilience as [uploadJpeg].
-  Future<List<String>> uploadFrames(List<Uint8List> frames) async {
-    final keys = <String>[];
-    for (final frame in frames) {
-      final result = await uploadJpeg(frame);
-      keys.add(result.storageKey);
-    }
-    return keys;
-  }
 }
 
 final uploadServiceProvider = Provider<UploadService>((ref) {
