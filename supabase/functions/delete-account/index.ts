@@ -54,7 +54,12 @@ async function purgeUserUploads(uid: string): Promise<number> {
 // and skipped when its credential isn't configured (so deletion never blocks).
 async function deleteThirdParties(uid: string): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
-  const rcKey = Deno.env.get("REVENUECAT_SECRET_API_KEY");
+  // Canonical slot name is REVENUECAT_API_KEY (ENVIRONMENT_VARS.md + Doppler
+  // prd). The old REVENUECAT_SECRET_API_KEY drift meant the RevenueCat purge
+  // silently no-op'd on account deletion (guarded, so no crash) — a GDPR
+  // completeness gap. Accept the legacy name as a fallback for safety.
+  const rcKey = Deno.env.get("REVENUECAT_API_KEY") ??
+      Deno.env.get("REVENUECAT_SECRET_API_KEY");
   if (rcKey) {
     try {
       const r = await fetch(`https://api.revenuecat.com/v1/subscribers/${uid}`, {
