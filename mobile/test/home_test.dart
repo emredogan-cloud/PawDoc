@@ -30,5 +30,11 @@ void main() {
     // lives inside the Account screen behind a confirm (roadmap §3.10.2).
     expect(find.byKey(const Key('home_account_button')), findsOneWidget);
     expect(find.byKey(const Key('sign_out_button')), findsNothing);
+
+    // Emergency is reachable even before a pet is added — the offline-capable
+    // red path must never be gated behind a network fetch. (The pets-load-error
+    // branch carries the same button; that state is device-verified — the
+    // FutureProvider error state isn't reproducible in this harness.)
+    expect(find.byKey(const Key('home_emergency_button')), findsOneWidget);
   });
 }
