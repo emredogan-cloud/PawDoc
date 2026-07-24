@@ -7,11 +7,18 @@
          first reminder creation, never upfront (H2/J2). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <!-- No location permission: "nearby vet" is an OS maps deep link, not GPS. -->
-    <!-- GAP-B3 permission diet: capture is camera-only (enableAudio: false) and
-         the app never reads the photo library, so strip the storage/audio
-         permissions that the camera / image / video plugins merge in by default.
-         tools:node="remove" deletes them from the final merged manifest. -->
+    <!-- Next Evolution Phase 5 (Smart Walks): COARSE location ONLY, foreground
+         only — the approximate-location dialog is the deliberate trust choice;
+         weather + nearby parks are fetched by the DEVICE (MET Norway / OSM)
+         and coordinates never reach PawDoc servers. FINE location is
+         intentionally NOT declared. "Nearby vet" remains an OS maps deep link. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- GAP-B3 permission diet: triage capture is camera-only (enableAudio:
+         false); Memories/Assistant gallery picking uses the system photo
+         picker (no storage permission on any supported API level), so strip
+         the storage/audio permissions that the camera / image / video plugins
+         merge in by default. tools:node="remove" deletes them from the final
+         merged manifest. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>

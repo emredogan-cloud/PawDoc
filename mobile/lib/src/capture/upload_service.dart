@@ -61,12 +61,17 @@ class UploadService {
   final SupabaseClient _client;
   final http.Client _http;
 
-  Future<UploadResult> uploadJpeg(Uint8List jpegBytes) async {
+  /// [scope] namespaces the object by purpose (Next Evolution Phase 2):
+  /// `uploads` (analysis inputs, default — unchanged), `memories` (pet
+  /// journal), `chat` (assistant attachments). The server validates it against
+  /// its own allowlist; the key always stays under the caller's uid.
+  Future<UploadResult> uploadJpeg(Uint8List jpegBytes,
+      {String scope = 'uploads'}) async {
     validateUploadBytes(jpegBytes); // size/empty guard before any network call
 
     for (var attempt = 1; attempt <= kUploadMaxAttempts; attempt++) {
       try {
-        return await _attempt(jpegBytes);
+        return await _attempt(jpegBytes, scope);
       } on _RetryableUpload {
         if (attempt < kUploadMaxAttempts) {
           // Bounded linear backoff — never an unbounded wait.
@@ -78,13 +83,13 @@ class UploadService {
         'Upload failed — please check your connection and try again.');
   }
 
-  Future<UploadResult> _attempt(Uint8List jpegBytes) async {
+  Future<UploadResult> _attempt(Uint8List jpegBytes, String scope) async {
     // 1. Presigned URL (no client R2 creds; CR #6), time-boxed.
     final Map<dynamic, dynamic> data;
     try {
       final res = await _client.functions.invoke(
         'generate-upload-url',
-        body: {'content_type': 'image/jpeg', 'ext': 'jpg'},
+        body: {'content_type': 'image/jpeg', 'ext': 'jpg', 'scope': scope},
       ).timeout(kUploadUrlTimeout);
       if (res.data is! Map) {
         throw const _RetryableUpload();

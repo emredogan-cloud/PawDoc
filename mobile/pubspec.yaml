@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ^3.11.5
@@ -79,6 +79,12 @@ dependencies:
   # binaries fetched at build time — a CI/offline + size risk we don't take
   # for chip-scale avatars. Revisit only with a deliberate migration.
   rive: 0.13.20
+  image_picker: ^1.2.3
+  cached_network_image: ^3.4.1
+  flutter_cache_manager: ^3.4.2
+  gpt_markdown: ^1.1.8
+  geolocator: ^14.0.3
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:
@@ -115,6 +121,7 @@ flutter:
   assets:
     - assets/google_fonts/
     - assets/brand/
+    - assets/breeds/
     - assets/icon/
     - assets/motion/
     - assets/illustrations/onboarding/
@@ -166,14 +173,20 @@ flutter_native_splash:
   color: "#FFFFFF"
   color_dark: "#121212"
 
-# App icons (Phase 2.1). Add the asset(s) then run `dart run flutter_launcher_icons`.
+# App icons (Next Evolution Phase 1 brand refresh — source art
+# ASO-image/PlayStore-ASO/007-app-logo.png). Regenerate with
+# `dart run flutter_launcher_icons` after changing any assets/icon/ source.
 flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/app_icon.png"
-  adaptive_icon_background: "#00897B"
-  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  # Background matches the artwork's own navy so the adaptive foreground
+  # blends seamlessly under every launcher mask shape.
+  adaptive_icon_background: "#030C1E"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  # Android 13+ themed icon: white paw glyph.
+  adaptive_icon_monochrome: "assets/icon/app_icon_monochrome.png"
   # GAP-B2: the iOS App Store rejects icons with an alpha channel. The source is
-  # RGBA, so flatten the iOS icon onto the brand teal to keep submission safe.
+  # RGBA, so flatten the iOS icon onto the brand navy to keep submission safe.
   remove_alpha_ios: true
-  background_color_ios: "#00897B"
+  background_color_ios: "#030C1E"

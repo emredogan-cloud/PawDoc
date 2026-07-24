@@ -68,6 +68,10 @@
 		</array>
 		<key>NSCameraUsageDescription</key>
 		<string>PawDoc uses the camera so you can take a photo of your pet for an AI health check.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>PawDoc opens your photo library so you can pick pictures for pet memories and assistant chats.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>PawDoc uses your approximate location, only while you use the app, to show walk-friendly weather and nearby parks. It is never stored on PawDoc servers.</string>
 		<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

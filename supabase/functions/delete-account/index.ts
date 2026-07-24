@@ -19,8 +19,13 @@ async function sha256Hex(s: string): Promise<string> {
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Delete every R2 object under uploads/<uid>/ (paginated). Returns the count.
+// Delete every R2 object under the user's namespaces (paginated). Returns the
+// count. Next Evolution Phase 2 widened this from uploads/ alone to every media
+// scope (uploads = analysis inputs, memories = pet journal, chat = assistant
+// attachments) so erasure stays complete as surfaces grow.
 // No-op (0) if R2 isn't configured, so the deletion still completes.
+const USER_MEDIA_PREFIXES = ["uploads", "memories", "chat"];
+
 async function purgeUserUploads(uid: string): Promise<number> {
   const accountId = Deno.env.get("R2_ACCOUNT_ID");
   const bucket = Deno.env.get("R2_BUCKET");
@@ -29,24 +34,26 @@ async function purgeUserUploads(uid: string): Promise<number> {
   if (!accountId || !bucket || !accessKeyId || !secretAccessKey) return 0;
   const r2 = new AwsClient({ accessKeyId, secretAccessKey, service: "s3", region: "auto" });
   const base = `https://${accountId}.r2.cloudflarestorage.com/${bucket}`;
-  const prefix = `uploads/${uid}/`;
-  let token: string | null = null;
   let deleted = 0;
-  do {
-    const u = new URL(base);
-    u.searchParams.set("list-type", "2");
-    u.searchParams.set("prefix", prefix);
-    if (token) u.searchParams.set("continuation-token", token);
-    const resp = await r2.fetch(u.toString(), { method: "GET" });
-    if (!resp.ok) break;
-    const xml = await resp.text();
-    // keysUnderPrefix is the safety net — never delete outside the uid prefix.
-    for (const key of keysUnderPrefix(parseListKeys(xml), prefix)) {
-      const d = await r2.fetch(`${base}/${key}`, { method: "DELETE" });
-      if (d.ok || d.status === 404) deleted++;
-    }
-    token = parseNextToken(xml);
-  } while (token);
+  for (const scope of USER_MEDIA_PREFIXES) {
+    const prefix = `${scope}/${uid}/`;
+    let token: string | null = null;
+    do {
+      const u = new URL(base);
+      u.searchParams.set("list-type", "2");
+      u.searchParams.set("prefix", prefix);
+      if (token) u.searchParams.set("continuation-token", token);
+      const resp = await r2.fetch(u.toString(), { method: "GET" });
+      if (!resp.ok) break;
+      const xml = await resp.text();
+      // keysUnderPrefix is the safety net — never delete outside the uid prefix.
+      for (const key of keysUnderPrefix(parseListKeys(xml), prefix)) {
+        const d = await r2.fetch(`${base}/${key}`, { method: "DELETE" });
+        if (d.ok || d.status === 404) deleted++;
+      }
+      token = parseNextToken(xml);
+    } while (token);
+  }
   return deleted;
 }
 

@@ -125,6 +125,67 @@ class LocalNotifications {
       await _plugin.cancel(idFor(reminderId));
     } catch (_) {}
   }
+
+  // --- Smart Walks (Next Evolution Phase 5) --------------------------------
+  // Same on-device philosophy: a DAILY repeating local notification at the
+  // user's chosen hour. No push vendor, no server, works offline. The copy is
+  // static (fully weather-conditional delivery would need a background
+  // fetcher — deliberately out of v1).
+
+  static const _walksChannel = AndroidNotificationDetails(
+    'walks',
+    'Walk suggestions',
+    channelDescription: 'Your daily walk-time nudge (on-device only).',
+    importance: Importance.defaultImportance,
+    priority: Priority.defaultPriority,
+  );
+
+  /// Fixed id — exactly one daily walk reminder exists at a time.
+  @visibleForTesting
+  static const int walkReminderId = 0x57414C4B; // 'WALK'
+
+  Future<void> scheduleDailyWalkReminder({
+    required int hour,
+    required int minute,
+    String? petName,
+  }) async {
+    try {
+      await initialize();
+      var when = tz.TZDateTime.local(
+        tz.TZDateTime.now(tz.local).year,
+        tz.TZDateTime.now(tz.local).month,
+        tz.TZDateTime.now(tz.local).day,
+        hour,
+        minute,
+      );
+      if (!when.isAfter(tz.TZDateTime.now(tz.local))) {
+        when = when.add(const Duration(days: 1));
+      }
+      await _plugin.zonedSchedule(
+        walkReminderId,
+        petName == null ? 'Walk time 🐾' : 'Walk time with $petName 🐾',
+        "Check today's walk window in PawDoc.",
+        when,
+        const NotificationDetails(
+          android: _walksChannel,
+          iOS: DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time, // repeat daily
+      );
+    } catch (e) {
+      debugPrint('scheduleDailyWalkReminder failed: $e');
+    }
+  }
+
+  Future<void> cancelDailyWalkReminder() async {
+    try {
+      await initialize();
+      await _plugin.cancel(walkReminderId);
+    } catch (_) {}
+  }
 }
 
 final localNotificationsProvider =

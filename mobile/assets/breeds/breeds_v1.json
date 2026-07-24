@@ -1,0 +1,566 @@
+{
+  "schema_version": 1,
+  "breeds": [
+    {
+      "id": "golden-retriever",
+      "species": "dog",
+      "name": "Golden Retriever",
+      "image": "assets/breeds/golden-retriever.webp",
+      "origin": "Scotland",
+      "countries": ["United Kingdom", "United States"],
+      "life_expectancy_years": [10, 12],
+      "size_class": "large",
+      "weight_kg": [25, 34],
+      "coat": "Dense, water-repellent double coat in shades of light to dark gold, with feathering at the neck, legs, and tail",
+      "temperament": ["friendly", "devoted", "intelligent", "gentle", "eager-to-please"],
+      "personality": "The Golden Retriever meets the world with an open heart and, more often than not, something proudly carried in its mouth. Bred to work all day beside Scottish gamekeepers, the breed pairs real athleticism with a famously forgiving temperament, thriving wherever it is included. Goldens read household moods with uncommon sensitivity, which helps explain why so many excel as therapy and assistance dogs.",
+      "exercise_level": 4,
+      "exercise_note": "Plan on an hour or more of daily activity; retrieving games and swimming are lifelong favorites.",
+      "grooming_level": 3,
+      "grooming_note": "Brush two to three times a week, stepping up to daily during heavy spring and fall shedding.",
+      "health_notes": [
+        "Can be prone to hip and elbow dysplasia; reputable breeders screen their breeding stock.",
+        "The breed is associated with a higher lifetime risk of certain cancers, which makes routine veterinary checkups especially worthwhile.",
+        "Inherited eye conditions, including progressive retinal atrophy, are reported in some lines.",
+        "Floppy ears can be prone to ear infections, particularly after swimming."
+      ],
+      "fun_facts": [
+        "The breed was developed in the 1860s by Dudley Marjoribanks at Guisachan, his estate in the Scottish Highlands.",
+        "Goldens are famed for a 'soft mouth,' bred to carry retrieved waterfowl without leaving a mark.",
+        "Two US presidents, Gerald Ford and Ronald Reagan, kept Golden Retrievers at the White House."
+      ]
+    },
+    {
+      "id": "labrador-retriever",
+      "species": "dog",
+      "name": "Labrador Retriever",
+      "image": "assets/breeds/labrador-retriever.webp",
+      "origin": "Newfoundland",
+      "countries": ["Canada", "United Kingdom"],
+      "life_expectancy_years": [11, 13],
+      "size_class": "large",
+      "weight_kg": [25, 36],
+      "coat": "Short, dense, weather-resistant double coat in yellow, black, or chocolate",
+      "temperament": ["outgoing", "friendly", "eager", "gentle", "energetic"],
+      "personality": "Few breeds wear enthusiasm as openly as the Labrador. Built for cold-water retrieving, the Lab brings that same cheerful work ethic to family life: game for any outing, patient with children, and convinced every stranger is a friend not yet greeted. Beneath the wagging exterior is a genuinely biddable worker, which is why Labs remain a mainstay of guide-dog and detection programs worldwide.",
+      "exercise_level": 4,
+      "exercise_note": "An hour or more of daily exercise keeps a Lab content; swimming and fetch are practically breed requirements.",
+      "grooming_level": 2,
+      "grooming_note": "Weekly brushing, increased during seasonal shedding, keeps the dense coat in order.",
+      "health_notes": [
+        "Can be prone to hip and elbow dysplasia.",
+        "A well-documented gene variant found in some Labs is associated with strong food motivation and a tendency to gain weight.",
+        "Inherited eye conditions, including progressive retinal atrophy, are reported in the breed."
+      ],
+      "fun_facts": [
+        "Despite the name, the breed traces to the St. John's water dog of Newfoundland and was refined in nineteenth-century Britain.",
+        "Webbed toes and a thick 'otter tail' make Labs powerful, rudder-steered swimmers.",
+        "Labs held the top spot in American Kennel Club registrations for 31 consecutive years, from 1991 through 2021."
+      ]
+    },
+    {
+      "id": "german-shepherd",
+      "species": "dog",
+      "name": "German Shepherd",
+      "image": "assets/breeds/german-shepherd.webp",
+      "origin": "Germany",
+      "countries": ["Germany"],
+      "life_expectancy_years": [9, 13],
+      "size_class": "large",
+      "weight_kg": [22, 40],
+      "coat": "Medium-length, dense double coat, classically black and tan; a longhaired variety also occurs",
+      "temperament": ["loyal", "confident", "intelligent", "courageous", "watchful"],
+      "personality": "A German Shepherd gives its loyalty carefully and then completely. This is a thinking dog, poised and observant, quick to learn a routine and quicker to notice when it changes, which explains more than a century of service in police, guide, and search-and-rescue work. With family, Shepherds are affectionate and gently protective; with strangers they tend toward polite reserve. They are happiest with a job, even if the job is fetching the newspaper on a schedule.",
+      "exercise_level": 5,
+      "exercise_note": "Give this working breed vigorous daily exercise plus real mental work such as training or scent games.",
+      "grooming_level": 3,
+      "grooming_note": "Brush several times a week and expect heavy seasonal shedding twice a year.",
+      "health_notes": [
+        "Can be prone to hip and elbow dysplasia; screening of breeding stock is standard practice.",
+        "Degenerative myelopathy, a progressive spinal condition, is reported in the breed and has a genetic test.",
+        "As a deep-chested breed, they are associated with a higher risk of bloat (gastric dilatation-volvulus)."
+      ],
+      "fun_facts": [
+        "The breed was standardized from 1899 by Max von Stephanitz, beginning with a dog he named Horand von Grafrath.",
+        "Rin Tin Tin, rescued from a World War I battlefield in France, became one of early Hollywood's biggest stars.",
+        "The first Seeing Eye guide dogs in the United States were German Shepherds."
+      ]
+    },
+    {
+      "id": "french-bulldog",
+      "species": "dog",
+      "name": "French Bulldog",
+      "image": "assets/breeds/french-bulldog.webp",
+      "origin": "France",
+      "countries": ["France", "United Kingdom"],
+      "life_expectancy_years": [10, 12],
+      "size_class": "small",
+      "weight_kg": [8, 13],
+      "coat": "Short, smooth, fine coat in fawn, brindle, cream, or pied",
+      "temperament": ["affectionate", "playful", "adaptable", "sociable", "charming"],
+      "personality": "The French Bulldog is a comedian in a velvet jacket: bat ears up, eyes bright, always positioned at the center of household life. Frenchies were bred purely for companionship and it shows; they trail their people from room to room and greet visitors like co-hosts. Modest exercise needs make them beloved city dogs, though their flat faces mean warm days and long stairways deserve real respect.",
+      "exercise_level": 2,
+      "exercise_note": "A couple of short, unhurried walks plus indoor play meet their needs; avoid exertion in warm or humid weather.",
+      "grooming_level": 2,
+      "grooming_note": "Weekly brushing, plus gentle regular cleaning and drying of the facial folds.",
+      "health_notes": [
+        "As a brachycephalic (flat-faced) breed, French Bulldogs can be prone to airway issues and are notably sensitive to heat, humidity, and overexertion.",
+        "Spinal conditions such as hemivertebrae and intervertebral disc disease are associated with the breed.",
+        "Skin fold irritation can occur if facial wrinkles stay damp.",
+        "Certain eye conditions, including cherry eye, are seen more often in the breed."
+      ],
+      "fun_facts": [
+        "The breed descends from toy bulldogs taken to Normandy by English lace workers in the 1800s.",
+        "The signature upright 'bat ears' became the standard largely at the insistence of American fanciers.",
+        "Their front-heavy build makes most Frenchies poor swimmers."
+      ]
+    },
+    {
+      "id": "poodle-standard",
+      "species": "dog",
+      "name": "Poodle (Standard)",
+      "image": "assets/breeds/poodle-standard.webp",
+      "origin": "Germany",
+      "countries": ["France", "Germany"],
+      "life_expectancy_years": [12, 15],
+      "size_class": "large",
+      "weight_kg": [20, 32],
+      "coat": "Curly, dense, continuously growing single coat in a wide palette of solid colors; sheds very little",
+      "temperament": ["intelligent", "athletic", "proud", "playful", "trainable"],
+      "personality": "Beneath the show ring's topiary lies one of dogdom's great working minds. The Standard Poodle began as a German duck retriever, and the athlete is still there: springy, fast, and delighted by a training challenge. Poodles are attentive to their people almost to the point of telepathy, gently mischievous at home, and courteous but reserved with strangers. Give one a puzzle, a swim, or a job and you will see the breed at its considerable best.",
+      "exercise_level": 4,
+      "exercise_note": "An hour of varied daily activity, mixing walks, swims, fetch, and training games, suits this working retriever.",
+      "grooming_level": 5,
+      "grooming_note": "Plan on brushing every day or two and professional grooming every four to six weeks to prevent matting.",
+      "health_notes": [
+        "Can be prone to hip dysplasia and certain inherited eye conditions.",
+        "Addison's disease and sebaceous adenitis are reported more often in Standard Poodles than in many breeds.",
+        "As a deep-chested breed, they are associated with a higher risk of bloat (gastric dilatation-volvulus)."
+      ],
+      "fun_facts": [
+        "The name comes from the German 'pudeln,' meaning to splash; the breed began as a duck-retrieving water dog.",
+        "By tradition, the elaborate show clip once served a purpose: warming joints and organs in cold water while lightening the coat for swimming.",
+        "Although the Poodle originated in Germany, it is celebrated as the national dog of France."
+      ]
+    },
+    {
+      "id": "beagle",
+      "species": "dog",
+      "name": "Beagle",
+      "image": "assets/breeds/beagle.webp",
+      "origin": "England",
+      "countries": ["United Kingdom", "United States"],
+      "life_expectancy_years": [10, 15],
+      "size_class": "small",
+      "weight_kg": [9, 14],
+      "coat": "Short, dense, weather-resistant coat, classically in tricolor or lemon and white",
+      "temperament": ["merry", "curious", "friendly", "determined", "vocal"],
+      "personality": "The Beagle is merriness on four legs: a small hound with a big voice and a nose that runs the show. Bred to work in packs, Beagles are famously good-natured with children, other dogs, and just about everyone else. That marvelous nose comes with a caveat, though; once a scent lifts, a Beagle's ears close, which is why secure fences and leashes are lifelong equipment. Come evening, the tireless explorer becomes a champion couch companion.",
+      "exercise_level": 3,
+      "exercise_note": "An hour of daily walking and sniffing keeps a Beagle content, on leash or behind a secure fence, since a fresh scent outranks recall.",
+      "grooming_level": 2,
+      "grooming_note": "A weekly once-over with a hound mitt, plus routine checks of those long ears.",
+      "health_notes": [
+        "Long, low-hanging ears can be prone to ear infections.",
+        "Beagles can be prone to weight gain, especially with free access to food.",
+        "Idiopathic epilepsy and hypothyroidism are reported in the breed."
+      ],
+      "fun_facts": [
+        "A Beagle's nose carries an estimated 220 million scent receptors, compared with roughly five million in humans.",
+        "By tradition, the white tail tip was bred in so hunters could spot their hounds working in tall cover.",
+        "The USDA's 'Beagle Brigade' sniffs out prohibited produce and plants in US airport baggage halls."
+      ]
+    },
+    {
+      "id": "rottweiler",
+      "species": "dog",
+      "name": "Rottweiler",
+      "image": "assets/breeds/rottweiler.webp",
+      "origin": "Germany",
+      "countries": ["Germany"],
+      "life_expectancy_years": [8, 10],
+      "size_class": "large",
+      "weight_kg": [36, 60],
+      "coat": "Short, dense black coat with clearly defined rust-to-mahogany markings",
+      "temperament": ["confident", "loyal", "calm", "courageous", "watchful"],
+      "personality": "A well-raised Rottweiler is calm certainty in dog form: confident, watchful, and deeply bonded to its family. Descended from drover dogs, the breed retains a working gravity; Rotties observe first and act with deliberation, guarding those they love without theatrics. With their inner circle they are surprisingly playful and affectionate, often pressing their considerable weight against a favorite person in the signature 'Rottie lean.' Early socialization and steady training let that steadiness shine.",
+      "exercise_level": 4,
+      "exercise_note": "An hour or more of daily exercise plus training or a task; a bored Rottweiler invents its own projects.",
+      "grooming_level": 1,
+      "grooming_note": "A quick weekly brush handles the short coat, with heavier shedding in spring and fall.",
+      "health_notes": [
+        "Can be prone to hip and elbow dysplasia; screening is standard among responsible breeders.",
+        "Heart conditions such as aortic stenosis are reported in the breed.",
+        "Large, fast-growing breeds like the Rottweiler are associated with a higher risk of cruciate ligament injury and certain bone conditions."
+      ],
+      "fun_facts": [
+        "The breed is believed to descend from drover dogs that moved cattle with Roman legions across the Alps.",
+        "It takes its name from Rottweil, Germany, where the 'butcher's dog' carted meat and, by tradition, guarded the purse tied around its neck.",
+        "Rottweilers were among the earliest breeds trained for organized police work in the early 1900s."
+      ]
+    },
+    {
+      "id": "yorkshire-terrier",
+      "species": "dog",
+      "name": "Yorkshire Terrier",
+      "image": "assets/breeds/yorkshire-terrier.webp",
+      "origin": "England",
+      "countries": ["United Kingdom", "United States"],
+      "life_expectancy_years": [11, 15],
+      "size_class": "toy",
+      "weight_kg": [2, 3.2],
+      "coat": "Long, silky, fine coat in steel blue and tan that grows continuously, much like human hair",
+      "temperament": ["spirited", "affectionate", "brave", "tenacious", "alert"],
+      "personality": "The Yorkshire Terrier packs a full-sized opinion into a handbag-sized frame. Originally a rat catcher in Yorkshire's textile mills, the Yorkie keeps the terrier fire, bold and inquisitive and certain of its place at the center of events, while doubling as a devoted lap companion. They bond intensely with their people and appoint themselves household sentinels, announcing every arrival with conviction.",
+      "exercise_level": 2,
+      "exercise_note": "Short daily walks and lively indoor play cover it, though the terrier spirit relishes a good game.",
+      "grooming_level": 4,
+      "grooming_note": "Long coats want daily brushing; many companions wear a shorter clip that needs brushing a few times a week plus regular trims.",
+      "health_notes": [
+        "Can be prone to patellar luxation, a slipping kneecap seen in many small breeds.",
+        "Collapsing trachea is reported in the breed, as in several toy breeds.",
+        "Small mouths can be prone to dental crowding and dental disease, so routine oral care is worthwhile."
+      ],
+      "fun_facts": [
+        "Yorkies began as working ratters in the textile mills of nineteenth-century Yorkshire.",
+        "A four-pound Yorkie named Smoky served with US forces in World War II and is often credited as one of the first therapy dogs.",
+        "Their silky single coat grows continuously and is closer in texture to human hair than to typical dog fur."
+      ]
+    },
+    {
+      "id": "dachshund",
+      "species": "dog",
+      "name": "Dachshund",
+      "image": "assets/breeds/dachshund.webp",
+      "origin": "Germany",
+      "countries": ["Germany", "United States"],
+      "life_expectancy_years": [12, 16],
+      "size_class": "small",
+      "weight_kg": [4, 14.5],
+      "coat": "Three coat types, smooth, longhaired, and wirehaired, in a wide range of colors and patterns",
+      "temperament": ["curious", "bold", "clever", "devoted", "stubborn"],
+      "personality": "The Dachshund's silhouette is a working blueprint: long, low, and built to follow a badger underground. That heritage left the breed brave to the point of comedy, with a hound's nose and a terrier-like independence. Dachshunds love their people wholeheartedly and hold opinions with equal commitment, so training works best as cheerful negotiation. They come in two sizes and three coats, but the confident, curious spirit is standard equipment.",
+      "exercise_level": 3,
+      "exercise_note": "Two moderate daily walks keep body and back strong, and sniffing time is non-negotiable for this scent hound.",
+      "grooming_level": 2,
+      "grooming_note": "Smooth coats need only an occasional wipe-down; longhaired and wirehaired varieties want weekly brushing.",
+      "health_notes": [
+        "The long, low build is associated with a higher risk of intervertebral disc disease; keeping a lean weight is widely encouraged for back health.",
+        "Can be prone to weight gain, which adds strain to the spine.",
+        "Patellar luxation and certain inherited eye conditions are reported in the breed."
+      ],
+      "fun_facts": [
+        "The name is German for 'badger dog'; the breed was engineered to follow badgers into their burrows.",
+        "Waldi the Dachshund was the first official Olympic mascot, created for the 1972 Munich Summer Games.",
+        "Dachshunds come in two sizes and three coat types, making six classic combinations."
+      ]
+    },
+    {
+      "id": "siberian-husky",
+      "species": "dog",
+      "name": "Siberian Husky",
+      "image": "assets/breeds/siberian-husky.webp",
+      "origin": "Siberia",
+      "countries": ["Russia", "United States"],
+      "life_expectancy_years": [12, 14],
+      "size_class": "medium",
+      "weight_kg": [16, 27],
+      "coat": "Thick, medium-length double coat built for arctic cold, in many colors, often with striking facial masks",
+      "temperament": ["energetic", "friendly", "independent", "mischievous", "vocal"],
+      "personality": "The Siberian Husky is an endurance athlete with a comedian's soul. Developed by the Chukchi people to pull light loads across frozen distances, the breed still lives to run, and, given a gap in the fence, will. Huskies are gregarious and famously friendly even with strangers, communicating in howls, 'woos,' and theatrical side-eye rather than barks. They suit active people who enjoy a dog with its own point of view.",
+      "exercise_level": 5,
+      "exercise_note": "Bred to run for miles, they need vigorous daily exercise and a securely fenced yard, as they are gifted escape artists.",
+      "grooming_level": 3,
+      "grooming_note": "Weekly brushing, stepping up to daily during the dramatic twice-yearly coat blow.",
+      "health_notes": [
+        "Hereditary eye conditions, including juvenile cataracts and progressive retinal atrophy, are reported in the breed.",
+        "Hip dysplasia can occur, though the breed screens comparatively well.",
+        "The dense arctic coat means Huskies can be prone to overheating in hot, humid climates."
+      ],
+      "fun_facts": [
+        "Sled teams of Siberian Huskies relayed lifesaving diphtheria antitoxin to Nome, Alaska, in the famous 1925 serum run.",
+        "The breed was developed over centuries by the Chukchi people of northeastern Asia.",
+        "Blue eyes, brown eyes, or one of each are all accepted in the breed standard."
+      ]
+    },
+    {
+      "id": "persian",
+      "species": "cat",
+      "name": "Persian",
+      "image": "assets/breeds/persian.webp",
+      "origin": "Persia (Iran)",
+      "countries": ["Iran", "United Kingdom"],
+      "life_expectancy_years": [12, 17],
+      "size_class": "medium",
+      "weight_kg": [3, 5.5],
+      "coat": "Long, dense, flowing coat with an immense undercoat, shown in a vast range of colors and patterns",
+      "temperament": ["gentle", "quiet", "sweet", "placid", "dignified"],
+      "personality": "The Persian is the cat fancy's great romantic: a cloud of coat, a serene expression, and a temperament to match. Persians prefer their days composed, with sunlit cushions, gentle company, and a predictable rhythm, and they reward calm households with quiet, ornamental devotion. They are affectionate without being insistent, more likely to pose gracefully nearby than to demand a lap, though many melt for a soft brush and a familiar voice.",
+      "exercise_level": 1,
+      "exercise_note": "A few short, gentle play sessions a day suit this restful breed.",
+      "grooming_level": 5,
+      "grooming_note": "Daily combing is essential to prevent mats, along with routine cleaning around the eyes.",
+      "health_notes": [
+        "Polycystic kidney disease is associated with the breed; a genetic test exists and reputable breeders screen for it.",
+        "The flat facial structure can be prone to tear overflow, eye irritation, and noisy or effortful breathing.",
+        "Dental misalignments are seen more often in flat-faced breeds."
+      ],
+      "fun_facts": [
+        "Persians were among the star attractions at the world's first major cat show, held at London's Crystal Palace in 1871.",
+        "Queen Victoria's fondness for blue Persians helped make the breed fashionable in Victorian Britain.",
+        "Traditional or 'doll-face' Persians preserve the breed's older, less flattened profile."
+      ]
+    },
+    {
+      "id": "maine-coon",
+      "species": "cat",
+      "name": "Maine Coon",
+      "image": "assets/breeds/maine-coon.webp",
+      "origin": "Maine, United States",
+      "countries": ["United States"],
+      "life_expectancy_years": [12, 15],
+      "size_class": "large",
+      "weight_kg": [4.5, 10],
+      "coat": "Shaggy, water-resistant semi-long coat, heaviest at the ruff, britches, and plumed tail",
+      "temperament": ["gentle", "sociable", "playful", "adaptable", "clever"],
+      "personality": "The Maine Coon carries its size with the easy confidence of a born farm cat. These are sociable, dog-adjacent companions that follow their people between rooms, supervise projects from a respectful distance, and converse in distinctive chirps and trills rather than meows. Despite the imposing ruff and lynx-tipped ears, the temperament is famously mellow: patient with children, tolerant of dogs, and endlessly interested in whatever is happening at the sink.",
+      "exercise_level": 3,
+      "exercise_note": "Daily interactive play plus room to climb and patrol keeps this big cat in working trim.",
+      "grooming_level": 3,
+      "grooming_note": "Comb once or twice a week; the silky coat mats less than its size suggests.",
+      "health_notes": [
+        "Hypertrophic cardiomyopathy is documented in the breed; a genetic test and heart screening are available.",
+        "As one of the larger domestic breeds, Maine Coons can be prone to hip dysplasia.",
+        "Spinal muscular atrophy is reported in the breed and has a genetic test."
+      ],
+      "fun_facts": [
+        "The Maine Coon is the official state cat of Maine.",
+        "They tend to chirp and trill rather than produce a classic meow.",
+        "A Maine Coon named Cosey won Best in Show at one of America's earliest major cat shows, held at Madison Square Garden in 1895."
+      ]
+    },
+    {
+      "id": "british-shorthair",
+      "species": "cat",
+      "name": "British Shorthair",
+      "image": "assets/breeds/british-shorthair.webp",
+      "origin": "England",
+      "countries": ["United Kingdom"],
+      "life_expectancy_years": [12, 17],
+      "size_class": "medium",
+      "weight_kg": [4, 8],
+      "coat": "Plush, dense, crisp-textured short coat, most famously in solid blue-gray",
+      "temperament": ["easygoing", "calm", "loyal", "independent", "even-tempered"],
+      "personality": "The British Shorthair has perfected the art of unbothered companionship. Round of cheek and plush of coat, it favors quiet proximity over lap-sitting: a dignified presence on the armchair beside you, purring at low volume. The breed is patient, undemanding, and slow to ruffle, which makes it a gracious housemate for busy households. Its reserve should not be mistaken for indifference; a British Shorthair keeps unhurried but faithful tabs on its people.",
+      "exercise_level": 2,
+      "exercise_note": "A couple of short play sessions a day keep this easygoing breed trim.",
+      "grooming_level": 2,
+      "grooming_note": "Weekly brushing suits the plush coat, with extra sessions during the spring shed.",
+      "health_notes": [
+        "Hypertrophic cardiomyopathy is reported in the breed; heart screening is available.",
+        "A relaxed temperament means British Shorthairs can be prone to weight gain.",
+        "As with many cats, dental disease can develop quietly, so routine checks are worthwhile."
+      ],
+      "fun_facts": [
+        "The breed's ancestors are often traced to cats that arrived in Britain with the Romans.",
+        "John Tenniel's grinning Cheshire Cat illustrations for 'Alice in Wonderland' are popularly said to have been inspired by a British tabby.",
+        "The blue-gray 'British Blue' is so iconic that many assume it is the breed's only color; it is one of many."
+      ]
+    },
+    {
+      "id": "ragdoll",
+      "species": "cat",
+      "name": "Ragdoll",
+      "image": "assets/breeds/ragdoll.webp",
+      "origin": "California, United States",
+      "countries": ["United States"],
+      "life_expectancy_years": [12, 17],
+      "size_class": "large",
+      "weight_kg": [4.5, 9],
+      "coat": "Silky, semi-long coat with little undercoat, worn in pointed patterns: colorpoint, mitted, and bicolor",
+      "temperament": ["relaxed", "affectionate", "docile", "sociable", "quiet"],
+      "personality": "Pick up a Ragdoll and you will understand the name: many go contentedly limp, trusting you completely. This is a cat bred for gentleness, blue-eyed and soft-voiced, inclined to greet you at the door, flop at your feet, and drift after the household like an amiable shadow. Ragdolls tend to stay kitten-playful without kitten chaos, preferring games at ground level to acrobatics on the bookshelf.",
+      "exercise_level": 2,
+      "exercise_note": "Gentle daily play at floor level suits this relaxed breed.",
+      "grooming_level": 3,
+      "grooming_note": "Comb twice a week; the silky, low-undercoat fur resists matting better than most longhaired coats.",
+      "health_notes": [
+        "Hypertrophic cardiomyopathy is documented in the breed, and a breed-specific genetic test exists.",
+        "Bladder stones are reported in the breed.",
+        "A laid-back lifestyle means Ragdolls can be prone to weight gain."
+      ],
+      "fun_facts": [
+        "The breed was founded in the 1960s by Ann Baker in Riverside, California.",
+        "The name comes from the way many Ragdolls go softly limp when picked up.",
+        "Kittens are born almost white; point color deepens over the first weeks and continues to develop for years."
+      ]
+    },
+    {
+      "id": "siamese",
+      "species": "cat",
+      "name": "Siamese",
+      "image": "assets/breeds/siamese.webp",
+      "origin": "Thailand",
+      "countries": ["Thailand", "United Kingdom"],
+      "life_expectancy_years": [12, 18],
+      "size_class": "medium",
+      "weight_kg": [3, 5.5],
+      "coat": "Short, fine, glossy coat with pointed coloring; seal, blue, chocolate, and lilac are the classic points",
+      "temperament": ["vocal", "social", "intelligent", "demanding", "devoted"],
+      "personality": "The Siamese is the conversationalist of the cat world, equipped with a loud, expressive voice and the firm conviction that you want to hear it. Behind the striking mask is an intensely social, clever cat that shadows its person, studies door handles and drawer pulls, and mourns boredom audibly. Siamese form deep, selective attachments and are happiest with company, human or feline, for most of the day.",
+      "exercise_level": 4,
+      "exercise_note": "Plan on real daily play, climbing, and puzzle toys; an under-occupied Siamese will schedule its own entertainment.",
+      "grooming_level": 1,
+      "grooming_note": "A weekly polish with a soft cloth or grooming glove keeps the fine coat gleaming.",
+      "health_notes": [
+        "Inherited eye conditions, including progressive retinal atrophy, are reported in the breed.",
+        "Siamese can be prone to dental disease, so routine oral checks are worthwhile.",
+        "Amyloidosis, a protein-deposit condition, has been reported in some lines."
+      ],
+      "fun_facts": [
+        "Point color is temperature-sensitive: cooler areas of the body darken, and kittens are born nearly white.",
+        "Cats resembling the modern Siamese appear in the 'Tamra Maew,' Thai manuscripts dating back centuries.",
+        "One of the first documented Siamese in America, a cat named Siam, was a gift to First Lady Lucy Hayes in 1878."
+      ]
+    },
+    {
+      "id": "bengal",
+      "species": "cat",
+      "name": "Bengal",
+      "image": "assets/breeds/bengal.webp",
+      "origin": "United States",
+      "countries": ["United States"],
+      "life_expectancy_years": [12, 16],
+      "size_class": "medium",
+      "weight_kg": [3.6, 7],
+      "coat": "Short, dense, uncommonly soft pelt with rosetted or marbled patterns, sometimes carrying a golden glitter effect",
+      "temperament": ["energetic", "curious", "confident", "athletic", "talkative"],
+      "personality": "A Bengal brings a shimmer of the wild into the living room: rosetted coat, rolling muscle, and an engine that rarely idles. Bred from crosses between domestic cats and the Asian leopard cat, Bengals are athletic problem-solvers that claim the highest point in every room, learn faucets, and investigate everything once. They bond warmly with their people but expect participation; this is a companion for households that enjoy an interactive, acrobatic cat.",
+      "exercise_level": 5,
+      "exercise_note": "Vigorous daily play, vertical territory, and puzzle feeders are essential, and many Bengals also enjoy leash walks.",
+      "grooming_level": 1,
+      "grooming_note": "The short pelt needs little more than a weekly once-over.",
+      "health_notes": [
+        "Hypertrophic cardiomyopathy is reported in the breed; heart screening is available.",
+        "A Bengal-specific form of progressive retinal atrophy is reported and has a genetic test.",
+        "Pyruvate kinase deficiency, an inherited blood condition, is reported in the breed and can be tested for."
+      ],
+      "fun_facts": [
+        "The breed descends from crosses between domestic cats and the Asian leopard cat, with foundation work by American breeder Jean Mill.",
+        "Some Bengals carry a 'glitter' trait that gives the coat an iridescent sheen in sunlight.",
+        "Unusually for cats, many Bengals are drawn to water and will happily play in a running faucet."
+      ]
+    },
+    {
+      "id": "sphynx",
+      "species": "cat",
+      "name": "Sphynx",
+      "image": "assets/breeds/sphynx.webp",
+      "origin": "Ontario, Canada",
+      "countries": ["Canada", "United States"],
+      "life_expectancy_years": [9, 15],
+      "size_class": "medium",
+      "weight_kg": [3, 5.5],
+      "coat": "Appears hairless but is covered in fine down; the skin shows the color and pattern its coat would have had",
+      "temperament": ["extroverted", "affectionate", "energetic", "curious", "people-oriented"],
+      "personality": "The Sphynx greets life skin-first: warm as a hot-water bottle, wrinkled as unmade linen, and utterly devoted to human company. What the breed lacks in coat it repays in charisma; Sphynx cats are clownish, acrobatic, and persistent lap-seekers, partly for affection and partly for your body heat. They do best as indoor cats with company for much of the day, and most will burrow under the blankets by night.",
+      "exercise_level": 3,
+      "exercise_note": "Energetic daily play sessions suit this acrobatic, curious breed.",
+      "grooming_level": 4,
+      "grooming_note": "No coat does not mean no care: regular baths or wipe-downs manage skin oils, plus routine ear and nail cleaning.",
+      "health_notes": [
+        "Hypertrophic cardiomyopathy is documented in the breed, and periodic heart screening is common practice among breeders.",
+        "Exposed skin can be prone to sunburn and to chill, so indoor living with warm resting spots suits the breed.",
+        "Without fur to absorb them, natural skin oils can build up and irritate the skin if bathing lapses."
+      ],
+      "fun_facts": [
+        "The modern breed traces to a hairless kitten named Prune, born in Toronto in 1966.",
+        "Sphynx are not truly hairless; a fine down covers the skin, giving it the feel of warm suede.",
+        "With no insulating coat, they feel notably warm to the touch and are dedicated seekers of laps, blankets, and sunbeams."
+      ]
+    },
+    {
+      "id": "scottish-fold",
+      "species": "cat",
+      "name": "Scottish Fold",
+      "image": "assets/breeds/scottish-fold.webp",
+      "origin": "Scotland",
+      "countries": ["United Kingdom", "United States"],
+      "life_expectancy_years": [11, 15],
+      "size_class": "medium",
+      "weight_kg": [3, 6],
+      "coat": "Dense, plush short coat, with a longhaired variety, in nearly every color and pattern",
+      "temperament": ["sweet-natured", "quiet", "companionable", "adaptable", "placid"],
+      "personality": "The Scottish Fold's folded ears and round eyes give it a permanently owlish, listening expression, and the temperament matches: sweet, soft-voiced, and companionable. Folds like to be near their people rather than on them, often sitting up in the distinctive relaxed pose fanciers call the 'Buddha sit.' They settle calmly into quiet homes and gentle routines, forming steady attachments without drama.",
+      "exercise_level": 2,
+      "exercise_note": "Moderate daily play keeps this mellow breed engaged without fuss.",
+      "grooming_level": 2,
+      "grooming_note": "Weekly brushing for shorthairs, twice weekly for the longhaired variety, plus gentle attention to the folded ears.",
+      "health_notes": [
+        "The gene that folds the ear alters cartilage throughout the body, a condition called osteochondrodysplasia; this is a recognized welfare consideration in the breed, and all folded-ear cats are believed to be affected to some degree.",
+        "Folded-ear cats can be prone to progressive joint changes, particularly in the tail and limbs; some registries, including the GCCF, do not register the breed for this reason.",
+        "Responsible breeding programs pair folded-ear cats only with straight-eared partners."
+      ],
+      "fun_facts": [
+        "Every Scottish Fold descends from Susie, a white farm cat discovered in Perthshire, Scotland, in 1961.",
+        "Kittens are born with straight ears; in those that fold, the change appears at around three weeks of age.",
+        "Straight-eared kittens from Fold litters, known as Scottish Straights, are essential partners in responsible breeding."
+      ]
+    },
+    {
+      "id": "russian-blue",
+      "species": "cat",
+      "name": "Russian Blue",
+      "image": "assets/breeds/russian-blue.webp",
+      "origin": "Russia",
+      "countries": ["Russia", "United Kingdom"],
+      "life_expectancy_years": [15, 20],
+      "size_class": "medium",
+      "weight_kg": [3.5, 6],
+      "coat": "Short, dense, plush double coat in even blue-gray, silver-tipped for a shimmering finish",
+      "temperament": ["gentle", "reserved", "loyal", "observant", "quiet"],
+      "personality": "The Russian Blue is a connoisseur's cat: silver-tipped, green-eyed, and quietly discerning. With strangers it is politely elusive; with its chosen people it is faithful, privately playful, and surprisingly fond of a game of fetch. The breed keeps regular habits, from mealtimes to greetings at the door, and rewards calm, predictable homes with deep, low-key devotion.",
+      "exercise_level": 2,
+      "exercise_note": "Daily play sessions, and many Russian Blues are lifelong fetch enthusiasts, balance their calm indoor habits.",
+      "grooming_level": 1,
+      "grooming_note": "The short, plush double coat needs only a weekly comb-through.",
+      "health_notes": [
+        "The breed is generally regarded as healthy, but can be prone to weight gain given its fondness for food and routine.",
+        "As with many cats, dental disease can develop quietly, so routine checks are worthwhile."
+      ],
+      "fun_facts": [
+        "Legend holds the breed sailed with merchants from the northern Russian port of Arkhangelsk, earning the early name 'Archangel Blue.'",
+        "The double coat is so dense that patterns traced into it with a finger remain until smoothed away.",
+        "Vivid green eyes set against silver-tipped blue fur are the breed's signature."
+      ]
+    },
+    {
+      "id": "norwegian-forest-cat",
+      "species": "cat",
+      "name": "Norwegian Forest Cat",
+      "image": "assets/breeds/norwegian-forest-cat.webp",
+      "origin": "Norway",
+      "countries": ["Norway"],
+      "life_expectancy_years": [12, 16],
+      "size_class": "large",
+      "weight_kg": [4, 9],
+      "coat": "Weatherproof double coat: a woolly undercoat beneath long, glossy guard hairs, with a full ruff and bushy tail",
+      "temperament": ["independent", "friendly", "patient", "athletic", "undemanding"],
+      "personality": "The Norwegian Forest Cat, skogkatt at home, is a fjord-hardened mouser content in modern living rooms. Sturdy and self-possessed, Wegies are friendly without being needy: they enjoy company at arm's length, save open affection for trusted people, and converse in soft chirps. Their great joy is altitude, so a tall, sturdy cat tree is less furniture than infrastructure.",
+      "exercise_level": 3,
+      "exercise_note": "Daily play and serious climbing opportunities suit this born athlete.",
+      "grooming_level": 3,
+      "grooming_note": "Weekly combing for most of the year, stepping up to daily during the heavy spring molt.",
+      "health_notes": [
+        "Glycogen storage disease type IV is reported in the breed and has a genetic test.",
+        "Hypertrophic cardiomyopathy is reported in the breed.",
+        "As a large, sturdy breed, they can be prone to hip dysplasia."
+      ],
+      "fun_facts": [
+        "In Norway the breed is simply called 'skogkatt,' meaning forest cat.",
+        "Norse folklore links large, long-haired cats to the goddess Freyja, whose chariot was said to be drawn by cats.",
+        "King Olav V of Norway is popularly credited with naming the skogkatt the country's national cat."
+      ]
+    }
+  ]
+}

@@ -38,9 +38,12 @@ Deno.serve(async (req: Request) => {
     // body is optional; defaults below
   }
 
+  // Next Evolution Phase 2: optional purpose scope (uploads | memories | chat).
+  // buildStorageKey validates it against the allowlist; default stays uploads/
+  // so the analysis capture flow is unchanged.
   let key: string;
   try {
-    key = buildStorageKey(user.id, body.ext ?? "jpg", crypto.randomUUID());
+    key = buildStorageKey(user.id, body.ext ?? "jpg", crypto.randomUUID(), body.scope ?? "uploads");
   } catch (e) {
     return json({ error: String(e) }, 400);
   }

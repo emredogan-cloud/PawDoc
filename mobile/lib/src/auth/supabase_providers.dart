@@ -19,3 +19,9 @@ final currentSessionProvider = Provider<Session?>((ref) {
   ref.watch(authStateChangesProvider);
   return ref.watch(supabaseClientProvider).auth.currentSession;
 });
+
+/// The signed-in user's id, or null. A seam of its own so widget tests can
+/// override identity without faking a whole Supabase client.
+final currentUserIdProvider = Provider<String?>((ref) {
+  return ref.watch(supabaseClientProvider).auth.currentUser?.id;
+});

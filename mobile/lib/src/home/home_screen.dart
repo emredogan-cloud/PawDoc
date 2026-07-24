@@ -10,6 +10,7 @@ import '../account/user_profile.dart';
 import '../analysis/analysis_runner.dart';
 import '../analysis/analysis_service.dart';
 import '../capture/camera_screen.dart';
+import '../community/community_card.dart';
 import '../core/action_labels.dart';
 import '../core/app_motion_asset.dart';
 import '../core/app_views.dart';
@@ -20,10 +21,12 @@ import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../emergency/emergency_help_screen.dart';
 import '../emergency/emergency_keywords.dart';
+import '../encyclopedia/encyclopedia_screen.dart';
 import '../feedback/followup_banner.dart';
 import '../health/breed_insight_card.dart';
 import '../health/health_event_form_screen.dart';
 import '../health/timeline.dart';
+import '../memories/memories_screen.dart';
 import '../pets/active_pet.dart';
 import '../pets/add_pet_flow.dart';
 import '../pets/pet.dart';
@@ -33,6 +36,7 @@ import '../text_input/symptom_text_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
+import '../walks/walk_card.dart';
 
 /// Sentinel value for the "Add pet" entry in the pet switcher menu.
 const _addPetSentinel = '__add_pet__';
@@ -202,6 +206,12 @@ class HomeScreen extends ConsumerWidget {
                     breed: pet.breed,
                   ),
                   const SizedBox(height: AppSpace.s8),
+                  // Next Evolution Phase 5: weather-aware walks (on-device).
+                  const WalkCard(),
+                  const SizedBox(height: AppSpace.s8),
+                  // Next Evolution Phase 6: opt-in social layer.
+                  const CommunityCard(),
+                  const SizedBox(height: AppSpace.s8),
                   Row(
                     children: [
                       Expanded(
@@ -223,6 +233,17 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  // Next Evolution Phase 2: the pet journal — "paid = memory"
+                  // as a first-class, joyful surface.
+                  OutlinedButton.icon(
+                    key: const Key('home_memories'),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => MemoriesScreen(pet: pet)),
+                    ),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: Text('Memories with ${pet.name}'),
+                  ),
                   // Phase 5: the record product's centerpiece gets a first-
                   // class home entry (it was buried in an overflow menu).
                   OutlinedButton.icon(
@@ -233,6 +254,17 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     icon: const Icon(Icons.assignment_outlined),
                     label: const Text('Prepare for a vet visit'),
+                  ),
+                  // Next Evolution Phase 3: the premium breed field guide.
+                  OutlinedButton.icon(
+                    key: const Key('home_encyclopedia'),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => EncyclopediaScreen(
+                              initialSpecies: pet.species)),
+                    ),
+                    icon: const Icon(Icons.menu_book_outlined),
+                    label: const Text('Breed Encyclopedia'),
                   ),
                   TextButton.icon(
                     onPressed: () => context.push('/pets'),
