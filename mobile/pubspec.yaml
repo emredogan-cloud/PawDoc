@@ -118,6 +118,7 @@ flutter:
   assets:
     - assets/google_fonts/
     - assets/brand/
+    - assets/breeds/
     - assets/icon/
     - assets/motion/
     - assets/illustrations/onboarding/

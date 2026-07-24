@@ -20,6 +20,7 @@ import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../emergency/emergency_help_screen.dart';
 import '../emergency/emergency_keywords.dart';
+import '../encyclopedia/encyclopedia_screen.dart';
 import '../feedback/followup_banner.dart';
 import '../health/breed_insight_card.dart';
 import '../health/health_event_form_screen.dart';
@@ -245,6 +246,17 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     icon: const Icon(Icons.assignment_outlined),
                     label: const Text('Prepare for a vet visit'),
+                  ),
+                  // Next Evolution Phase 3: the premium breed field guide.
+                  OutlinedButton.icon(
+                    key: const Key('home_encyclopedia'),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => EncyclopediaScreen(
+                              initialSpecies: pet.species)),
+                    ),
+                    icon: const Icon(Icons.menu_book_outlined),
+                    label: const Text('Breed Encyclopedia'),
                   ),
                   TextButton.icon(
                     onPressed: () => context.push('/pets'),
