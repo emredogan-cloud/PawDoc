@@ -126,3 +126,4 @@ coverage/
 # ---- Phase 6.2 training-dataset exports (admin-only, NEVER commit) ----
 *.jsonl
 runtime/
+ASO-image/
