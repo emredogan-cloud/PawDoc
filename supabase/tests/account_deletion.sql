@@ -19,6 +19,14 @@ begin
   if (select count(*) from public.health_events) <> 1 then
     raise exception 'CR #9: A''s health_events not cascaded (B''s one should remain)';
   end if;
+  if (select count(*) from public.pet_memories
+      where user_id = '11111111-1111-1111-1111-111111111111') <> 0 then
+    raise exception 'CR #9: pet_memories for A were not cascaded';
+  end if;
+  if (select count(*) from public.pet_memories
+      where user_id = '22222222-2222-2222-2222-222222222222') <> 1 then
+    raise exception 'CR #9: B''s pet_memories should be untouched';
+  end if;
   -- User B must be untouched.
   if (select count(*) from public.users where id = '22222222-2222-2222-2222-222222222222') <> 1 then
     raise exception 'CR #9: user B should be untouched';

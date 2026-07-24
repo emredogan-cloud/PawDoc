@@ -412,7 +412,9 @@ verify_jwt = true
 # NOTE: claim-referral, process-reminders, find-vets, generate-journals,
 # invite-family-member, accept-family-invite were removed in the 2026-07
 # evolution (referral / crons / vet-finder / journals / family sharing deleted).
-# analyze, delete-account, generate-upload-url use the default (verify_jwt=true).
+# analyze, delete-account, generate-upload-url — and the Next Evolution Phase 2
+# media functions sign-media-url + delete-media — use the default
+# (verify_jwt=true): every caller must be a signed-in user.
 
 [analytics]
 enabled = true

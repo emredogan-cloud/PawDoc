@@ -32,6 +32,14 @@ insert into public.analyses (id, user_id, pet_id, input_type) values
 insert into public.health_events (pet_id, event_type, event_date) values
   ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'weight', current_date),
   ('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'weight', current_date);
+insert into public.pet_memories (id, user_id, pet_id, title, storage_key) values
+  ('a2a2a2a2-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111',
+   'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'First walk',
+   'memories/11111111-1111-1111-1111-111111111111/a2a2a2a2-aaaa-aaaa-aaaa-aaaaaaaaaaaa.jpg'),
+  ('b2b2b2b2-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '22222222-2222-2222-2222-222222222222',
+   'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Nap time',
+   'memories/22222222-2222-2222-2222-222222222222/b2b2b2b2-bbbb-bbbb-bbbb-bbbbbbbbbbbb.jpg')
+on conflict (id) do nothing;
 
 -- Act as authenticated user A.
 set role authenticated;
@@ -159,6 +167,71 @@ do $$
 begin
   if (select count(*) from public.analysis_feedback) <> 1 then
     raise exception 'analysis_feedback WRITE: A should see exactly its own 1 feedback row';
+  end if;
+end
+$$;
+
+-- pet_memories READ isolation (Next Evolution Phase 2): A sees only its own.
+do $$
+begin
+  if (select count(*) from public.pet_memories) <> 1 then
+    raise exception 'pet_memories READ: A sees % rows, expected 1',
+      (select count(*) from public.pet_memories);
+  end if;
+  if exists (
+    select 1 from public.pet_memories
+    where user_id = '22222222-2222-2222-2222-222222222222'
+  ) then
+    raise exception 'pet_memories READ: A can see B''s memory';
+  end if;
+end
+$$;
+
+-- pet_memories WRITE isolation: A must NOT insert a memory owned by B.
+do $$
+begin
+  begin
+    insert into public.pet_memories (user_id, pet_id, title, storage_key)
+    values ('22222222-2222-2222-2222-222222222222',
+            'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Hijack',
+            'memories/22222222-2222-2222-2222-222222222222/c3c3c3c3-cccc-cccc-cccc-cccccccccccc.jpg');
+    raise exception 'pet_memories WRITE: A inserted a row for B (RLS WITH CHECK failed)';
+  exception
+    when insufficient_privilege then null; -- expected
+  end;
+end
+$$;
+
+-- pet_memories WRITE isolation via parent pet: A (as itself) must NOT attach a
+-- memory to B's pet — the WITH CHECK pins pet_id to a pet the caller owns.
+do $$
+begin
+  begin
+    insert into public.pet_memories (user_id, pet_id, title, storage_key)
+    values ('11111111-1111-1111-1111-111111111111',
+            'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Wrong pet',
+            'memories/11111111-1111-1111-1111-111111111111/d4d4d4d4-dddd-dddd-dddd-dddddddddddd.jpg');
+    raise exception 'pet_memories WRITE: A attached a memory to B''s pet (WITH CHECK failed)';
+  exception
+    when insufficient_privilege then null; -- expected
+  end;
+end
+$$;
+
+-- Positive control: A CAN create + edit a memory for its OWN pet.
+insert into public.pet_memories (user_id, pet_id, title, note, storage_key)
+values ('11111111-1111-1111-1111-111111111111',
+        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'Beach day', 'Sunny afternoon',
+        'memories/11111111-1111-1111-1111-111111111111/e5e5e5e5-eeee-eeee-eeee-eeeeeeeeeeee.jpg');
+update public.pet_memories set title = 'Beach day!'
+where storage_key = 'memories/11111111-1111-1111-1111-111111111111/e5e5e5e5-eeee-eeee-eeee-eeeeeeeeeeee.jpg';
+do $$
+begin
+  if (select count(*) from public.pet_memories) <> 2 then
+    raise exception 'pet_memories WRITE: A should see 2 of its own memories after insert';
+  end if;
+  if not exists (select 1 from public.pet_memories where title = 'Beach day!') then
+    raise exception 'pet_memories WRITE: A''s own memory update did not persist';
   end if;
 end
 $$;

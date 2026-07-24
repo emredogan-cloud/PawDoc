@@ -79,6 +79,9 @@ dependencies:
   # binaries fetched at build time — a CI/offline + size risk we don't take
   # for chip-scale avatars. Revisit only with a deliberate migration.
   rive: 0.13.20
+  image_picker: ^1.2.3
+  cached_network_image: ^3.4.1
+  flutter_cache_manager: ^3.4.2
 
 dev_dependencies:
   flutter_test:

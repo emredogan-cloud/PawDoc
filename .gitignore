@@ -127,3 +127,5 @@ coverage/
 *.jsonl
 runtime/
 ASO-image/
+# Founder-local GCP service-account keys — NEVER commit (live private keys)
+pawdoc-prod-*.json

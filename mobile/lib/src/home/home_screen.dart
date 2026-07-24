@@ -24,6 +24,7 @@ import '../feedback/followup_banner.dart';
 import '../health/breed_insight_card.dart';
 import '../health/health_event_form_screen.dart';
 import '../health/timeline.dart';
+import '../memories/memories_screen.dart';
 import '../pets/active_pet.dart';
 import '../pets/add_pet_flow.dart';
 import '../pets/pet.dart';
@@ -222,6 +223,17 @@ class HomeScreen extends ConsumerWidget {
                         ),
                       ),
                     ],
+                  ),
+                  // Next Evolution Phase 2: the pet journal — "paid = memory"
+                  // as a first-class, joyful surface.
+                  OutlinedButton.icon(
+                    key: const Key('home_memories'),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => MemoriesScreen(pet: pet)),
+                    ),
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: Text('Memories with ${pet.name}'),
                   ),
                   // Phase 5: the record product's centerpiece gets a first-
                   // class home entry (it was buried in an overflow menu).
