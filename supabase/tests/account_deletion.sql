@@ -39,6 +39,26 @@ begin
       where user_id = '22222222-2222-2222-2222-222222222222') <> 1 then
     raise exception 'CR #9: B''s assistant_conversations should be untouched';
   end if;
+  -- Paw Community (Phase 6): deleting A dissolves A's entire social graph.
+  if exists (select 1 from public.community_profiles
+             where user_id = '11111111-1111-1111-1111-111111111111') then
+    raise exception 'CR #9: community_profile for A was not cascaded';
+  end if;
+  if (select count(*) from public.community_connections) <> 0 then
+    raise exception 'CR #9: A''s community_connections were not cascaded';
+  end if;
+  if (select count(*) from public.community_messages) <> 0 then
+    raise exception 'CR #9: A''s community_messages were not cascaded';
+  end if;
+  if (select count(*) from public.walk_proposals) <> 0 then
+    raise exception 'CR #9: A''s walk_proposals were not cascaded';
+  end if;
+  if (select count(*) from public.community_reports) <> 0 then
+    raise exception 'CR #9: A''s community_reports were not cascaded';
+  end if;
+  if (select count(*) from public.community_profiles) <> 2 then
+    raise exception 'CR #9: B/C community_profiles should remain';
+  end if;
   -- User B must be untouched.
   if (select count(*) from public.users where id = '22222222-2222-2222-2222-222222222222') <> 1 then
     raise exception 'CR #9: user B should be untouched';

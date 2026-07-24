@@ -10,6 +10,7 @@ import '../account/user_profile.dart';
 import '../analysis/analysis_runner.dart';
 import '../analysis/analysis_service.dart';
 import '../capture/camera_screen.dart';
+import '../community/community_card.dart';
 import '../core/action_labels.dart';
 import '../core/app_motion_asset.dart';
 import '../core/app_views.dart';
@@ -207,6 +208,9 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpace.s8),
                   // Next Evolution Phase 5: weather-aware walks (on-device).
                   const WalkCard(),
+                  const SizedBox(height: AppSpace.s8),
+                  // Next Evolution Phase 6: opt-in social layer.
+                  const CommunityCard(),
                   const SizedBox(height: AppSpace.s8),
                   Row(
                     children: [
