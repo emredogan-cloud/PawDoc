@@ -83,6 +83,7 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.2
   gpt_markdown: ^1.1.8
+  geolocator: ^14.0.3
 
 dev_dependencies:
   flutter_test:

@@ -35,6 +35,7 @@ import '../text_input/symptom_text_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
+import '../walks/walk_card.dart';
 
 /// Sentinel value for the "Add pet" entry in the pet switcher menu.
 const _addPetSentinel = '__add_pet__';
@@ -203,6 +204,9 @@ class HomeScreen extends ConsumerWidget {
                     species: pet.species,
                     breed: pet.breed,
                   ),
+                  const SizedBox(height: AppSpace.s8),
+                  // Next Evolution Phase 5: weather-aware walks (on-device).
+                  const WalkCard(),
                   const SizedBox(height: AppSpace.s8),
                   Row(
                     children: [
