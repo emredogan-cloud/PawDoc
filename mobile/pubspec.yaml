@@ -84,6 +84,7 @@ dependencies:
   flutter_cache_manager: ^3.4.2
   gpt_markdown: ^1.1.8
   geolocator: ^14.0.3
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:

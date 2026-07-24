@@ -3,20 +3,53 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/env.dart';
 import 'supabase_providers.dart';
 
 final authControllerProvider = Provider<AuthController>((ref) {
   return AuthController(ref.watch(supabaseClientProvider));
 });
 
-/// Thin wrapper over Supabase auth for the email and Apple flows.
+/// Whether the Google button should exist at all: requires the OAuth client
+/// id at build time (graceful degrade — no dead controls). A provider seam so
+/// widget tests can exercise both states.
+final googleSignInAvailableProvider =
+    Provider<bool>((ref) => Env.hasGoogleSignIn);
+
+/// Thin wrapper over Supabase auth for the email, Apple, and Google flows.
 class AuthController {
-  AuthController(this._client);
+  AuthController(this._client, {Future<String?> Function()? googleIdToken})
+      : _googleIdToken = googleIdToken ?? _nativeGoogleIdToken;
 
   final SupabaseClient _client;
+
+  /// Fetches a Google id token via the native sheet, or null on cancel.
+  /// Injectable so unit tests never touch the platform plugin.
+  final Future<String?> Function() _googleIdToken;
+
+  static bool _googleInitialized = false;
+
+  static Future<String?> _nativeGoogleIdToken() async {
+    final signIn = GoogleSignIn.instance;
+    if (!_googleInitialized) {
+      // The WEB client id is the `serverClientId`: Google mints the id token
+      // for that audience and Supabase validates it (dashboard: the same id
+      // listed under Auth → Google → authorized client IDs).
+      await signIn.initialize(serverClientId: Env.googleWebClientId);
+      _googleInitialized = true;
+    }
+    try {
+      final account = await signIn.authenticate(scopeHint: const ['email']);
+      return account.authentication.idToken;
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) return null;
+      rethrow;
+    }
+  }
 
   Future<void> signInWithEmail(String email, String password) {
     return _client.auth.signInWithPassword(email: email, password: password);
@@ -49,6 +82,23 @@ class AuthController {
       provider: OAuthProvider.apple,
       idToken: idToken,
       nonce: rawNonce,
+    );
+  }
+
+  /// Marker for a user-cancelled Google sheet — the UI stays quiet on it
+  /// (cancelling is not an error).
+  static const googleCancelled = AuthException('google_sign_in_cancelled');
+
+  /// Next Evolution Phase 7 — native Google Sign-In. A first Google sign-in
+  /// also CREATES the account (Supabase provisions it; the DB trigger adds
+  /// the profile row), so the caller gates it behind the same terms assent
+  /// as email sign-up. Throws [googleCancelled] when the user backs out.
+  Future<void> signInWithGoogle() async {
+    final idToken = await _googleIdToken();
+    if (idToken == null) throw googleCancelled;
+    await _client.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
     );
   }
 

@@ -88,6 +88,23 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     }
   }
 
+  Future<void> _googleSignIn() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref.read(authControllerProvider).signInWithGoogle();
+    } catch (e) {
+      // Backing out of the Google sheet is a choice, not an error.
+      if (!identical(e, AuthController.googleCancelled)) {
+        _showError('Google sign-in failed. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   // Calm inline banner (replaces the bottom snackbar from runtime R07).
   void _showError(String message) {
     if (!mounted) return;
@@ -394,6 +411,25 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               child: const Text('Continue with Apple'),
             ),
           ],
+          // Next Evolution Phase 7: Google Sign-In — shown only when the
+          // OAuth client id is configured (no dead controls); a first Google
+          // sign-in also CREATES an account, so terms assent gates it too.
+          if (ref.watch(googleSignInAvailableProvider)) ...[
+            const SizedBox(height: AppSpace.s8),
+            PawSecondaryButton(
+              key: const Key('google_sign_in_button'),
+              variant: PawSurface.cream,
+              onPressed: (_busy || !_acceptedTerms) ? null : _googleSignIn,
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _GoogleMark(),
+                  SizedBox(width: AppSpace.s8),
+                  Text('Continue with Google'),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpace.s16),
           _encryptionCard(),
           const SizedBox(height: AppSpace.s8),
@@ -540,6 +576,38 @@ class _OrDivider extends StatelessWidget {
         ),
         line,
       ],
+    );
+  }
+}
+
+/// Compact Google "G" mark for the social button. A neutral, self-drawn badge
+/// (white disc + brand-blue G) keeps the bundle asset-free; the founder can
+/// swap in the official multicolor asset for strict brand compliance
+/// (docs/runbooks/GOOGLE_SIGN_IN_SETUP.md §7).
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        border: Border.all(
+            color: PawPalette.forestInk.withValues(alpha: 0.12)),
+      ),
+      child: const Text(
+        'G',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF4285F4),
+          height: 1,
+        ),
+      ),
     );
   }
 }
