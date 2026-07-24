@@ -236,5 +236,93 @@ begin
 end
 $$;
 
+-- assistant_conversations / assistant_messages isolation (Next Evolution
+-- Phase 4). B's fixture rows are seeded below as the table owner via a role
+-- reset, then we return to acting as A.
+reset role;
+insert into public.assistant_conversations (id, user_id, title) values
+  ('c1c1c1c1-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '22222222-2222-2222-2222-222222222222', 'B private chat')
+on conflict (id) do nothing;
+insert into public.assistant_messages (user_id, conversation_id, role, content) values
+  ('22222222-2222-2222-2222-222222222222', 'c1c1c1c1-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'user', 'B secret question');
+
+set role authenticated;
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111"}', false);
+
+-- READ isolation: A sees neither B's conversation nor B's messages.
+do $$
+begin
+  if (select count(*) from public.assistant_conversations) <> 0 then
+    raise exception 'assistant_conversations READ: A sees % rows, expected 0',
+      (select count(*) from public.assistant_conversations);
+  end if;
+  if (select count(*) from public.assistant_messages) <> 0 then
+    raise exception 'assistant_messages READ: A sees B''s messages';
+  end if;
+end
+$$;
+
+-- WRITE isolation: A must NOT insert a message into B's conversation.
+do $$
+begin
+  begin
+    insert into public.assistant_messages (user_id, conversation_id, role, content)
+    values ('11111111-1111-1111-1111-111111111111',
+            'c1c1c1c1-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'user', 'hijack');
+    raise exception 'assistant_messages WRITE: A wrote into B''s conversation (WITH CHECK failed)';
+  exception
+    when insufficient_privilege then null; -- expected
+  end;
+end
+$$;
+
+-- WRITE isolation: a client must NOT forge an assistant-role reply.
+insert into public.assistant_conversations (id, user_id, title) values
+  ('c2c2c2c2-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '11111111-1111-1111-1111-111111111111', 'A chat');
+do $$
+begin
+  begin
+    insert into public.assistant_messages (user_id, conversation_id, role, content)
+    values ('11111111-1111-1111-1111-111111111111',
+            'c2c2c2c2-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'assistant', 'forged model reply');
+    raise exception 'assistant_messages WRITE: client forged an assistant-role row';
+  exception
+    when insufficient_privilege then null; -- expected: role must be user
+  end;
+end
+$$;
+
+-- WRITE isolation: A cannot pin a conversation to B's pet.
+do $$
+begin
+  begin
+    insert into public.assistant_conversations (user_id, pet_id, title)
+    values ('11111111-1111-1111-1111-111111111111',
+            'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', 'Wrong pet chat');
+    raise exception 'assistant_conversations WRITE: A pinned B''s pet (WITH CHECK failed)';
+  exception
+    when insufficient_privilege then null; -- expected
+  end;
+end
+$$;
+
+-- Positive controls: A CAN chat in its own conversation and rename it.
+insert into public.assistant_messages (user_id, conversation_id, role, content)
+values ('11111111-1111-1111-1111-111111111111',
+        'c2c2c2c2-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'user', 'How much exercise daily?');
+update public.assistant_conversations set title = 'Exercise questions'
+where id = 'c2c2c2c2-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+do $$
+begin
+  if (select count(*) from public.assistant_messages) <> 1 then
+    raise exception 'assistant_messages WRITE: A''s own user turn was blocked';
+  end if;
+  if not exists (select 1 from public.assistant_conversations
+                 where title = 'Exercise questions') then
+    raise exception 'assistant_conversations WRITE: A''s rename did not persist';
+  end if;
+end
+$$;
+
 reset role;
 select 'RLS ISOLATION TESTS PASSED' as result;

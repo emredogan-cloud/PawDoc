@@ -14,6 +14,16 @@ CONFIDENCE_ROUTE_THRESHOLD = 0.85   # Tier-2 confidence > this -> accept; else e
 CONFIDENCE_FLOOR = 0.60             # below this -> "insufficient information" (never fabricate)
 FREE_TIER_MONTHLY_LIMIT = 3
 
+# --- Assistant (Next Evolution Phase 4) — conversational surface -------------
+# NOT triage: the 0.1 temperature rule is for health-analysis calls; the
+# assistant is a guardrailed companion (no diagnosis / no dosing / emergency
+# override before any call) and keeps a deliberately low-but-warmer 0.3.
+ASSISTANT_MODEL = os.getenv("ASSISTANT_MODEL", TIER3_MODEL)
+ASSISTANT_TEMPERATURE = 0.3
+ASSISTANT_MAX_TOKENS = 1500
+ASSISTANT_HISTORY_LIMIT = 20     # turns per request window (EF sends the tail)
+ASSISTANT_TIMEOUT_SECONDS = 45.0  # whole-stream budget on the provider call
+
 # --- Secrets / runtime flags (read from env; never hardcode) -----------------
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 GOOGLE_AI_API_KEY = os.getenv("GOOGLE_AI_API_KEY", "")

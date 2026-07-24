@@ -11,8 +11,10 @@ import hmac
 import uuid
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import StreamingResponse
 
 from . import config
+from .assistant import AssistantChatRequest, stream_assistant_reply
 from .cache import make_cache
 from .logging_setup import (
     configure_logging,
@@ -150,6 +152,21 @@ def get_pipeline() -> AnalysisPipeline:
         tier3=ClaudeProvider(config.ANTHROPIC_API_KEY),
         cache=make_cache(),
         moderator=build_moderator(),
+    )
+
+
+@app.post("/assistant/chat", dependencies=[Depends(require_service_auth)])
+def assistant_chat(req: AssistantChatRequest) -> StreamingResponse:
+    """Next Evolution Phase 4 — the conversational assistant, streamed as SSE.
+    Same trust boundary as /analyze (Edge Functions only). The emergency
+    keyword override runs inside the generator BEFORE any model call."""
+    return StreamingResponse(
+        stream_assistant_reply(req),
+        media_type="text/event-stream",
+        headers={
+            "cache-control": "no-cache",
+            "x-accel-buffering": "no",  # never buffer a live stream
+        },
     )
 
 

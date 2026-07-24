@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../account/account_screen.dart';
+import '../assistant/assistant_screen.dart';
 import '../health/history_timeline_screen.dart';
 import '../home/home_screen.dart';
 import '../pets/pets_list_screen.dart';
@@ -30,9 +31,11 @@ class RootShell extends StatefulWidget {
 class _RootShellState extends State<RootShell> {
   int _index = 0;
 
+  // Next Evolution Phase 4: the Assistant is a permanent center destination.
   static const _pages = <Widget>[
     HomeScreen(),
     PetsListScreen(),
+    AssistantScreen(),
     HealthHistoryScreen(),
     AccountScreen(),
   ];
@@ -72,6 +75,11 @@ class _RootShellState extends State<RootShell> {
               icon: Icon(Icons.pets_outlined),
               selectedIcon: Icon(Icons.pets_rounded),
               label: 'Pets',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.auto_awesome_outlined),
+              selectedIcon: Icon(Icons.auto_awesome_rounded),
+              label: 'Assistant',
             ),
             NavigationDestination(
               icon: Icon(Icons.favorite_outline_rounded),
