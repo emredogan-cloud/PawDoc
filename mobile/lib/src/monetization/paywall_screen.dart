@@ -5,13 +5,13 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import '../analytics/analytics.dart';
 import '../core/app_image.dart';
 import '../core/app_motion_asset.dart';
-import '../core/celebration_overlay.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
 import '../config/legal_urls.dart';
 import '../account/user_profile.dart';
 import 'paywall_copy.dart';
+import 'premium_welcome.dart';
 
 /// Annual-first paywall (evolution Phase 6): ONE plan, record-centric value.
 /// Free = safety (unmetered text guidance + the red button); Premium = memory
@@ -67,16 +67,10 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
         // the webhook round-trip.
         ref.invalidate(userProfileProvider);
         if (mounted) {
-          // M3 (#15): calm welcome moment on a REAL entitlement-active
-          // purchase — ≤2.5s, tap-skippable, reduce-motion → text snackbar.
+          // Next Evolution Phase 8: the full premium welcome moment on a
+          // REAL entitlement-active purchase (replaces the M3 toast).
           // Purchase/eligibility logic above is untouched (visual swap only).
-          await showCelebration(
-            context,
-            motionAsset: AppMotionAssets.premiumWelcome,
-            fallbackAsset: AppAssets.paywallPeace,
-            message: 'Welcome to Premium 🎉',
-            duration: const Duration(milliseconds: 2500),
-          );
+          await showPremiumWelcome(context);
           if (mounted) Navigator.of(context).pop(true);
         }
         return;
@@ -195,11 +189,17 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 final info = await Purchases.restorePurchases();
                 final active = info.entitlements.active.isNotEmpty;
                 ref.invalidate(userProfileProvider);
-                messenger.showSnackBar(SnackBar(
-                    content: Text(active
-                        ? 'Premium restored — welcome back!'
-                        : 'No previous purchase found for this store account.')));
-                if (active && mounted) navigator.pop(true);
+                if (active) {
+                  // Phase 8: restoring is a premium transition too.
+                  if (context.mounted) {
+                    await showPremiumWelcome(context, restored: true);
+                  }
+                  if (context.mounted) navigator.pop(true);
+                } else {
+                  messenger.showSnackBar(const SnackBar(
+                      content: Text(
+                          'No previous purchase found for this store account.')));
+                }
               } catch (e) {
                 messenger.showSnackBar(SnackBar(
                     content:
