@@ -150,8 +150,12 @@ class HomeScreen extends ConsumerWidget {
             const FollowUpBanner(),
             petsAsync.when(
               // Skeletons matching the final layout (§4.3); static under reduce-motion.
+              // Emergency stays reachable while pets load — offline cold start can
+              // sit here for the whole request timeout before erroring.
               loading: () => const Column(
                 children: [
+                  EmergencyHelpButton(),
+                  SizedBox(height: AppSpace.s12),
                   SkeletonCard(height: 120),
                   SizedBox(height: AppSpace.s8),
                   SkeletonCard(height: 72),
@@ -159,9 +163,18 @@ class HomeScreen extends ConsumerWidget {
                   SkeletonCard(height: 44),
                 ],
               ),
-              error: (e, _) => AppErrorView(
-                message: 'Could not load your pets.',
-                onRetry: () => ref.invalidate(petsListProvider),
+              // Emergency must stay reachable even when the pet list can't load
+              // (e.g. offline cold start) — the red path is offline-capable and
+              // must never be gated behind a network fetch.
+              error: (e, _) => Column(
+                children: [
+                  const EmergencyHelpButton(),
+                  const SizedBox(height: AppSpace.s12),
+                  AppErrorView(
+                    message: 'Could not load your pets.',
+                    onRetry: () => ref.invalidate(petsListProvider),
+                  ),
+                ],
               ),
               data: (list) {
                 if (list.isEmpty) {
@@ -445,6 +458,9 @@ class _HomeEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: AppSpace.s16),
           _FreeChecksChip(freeRemaining: freeRemaining),
+          // Emergency stays reachable before a pet is even added.
+          const SizedBox(height: AppSpace.s24),
+          const EmergencyHelpButton(),
         ],
       ),
     );

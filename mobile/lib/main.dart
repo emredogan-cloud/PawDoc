@@ -17,6 +17,29 @@ import 'src/theme/design_tokens.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Catch uncaught ASYNC errors. supabase_flutter's background session
+  // auto-refresh throws AuthRetryableFetchException (SocketException / failed
+  // host lookup) on every ~20s tick while the network is unreachable; without
+  // a handler these spam the log as "Unhandled Exception" and would flood
+  // Sentry. Transient network/auth-retry errors are expected — swallow them;
+  // report anything else so real bugs still surface.
+  WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+    final s = error.toString();
+    final transient = error is AuthRetryableFetchException ||
+        s.contains('SocketException') ||
+        s.contains('Failed host lookup') ||
+        s.contains('ClientException') ||
+        s.contains('TimeoutException');
+    if (!transient) {
+      FlutterError.reportError(FlutterErrorDetails(
+        exception: error,
+        stack: stack,
+        library: 'pawdoc (uncaught async)',
+      ));
+    }
+    return true; // handled — never crash to the default reporter
+  };
+
   // ENG-01: brand fonts are BUNDLED (assets/google_fonts/) — never fetched
   // over the network. First launch renders correct type offline, and no
   // pre-consent request to fonts.gstatic.com ever fires.
