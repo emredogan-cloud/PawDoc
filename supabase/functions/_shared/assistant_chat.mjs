@@ -15,12 +15,9 @@ export const MAX_ASSISTANT_MESSAGE_CHARS = 2000;
 /** Conversation-window size sent to the model (newest last). */
 export const ASSISTANT_HISTORY_WINDOW = 20;
 
-/** One plan: premium (plus the store trial period). Mirrors analyze/index.ts. */
-export const PREMIUM_STATUSES = new Set(["premium", "trial"]);
-
-export function isPremiumStatus(status) {
-  return PREMIUM_STATUSES.has(String(status ?? ""));
-}
+// Premium is defined once, in _shared/premium.mjs, so the four gates
+// (analyze, assistant-chat, generate-pdf-report, client) cannot drift apart.
+export { INTERNAL_TESTER_STATUS, isPremiumStatus, PREMIUM_STATUSES } from "./premium.mjs";
 
 /** True when a free user has exhausted today's allowance. Premium never blocks. */
 export function assistantBlocked(todayCount, isPremium, limit = ASSISTANT_FREE_DAILY_LIMIT) {

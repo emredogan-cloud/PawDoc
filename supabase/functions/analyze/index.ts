@@ -15,12 +15,14 @@ import { aiServiceHeaders } from "../_shared/ai_service.mjs";
 import { isOwnUploadKey } from "../_shared/upload_key.mjs";
 // deno-lint-ignore no-import-assertions
 import { blockBeforeAi, countsAgainstQuota, isMetered } from "../_shared/quota_gate.mjs";
+// deno-lint-ignore no-import-assertions
+import { PREMIUM_STATUSES } from "../_shared/premium.mjs";
 
 const AI_SERVICE_URL = Deno.env.get("AI_SERVICE_URL") ?? "https://pawdoc-ai.fly.dev";
 // Phase A — trust-boundary credential presented to the internal AI service.
 const AI_SERVICE_TOKEN = Deno.env.get("AI_SERVICE_TOKEN") ?? "";
-// One plan: premium (plus the store trial period).
-const PREMIUM_STATUSES = new Set(["premium", "trial"]);
+// Premium is defined once in _shared/premium.mjs (it includes the
+// service-role-only `internal_tester` grant — docs/runbooks/INTERNAL_TEST_ACCOUNT.md).
 
 // Presign a short-lived GET URL so the AI service can read the uploaded image
 // (Phase 1.2 stored it and handed the client only the key).

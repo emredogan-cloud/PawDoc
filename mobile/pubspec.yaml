@@ -134,6 +134,14 @@ flutter:
     - assets/illustrations/pets/
     - assets/illustrations/premium/
     - assets/illustrations/results/
+    # The derived portrait only — the 2.1 MB source composite in the same folder
+    # stays out of the bundle (see AppAssets.assistantAvatar for why).
+    - assets/ai-assistans/ai_assistant_avatar.png
+    # Species art for the picker chips and the reduce-motion avatar. Declared so
+    # that dropping the generated PNGs in is all it takes — without this entry
+    # the files would exist on disk and still never reach the bundle. Empty
+    # today: every one falls back to its emoji until the art lands.
+    - assets/icons/species/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -21,14 +21,15 @@
       "Bash(cat:*)",
       "Bash(grep:*)",
       "Bash(git:*)",
-      "Bash(flutter build:*)"
-
-    ],
-    "ask": [
+      "Bash(flutter build:*)",
       "Bash(fly deploy:*)",
       "Bash(flyctl deploy:*)",
       "Bash(supabase functions deploy:*)",
       "Bash(supabase db push:*)"
+
+    ],
+    "ask": [
+      
     ],
     "deny": [
       "Bash(rm -rf /)",

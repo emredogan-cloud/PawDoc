@@ -9,6 +9,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 import '../experiments/feature_flags.dart';
 import '../theme/app_assets.dart';
+import '../memories/memory_photo.dart';
 import 'app_image.dart';
 import 'motion.dart';
 
@@ -78,12 +79,21 @@ class LivingPetAvatar extends ConsumerStatefulWidget {
     this.mountBeat,
     this.beatKey,
     this.seed,
+    this.photoKey,
     super.key,
   });
 
   /// One of kSpecies; unknown values fall back to 'other'.
   final String species;
   final double size;
+
+  /// The owner's uploaded profile photo (`pets/<uid>/<uuid>.jpg`).
+  ///
+  /// When set it replaces the species rig entirely: this is the actual animal,
+  /// so an idle animation of a generic cartoon would be a downgrade. Every
+  /// surface that already renders this widget therefore shows the real pet with
+  /// no per-screen work. Null → the existing rig / paw-disc behaviour.
+  final String? photoKey;
 
   /// Drives the rig's `sleepy` bool input (quiet-hours surfaces).
   final bool sleepy;
@@ -216,6 +226,18 @@ class _LivingPetAvatarState extends ConsumerState<LivingPetAvatar> {
 
   @override
   Widget build(BuildContext context) {
+    // A real photo of the pet outranks every generated stand-in.
+    final photoKey = widget.photoKey;
+    if (photoKey != null && photoKey.isNotEmpty) {
+      return SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: ClipOval(
+          child: MemoryPhoto(storageKey: photoKey, fit: BoxFit.cover),
+        ),
+      );
+    }
+
     // Reduce-motion: the static species PNG, no rig at all (M2 acceptance) —
     // the runtime is never even loaded for reduce-motion users.
     if (reduceMotion(context)) return _staticPng(context);

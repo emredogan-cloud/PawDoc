@@ -515,5 +515,49 @@ begin
 end
 $$;
 
+-- ── Pet profile photo (post-beta polish) ────────────────────────────────────
+-- RLS keeps a row to its owner, but nothing stopped an owner from pointing
+-- their OWN row at ANOTHER user's object key and having the display path sign
+-- a GET for it. The ownership trigger closes that; prove it here.
+select set_config('request.jwt.claims', '{"sub":"11111111-1111-1111-1111-111111111111"}', false);
+do $$
+begin
+  -- Own key: accepted.
+  update public.pets
+     set photo_key = 'pets/11111111-1111-1111-1111-111111111111/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg'
+   where user_id = '11111111-1111-1111-1111-111111111111';
+
+  -- Another user's key: rejected.
+  begin
+    update public.pets
+       set photo_key = 'pets/22222222-2222-2222-2222-222222222222/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg'
+     where user_id = '11111111-1111-1111-1111-111111111111';
+    raise exception 'pets.photo_key: accepted ANOTHER user''s object key';
+  exception
+    when check_violation then null; -- expected
+  end;
+
+  -- Wrong scope (an analysis upload is never displayable): rejected.
+  begin
+    update public.pets
+       set photo_key = 'uploads/11111111-1111-1111-1111-111111111111/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg'
+     where user_id = '11111111-1111-1111-1111-111111111111';
+    raise exception 'pets.photo_key: accepted an uploads/ key';
+  exception
+    when check_violation then null; -- expected
+  end;
+
+  -- Disallowed extension: rejected by the shape CHECK.
+  begin
+    update public.pets
+       set photo_key = 'pets/11111111-1111-1111-1111-111111111111/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.svg'
+     where user_id = '11111111-1111-1111-1111-111111111111';
+    raise exception 'pets.photo_key: accepted a non-image extension';
+  exception
+    when check_violation then null; -- expected
+  end;
+end
+$$;
+
 reset role;
 select 'RLS ISOLATION TESTS PASSED' as result;

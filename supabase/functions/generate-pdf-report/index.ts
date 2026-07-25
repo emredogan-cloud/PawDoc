@@ -20,7 +20,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { buildReportSections, reportFilename } from "../_shared/pdf_report.mjs";
 import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 
-const PREMIUM_STATUSES = new Set(["premium", "trial"]);
+// Premium is defined once in _shared/premium.mjs.
+import { PREMIUM_STATUSES } from "../_shared/premium.mjs";
 
 Deno.serve(async (req: Request) => {
   const requestId = req.headers.get("x-request-id") ?? crypto.randomUUID();

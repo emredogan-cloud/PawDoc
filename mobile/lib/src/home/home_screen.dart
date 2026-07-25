@@ -451,6 +451,7 @@ class _PetHeroCard extends ConsumerWidget {
       species: pet.species,
       size: 56,
       seed: pet.id,
+      photoKey: pet.photoKey,
       beatKey: lastTriage.value?.checkedAt,
     );
   }

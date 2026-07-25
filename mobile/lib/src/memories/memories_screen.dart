@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../account/user_profile.dart';
 import '../core/app_views.dart';
+import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../monetization/paywall_screen.dart';
 import '../pets/pet.dart';
@@ -125,14 +126,29 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen> {
     return PawScaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            const Text('Memories'),
-            Text(
-              'with ${widget.pet.name}',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: PawPalette.mint),
+            LivingPetAvatar(
+              species: widget.pet.species,
+              size: 28,
+              seed: widget.pet.id,
+              photoKey: widget.pet.photoKey,
+            ),
+            const SizedBox(width: AppSpace.s8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Memories'),
+                  Text(
+                    'with ${widget.pet.name}',
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: PawPalette.mint),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

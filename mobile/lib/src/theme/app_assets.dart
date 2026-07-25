@@ -13,7 +13,6 @@ class AppAssets {
 
   // ---- Brand ----
   static const String logoMark = '$_brand/logo_mark_v1.png';
-  static const String splashLogo = '$_brand/splash_logo.png';
 
   // ---- Illustrations: onboarding / analysis / empties / monetization / growth ----
   static const String onbHero = '$_ill/onboarding/onboarding_hero_value_v1.png';
@@ -25,7 +24,6 @@ class AppAssets {
       '$_ill/monetization/paywall_peace_of_mind_v1.png';
   static const String familyCircle = '$_ill/growth/family_care_circle_v1.png';
   static const String sysError = '$_ill/system/system_error_calm_v1.png';
-  static const String sysOffline = '$_ill/system/system_offline_v1.png';
 
   // ---- NEW UI translation illustrations (OLD→NEW migration, 2026-06-12) ----
   // Cartoon puppy+kitten duo in the new teal-green design language. Every one is
@@ -51,17 +49,21 @@ class AppAssets {
   static const String resultMonitor = '$_ill/results/monitor_result_v1.png'; // 019 monitor banner
   static const String offlineCompanion = '$_ill/system/offline_companion_v1.png'; // offline
 
+  // ---- AI Assistant ----
+  // Portrait crop of the founder-supplied character art. The source composite
+  // (ai-assistan.png, kept beside it) is deliberately NOT shipped: it has a
+  // dashboard of invented vitals ("Heart Rate 102 bpm", "Wellness Score 98%
+  // Excellent") and an "AI VIRTUAL VETERINARIAN" wordmark baked in. PawDoc
+  // measures none of those and is explicitly not a veterinary diagnosis, so the
+  // character travels into the app without the claims.
+  static const String assistantAvatar =
+      'assets/ai-assistans/ai_assistant_avatar.png';
+
   // ---- Species + avatars (keyed by the Species enum value) ----
   // 'other' ships as the paw mascot file (species_other_paw.png) — without
   // this mapping the Other chip silently fell back to the emoji (M2 find).
   static String species(String key) =>
       '$_ic/species/species_${key == 'other' ? 'other_paw' : key}.png';
-  static String avatar(String key) => '$_ic/avatars/avatar_$key.png';
-
-  // ---- Status glyphs (always paired with text label + shape — never alone) ----
-  static const String statusEmergency = '$_ic/status/status_emergency.png';
-  static const String statusMonitor = '$_ic/status/status_monitor.png';
-  static const String statusNormal = '$_ic/status/status_normal.png';
 }
 
 /// Lottie motion assets (M1 "First breath", PAWDOC_MOTION_ROADMAP.md §4).
