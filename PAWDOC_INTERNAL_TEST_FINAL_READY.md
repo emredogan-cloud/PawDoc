@@ -258,8 +258,23 @@ Local gates, all green:
 GitHub Actions on PR #88: the first run **failed** on a real lint —
 `prefer_final_fields` in one of my new test files, which the CI runner's
 freshly-resolved analyzer flagged and my local pub cache did not. Fixed in
-`174dc16` and re-run. The founder should confirm the final run is green before
-merging (`gh run list --branch fix/internal-test-readiness`).
+`174dc16`.
+
+**Final run (`30164918583`, sha `8298226`): all 7 jobs green.**
+
+```
+AI service — ruff + pytest .......................... success
+Secret scan (gitleaks) .............................. success
+RLS + deletion cascade (full migrations, Docker pg) . success
+Edge shared tests (node --test) ..................... success
+Flutter analyze + test + build ...................... success
+No placeholders / overclaims ........................ success
+ShellCheck (scripts) ................................ success
+```
+
+The gitleaks job passing is worth noting specifically: it confirms the Google
+OAuth `client_secret_*.json` sitting in the working tree is properly ignored and
+did not reach the branch.
 
 ---
 
@@ -301,7 +316,9 @@ The AAB was rebuilt after the last code fix, so the artifact matches the branch 
 Nothing engineering-side is outstanding. These are all console/account steps
 only you can perform:
 
-1. **Merge PR #88** once its CI run is green (`main` is protected: squash-merge).
+1. **Merge PR #88** — CI is green on the head commit (`main` is protected:
+   squash-merge). Merging to `main` also re-deploys the ai-service via
+   `deploy.yml`, which is harmless here (no ai-service code changed).
 2. **Google OAuth configuration** — deliberately not done, per your instruction.
    Follow `docs/runbooks/GOOGLE_SIGN_IN_SETUP.md`; use the SHA-1 above for the
    Android client. Until `GOOGLE_WEB_CLIENT_ID` is set the button stays hidden,
@@ -334,9 +351,9 @@ Google Sign-In?**
 # YES WITH CONDITIONS
 
 The conditions are exclusively the founder-controlled items in §8 — Google OAuth
-configuration, RevenueCat products, and Play Console setup — plus merging PR #88
-once its CI run is green.
+configuration, RevenueCat products, and Play Console setup — plus merging PR #88,
+which is green and ready.
 
 No engineering work remains. The backend is fully deployed and verified against
-real devices, the four defects found on hardware are fixed and re-verified, every
-local gate is green, and the signed AAB is built and ready to upload.
+real devices, the four defects found on hardware are fixed and re-verified, all
+seven CI jobs are green, and the signed AAB is built and ready to upload.
