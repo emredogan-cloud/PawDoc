@@ -129,3 +129,6 @@ runtime/
 ASO-image/
 # Founder-local GCP service-account keys — NEVER commit (live private keys)
 pawdoc-prod-*.json
+# Google OAuth client downloads (contain client_secret) — the secret belongs in
+# the Supabase dashboard / Doppler, never in the repo.
+client_secret_*.json

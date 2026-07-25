@@ -15,6 +15,7 @@ import '../core/action_labels.dart';
 import '../core/app_motion_asset.dart';
 import '../core/app_views.dart';
 import '../core/connectivity.dart';
+import '../core/friendly_error.dart';
 import '../core/last_check.dart';
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
@@ -102,6 +103,20 @@ class HomeScreen extends ConsumerWidget {
     ref.invalidate(healthTimelineProvider(pet.id!));
   }
 
+  /// Emergency must stay reachable even when the pet list can't load (e.g. an
+  /// offline cold start) — the red path is offline-capable and must never be
+  /// gated behind a network fetch.
+  Widget _petsErrorBody(WidgetRef ref, Object error) => Column(
+        children: [
+          const EmergencyHelpButton(),
+          const SizedBox(height: AppSpace.s12),
+          AppErrorView(
+            message: friendlyLoadError(error, noun: 'pets'),
+            onRetry: () => ref.invalidate(petsListProvider),
+          ),
+        ],
+      );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final petsAsync = ref.watch(petsListProvider);
@@ -154,32 +169,29 @@ class HomeScreen extends ConsumerWidget {
             const FollowUpBanner(),
             petsAsync.when(
               // Skeletons matching the final layout (§4.3); static under reduce-motion.
-              // Emergency stays reachable while pets load — offline cold start can
-              // sit here for the whole request timeout before erroring.
-              loading: () => const Column(
-                children: [
-                  EmergencyHelpButton(),
-                  SizedBox(height: AppSpace.s12),
-                  SkeletonCard(height: 120),
-                  SizedBox(height: AppSpace.s8),
-                  SkeletonCard(height: 72),
-                  SizedBox(height: AppSpace.s8),
-                  SkeletonCard(height: 44),
-                ],
-              ),
-              // Emergency must stay reachable even when the pet list can't load
-              // (e.g. offline cold start) — the red path is offline-capable and
-              // must never be gated behind a network fetch.
-              error: (e, _) => Column(
-                children: [
-                  const EmergencyHelpButton(),
-                  const SizedBox(height: AppSpace.s12),
-                  AppErrorView(
-                    message: 'Could not load your pets.',
-                    onRetry: () => ref.invalidate(petsListProvider),
-                  ),
-                ],
-              ),
+              // Emergency stays reachable while pets load.
+              //
+              // Riverpod 3 retries a failed provider on its own, and each retry
+              // puts the value back into AsyncLoading while *retaining* the last
+              // error — so an offline cold start would sit on these skeletons
+              // forever and never reach `error:` below. When we have an error and
+              // have never had data, show the error body instead of pretending to
+              // still be loading. (A failed *refresh* over existing data keeps the
+              // skeletons: the retry usually wins and the flicker isn't worth it.)
+              loading: () => petsAsync.hasError && !petsAsync.hasValue
+                  ? _petsErrorBody(ref, petsAsync.error!)
+                  : const Column(
+                      children: [
+                        EmergencyHelpButton(),
+                        SizedBox(height: AppSpace.s12),
+                        SkeletonCard(height: 120),
+                        SizedBox(height: AppSpace.s8),
+                        SkeletonCard(height: 72),
+                        SizedBox(height: AppSpace.s8),
+                        SkeletonCard(height: 44),
+                      ],
+                    ),
+              error: (e, _) => _petsErrorBody(ref, e),
               data: (list) {
                 if (list.isEmpty) {
                   return _HomeEmptyState(

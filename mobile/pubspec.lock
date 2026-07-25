@@ -1201,10 +1201,10 @@ packages:
     dependency: "direct main"
     description:
       name: purchases_flutter
-      sha256: e0034abc9b4412da1dcf3c4d9df04bf3256998d4982846f9c9952212e5619751
+      sha256: "2d02f74f88a890aca44962cac31c7f55fa6b28b18f6fa73c6da71b3cc878d969"
       url: "https://pub.dev"
     source: hosted
-    version: "10.1.1"
+    version: "10.4.3"
   realtime_client:
     dependency: transitive
     description:

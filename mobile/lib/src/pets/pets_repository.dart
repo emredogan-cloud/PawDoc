@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/supabase_providers.dart';
+import '../core/data_timeout.dart';
 import 'pet.dart';
 
 /// CRUD for the `pets` table. All access is RLS-scoped to the signed-in user
@@ -16,7 +17,8 @@ class PetsRepository {
         .from('pets')
         .select()
         .eq('is_active', true)
-        .order('created_at');
+        .order('created_at')
+        .timeout(kDataReadTimeout);
     return (rows as List)
         .map((r) => Pet.fromJson(r as Map<String, dynamic>))
         .toList(growable: false);
@@ -54,6 +56,12 @@ final petsRepositoryProvider = Provider<PetsRepository>((ref) {
 });
 
 /// The signed-in user's active pets.
+///
+/// Watches the user id so a change of identity on this device recomputes the
+/// list instead of serving the previous account's cache. Device-found: after
+/// deleting an account and signing up again in the same app session, the new
+/// (empty) account still showed the deleted user's pet on Home and in My Pets.
 final petsListProvider = FutureProvider.autoDispose<List<Pet>>((ref) {
+  ref.watch(currentUserIdProvider);
   return ref.watch(petsRepositoryProvider).list();
 });

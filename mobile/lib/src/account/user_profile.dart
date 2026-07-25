@@ -2,6 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../auth/supabase_providers.dart';
+import '../config/env.dart';
+import '../core/data_timeout.dart';
+
+/// Bound on the store entitlement probe — shorter than a data read because a
+/// stale `false` only means "not premium *yet*"; the webhook-written DB status
+/// is the other half of the merge and still counts.
+const Duration kEntitlementProbeTimeout = Duration(seconds: 6);
 
 class UserProfile {
   const UserProfile({
@@ -37,21 +44,32 @@ class UserProfile {
 /// Merges the DB status (webhook-written) with the RevenueCat SDK entitlement
 /// (device truth) so neither path alone can lock a paying user out.
 final userProfileProvider = FutureProvider.autoDispose<UserProfile>((ref) async {
+  // Scoped to the signed-in user: watching the id makes an identity change
+  // on this device recompute instead of serving the previous account's cache.
+  ref.watch(currentUserIdProvider);
   final client = ref.watch(supabaseClientProvider);
   final uid = client.auth.currentUser!.id;
   final row = await client
       .from('users')
       .select('subscription_status, free_analyses_used_this_month')
       .eq('id', uid)
-      .single();
+      .single()
+      .timeout(kDataReadTimeout);
 
-  // Best-effort SDK read (SUB-02). Never throws: unconfigured SDK (tests,
-  // dev builds without a key) or a store hiccup simply yields false.
+  // Best-effort SDK read (SUB-02). Never throws *and never hangs*: an
+  // unconfigured SDK (tests, dev builds with no key) doesn't reject — it never
+  // answers, which strands this whole provider in `loading` and leaves the
+  // account's subscription row inert. Device-found on a Redmi Note 11R built
+  // without REVENUECAT_PUBLIC_SDK_KEY. So: only ask when main() configured it,
+  // and still bound the call for a store hiccup.
   var sdkActive = false;
-  try {
-    final info = await Purchases.getCustomerInfo();
-    sdkActive = info.entitlements.active.isNotEmpty;
-  } catch (_) {}
+  if (Env.hasRevenueCat) {
+    try {
+      final info =
+          await Purchases.getCustomerInfo().timeout(kEntitlementProbeTimeout);
+      sdkActive = info.entitlements.active.isNotEmpty;
+    } catch (_) {}
+  }
 
   return UserProfile(
     subscriptionStatus: (row['subscription_status'] as String?) ?? 'free',

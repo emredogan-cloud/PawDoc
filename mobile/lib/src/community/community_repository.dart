@@ -202,10 +202,16 @@ final communityRepositoryProvider = Provider<CommunityRepository>((ref) {
 /// Own membership (null = not opted in) — gates every community surface.
 final myCommunityProfileProvider =
     FutureProvider.autoDispose<CommunityProfile?>((ref) {
+  // Scoped to the signed-in user: watching the id makes an identity change
+  // on this device recompute instead of serving the previous account's cache.
+  ref.watch(currentUserIdProvider);
   return ref.watch(communityRepositoryProvider).myProfile();
 });
 
 final communityConnectionsProvider =
     FutureProvider.autoDispose<List<CommunityConnection>>((ref) {
+  // Scoped to the signed-in user: watching the id makes an identity change
+  // on this device recompute instead of serving the previous account's cache.
+  ref.watch(currentUserIdProvider);
   return ref.watch(communityRepositoryProvider).connections();
 });

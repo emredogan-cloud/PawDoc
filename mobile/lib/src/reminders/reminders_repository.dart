@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/supabase_providers.dart';
+import '../core/data_timeout.dart';
 import '../notifications/local_notifications.dart';
 import 'reminder.dart';
 
@@ -22,7 +23,8 @@ class RemindersRepository {
         .from('reminders')
         .select()
         .eq('pet_id', petId)
-        .order('due_date');
+        .order('due_date')
+        .timeout(kDataReadTimeout);
     return (rows as List)
         .map((r) => Reminder.fromJson(r as Map<String, dynamic>))
         .toList(growable: false);
