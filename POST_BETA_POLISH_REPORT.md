@@ -313,8 +313,22 @@ No crashes and no ANRs during the session.
 | RLS + deletion cascade | **PASS**, extended with 4 new pet-photo ownership assertions |
 | `shellcheck` | Clean (including the new grant script) |
 
-GitHub Actions on PR #90 was running at the time of writing; confirm it is green
-before merging.
+**GitHub Actions on PR #90 (run `30174874406`, sha `70ad25c`): all 7 jobs green.**
+
+```
+Flutter analyze + test + build ...................... success
+AI service — ruff + pytest .......................... success
+Edge shared tests (node --test) ..................... success
+RLS + deletion cascade (full migrations, Docker pg) . success
+Secret scan (gitleaks) .............................. success
+No placeholders / overclaims ........................ success
+ShellCheck (scripts) ................................ success
+```
+
+The gitleaks and "no placeholders / overclaims" passes are the two worth noting:
+the first confirms the Google `client_secret_*.json` in your working tree never
+reached the branch, and the second is the repo's own guard against exactly the
+kind of placeholder copy this program was sent to find.
 
 ### Deployed during this session
 
@@ -330,7 +344,8 @@ before merging.
 1. **`REVENUECAT_PUBLIC_SDK_KEY_ANDROID`** — currently `NOT YET`. §2 has the
    exact steps. This is the only thing standing between the build and a verified
    purchase flow.
-2. **Merge PR #90** once CI is green (`main` is protected → squash-merge).
+2. **Merge PR #90** — CI is green on the head commit (`main` is protected →
+   squash-merge).
 3. **Verify the Premium Welcome screen** on your first sandbox purchase — it can
    only fire from a real purchase/restore.
 4. **Generate the 7 species icons** from `docs/ASSET_PROMPTS.md` and drop them
