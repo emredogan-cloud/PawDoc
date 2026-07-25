@@ -46,6 +46,13 @@ void main() {
     final repo = _FakeRepo();
     _stubAnalytics(tester);
     await tester.pumpWidget(_host(repo));
+    // A vaccination is identified by its name — the form won't save without it.
+    await tester.scrollUntilVisible(
+        find.byKey(const Key('event_vaccine_name_field')), 120,
+        scrollable: find.byType(Scrollable).first);
+    await tester.enterText(
+        find.byKey(const Key('event_vaccine_name_field')), 'Rabies');
+    await tester.pump();
     await tester.tap(find.byKey(const Key('event_save_button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
@@ -59,6 +66,12 @@ void main() {
       (tester) async {
     _stubAnalytics(tester);
     await tester.pumpWidget(_host(_FakeRepo(fail: true)));
+    await tester.scrollUntilVisible(
+        find.byKey(const Key('event_vaccine_name_field')), 120,
+        scrollable: find.byType(Scrollable).first);
+    await tester.enterText(
+        find.byKey(const Key('event_vaccine_name_field')), 'Rabies');
+    await tester.pump();
     await tester.tap(find.byKey(const Key('event_save_button')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));

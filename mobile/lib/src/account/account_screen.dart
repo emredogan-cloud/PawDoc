@@ -128,8 +128,18 @@ class AccountScreen extends ConsumerWidget {
                 await openManageSubscription();
               },
             ),
-            orElse: () => const _Tile(
-                icon: Icons.workspace_premium_outlined, title: 'Subscription'),
+            // While the profile is still loading (or failed), the row must
+            // still go somewhere — an inert tile is a dead end. The paywall is
+            // the safe destination: a premium user who lands there sees their
+            // active plan rather than being sold anything.
+            orElse: () => _Tile(
+              key: const Key('account_subscription_tile'),
+              icon: Icons.workspace_premium_outlined,
+              title: 'Subscription',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PaywallScreen()),
+              ),
+            ),
           ),
           _Tile(
             icon: Icons.notifications_outlined,

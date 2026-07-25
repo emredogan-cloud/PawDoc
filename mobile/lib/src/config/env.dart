@@ -29,4 +29,9 @@ class Env {
   static bool get hasSupabase => supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 
   static bool get hasGoogleSignIn => googleWebClientId.isNotEmpty;
+
+  /// True only when main() actually called `Purchases.configure`. Querying an
+  /// unconfigured SDK doesn't fail fast — it hangs, which strands whatever
+  /// future is awaiting it.
+  static bool get hasRevenueCat => revenueCatPublicKey.isNotEmpty;
 }

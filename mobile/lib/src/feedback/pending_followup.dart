@@ -14,6 +14,9 @@ class PendingFollowup {
 /// RPC. Returns null when nothing is pending, the banner is snoozed, or on any
 /// error — never throws, so it can't break the home screen.
 final pendingFollowupProvider = FutureProvider.autoDispose<PendingFollowup?>((ref) async {
+  // Scoped to the signed-in user: watching the id makes an identity change
+  // on this device recompute instead of serving the previous account's cache.
+  ref.watch(currentUserIdProvider);
   if (await FollowUpPrefs.isSnoozed()) return null;
   try {
     final client = ref.watch(supabaseClientProvider);

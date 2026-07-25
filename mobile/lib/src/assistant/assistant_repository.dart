@@ -57,5 +57,8 @@ final assistantRepositoryProvider = Provider<AssistantRepository>((ref) {
 
 final assistantConversationsProvider =
     FutureProvider.autoDispose<List<AssistantConversation>>((ref) {
+  // Scoped to the signed-in user: watching the id makes an identity change
+  // on this device recompute instead of serving the previous account's cache.
+  ref.watch(currentUserIdProvider);
   return ref.watch(assistantRepositoryProvider).conversations();
 });

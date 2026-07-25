@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/supabase_providers.dart';
+import '../core/data_timeout.dart';
 import 'memory.dart';
 
 /// CRUD for `pet_memories`. All access is RLS-scoped to the signed-in user
@@ -23,7 +24,8 @@ class MemoriesRepository {
         .eq('pet_id', petId)
         .order('taken_on', ascending: false)
         .order('created_at', ascending: false)
-        .limit(_fetchCap);
+        .limit(_fetchCap)
+        .timeout(kDataReadTimeout);
     return (rows as List)
         .map((r) => Memory.fromJson(r as Map<String, dynamic>))
         .toList(growable: false);
@@ -92,5 +94,8 @@ final memoriesListProvider = FutureProvider.autoDispose
 
 /// Total memory count across pets — drives the free-tier allowance UI.
 final memoriesCountProvider = FutureProvider.autoDispose<int>((ref) {
+  // Scoped to the signed-in user: watching the id makes an identity change
+  // on this device recompute instead of serving the previous account's cache.
+  ref.watch(currentUserIdProvider);
   return ref.watch(memoriesRepositoryProvider).countAll();
 });

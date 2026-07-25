@@ -40,14 +40,54 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
   bool _saved = false;
 
   @override
+  void initState() {
+    super.initState();
+    // The save CTA and its hint depend on what's typed, so rebuild as it changes.
+    for (final c in [_notes, _weight, _vaccineName]) {
+      c.addListener(_onFieldChanged);
+    }
+  }
+
+  void _onFieldChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   void dispose() {
-    _notes.dispose();
-    _weight.dispose();
-    _vaccineName.dispose();
+    for (final c in [_notes, _weight, _vaccineName]) {
+      c.removeListener(_onFieldChanged);
+      c.dispose();
+    }
     super.dispose();
   }
 
+  /// What the selected type needs before the record means anything.
+  ///
+  /// Device-found: with no validation, "Save event" on an untouched form wrote
+  /// a vaccination row with `notes: null, metadata: null` — a record the owner
+  /// can neither read nor act on, and an unparseable weight saved a weight
+  /// event carrying no weight. A health record with no content is worse than
+  /// no record: it pads the history the vet reads.
+  String? get _missingRequirement {
+    switch (_type) {
+      case 'vaccination':
+        return _vaccineName.text.trim().isEmpty
+            ? 'Add the vaccine name to save this.'
+            : null;
+      case 'weight':
+        final kg = double.tryParse(_weight.text.trim().replaceAll(',', '.'));
+        if (kg == null) return 'Add the weight to save this.';
+        return kg > 0 && kg < 500 ? null : 'Enter a weight between 0 and 500 kg.';
+      default:
+        // vet_visit / medication / custom are described by their notes.
+        return _notes.text.trim().isEmpty
+            ? 'Add a short note to save this.'
+            : null;
+    }
+  }
+
   Future<void> _save() async {
+    if (_missingRequirement != null) return;
     setState(() => _saving = true);
     Map<String, dynamic>? metadata;
     if (_type == 'weight') {
@@ -139,30 +179,49 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
             AppSpace.s16,
             MediaQuery.of(context).padding.bottom + AppSpace.s16,
           ),
-          child: SizedBox(
-            width: double.infinity,
-            child: PawPrimaryButton(
-              key: const Key('event_save_button'),
-              onPressed: (_saving || _saved) ? null : _save,
-              icon: Icons.save_alt_rounded,
-              child: AnimatedSwitcher(
-                duration: reduceMotion(context)
-                    ? Duration.zero
-                    : const Duration(milliseconds: 200),
-                child: _saved
-                    ? const Row(
-                        key: ValueKey('saved'),
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.check_circle_rounded, size: 18),
-                          SizedBox(width: 6),
-                          Text('Saved'),
-                        ],
-                      )
-                    : Text(_saving ? 'Saving…' : 'Save event',
-                        key: ValueKey(_saving)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Say what's missing rather than leaving a dead button (§ no dead ends).
+              if (_missingRequirement != null && !_saving && !_saved)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpace.s8),
+                  child: Text(
+                    _missingRequirement!,
+                    key: const Key('event_save_hint'),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: AppColors.ink300),
+                  ),
+                ),
+              SizedBox(
+                width: double.infinity,
+                child: PawPrimaryButton(
+                  key: const Key('event_save_button'),
+                  onPressed: (_saving || _saved || _missingRequirement != null)
+                      ? null
+                      : _save,
+                  icon: Icons.save_alt_rounded,
+                  child: AnimatedSwitcher(
+                    duration: reduceMotion(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 200),
+                    child: _saved
+                        ? const Row(
+                            key: ValueKey('saved'),
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle_rounded, size: 18),
+                              SizedBox(width: 6),
+                              Text('Saved'),
+                            ],
+                          )
+                        : Text(_saving ? 'Saving…' : 'Save event',
+                            key: ValueKey(_saving)),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
         body: ListView(

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/supabase_providers.dart';
+import '../core/data_timeout.dart';
 import 'health_event.dart';
 
 /// CRUD for the `health_events` table. All access is RLS-scoped: the policy
@@ -40,7 +41,8 @@ class HealthEventsRepository {
         .from('health_events')
         .select()
         .eq('pet_id', petId)
-        .order('event_date', ascending: false);
+        .order('event_date', ascending: false)
+        .timeout(kDataReadTimeout);
     return (rows as List)
         .map((r) => HealthEvent.fromJson(r as Map<String, dynamic>))
         .toList(growable: false);
