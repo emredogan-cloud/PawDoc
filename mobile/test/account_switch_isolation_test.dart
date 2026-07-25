@@ -15,7 +15,7 @@ import 'package:pawdoc/src/pets/pets_repository.dart';
 class _PerUserRepo implements PetsRepository {
   _PerUserRepo(this._petsByUser, this._currentUser);
   final Map<String, List<Pet>> _petsByUser;
-  String Function() _currentUser;
+  final String Function() _currentUser;
   int listCalls = 0;
 
   @override
