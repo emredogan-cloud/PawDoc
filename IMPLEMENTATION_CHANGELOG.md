@@ -3,7 +3,7 @@
 Every significant implementation, grouped by phase. Branch `feat/final-evolution` (PR #80); one commit per phase (a…f sub-commits in Phase 1). Validation state at each phase close is recorded in the main report's test table.
 
 ## Phase 0 — Foundation (`e125462`)
-- Master execution roadmap written into `PAWDOC_FINAL_EVOLUTION_REPORT.md` (all sources merged/deduplicated/re-phased).
+- Master execution roadmap written into `docs/archive/2026-07/PAWDOC_FINAL_EVOLUTION_REPORT.md` (all sources merged/deduplicated/re-phased).
 - Baseline recorded green: analyze 0 · 217 flutter · ruff · 186 pytest · 103 node.
 - Dead `auth-webhook` Edge Function deleted (BE-03); `verify-phase-1.1.sh` inverted to fail if it reappears; runbook 13 marked superseded.
 

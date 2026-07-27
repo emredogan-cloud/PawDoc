@@ -94,4 +94,4 @@ touches all three in the same commit:
   `primary_concern`, `differential`. Retired because the verdict surface
   concentrated the product's entire false-negative and
   practice-of-veterinary-medicine exposure in its two lowest-value outputs
-  (`NORMAL`, `differential`). See `PAWDOC_PRODUCT_EVOLUTION_MASTERPLAN.md`.
+  (`NORMAL`, `differential`). See `docs/archive/2026-07/PAWDOC_PRODUCT_EVOLUTION_MASTERPLAN.md`.
