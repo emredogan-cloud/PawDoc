@@ -1,6 +1,6 @@
 # PawDoc — Legal Content Appendix
 
-> **Supporting Appendix 1** to `PAWDOC_LEGAL_PORTAL_REPORT.md`. Contains the final text of all 15 legal pages, exactly as deployed to the public legal portal.
+> **Supporting Appendix 1** to `docs/archive/2026-07/PAWDOC_LEGAL_PORTAL_REPORT.md`. Contains the final text of all 15 legal pages, exactly as deployed to the public legal portal.
 
 - **Portal (live, public HTTPS):** https://d1klm6zb1x23me.cloudfront.net
 - **Effective date:** 2026-06-15
