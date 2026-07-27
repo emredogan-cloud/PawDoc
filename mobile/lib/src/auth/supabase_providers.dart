@@ -22,6 +22,19 @@ final currentSessionProvider = Provider<Session?>((ref) {
 
 /// The signed-in user's id, or null. A seam of its own so widget tests can
 /// override identity without faking a whole Supabase client.
+///
+/// Derived from [currentSessionProvider] rather than reading
+/// `auth.currentUser` directly. That is load-bearing, not stylistic: reading
+/// the client straight created a provider with no reactive dependency at all —
+/// [supabaseClientProvider] is a singleton that never changes, so this value
+/// was computed once per process and never again.
+///
+/// Every user-scoped provider (pets, memories, assistant, community, profile)
+/// watches this to recompute when identity changes on a shared device. With a
+/// frozen dependency they never recomputed, and the previous account's data
+/// survived a sign-out — the exact bleed-through this was meant to prevent.
+/// Device-reproduced 2026-07-27: after deleting an account and signing in
+/// again, Home still showed the deleted account's pet.
 final currentUserIdProvider = Provider<String?>((ref) {
-  return ref.watch(supabaseClientProvider).auth.currentUser?.id;
+  return ref.watch(currentSessionProvider)?.user.id;
 });

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
@@ -11,7 +12,9 @@ import '../theme/paw_ui.dart';
 import '../config/legal_urls.dart';
 import '../account/user_profile.dart';
 import 'paywall_copy.dart';
+import 'paywall_pricing.dart';
 import 'premium_welcome.dart';
+import 'purchase_error_message.dart';
 
 /// Annual-first paywall (evolution Phase 6): ONE plan, record-centric value.
 /// Free = safety (unmetered text guidance + the red button); Premium = memory
@@ -75,10 +78,25 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
         }
         return;
       }
-    } catch (e) {
+      // Store reported success but no entitlement is active yet (e.g. a
+      // deferred payment). Say so — this path used to end in silence.
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text(purchaseNoEntitlementMessage)));
+      }
+    } on PlatformException catch (e) {
+      // Never surface the raw exception: map to one sentence, and stay silent
+      // when the user simply backed out of the store sheet.
+      final message = purchaseErrorMessage(PurchasesErrorHelper.getErrorCode(e));
+      if (mounted && message != null) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Purchase did not complete: $e')));
+            .showSnackBar(SnackBar(content: Text(message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('The purchase did not complete. Please try again — '
+                'you have not been charged.')));
       }
     } finally {
       if (mounted) setState(() => _purchasing = false);
@@ -86,36 +104,58 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   }
 
   // Annual-first plan cards. ONE plan, everything included — no tiers, no
-  // add-ons; fallback prices per the founder strategy ($39.99 / $6.99).
+  // add-ons.
+  //
+  // A card is built ONLY for a package the store actually returned. There is no
+  // placeholder price: a hardcoded figure next to a real localized one renders
+  // two currencies side by side and quotes a price we would not charge, so a
+  // package that did not resolve is omitted rather than faked.
   List<Widget> _plans(Package? annual, Package? monthly) {
-    return [
-      _PlanCard(
+    final cards = <Widget>[];
+    if (annual != null) {
+      cards.add(_PlanCard(
         key: const Key('paywall_annual'),
         title: 'Annual',
-        price: annual?.storeProduct.priceString ?? '\$39.99 / year',
-        subtitle: 'About \$3.33/month, billed yearly',
+        price: annual.storeProduct.priceString,
+        subtitle:
+            PaywallPricing.annualSubtitle(annual.storeProduct.pricePerMonthString),
         featured: true,
-        badge: 'Save 52%',
+        badge: PaywallPricing.savingsBadge(
+          annualPrice: annual.storeProduct.price,
+          annualCurrency: annual.storeProduct.currencyCode,
+          monthlyPrice: monthly?.storeProduct.price,
+          monthlyCurrency: monthly?.storeProduct.currencyCode,
+        ),
         busy: _purchasing,
         onTap: () => _purchase(annual),
-      ),
-      const SizedBox(height: 12),
-      _PlanCard(
+      ));
+    }
+    if (monthly != null) {
+      if (cards.isNotEmpty) cards.add(const SizedBox(height: 12));
+      cards.add(_PlanCard(
         key: const Key('paywall_monthly'),
         title: 'Monthly',
-        price: monthly?.storeProduct.priceString ?? '\$6.99 / month',
+        price: monthly.storeProduct.priceString,
         subtitle: 'Flexible, cancel anytime',
-        featured: false,
+        // Annual is the featured plan whenever it is offered; when it is the
+        // only plan available, monthly carries the primary CTA.
+        featured: annual == null,
         busy: _purchasing,
         onTap: () => _purchase(monthly),
-      ),
-    ];
+      ));
+    }
+    return cards;
   }
 
   @override
   Widget build(BuildContext context) {
     final annual = _offering?.annual;
     final monthly = _offering?.monthly;
+    // An offering can exist while the packages inside it don't (product not yet
+    // active in the Play Console, or not attached to the offering). That is the
+    // same user-facing situation as no offering at all, so it gets the same
+    // production-safe state instead of a CTA-less void.
+    final hasPlans = annual != null || monthly != null;
 
     return PawBackground(
       variant: PawSurface.dark,
@@ -169,14 +209,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 child: CircularProgressIndicator(),
               ),
             )
-          else if (_offering == null)
+          else if (!hasPlans)
             const _PremiumComingSoon()
           else
             ..._plans(annual, monthly),
           // Apple 3.1.2 / Google Play: auto-renew disclosure + functional links
           // to Subscription Terms, Terms of Service, and Privacy Policy, shown
           // near the purchase CTAs whenever real plans are offered.
-          if (_offering != null) const _SubscriptionLegal(),
+          if (hasPlans) const _SubscriptionLegal(),
           const SizedBox(height: AppSpace.s16),
           TextButton(
             key: const Key('paywall_restore'),
