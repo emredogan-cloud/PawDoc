@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../capture/image_compressor.dart';
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_ui.dart';
 import 'pet.dart';
+import 'pet_photo_crop_screen.dart';
+import 'pet_photo_service.dart';
 import 'pets_repository.dart';
 import 'species_chip.dart';
 
@@ -29,6 +34,16 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
   DateTime? _birthDate;
   bool _saving = false;
 
+  /// The photo as the form currently shows it. Uploaded immediately on pick so
+  /// the preview is the real thing; the row only points at it on save.
+  String? _photoKey;
+
+  /// Keys uploaded during this edit that the pet no longer points at. Swept on
+  /// save (replaced originals) or on cancel (everything picked this session),
+  /// so abandoning the form cannot leave paid-for storage behind.
+  final _orphanedKeys = <String>[];
+  bool _photoBusy = false;
+
   bool get _isEdit => widget.pet != null;
 
   @override
@@ -43,6 +58,7 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
     _species = widget.pet?.species ?? kSpecies.first;
     _sex = widget.pet?.sex;
     _birthDate = widget.pet?.birthDate;
+    _photoKey = widget.pet?.photoKey;
   }
 
   @override
@@ -52,6 +68,96 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
     _weight.dispose();
     _medicalNotes.dispose();
     super.dispose();
+  }
+
+  /// Pick → frame → upload. The upload happens before save so the preview is
+  /// the real, cropped, EXIF-stripped image rather than a local placeholder.
+  Future<void> _choosePhoto(ImageSource source) async {
+    final service = ref.read(petPhotoServiceProvider);
+    setState(() => _photoBusy = true);
+    try {
+      final raw = await service.pick(source);
+      if (raw == null || !mounted) return;
+
+      final crop = await Navigator.of(context).push<SquareCrop>(
+        MaterialPageRoute(
+          builder: (_) => PetPhotoCropScreen(
+            bytes: raw,
+            petName: _name.text.trim().isEmpty ? null : _name.text.trim(),
+          ),
+        ),
+      );
+      if (crop == null || !mounted) return;
+
+      final key = await service.cropAndUpload(raw, crop);
+      if (!mounted) return;
+      setState(() {
+        // The previous key is not deleted yet — the row still points at it
+        // until this form saves.
+        if (_photoKey != null) _orphanedKeys.add(_photoKey!);
+        _photoKey = key;
+      });
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Couldn't add that photo. Please try again."),
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _photoBusy = false);
+    }
+  }
+
+  void _removePhoto() {
+    setState(() {
+      if (_photoKey != null) _orphanedKeys.add(_photoKey!);
+      _photoKey = null;
+    });
+  }
+
+  Future<void> _photoSheet() async {
+    final action = await showModalBottomSheet<_PhotoAction>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              key: const Key('pet_photo_camera'),
+              leading: const Icon(Icons.photo_camera_rounded),
+              title: const Text('Take a photo'),
+              onTap: () =>
+                  Navigator.of(sheetContext).pop(_PhotoAction.camera),
+            ),
+            ListTile(
+              key: const Key('pet_photo_gallery'),
+              leading: const Icon(Icons.photo_library_rounded),
+              title: const Text('Choose from gallery'),
+              onTap: () =>
+                  Navigator.of(sheetContext).pop(_PhotoAction.gallery),
+            ),
+            if (_photoKey != null)
+              ListTile(
+                key: const Key('pet_photo_remove'),
+                leading: const Icon(Icons.delete_outline_rounded),
+                title: const Text('Remove photo'),
+                onTap: () =>
+                    Navigator.of(sheetContext).pop(_PhotoAction.remove),
+              ),
+          ],
+        ),
+      ),
+    );
+    switch (action) {
+      case null:
+        return;
+      case _PhotoAction.camera:
+        await _choosePhoto(ImageSource.camera);
+      case _PhotoAction.gallery:
+        await _choosePhoto(ImageSource.gallery);
+      case _PhotoAction.remove:
+        _removePhoto();
+    }
   }
 
   Future<void> _save() async {
@@ -67,6 +173,8 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
       birthDate: _birthDate,
       sex: _sex,
       weightKg: double.tryParse(_weight.text.trim().replaceAll(',', '.')),
+      photoKey: _photoKey,
+      clearPhotoKey: _photoKey == null,
       medicalNotes: _medicalNotes.text.trim().isEmpty
           ? null
           : _medicalNotes.text.trim(),
@@ -77,6 +185,14 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
       } else {
         await repo.create(draft);
       }
+      // The row now points at the surviving key, so anything it replaced is
+      // safe to delete. Best-effort: a failed sweep leaves an object the
+      // account-deletion purge collects, never a broken save.
+      final sweep = ref.read(petPhotoServiceProvider);
+      for (final key in _orphanedKeys) {
+        await sweep.discard(key);
+      }
+      _orphanedKeys.clear();
       ref.invalidate(petsListProvider);
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
@@ -98,14 +214,54 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpace.s16),
           children: [
-            // M2 (#9): living avatar preview (identity) — re-rigs live as the
-            // species pick changes. (A real photo picker is separate — see report.)
+            // Identity: the owner's own photo when there is one, else the
+            // living avatar, which re-rigs live as the species pick changes.
             Center(
-              child: LivingPetAvatar(
-                key: ValueKey('form_pal_$_species'),
-                species: _species,
-                size: 80,
-                seed: widget.pet?.id,
+              child: Semantics(
+                button: true,
+                label: _photoKey == null
+                    ? 'Add a photo of your pet'
+                    : 'Change or remove your pet\'s photo',
+                child: InkWell(
+                  key: const Key('pet_photo_button'),
+                  customBorder: const CircleBorder(),
+                  onTap: _photoBusy ? null : _photoSheet,
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      LivingPetAvatar(
+                        key: ValueKey('form_pal_${_photoKey ?? _species}'),
+                        species: _species,
+                        size: 96,
+                        seed: widget.pet?.id,
+                        photoKey: _photoKey,
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(AppSpace.s4),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                              colors: [PawPalette.mint, PawPalette.teal]),
+                        ),
+                        child: _photoBusy
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: PawPalette.bgBottom),
+                              )
+                            : Icon(
+                                _photoKey == null
+                                    ? Icons.add_a_photo_rounded
+                                    : Icons.edit_rounded,
+                                size: 18,
+                                color: PawPalette.bgBottom,
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: AppSpace.s24),
@@ -233,3 +389,6 @@ class _PetFormScreenState extends ConsumerState<PetFormScreen> {
         ),
       );
 }
+
+/// What the photo sheet asked for.
+enum _PhotoAction { camera, gallery, remove }

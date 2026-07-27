@@ -30,11 +30,19 @@ class UserProfile {
 
   static const freePhotoLogsPerMonth = 5;
 
-  /// One plan: `premium` (plus the store trial period).
-  static const _premiumTiers = {'premium', 'trial'};
+  /// Service-role-only permanent grant for PawDoc's internal QA account. A
+  /// distinct status (rather than a plain `premium` row) so support, analytics
+  /// and revenue reporting can tell an internal tester from a paying customer.
+  /// Mirrors `supabase/functions/_shared/premium.mjs`; the client only *reads*
+  /// it — `authenticated` holds no UPDATE grant on public.users, so no client
+  /// can award it to itself. See docs/runbooks/INTERNAL_TEST_ACCOUNT.md.
+  static const internalTesterStatus = 'internal_tester';
+
+  /// One plan: `premium` (plus the store trial period), and the QA grant.
+  static const premiumTiers = {'premium', 'trial', internalTesterStatus};
 
   bool get isPremium =>
-      _premiumTiers.contains(subscriptionStatus) || sdkEntitlementActive;
+      premiumTiers.contains(subscriptionStatus) || sdkEntitlementActive;
   int get photoLogsRemaining =>
       (freePhotoLogsPerMonth - photoLogsUsedThisMonth)
           .clamp(0, freePhotoLogsPerMonth);

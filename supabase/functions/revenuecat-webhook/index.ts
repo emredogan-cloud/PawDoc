@@ -7,6 +7,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 // deno-lint-ignore no-import-assertions
 import { entitlementStatusFromEvent } from "../_shared/revenuecat.mjs";
 // deno-lint-ignore no-import-assertions
+import { INTERNAL_TESTER_STATUS } from "../_shared/premium.mjs";
+// deno-lint-ignore no-import-assertions
 import { timingSafeEqual } from "../_shared/timing_safe_equal.mjs";
 
 Deno.serve(async (req: Request) => {
@@ -76,10 +78,17 @@ Deno.serve(async (req: Request) => {
   if (!status) return json({ ok: true, changed: false }); // e.g. CANCELLATION: no change
 
   // The app sets RevenueCat appUserID = the Supabase user id (Purchases.logIn).
+  //
+  // `internal_tester` is a service-role-only grant (see
+  // docs/runbooks/INTERNAL_TEST_ACCOUNT.md). A store event must never overwrite
+  // it — an EXPIRATION for a stale sandbox purchase would silently strip the
+  // internal account's access mid-test. Real purchases are unaffected: no
+  // ordinary account ever carries this status.
   const { error } = await admin
     .from("users")
     .update({ subscription_status: status, revenuecat_user_id: appUserId })
-    .eq("id", appUserId);
+    .eq("id", appUserId)
+    .neq("subscription_status", INTERNAL_TESTER_STATUS);
   if (error) {
     console.error("revenuecat-webhook update failed", error.message);
     await releaseClaim();

@@ -346,6 +346,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
       species: key,
       size: 96,
       seed: _createdPet?.id,
+      photoKey: _createdPet?.photoKey,
       mountBeat: PalBeat.happy,
     );
     if (reduceMotion(context)) return avatar;

@@ -12,6 +12,7 @@ import '../monetization/paywall_screen.dart';
 import '../pets/active_pet.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
+import 'assistant_avatar.dart';
 import 'assistant_media.dart';
 import 'assistant_models.dart';
 import 'assistant_repository.dart';
@@ -346,23 +347,7 @@ class _Greeting extends StatelessWidget {
           key: const Key('assistant_greeting'),
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                    colors: [PawPalette.mint, PawPalette.teal]),
-                boxShadow: [
-                  BoxShadow(
-                    color: PawPalette.glow.withValues(alpha: 0.35),
-                    blurRadius: 32,
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.pets_rounded,
-                  size: 40, color: PawPalette.bgBottom),
-            ),
+            const AssistantAvatar(size: 88),
             const SizedBox(height: AppSpace.s16),
             Text(
               petName == null
@@ -494,30 +479,40 @@ class _Bubble extends StatelessWidget {
         ),
       );
     }
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(
-            right: 32, top: AppSpace.s4, bottom: AppSpace.s4),
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpace.s16, vertical: AppSpace.s12),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(AppRadius.md),
-            topRight: Radius.circular(AppRadius.md),
-            bottomLeft: Radius.circular(4),
-            bottomRight: Radius.circular(AppRadius.md),
-          ),
-        ),
-        child: typing
-            ? const _TypingDots()
-            : GptMarkdown(
-                message.content,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: AppColors.ink50, height: 1.45),
+    // The Assistant's face sits beside its replies so the conversation has a
+    // consistent speaker; no glow at this size (one halo per row reads as noise).
+    return Padding(
+      padding: const EdgeInsets.only(
+          right: 32, top: AppSpace.s4, bottom: AppSpace.s4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AssistantAvatar(size: 28, glow: false),
+          const SizedBox(width: AppSpace.s8),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s16, vertical: AppSpace.s12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(AppRadius.md),
+                  topRight: Radius.circular(AppRadius.md),
+                  bottomLeft: Radius.circular(4),
+                  bottomRight: Radius.circular(AppRadius.md),
+                ),
               ),
+              child: typing
+                  ? const _TypingDots()
+                  : GptMarkdown(
+                      message.content,
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: AppColors.ink50, height: 1.45),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }

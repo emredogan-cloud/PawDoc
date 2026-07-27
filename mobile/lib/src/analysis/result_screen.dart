@@ -33,6 +33,7 @@ class ResultScreen extends StatelessWidget {
       this.petId,
       this.petName,
       this.petSpecies,
+      this.petPhotoKey,
       this.firstCheckToast = false});
   final AnalysisResult result;
   final String? analysisId;
@@ -45,6 +46,9 @@ class ResultScreen extends StatelessWidget {
   /// M2 (#13): enables the attentive avatar beat on the standard screen.
   /// GET_HELP_NOW ignores it entirely — that screen renders zero rig.
   final String? petSpecies;
+
+  /// The owner's pet photo, shown instead of the species rig when set.
+  final String? petPhotoKey;
 
   /// M3 (#17): the one-time-ever "story has begun" toast. The runner only
   /// sets this for non-emergency results; the emergency route ignores it.
@@ -62,6 +66,7 @@ class ResultScreen extends StatelessWidget {
         petId: petId,
         petName: petName,
         petSpecies: petSpecies,
+        petPhotoKey: petPhotoKey,
         firstCheckToast: firstCheckToast);
   }
 }
@@ -112,6 +117,7 @@ class StandardResultScreen extends ConsumerStatefulWidget {
       this.petId,
       this.petName,
       this.petSpecies,
+      this.petPhotoKey,
       this.firstCheckToast = false});
   final AnalysisResult result;
   final String? analysisId;
@@ -119,6 +125,7 @@ class StandardResultScreen extends ConsumerStatefulWidget {
   final String? petId;
   final String? petName;
   final String? petSpecies;
+  final String? petPhotoKey;
   final bool firstCheckToast;
 
   @override
@@ -284,6 +291,7 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
                 species: widget.petSpecies!,
                 size: 64,
                 seed: widget.analysisId,
+                photoKey: widget.petPhotoKey,
                 mountBeat: PalBeat.attentive,
               ),
             ),

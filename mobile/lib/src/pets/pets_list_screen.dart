@@ -202,7 +202,8 @@ class _PetListTile extends ConsumerWidget {
       onLongPress: onLongPress,
       // M2 (#9): living species avatar; per-pet seed de-syncs blink phases so
       // rows never blink in unison; offscreen rows pause via visibility.
-      leading: LivingPetAvatar(species: pet.species, size: 44, seed: pet.id),
+      leading: LivingPetAvatar(
+          species: pet.species, size: 44, seed: pet.id, photoKey: pet.photoKey),
       title: Text(petDisplayName(pet.name)),
       subtitle: Text(_meta()),
       // F-4: the last-check chip — fed by latestTriageProvider, which the

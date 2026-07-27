@@ -111,3 +111,41 @@ test("sanitizeKeyBatch drops foreign/invalid keys, dedupes, and caps", () => {
     buildStorageKey(USER, "jpg", `${String(i).padStart(8, "0")}-2222-2222-2222-222222222222`, "memories"));
   assert.equal(sanitizeKeyBatch(many, USER, DISPLAY_SCOPES, 24).length, 24);
 });
+
+// ── Pet profile photos (post-beta polish) ────────────────────────────────────
+// The `pets/` scope is displayable AND owner-deletable — replacing a photo must
+// not strand the old object — while `uploads/` stays neither.
+test("pets scope: displayable and deletable, uploads still neither", () => {
+  assert.ok(DISPLAY_SCOPES.includes("pets"));
+  assert.ok(DELETABLE_SCOPES.includes("pets"));
+  assert.ok(!DISPLAY_SCOPES.includes("uploads"));
+  assert.ok(!DELETABLE_SCOPES.includes("uploads"));
+});
+
+test("pets keys build and parse", () => {
+  const uid = "11111111-1111-4111-8111-111111111111";
+  const obj = "22222222-2222-4222-8222-222222222222";
+  const key = buildStorageKey(uid, "jpg", obj, "pets");
+  assert.equal(key, `pets/${uid}/${obj}.jpg`);
+  assert.deepEqual(parseMediaKey(key), {
+    scope: "pets",
+    userId: uid,
+    uuid: obj,
+    ext: "jpg",
+  });
+});
+
+test("a pet photo key belonging to someone else is not mine", () => {
+  const mine = "11111111-1111-4111-8111-111111111111";
+  const theirs = "33333333-3333-4333-8333-333333333333";
+  const obj = "22222222-2222-4222-8222-222222222222";
+  assert.equal(isOwnMediaKey(`pets/${mine}/${obj}.jpg`, mine, DISPLAY_SCOPES), true);
+  assert.equal(isOwnMediaKey(`pets/${theirs}/${obj}.jpg`, mine, DISPLAY_SCOPES), false);
+});
+
+test("a pet photo key is never accepted by the analysis SSRF gate", () => {
+  // /analyze presigns only `uploads/`; a display-scope key must not slip in.
+  const uid = "11111111-1111-4111-8111-111111111111";
+  const obj = "22222222-2222-4222-8222-222222222222";
+  assert.equal(isOwnUploadKey(`pets/${uid}/${obj}.jpg`, uid), false);
+});

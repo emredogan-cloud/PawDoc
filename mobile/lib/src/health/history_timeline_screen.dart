@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/living_pet_avatar.dart';
 import '../account/user_profile.dart';
 import '../analytics/analytics.dart';
 import '../core/action_labels.dart';
@@ -117,12 +118,28 @@ class HealthHistoryScreen extends ConsumerWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           iconTheme: const IconThemeData(color: AppColors.ink50),
-          title: Text(
-            "${petDisplayName(pet.name)}’s history",
-            style: const TextStyle(
-              color: AppColors.ink50,
-              fontWeight: FontWeight.w700,
-            ),
+          title: Row(
+            children: [
+              // The pet's own face, so a multi-pet owner can see whose history
+              // they are reading without parsing the name.
+              LivingPetAvatar(
+                species: pet.species,
+                size: 28,
+                seed: pet.id,
+                photoKey: pet.photoKey,
+              ),
+              const SizedBox(width: AppSpace.s8),
+              Flexible(
+                child: Text(
+                  "${petDisplayName(pet.name)}’s history",
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.ink50,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
           actions: [
             PopupMenuButton<String>(

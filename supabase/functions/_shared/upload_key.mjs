@@ -9,12 +9,14 @@ const ALLOWED_EXT = new Set(["jpg", "jpeg", "png", "webp"]);
 // `chat/` is assistant attachments. Scopes keep the analysis SSRF gate
 // (`isOwnUploadKey`) untouched while letting display surfaces sign GETs for
 // their own media only.
-export const MEDIA_SCOPES = Object.freeze(["uploads", "memories", "chat"]);
+// `pets/` is the pet's profile photo (post-beta polish): displayable, and
+// owner-deletable so replacing or clearing a photo doesn't orphan the object.
+export const MEDIA_SCOPES = Object.freeze(["uploads", "memories", "chat", "pets"]);
 // Scopes whose objects may be re-displayed to their owner via signed GET URLs.
 // `uploads/` is deliberately absent: analysis images stay non-displayable.
-export const DISPLAY_SCOPES = Object.freeze(["memories", "chat"]);
-// Scopes whose objects the owner may delete directly (journal media).
-export const DELETABLE_SCOPES = Object.freeze(["memories"]);
+export const DISPLAY_SCOPES = Object.freeze(["memories", "chat", "pets"]);
+// Scopes whose objects the owner may delete directly (journal + profile media).
+export const DELETABLE_SCOPES = Object.freeze(["memories", "pets"]);
 
 /** `<scope>/<userId>/<uuid>.<ext>`, with validation/sanitization. Throws on bad input. */
 export function buildStorageKey(userId, ext, uuid, scope = "uploads") {

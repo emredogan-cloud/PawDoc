@@ -40,6 +40,7 @@ class Pet {
     this.sex,
     this.weightKg,
     this.photoUrl,
+    this.photoKey,
     this.medicalNotes,
     this.isActive = true,
   });
@@ -53,6 +54,11 @@ class Pet {
   final String? sex;
   final double? weightKg;
   final String? photoUrl;
+
+  /// R2 storage key for the owner-uploaded profile photo
+  /// (`pets/<uid>/<uuid>.jpg`), or null to fall back to the species avatar.
+  /// A key, never a URL — display URLs are signed server-side.
+  final String? photoKey;
   final String? medicalNotes;
   final bool isActive;
 
@@ -68,6 +74,7 @@ class Pet {
       sex: json['sex'] as String?,
       weightKg: (json['weight_kg'] as num?)?.toDouble(),
       photoUrl: json['photo_url'] as String?,
+      photoKey: json['photo_key'] as String?,
       medicalNotes: json['medical_notes'] as String?,
       isActive: json['is_active'] as bool? ?? true,
     );
@@ -83,6 +90,7 @@ class Pet {
         'sex': sex,
         'weight_kg': weightKg,
         'photo_url': photoUrl,
+        'photo_key': photoKey,
         'medical_notes': medicalNotes,
         'is_active': isActive,
       };
@@ -97,8 +105,12 @@ class Pet {
     String? sex,
     double? weightKg,
     String? photoUrl,
+    String? photoKey,
     String? medicalNotes,
     bool? isActive,
+    // `??` cannot express "set this back to null", which is exactly what
+    // removing a pet's photo needs.
+    bool clearPhotoKey = false,
   }) =>
       Pet(
         id: id,
@@ -110,6 +122,7 @@ class Pet {
         sex: sex ?? this.sex,
         weightKg: weightKg ?? this.weightKg,
         photoUrl: photoUrl ?? this.photoUrl,
+        photoKey: clearPhotoKey ? null : (photoKey ?? this.photoKey),
         medicalNotes: medicalNotes ?? this.medicalNotes,
         isActive: isActive ?? this.isActive,
       );

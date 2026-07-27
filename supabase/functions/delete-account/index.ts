@@ -24,7 +24,7 @@ async function sha256Hex(s: string): Promise<string> {
 // scope (uploads = analysis inputs, memories = pet journal, chat = assistant
 // attachments) so erasure stays complete as surfaces grow.
 // No-op (0) if R2 isn't configured, so the deletion still completes.
-const USER_MEDIA_PREFIXES = ["uploads", "memories", "chat"];
+const USER_MEDIA_PREFIXES = ["uploads", "memories", "chat", "pets"];
 
 async function purgeUserUploads(uid: string): Promise<number> {
   const accountId = Deno.env.get("R2_ACCOUNT_ID");

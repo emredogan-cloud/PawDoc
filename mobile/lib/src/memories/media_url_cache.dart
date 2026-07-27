@@ -66,6 +66,12 @@ class MediaUrlService {
 
   /// Single-key convenience; null when the server refused to sign it.
   Future<String?> resolveOne(String key) async => (await resolve([key]))[key];
+
+  /// Forget a key's signed URL.
+  ///
+  /// Call when the object behind it is deleted or replaced — otherwise the
+  /// cached URL keeps a removed photo on screen until it expires.
+  void evict(String key) => _cache.remove(key);
 }
 
 /// Production signer: calls the `sign-media-url` Edge Function with the
