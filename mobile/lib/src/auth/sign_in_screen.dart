@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../config/legal_urls.dart';
@@ -13,6 +14,7 @@ import '../theme/app_assets.dart';
 import '../theme/app_theme.dart';
 import '../theme/paw_ui.dart';
 import 'auth_controller.dart';
+import 'google_sign_in_diagnosis.dart';
 
 /// Email + Apple sign-in. Auth providers are read lazily in callbacks (not in
 /// build) so the screen can render in tests without an initialized backend.
@@ -95,10 +97,19 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
     try {
       await ref.read(authControllerProvider).signInWithGoogle();
+    } on GoogleSignInException catch (e) {
+      // Say what actually went wrong. A configuration failure (package name or
+      // signing certificate not registered as an Android OAuth client) is not
+      // something a second tap can fix, so it points at email sign-in instead
+      // of inviting a pointless retry. See google_sign_in_diagnosis.dart.
+      _showError(diagnoseGoogleSignIn(
+        code: e.code.name,
+        description: e.description,
+      ).userMessage);
     } catch (e) {
       // Backing out of the Google sheet is a choice, not an error.
       if (!identical(e, AuthController.googleCancelled)) {
-        _showError('Google sign-in failed. Please try again.');
+        _showError('Google sign-in did not complete. Please try again.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);

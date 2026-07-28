@@ -8,6 +8,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/env.dart';
+import 'google_sign_in_diagnosis.dart';
 import 'supabase_providers.dart';
 
 final authControllerProvider = Provider<AuthController>((ref) {
@@ -47,6 +48,11 @@ class AuthController {
       return account.authentication.idToken;
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) return null;
+      // Never let Google's own diagnosis die here. This is the only place the
+      // code and description exist; the 2026-07-28 Play sign-in incident cost
+      // days precisely because they were discarded and the UI showed a generic
+      // "try again". See google_sign_in_diagnosis.dart.
+      logGoogleSignInFailure(e.code.name, e.description);
       rethrow;
     }
   }
