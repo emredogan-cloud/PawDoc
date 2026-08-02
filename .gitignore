@@ -132,3 +132,8 @@ pawdoc-prod-*.json
 # Google OAuth client downloads (contain client_secret) — the secret belongs in
 # the Supabase dashboard / Doppler, never in the repo.
 client_secret_*.json
+
+# Phase 0 UI asset pipeline: the raw generated plates (unexpanded placeholder
+# filenames, ~150 MB). Production assets are derived from these and committed;
+# the plates themselves stay local and must never reach the Flutter bundle.
+mobile/assets/_plates/
