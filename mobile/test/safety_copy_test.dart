@@ -236,6 +236,56 @@ void main() {
     });
   });
 
+  group('rule: the assistant never implies a veterinarian (V-23)', () {
+    test('no assistant surface claims a veterinary role', () {
+      // The mockups label it "AI Vet Assistant". The shipping app calls it
+      // "Assistant / Your pet-life companion", which is correct — this pins
+      // that a redesign pass does not adopt the mockup's title.
+      final assistant = _sourceFiles()
+          .where((f) => f.path.contains('/assistant/'))
+          .toList();
+      expect(assistant, isNotEmpty);
+      final hits = <String>[];
+      for (final f in assistant) {
+        final code = _codeOnly(f.readAsStringSync());
+        for (final p in [
+          RegExp(r'''["'][^"']*\bvet(erinary|erinarian)?\s+assistant[^"']*["']''',
+              caseSensitive: false),
+          RegExp(r'''["'][^"']*\bdr\.?\s*paw[^"']*["']''', caseSensitive: false),
+          RegExp(r'''["'][^"']*virtual vet[^"']*["']''', caseSensitive: false),
+        ]) {
+          for (final m in p.allMatches(code)) {
+            hits.add('${f.path}: "${m.group(0)}"');
+          }
+        }
+      }
+      expect(hits, isEmpty,
+          reason: 'the assistant is a companion, not a licensed professional; '
+              'implying otherwise invites reliance the product cannot carry\n'
+              '${hits.join('\n')}');
+    });
+
+    test('suggestion chips do not presuppose a condition (V-12)', () {
+      // The mockups seed the assistant with chips like "Why is my dog itching?"
+      // — which asserts a symptom before the owner has said anything. The
+      // shipping chips are lifestyle/care framed.
+      final src =
+          File('lib/src/assistant/assistant_screen.dart').readAsStringSync();
+      final code = _codeOnly(src);
+      for (final p in [
+        RegExp(r'''["'][^"']*why is my (dog|cat|pet)[^"']*["']''',
+            caseSensitive: false),
+        RegExp(r'''["'][^"']*(is|are) (my )?(dog|cat|pet) sick[^"']*["']''',
+            caseSensitive: false),
+        RegExp(r'''["'][^"']*what'?s wrong with[^"']*["']''', caseSensitive: false),
+      ]) {
+        expect(p.hasMatch(code), isFalse,
+            reason: 'a suggestion chip must not assert a symptom the owner has '
+                'not reported');
+      }
+    });
+  });
+
   group('rule: exported records carry provenance (V-22)', () {
     test('the report builder marks AI output and owner input separately', () {
       // A vet reading the exported report must be able to tell, line by line,

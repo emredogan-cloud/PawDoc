@@ -1,6 +1,6 @@
 # PawDoc — UI Implementation Roadmap
 
-**Status:** ✅ Phase 0 · ✅ A–H · ▶ I · ⏳ J–Q — **9 of 18 complete (50%)**
+**Status:** ✅ Phase 0 · ✅ A–I · ▶ J · ⏳ K–Q — **10 of 18 complete (56%)**
 **Branch:** one per phase; PRs #94 (Phase 0), #95 (A–F), current `ui-impl-phase-g-health`.
 **Inputs:** `new-interface/` (57 mockups) · `UI_ASSET_SPECIFICATION.md` · `UI_SAFETY_CONTRACT_REVIEW.md` · `UI_ASSET_PROMPT_LIBRARY.html` · `CLAUDE.md`
 **Working agreement:** one phase per PR, validate, report, **stop for approval** before the next.
@@ -376,7 +376,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### ▶ Phase I — AI assistant
+### ✅ Phase I — AI assistant
 
 **Screens:** `ai_assistant_home`, `ai_assistant_chat`, `conversation_history`, `ai_message_actions`
 **Widgets:** `assistant_screen`, `chat_controller`, `sse_client`
@@ -387,7 +387,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### ⏳ Phase J — Memories
+### ▶ Phase J — Memories
 
 **Screens:** `memories_gallery`, `memory_detail`, `add_memory`, `search_memories`
 **Assets:** `mem-buddy-01..24`, `map-memory-location`
@@ -495,7 +495,8 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 | E | `6b5f7da` | `safety_copy_test` tripwire; `PawBackground` follows system |
 | F | `4d272e2` | D-1 pinned; third rule-4 violation found in `emergency_hub` |
 | G | `76e3ab4` | **App-wide System B `ColorScheme`** — every Material widget migrates at once; V-22 provenance markers in the exported report |
-| H | *(this branch)* | Species art wired — `AppAssets.species()` pointed at an **empty** folder, so every chip/avatar had silently fallen back to emoji since M2 |
+| H | `fb2c6f6` + | Species art wired — `AppAssets.species()` pointed at an **empty** folder, so every chip/avatar had silently fallen back to emoji since M2. Primary CTA + `secondaryContainer` migrated |
+| I | *(this branch)* | **System B declared at the app root** — pushed routes sit above the shell's scope, so every detail screen was still resolving to `legacy`. Assistant audited clean; V-12/V-23 pinned |
 
 **Discovery recorded during G (no stop):** the app-wide theme flip was the
 highest-leverage remaining change and is what makes H–P re-skins rather than

@@ -9,7 +9,7 @@ Resume file for the UI migration. Read this first; the roadmap
 
 ## Status
 
-**9 of 18 complete (50%).** ✅ Phase 0 · A–H — ▶ I — ⏳ J–Q
+**10 of 18 complete (56%).** ✅ Phase 0 · A–I — ▶ J — ⏳ K–Q
 
 | PR | Contents | CI |
 |---|---|---|
@@ -49,7 +49,8 @@ the confidence scan, because `AnalysisResult` must keep parsing the wire value).
 | E | `6b5f7da` | `safety_copy_test`; `PawBackground` follows `PawSystemScope` |
 | F | `4d272e2` | D-1 pinned on emergency surfaces |
 | G | `76e3ab4` | **App-wide System B `ColorScheme`**; V-22 provenance markers in the exported report |
-| H | *(branch)* | Species art wired; `AppAssets.species()` had pointed at an empty folder since M2 |
+| H | `fb2c6f6` | Species art wired; `AppAssets.species()` had pointed at an empty folder since M2. Primary CTA + `secondaryContainer` migrated |
+| I | *(branch)* | **System B declared at the app root** (pushed routes sit above the shell scope). Assistant audited clean; V-12/V-23 pinned |
 
 ---
 
@@ -69,7 +70,7 @@ the confidence scan, because `AnalysisResult` must keep parsing the wire value).
 
 1. **Two agreeing paths to System B.** The Material `ColorScheme` (Phase G) and `PawSystemScope`/`PawTone` both resolve to the same values. Screens migrate by *either* route, so most remaining phases are re-skins, not rewrites.
 2. **Change the primitive, not the screen.** `PawCard` and `PawBackground` each migrated every consumer in one commit. Prefer that over per-screen edits.
-3. **`PawSystem.legacy` is the escape hatch** for anything not yet migrated; onboarding must declare `PawSystem.a` so its navy/emerald never leaks (Phase P).
+3. **Declare the system at the app root, not the shell.** A pushed route is inserted into the Navigator that *owns* RootShell, above any scope the shell provides — detail screens silently stayed `legacy` until `app.dart` declared it. Onboarding must override to `PawSystem.a` so its navy/emerald never leaks (Phase P).
 4. **Keys are contracts.** Home tests address widgets by key; preserve them verbatim when restyling.
 5. **Lucide is font-based**, so `color` behaves exactly like `currentColor` — the emergency red colourway is a colour argument, never a second asset set.
 
