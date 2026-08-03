@@ -236,6 +236,26 @@ void main() {
     });
   });
 
+  group('rule: exported records carry provenance (V-22)', () {
+    test('the report builder marks AI output and owner input separately', () {
+      // A vet reading the exported report must be able to tell, line by line,
+      // what a model produced from what the owner typed. Without the markers
+      // the sections render identically and an AI observation can be read as a
+      // clinical finding.
+      final src = File('lib/src/export/health_report.dart').readAsStringSync();
+      expect(src.contains('Source: PawDoc AI'), isTrue,
+          reason: 'AI-derived sections must be labelled');
+      expect(src.contains('Not examined by a veterinarian'), isTrue,
+          reason: 'the report must not imply veterinary review');
+      expect(src.contains('Source: entered by the owner'), isTrue,
+          reason: 'owner-recorded sections must be labelled');
+      // "Primary concern" reads as a finding; the contract allows an
+      // observation only.
+      expect(src.contains('Primary concern'), isFalse,
+          reason: 'describe what was observed, never a concern/finding');
+    });
+  });
+
   group('rule: the disclaimer is API-injected, never hardcoded on', () {
     test('the result screens gate the disclaimer on the payload flag', () {
       for (final path in [

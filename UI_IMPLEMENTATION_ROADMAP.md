@@ -1,7 +1,7 @@
 # PawDoc — UI Implementation Roadmap
 
-**Status:** Phase 0 complete (committed, CI green). Phases A–Q awaiting approval.
-**Branch:** `ui-impl-phase0-assets` → one branch per phase thereafter.
+**Status:** ✅ Phase 0 · ✅ A · ✅ B · ✅ C · ✅ D · ✅ E · ✅ F · ✅ G · ▶ H · ⏳ I–Q — **8 of 18 complete (44%)**
+**Branch:** one per phase; PRs #94 (Phase 0), #95 (A–F), current `ui-impl-phase-g-health`.
 **Inputs:** `new-interface/` (57 mockups) · `UI_ASSET_SPECIFICATION.md` · `UI_SAFETY_CONTRACT_REVIEW.md` · `UI_ASSET_PROMPT_LIBRARY.html` · `CLAUDE.md`
 **Working agreement:** one phase per PR, validate, report, **stop for approval** before the next.
 
@@ -259,7 +259,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase A — Design system (System A + B ramps)
+### ✅ Phase A — Design system (System A + B ramps)
 
 | | |
 |---|---|
@@ -274,7 +274,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase B — Shared widget library
+### ✅ Phase B — Shared widget library
 
 | | |
 |---|---|
@@ -289,7 +289,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase C — Navigation shell + safety wave S0
+### ✅ Phase C — Navigation shell + safety wave S0
 
 | | |
 |---|---|
@@ -305,7 +305,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase D — Home (`010-home-page`) + safety wave S1a
+### ✅ Phase D — Home (`010-home-page`) + safety wave S1a
 
 | | |
 |---|---|
@@ -321,7 +321,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase E — AI triage flow + safety wave S1b (highest risk)
+### ✅ Phase E — AI triage flow + safety wave S1b (highest risk)
 
 | | |
 |---|---|
@@ -337,7 +337,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase F — Emergency & first aid (S0 completion)
+### ✅ Phase F — Emergency & first aid (S0 completion)
 
 | | |
 |---|---|
@@ -353,7 +353,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase G — Health records
+### ✅ Phase G — Health records
 
 **Screens:** `health_timeline`, `add_health_record`, `vaccination_manager`, `medication_tracker`, `weight_tracking`, `pdf_health_report_preview`, `pet_statistics`, `prepare_for_vet_visit`
 **Widgets:** `history_timeline_screen`, `health_event_form_screen`, `vet_visit_prep_screen`, `export/`
@@ -365,7 +365,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase H — Pets & profile
+### ▶ Phase H — Pets & profile
 
 **Screens:** `pet_profile`, `edit_pet`, `manage_multiple_pets`, `add_memory` entry points
 **Widgets:** `pets_list_screen`, `pet_form_screen`, `pet_photo_crop_screen`, `PetDisplay`, `LivingPetAvatar`
@@ -376,7 +376,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase I — AI assistant
+### ⏳ Phase I — AI assistant
 
 **Screens:** `ai_assistant_home`, `ai_assistant_chat`, `conversation_history`, `ai_message_actions`
 **Widgets:** `assistant_screen`, `chat_controller`, `sse_client`
@@ -387,7 +387,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase J — Memories
+### ⏳ Phase J — Memories
 
 **Screens:** `memories_gallery`, `memory_detail`, `add_memory`, `search_memories`
 **Assets:** `mem-buddy-01..24`, `map-memory-location`
@@ -395,7 +395,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase K — Lifestyle (walks, weather, baseline)
+### ⏳ Phase K — Lifestyle (walks, weather, baseline)
 
 **Screens:** `smart_walks`, `weather_walk_advisor`, `know_your_baseline`
 **Assets:** `ic-wx-*` (8), `map-walk-route-live`, `map-route-thumb-*`, achievement badges (21)
@@ -403,7 +403,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase L — Encyclopedia
+### ⏳ Phase L — Encyclopedia
 
 **Screens:** `breed_encyclopedia`, `breed_detail`
 **Assets:** `bre-*`, `ic-care-*` (12) · **Gaps G-4, G-6 apply**
@@ -411,7 +411,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase M — Community
+### ⏳ Phase M — Community
 
 **Screens:** `community_feed`, `community_post_detail`, `create_post`, `nearby_pet_owners`
 **Assets:** `cmn-*`, `avt-*` (17), `map-community-neighbourhood` · **Gaps G-5, G-7 apply**
@@ -419,7 +419,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase N — Premium & monetization
+### ⏳ Phase N — Premium & monetization
 
 **Screens:** `premium_home`, `subscription_plans`, `upgrade_benefits`, `usage_limits`
 **Assets:** `prm-3d-*` (13), `ic-benefit-*` (8), `bdg-*`
@@ -429,7 +429,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase O — Account & settings
+### ⏳ Phase O — Account & settings
 
 **Screens:** `profile`, `account_management`, `privacy_security`, `notifications`, `reminder_detail`
 **Assets:** `ic-notif-*` (6), `prm-3d-shield-lock`, `bdg-verified-*`
@@ -438,7 +438,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase P — Onboarding (System A)
+### ⏳ Phase P — Onboarding (System A)
 
 **Screens:** `000`, `002`–`009` (9)
 **Assets:** `onb-*` (14) · **Gaps G-8, G-9 apply**
@@ -449,7 +449,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### Phase Q — Hardening, device validation, final report
+### ⏳ Phase Q — Hardening, device validation, final report
 
 **Objective:** close S2/S3/S4, full-matrix device pass, produce `UI_IMPLEMENTATION_FINAL_REPORT.md`.
 
@@ -480,6 +480,26 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 ```
 
 **Squash-merge only** — `main` is protected (linear history + review).
+
+---
+
+## 5a. Execution log
+
+| Phase | Commits | Notes |
+|---|---|---|
+| 0 | `d17f02a` | 291 assets from 110 placeholder-named plates |
+| A | `2eac156` | Both ramps + `PawSystem`; light-mode lime corrected to `#4D7C0F` |
+| B | `e88a3b9` | 13 primitives; caught a 42dp touch target |
+| C | `6e45e39` | Emergency permanent destination (C-7/V-24 resolved) |
+| D | `00924e7`, `9d846d9` | Pill grid; `PawCard` migrated all consumers |
+| E | `6b5f7da` | `safety_copy_test` tripwire; `PawBackground` follows system |
+| F | `4d272e2` | D-1 pinned; third rule-4 violation found in `emergency_hub` |
+| G | *(this branch)* | **App-wide System B `ColorScheme`** — every Material widget migrates at once; V-22 provenance markers in the exported report |
+
+**Discovery recorded during G (no stop):** the app-wide theme flip was the
+highest-leverage remaining change and is what makes H–P re-skins rather than
+rewrites. Screens now inherit System B through *two* agreeing paths — the
+Material `ColorScheme` and `PawSystemScope`/`PawTone`.
 
 ---
 

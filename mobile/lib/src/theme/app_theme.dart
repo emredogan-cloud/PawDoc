@@ -25,28 +25,38 @@ class AppTheme {
       brightness: brightness,
     );
 
+    // System B is now the app-wide scheme (roadmap Phase G). Flipping it here
+    // rather than screen by screen is the point of a token system: every
+    // Material widget — Card, Chip, ListTile, Dialog, TextField, SnackBar —
+    // follows without being touched, including the screens whose own phases
+    // have not run yet. Screens still composing from PawCard/PawTone pick the
+    // same values up through PawSystemScope, so the two paths agree.
+    //
+    // `secondary` stays amber and `error` stays the emergency hue: those are
+    // safety-locked (MONITOR / GET_HELP_NOW) and are not the redesign's to move.
     final scheme = isDark
         ? base.copyWith(
-            primary: AppColors.teal300Dark, // mint primary (matches today's pills)
-            onPrimary: AppColors.ink900,
-            primaryContainer: AppColors.teal50Dark,
-            onPrimaryContainer: AppColors.teal300Dark,
+            primary: AppColors.lime500,
+            onPrimary: const Color(0xFF0A0F06), // dark ink on a bright accent
+            primaryContainer: const Color(0xFF1B2A0A),
+            onPrimaryContainer: AppColors.lime400,
             secondary: AppColors.amber500Dark,
             tertiary: AppColors.coral400Dark,
-            surface: AppColors.ink850,
+            surface: AppColors.carbon850,
             onSurface: AppColors.ink50,
             onSurfaceVariant: AppColors.ink300,
-            surfaceContainerLowest: AppColors.ink900,
-            surfaceContainerLow: AppColors.ink850,
-            surfaceContainer: AppColors.ink800,
-            surfaceContainerHigh: AppColors.ink700,
-            surfaceContainerHighest: AppColors.ink700,
-            outline: AppColors.ink600,
-            outlineVariant: AppColors.ink600,
+            surfaceContainerLowest: AppColors.carbon900,
+            surfaceContainerLow: AppColors.carbon850,
+            surfaceContainer: AppColors.carbon850,
+            surfaceContainerHigh: AppColors.carbon800,
+            surfaceContainerHighest: AppColors.carbon800,
+            outline: AppColors.carbon700,
+            outlineVariant: AppColors.carbon700,
             error: AppColors.emergencyDark,
           )
         : base.copyWith(
-            primary: AppColors.teal600Light,
+            // Never lime500 here: it is 1.51:1 on white. See design_tokens.
+            primary: AppColors.lime700OnLight,
             secondary: AppColors.amber500Light,
             tertiary: AppColors.coral400Light,
             surface: AppColors.lightSurface,
@@ -63,14 +73,14 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor:
-          isDark ? AppColors.ink900 : AppColors.lightBackground,
+          isDark ? AppColors.carbon900 : AppColors.lightBackground,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
         scrolledUnderElevation: 0.5,
         backgroundColor:
-            isDark ? AppColors.ink900 : AppColors.lightBackground,
+            isDark ? AppColors.carbon900 : AppColors.lightBackground,
         foregroundColor: isDark ? AppColors.ink50 : AppColors.lightText,
         titleTextStyle:
             textTheme.titleLarge?.copyWith(color: isDark ? AppColors.ink50 : AppColors.lightText),
