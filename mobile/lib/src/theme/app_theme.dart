@@ -41,6 +41,10 @@ class AppTheme {
             primaryContainer: const Color(0xFF1B2A0A),
             onPrimaryContainer: AppColors.lime400,
             secondary: AppColors.amber500Dark,
+            // Left derived from the teal seed until now, which is why the
+            // breed-insight card stayed teal after the scheme flip.
+            secondaryContainer: AppColors.carbon800,
+            onSecondaryContainer: AppColors.ink50,
             tertiary: AppColors.coral400Dark,
             surface: AppColors.carbon850,
             onSurface: AppColors.ink50,

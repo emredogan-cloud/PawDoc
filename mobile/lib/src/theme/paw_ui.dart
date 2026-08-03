@@ -194,10 +194,18 @@ class _PawPrimaryButtonState extends State<PawPrimaryButton> {
   Widget build(BuildContext context) {
     final enabled = widget.onPressed != null;
     final cream = widget.variant == PawSurface.cream;
-    final fg = cream ? Colors.white : PawPalette.bgBottom;
+    final fg = cream ? Colors.white : const Color(0xFF0A0F06);
+    // Follows the active system: this button is the primary CTA on most
+    // screens, so leaving it mint kept the teal palette visible everywhere the
+    // scheme flip had already landed.
+    final system = PawSystemScope.of(context);
     final gradientColors = cream
         ? const [Color(0xFF2FA28E), Color(0xFF1B7565)]
-        : const [PawPalette.mint, PawPalette.teal];
+        : switch (system) {
+            PawSystem.b => const [AppColors.lime400, AppColors.lime600],
+            PawSystem.a => const [AppColors.emerald400, AppColors.emerald500],
+            PawSystem.legacy => const [PawPalette.mint, PawPalette.teal],
+          };
     final label = DefaultTextStyle.merge(
       style: Theme.of(context).textTheme.labelLarge?.copyWith(
             color: fg,
