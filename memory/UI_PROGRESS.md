@@ -3,13 +3,13 @@
 Resume file for the UI migration. Read this first; the roadmap
 (`UI_IMPLEMENTATION_ROADMAP.md`) carries the per-phase detail.
 
-**Last updated:** 2026-08-03 · after Phase G
+**Last updated:** 2026-08-03 · after Phase Q (all phases complete)
 
 ---
 
 ## Status
 
-**16 of 18 complete (89%).** ✅ Phase 0 · A–O — ▶ P — ⏳ Q
+**18 of 18 complete (100%).** ✅ Phase 0 · A–Q
 
 | PR | Contents | CI |
 |---|---|---|
@@ -51,7 +51,7 @@ the confidence scan, because `AnalysisResult` must keep parsing the wire value).
 | G | `76e3ab4` | **App-wide System B `ColorScheme`**; V-22 provenance markers in the exported report |
 | H | `fb2c6f6` | Species art wired; `AppAssets.species()` had pointed at an empty folder since M2. Primary CTA + `secondaryContainer` migrated |
 | I | `dc84714` | **System B declared at the app root** (pushed routes sit above the shell scope). Assistant audited clean; V-12/V-23 pinned |
-| J–O | *(branch)* | **Accent palette repointed** — one change migrated ~120 call sites across memories, encyclopedia, walks, reminders, community, premium, account |
+| J–O | `5ecff02` | **Accent palette repointed** — one change migrated ~120 call sites across memories, encyclopedia, walks, reminders, community, premium, account |
 
 ---
 
@@ -98,4 +98,4 @@ the confidence scan, because `AnalysisResult` must keep parsing the wire value).
 
 ## Remaining
 
-▶ **P** Onboarding (9) — **must override to `PawSystem.a`**; the accent palette now resolves to lime, so onboarding will render lime instead of emerald/cyan until it declares its system. · ⏳ **Q** Hardening + final report.
+All phases complete. Remaining work is owner-gated: D-4 asset regeneration (6 gaps), D-5 payment marks, and per-screen mockup parity for the layout-level redesign (see PAWDOC_UI_IMPLEMENTATION_FINAL_REPORT.md §5).
