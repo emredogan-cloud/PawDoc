@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 
 import '../theme/design_tokens.dart';
 import '../theme/paw_components.dart';
+import '../theme/ui_assets.dart';
 
 /// System A presentation layer for onboarding.
 ///
@@ -694,4 +695,135 @@ class OnbSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       PawSystemScope(system: PawSystem.a, child: OnbBackdrop(child: child));
+}
+
+// ---------------------------------------------------------------------------
+// Device mockup
+// ---------------------------------------------------------------------------
+
+/// A real iPhone frame with live Flutter content inside its screen.
+///
+/// The frame is the supplied `onb-device-iphone-frame` plate, trimmed to the
+/// device itself — the original carried ~45% empty margin, which squeezed the
+/// usable screen down to about 120dp and made any content inside unreadable.
+///
+/// Content is a live child rather than a baked screenshot: the copy inside
+/// these mockups is safety-relevant, so it has to stay translatable, scalable
+/// and reachable by a screen reader.
+class OnbPhoneMockup extends StatelessWidget {
+  const OnbPhoneMockup({
+    required this.child,
+    this.height = 380,
+    this.glow = AppColors.cyan400,
+    super.key,
+  });
+
+  final Widget child;
+  final double height;
+  final Color glow;
+
+  /// Screen aperture as a fraction of the trimmed frame, measured off the
+  /// asset's white screen area.
+  static const _l = 0.041, _r = 0.959, _t = 0.021, _b = 0.979;
+
+  @override
+  Widget build(BuildContext context) {
+    final w = height * (509 / 1100);
+    return SizedBox(
+      width: w,
+      height: height,
+      child: Stack(
+        children: [
+          // Bloom behind the device, as the mockups light it.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                        color: glow.withValues(alpha: 0.30),
+                        blurRadius: 44,
+                        spreadRadius: -6),
+                  ],
+                  borderRadius: BorderRadius.circular(w * 0.14),
+                ),
+              ),
+            ),
+          ),
+          // Screen content, clipped to the aperture and sitting under the frame
+          // so the bezel and the notch draw over it.
+          Positioned(
+            left: w * _l,
+            right: w * (1 - _r),
+            top: height * _t,
+            bottom: height * (1 - _b),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(w * 0.115),
+              child: ColoredBox(
+                color: const Color(0xFF060C16),
+                child: MediaQuery(
+                  // The mockup is a picture of an app, not the app: freeze text
+                  // scaling so the user's accessibility setting cannot reflow
+                  // a decorative screenshot into an overflow.
+                  data: MediaQuery.of(context).copyWith(
+                      textScaler: const TextScaler.linear(1.0)),
+                  child: child,
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Image.asset(
+                UiAssets.onbDeviceFrameTrimmed,
+                fit: BoxFit.fill,
+                excludeFromSemantics: true,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The cyan light ribbon that sweeps behind the hero on `002`.
+class OnbSwoosh extends StatelessWidget {
+  const OnbSwoosh({this.color = AppColors.cyan300, super.key});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+      child: CustomPaint(painter: _SwooshPainter(color), size: Size.infinite));
+}
+
+class _SwooshPainter extends CustomPainter {
+  const _SwooshPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    for (final (stroke, alpha, blur) in [(9.0, 0.20, 16.0), (3.4, 0.95, 3.0)]) {
+      final p = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round
+        ..color = color.withValues(alpha: alpha)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur);
+      // An S that passes behind the subject: in at the upper left, out at the
+      // lower right.
+      final path = Path()
+        ..moveTo(w * 0.02, h * 0.44)
+        ..cubicTo(w * 0.16, h * 0.16, w * 0.44, h * 0.20, w * 0.52, h * 0.46)
+        ..cubicTo(w * 0.60, h * 0.72, w * 0.86, h * 0.74, w * 0.99, h * 0.58);
+      canvas.drawPath(path, p);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SwooshPainter old) => old.color != color;
 }

@@ -10,7 +10,10 @@ void main() {
     await tester.pumpWidget(
       const ProviderScope(child: MaterialApp(home: OnboardingFlow())),
     );
-    expect(find.text('A calm, clear read on your pet\'s symptoms — in seconds.'), findsOneWidget);
+    // Copy now follows mockup 002 verbatim.
+    expect(
+        find.textContaining('understand your pet', findRichText: true),
+        findsWidgets);
     expect(find.byKey(const Key('onb_get_started')), findsOneWidget);
   });
 

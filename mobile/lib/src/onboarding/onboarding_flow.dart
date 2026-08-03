@@ -170,28 +170,55 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   // 1 · Value hook (mockup 002)
   // -------------------------------------------------------------------------
   Widget _valueHook() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s8),
+        const SizedBox(height: AppSpace.s4),
         const OnbHeadline('Every pet deserves', 'calm, informed care.'),
         const SizedBox(height: AppSpace.s12),
         const OnbSubtitle(
-            'A calm, clear read on your pet\'s symptoms — in seconds.'),
+            'PawDoc helps you understand your pet\'s health and make the best '
+            'decisions, together.'),
+
+        // Hero stage: the pets sit whole and uncropped, with the cyan ribbon
+        // sweeping behind them and a labelled glyph on each side — the
+        // composition the reference builds, not just the photo.
+        const SizedBox(height: AppSpace.s8),
+        const _ValueHeroStage(),
+
+        // Shield badge overlapping the top edge of the trust card.
         const SizedBox(height: AppSpace.s20),
-        const Center(child: OnbHero(UiAssets.onbHeroDogCatHalo, height: 250)),
-        const SizedBox(height: AppSpace.s20),
-        const OnbPanel(
-          child: OnbTrustRow(items: [
-            (Icons.verified_user_outlined, 'Built on care', 'Guidance, never a diagnosis.'),
-            (Icons.lock_outline_rounded, 'Your data is private', 'You choose what to share.'),
-            (Icons.support_agent_rounded, 'We\'re here to help', 'Day or night.'),
-          ]),
-        ),
+        const _TrustCard(),
+
         ..._footer(OnbCta(
           key: const Key('onb_get_started'),
           label: 'Let\'s Continue',
           onPressed: _advance,
         )),
         const SizedBox(height: AppSpace.s8),
-        const OnbFooterNote('Emergency guidance is always free.'),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          const Icon(Icons.verified_user_outlined,
+              size: 16, color: AppColors.emerald500),
+          const SizedBox(width: 6),
+          Text.rich(
+            TextSpan(children: [
+              TextSpan(
+                  text: 'Always ',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: const Color(0xFF8C97A8))),
+              TextSpan(
+                  text: 'free',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.emerald400,
+                      fontWeight: FontWeight.w700)),
+              TextSpan(
+                  text: ' emergency guidance.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: const Color(0xFF8C97A8))),
+            ]),
+          ),
+        ]),
       ]);
 
   // -------------------------------------------------------------------------
@@ -814,6 +841,238 @@ class _CompareCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// `002`'s hero stage: the pets whole and uncropped, the cyan ribbon sweeping
+/// behind them, and a labelled glyph on each side.
+///
+/// The photo is deliberately NOT edge-faded here — the reference shows the
+/// animals complete, sitting on their own dark ground, and a radial mask would
+/// eat their paws.
+class _ValueHeroStage extends StatelessWidget {
+  const _ValueHeroStage();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 356,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Faint watermarks, as the reference layers behind the subject.
+          const Positioned(
+            left: 6,
+            top: 14,
+            child: Icon(Icons.favorite_border_rounded,
+                size: 44, color: Color(0x14FFFFFF)),
+          ),
+          const Positioned(
+            right: 10,
+            top: 74,
+            child: Icon(Icons.add_rounded, size: 52, color: Color(0x12FFFFFF)),
+          ),
+          const Positioned(
+            right: 18,
+            bottom: 96,
+            child: Icon(Icons.pets_rounded, size: 40, color: Color(0x12A3E635)),
+          ),
+          // The subject, uncropped, with its plate edges dissolved into the
+          // canvas. The photo is opaque and rectangular; the reference has no
+          // seam, so the top and sides fade while the BOTTOM is left intact —
+          // a symmetric mask would eat the paws.
+          Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Image.asset(
+                  UiAssets.onbHeroPuppyKittenSeated,
+                  height: 330,
+                  fit: BoxFit.contain,
+                  excludeFromSemantics: true,
+                  errorBuilder: (_, _, _) => const Icon(Icons.pets_rounded,
+                      size: 120, color: AppColors.emerald400),
+                ),
+                const Positioned.fill(child: _PlateEdgeFade()),
+              ],
+            ),
+          ),
+          // The ribbon sweeps in FRONT of the subject, as the reference draws
+          // it — behind the photo it would simply be hidden by an opaque plate.
+          const Positioned.fill(child: IgnorePointer(child: OnbSwoosh())),
+          const Positioned(
+            left: 0,
+            top: 96,
+            child: _SideNote(
+              icon: Icons.pets_rounded,
+              tint: AppColors.emerald400,
+              lines: ['Stronger bond,', 'healthier life.'],
+            ),
+          ),
+          const Positioned(
+            right: 0,
+            top: 40,
+            child: _SideNote(
+              icon: Icons.monitor_heart_outlined,
+              tint: AppColors.cyan300,
+              lines: ['Build trust', 'with every', 'moment.'],
+              alignEnd: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A circled glyph with a short caption beneath it, flanking the hero.
+class _SideNote extends StatelessWidget {
+  const _SideNote({
+    required this.icon,
+    required this.tint,
+    required this.lines,
+    this.alignEnd = false,
+  });
+
+  final IconData icon;
+  final Color tint;
+  final List<String> lines;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context)
+        .textTheme
+        .bodySmall
+        ?.copyWith(color: Colors.white, height: 1.25, fontSize: 12.5);
+    return Column(
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 62,
+          height: 62,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.03),
+            border: Border.all(color: tint.withValues(alpha: 0.35)),
+          ),
+          child: Icon(icon, size: 26, color: tint),
+        ),
+        const SizedBox(height: 6),
+        for (final l in lines)
+          Text(l,
+              textAlign: alignEnd ? TextAlign.right : TextAlign.left,
+              style: style),
+      ],
+    );
+  }
+}
+
+/// `002`'s social-proof card, with the shield badge straddling its top edge.
+class _TrustCard extends StatelessWidget {
+  const _TrustCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 26),
+          child: OnbPanel(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpace.s12, AppSpace.s24, AppSpace.s12, AppSpace.s16),
+            child: Column(children: [
+              Text.rich(
+                TextSpan(children: [
+                  TextSpan(
+                      text: 'Join thousands of pet parents\nalready using ',
+                      style: text.titleSmall
+                          ?.copyWith(color: Colors.white, height: 1.35)),
+                  TextSpan(
+                      text: 'PawDoc.',
+                      style: text.titleSmall?.copyWith(
+                          color: AppColors.emerald400,
+                          fontWeight: FontWeight.w700)),
+                ]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppSpace.s16),
+              const OnbTrustRow(items: [
+                (Icons.verified_user_outlined, 'Trusted by pet parents', null),
+                (Icons.lock_outline_rounded, 'Your data is private', null),
+                (Icons.support_agent_rounded, 'We\'re here to help', null),
+              ]),
+            ]),
+          ),
+        ),
+        // The badge overlaps the card's top edge in the reference.
+        Container(
+          width: 54,
+          height: 58,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.emerald400.withValues(alpha: 0.45),
+                AppColors.emerald500.withValues(alpha: 0.18),
+              ],
+            ),
+            borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12), bottom: Radius.circular(27)),
+            border: Border.all(
+                color: AppColors.emerald400.withValues(alpha: 0.85), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                  color: AppColors.emerald500.withValues(alpha: 0.40),
+                  blurRadius: 20,
+                  spreadRadius: -4),
+            ],
+          ),
+          child: const Icon(Icons.pets_rounded, size: 26, color: Colors.white),
+        ),
+      ],
+    );
+  }
+}
+
+
+/// Dissolves the top and side edges of an opaque photo plate into the canvas,
+/// leaving the bottom untouched.
+///
+/// The onboarding heroes came back as rectangles on a rendered background
+/// rather than as cut-outs. A radial mask would fade all four sides equally and
+/// clip the animals' feet, so the fades are drawn as canvas-coloured overlays
+/// on three edges only.
+class _PlateEdgeFade extends StatelessWidget {
+  const _PlateEdgeFade();
+
+  static const _bg = AppColors.navy900;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget edge(Alignment begin, Alignment end, double extent) => DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: begin,
+              end: end,
+              colors: const [_bg, Color(0x00050B14)],
+              stops: [0.0, extent],
+            ),
+          ),
+        );
+    return IgnorePointer(
+      child: Stack(children: [
+        Positioned.fill(child: edge(Alignment.centerLeft, Alignment.centerRight, 0.22)),
+        Positioned.fill(child: edge(Alignment.centerRight, Alignment.centerLeft, 0.22)),
+        Positioned.fill(child: edge(Alignment.topCenter, Alignment.bottomCenter, 0.16)),
+      ]),
     );
   }
 }

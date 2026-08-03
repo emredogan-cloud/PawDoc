@@ -125,6 +125,7 @@ abstract final class UiAssets {
   static const String mapRouteThumb03 = 'assets/images/maps/map-route-thumb-03@3x.webp';
   static const String mapWalkRouteLive = 'assets/images/maps/map-walk-route-live@3x.webp';
   static const String onbCollisionNotequal = 'assets/images/onboarding/devices/onb-collision-notequal@3x.png';
+  static const String onbDeviceFrameTrimmed = 'assets/images/onboarding/devices/onb-device-frame-trimmed@3x.png';
   static const String onbDeviceIphoneFrame = 'assets/images/onboarding/devices/onb-device-iphone-frame@3x.png';
   static const String onbGlyphBellNeon = 'assets/images/onboarding/devices/onb-glyph-bell-neon@3x.png';
   static const String onbGlyphBrainNeon = 'assets/images/onboarding/devices/onb-glyph-brain-neon@3x.png';
