@@ -185,6 +185,10 @@ flutter:
     - assets/images/memories/
     - assets/images/onboarding/
     - assets/images/onboarding/devices/
+    # Flutter does not recurse into sub-directories — each one is declared or
+    # its files never reach the bundle (the app-open screen rendered fallback
+    # icons until this line existed).
+    - assets/images/onboarding/firstrun/
     - assets/images/pets/
     - assets/images/pets/cast/
     - assets/images/premium/

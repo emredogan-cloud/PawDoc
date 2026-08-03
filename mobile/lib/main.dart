@@ -8,6 +8,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'src/app.dart';
+import 'src/router/app_router.dart';
 import 'src/config/env.dart';
 import 'src/core/consent_prefs.dart';
 import 'src/notifications/local_notifications.dart';
@@ -152,7 +153,11 @@ Future<void> _initAndRun() async {
       runApp(const _MissingConfigApp());
       return;
     }
-    runApp(const ProviderScope(child: PawDocApp()));
+    // Load the first-run flag before the first frame: go_router's redirect
+    // reads it synchronously, and a late load would flash the gateway at a
+    // brand-new install before bouncing it to /welcome.
+    FirstRun.load().whenComplete(
+        () => runApp(const ProviderScope(child: PawDocApp())));
   }
 
   // Initialize Sentry early to capture dev-time crashes (Phase 1.1 deliverable).

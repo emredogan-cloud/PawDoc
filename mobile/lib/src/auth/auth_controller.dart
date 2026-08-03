@@ -124,6 +124,14 @@ class AuthController {
     return _client.auth.updateUser(UserAttributes(password: newPassword));
   }
 
+  /// Guest session — the "Get Started" path on the auth gateway.
+  ///
+  /// A real Supabase anonymous user, not a local flag: every user-scoped table
+  /// is behind RLS keyed on `auth.uid()`, so a guest needs an actual JWT or it
+  /// could neither read nor write its own pet. Upgrading later (linking an
+  /// email or Google identity) keeps the same uid, so nothing has to migrate.
+  Future<void> continueAsGuest() => _client.auth.signInAnonymously();
+
   Future<void> signOut() => _client.auth.signOut();
 
   static String _generateNonce([int length = 32]) {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../auth/recovery_screen.dart';
@@ -11,6 +12,8 @@ import '../auth/supabase_providers.dart';
 import '../capture/camera_screen.dart';
 import '../core/root_shell.dart';
 import '../health/history_timeline_screen.dart';
+import '../onboarding/auth_gateway_screen.dart';
+import '../onboarding/first_run_screen.dart';
 import '../onboarding/onboarding_flow.dart';
 import '../pets/pets_list_screen.dart';
 import '../text_input/symptom_text_screen.dart';
@@ -37,17 +40,69 @@ class GoRouterRefreshStream extends ChangeNotifier {
 /// a Supabase client (ENG-02/QA-02: the most brittle navigation logic in the
 /// app used to be exercised only through mocks or not at all).
 /// Returns the location to redirect to, or null to stay.
+/// Routes that a signed-out user is allowed to sit on.
+///
+/// The first-run journey runs BEFORE authentication: app-open (`0001`) →
+/// onboarding (`002`–`009`) → the auth gateway (`000`). Sending an
+/// unauthenticated user straight to `/sign-in` would skip all of it, so these
+/// four are exempt from the auth redirect.
+/// Whether the app-open + onboarding journey has been seen.
+///
+/// Cached in memory and loaded once at startup: go_router's redirect runs on
+/// every navigation, and hitting disk there would add latency to each one.
+class FirstRun {
+  const FirstRun._();
+
+  static const _key = 'first_run_done';
+  static bool _done = false;
+
+  static bool get done => _done;
+
+  static Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    _done = prefs.getBool(_key) ?? false;
+  }
+
+  /// Called when the user reaches the auth gateway — the journey is over
+  /// whether they signed up, skipped, or backed out to sign in.
+  static Future<void> markDone() async {
+    if (_done) return;
+    _done = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_key, true);
+  }
+}
+
+const _preAuthRoutes = {
+  '/welcome',
+  '/onboarding',
+  '/auth-gateway',
+  '/sign-in',
+};
+
 String? computeRedirect({
   required bool inRecovery,
   required bool loggedIn,
   required String location,
+  bool firstRunDone = true,
 }) {
   // GAP-E1: a recovery session IS a session — handle it before normal routing.
   if (inRecovery) return location == '/recovery' ? null : '/recovery';
   if (location == '/recovery') return '/';
-  final atSignIn = location == '/sign-in';
-  if (!loggedIn) return atSignIn ? null : '/sign-in';
-  if (atSignIn) return '/';
+
+  if (!loggedIn) {
+    if (_preAuthRoutes.contains(location)) return null;
+    // A fresh install starts the journey; a returning signed-out user goes
+    // straight to the gateway rather than replaying onboarding.
+    return firstRunDone ? '/auth-gateway' : '/welcome';
+  }
+
+  // Signed in: the pre-auth journey is finished, so never sit on it.
+  if (location == '/sign-in' ||
+      location == '/welcome' ||
+      location == '/auth-gateway') {
+    return '/';
+  }
   return null;
 }
 
@@ -76,6 +131,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       inRecovery: inRecovery,
       loggedIn: client.auth.currentSession != null,
       location: state.matchedLocation,
+      firstRunDone: FirstRun.done,
     ),
     routes: [
       // Page transitions standardized via AppPageTransitions (§4.1). Sections
@@ -97,6 +153,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/recovery',
         pageBuilder: (context, state) =>
             AppPageTransitions.fadeThrough(context, const RecoveryScreen()),
+      ),
+      // App-open screen (mockup 0001) — the first thing a fresh install shows.
+      GoRoute(
+        path: '/welcome',
+        pageBuilder: (context, state) => AppPageTransitions.fadeThrough(
+          context,
+          FirstRunScreen(
+            onStart: () => context.go('/onboarding'),
+            onSignIn: () => context.go('/sign-in'),
+          ),
+        ),
+      ),
+      // Authentication gateway (mockup 000) — shown AFTER onboarding.
+      GoRoute(
+        path: '/auth-gateway',
+        pageBuilder: (context, state) =>
+            AppPageTransitions.fadeThrough(context, const AuthGatewayScreen2()),
       ),
       GoRoute(
         path: '/onboarding',

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../theme/design_tokens.dart';
 import '../theme/paw_components.dart';
@@ -266,6 +267,92 @@ class OnbSubtitle extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // Content blocks
 // ---------------------------------------------------------------------------
+
+/// Applies a [BlendMode] against everything already painted beneath it.
+///
+/// Flutter's `ColorFiltered`/`Opacity` cannot do this: a blend has to be
+/// composited against the backdrop, which needs its own saveLayer. Used to drop
+/// the solid-black background out of the supplied neon artwork — under `screen`
+/// black is the identity value, so the plate merges into the canvas with no
+/// matte line and no alpha channel to author.
+class BlendMask extends SingleChildRenderObjectWidget {
+  const BlendMask({required this.blendMode, super.child, super.key});
+
+  final BlendMode blendMode;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderBlendMask(blendMode);
+
+  @override
+  void updateRenderObject(BuildContext context, covariant RenderObject renderObject) {
+    (renderObject as _RenderBlendMask).blendMode = blendMode;
+  }
+}
+
+class _RenderBlendMask extends RenderProxyBox {
+  _RenderBlendMask(this._blendMode);
+
+  BlendMode _blendMode;
+  set blendMode(BlendMode v) {
+    if (v == _blendMode) return;
+    _blendMode = v;
+    markNeedsPaint();
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (child == null) return;
+    context.canvas.saveLayer(offset & size, Paint()..blendMode = _blendMode);
+    super.paint(context, offset);
+    context.canvas.restore();
+  }
+}
+
+/// The segmented step rail on its own, for screens that show it without the
+/// Skip affordance (the app-open screen).
+class OnbProgressRail extends StatelessWidget {
+  const OnbProgressRail({required this.step, required this.total, super.key});
+
+  final int step;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Step ${step + 1} of $total',
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < total; i++)
+              Container(
+                width: i == step ? 30 : 22,
+                height: 5,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(3),
+                  color: i < step
+                      ? AppColors.cyan400
+                      : i == step
+                          ? AppColors.emerald400
+                          : const Color(0xFF243044),
+                  boxShadow: i == step
+                      ? [
+                          BoxShadow(
+                              color:
+                                  AppColors.emerald400.withValues(alpha: 0.5),
+                              blurRadius: 8)
+                        ]
+                      : null,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Photographic hero, faded into the canvas at its edges.
 ///

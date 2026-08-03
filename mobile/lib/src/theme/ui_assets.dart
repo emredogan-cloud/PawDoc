@@ -133,9 +133,11 @@ abstract final class UiAssets {
   static const String onbHeroDogCatHalo = 'assets/images/onboarding/devices/onb-hero-dog-cat-halo@3x.webp';
   static const String onbHeroDogKittenCelebration = 'assets/images/onboarding/devices/onb-hero-dog-kitten-celebration@3x.webp';
   static const String onbHeroDogKittenCutout = 'assets/images/onboarding/devices/onb-hero-dog-kitten-cutout@3x.webp';
+  static const String onbHeroDuoNeon = 'assets/images/onboarding/firstrun/onb-hero-duo-neon.webp';
   static const String onbHeroPuppyKittenBlanket = 'assets/images/onboarding/devices/onb-hero-puppy-kitten-blanket@3x.webp';
   static const String onbHeroPuppyKittenSeated = 'assets/images/onboarding/devices/onb-hero-puppy-kitten-seated@3x.webp';
   static const String onbHeroPuppyKittenSplash = 'assets/images/onboarding/devices/onb-hero-puppy-kitten-splash@3x.webp';
+  static const String onbLogoPawdoc = 'assets/images/onboarding/firstrun/onb-logo-pawdoc.webp';
   static const String onbShieldPawTeal3d = 'assets/images/onboarding/devices/onb-shield-paw-teal-3d@3x.png';
   static const String onbUploadCameraRing = 'assets/images/onboarding/devices/onb-upload-camera-ring@3x.png';
   static const String petBuddyAvatar = 'assets/images/pets/cast/pet-buddy-avatar@3x.webp';

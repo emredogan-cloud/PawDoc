@@ -25,17 +25,54 @@ void main() {
           '/');
     });
 
-    test('signed out: everything except /sign-in redirects to /sign-in', () {
+    test('signed out, fresh install: protected routes start the journey', () {
+      // A brand-new install must see the app-open screen, not the sign-in form
+      // — the pre-auth journey is 0001 -> onboarding -> gateway.
       for (final loc in ['/', '/pets', '/history', '/capture']) {
         expect(
-            computeRedirect(inRecovery: false, loggedIn: false, location: loc),
-            '/sign-in',
+            computeRedirect(
+                inRecovery: false,
+                loggedIn: false,
+                location: loc,
+                firstRunDone: false),
+            '/welcome',
             reason: loc);
       }
-      expect(
-          computeRedirect(
-              inRecovery: false, loggedIn: false, location: '/sign-in'),
-          isNull);
+    });
+
+    test('signed out, journey already seen: protected routes go to the gateway',
+        () {
+      // A returning signed-out user does not replay eight onboarding pages.
+      for (final loc in ['/', '/pets', '/history']) {
+        expect(
+            computeRedirect(
+                inRecovery: false,
+                loggedIn: false,
+                location: loc,
+                firstRunDone: true),
+            '/auth-gateway',
+            reason: loc);
+      }
+    });
+
+    test('signed out: the pre-auth routes are reachable', () {
+      for (final loc in ['/welcome', '/onboarding', '/auth-gateway', '/sign-in']) {
+        expect(
+            computeRedirect(
+                inRecovery: false, loggedIn: false, location: loc,
+                firstRunDone: false),
+            isNull,
+            reason: loc);
+      }
+    });
+
+    test('signed in: the pre-auth routes bounce home', () {
+      for (final loc in ['/sign-in', '/welcome', '/auth-gateway']) {
+        expect(
+            computeRedirect(inRecovery: false, loggedIn: true, location: loc),
+            '/',
+            reason: loc);
+      }
     });
 
     test('signed in: /sign-in bounces home; app routes stay put', () {
