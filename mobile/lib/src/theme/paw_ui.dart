@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../core/motion.dart';
 import 'design_tokens.dart';
+import 'paw_components.dart';
 
 /// NEW UI translation design-system layer (OLD→NEW migration, 2026-06-12).
 ///
@@ -62,9 +63,26 @@ class PawBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = variant == PawSurface.dark;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
+    // A subtree inside a migrated shell declares its system, and the canvas has
+    // to follow: device validation of Phase D showed the new black cards and
+    // black nav bar sitting on the old teal gradient, which read as two
+    // different apps stacked on top of each other.
+    final system = PawSystemScope.of(context);
+
+    final gradient = switch (system) {
+      PawSystem.b when dark => const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.carbon900, Color(0xFF060806), AppColors.carbon900],
+          stops: [0.0, 0.5, 1.0],
+        ),
+      PawSystem.a when dark => const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.navy900, AppColors.navy850, AppColors.navy900],
+          stops: [0.0, 0.5, 1.0],
+        ),
+      _ => LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: dark
@@ -72,10 +90,17 @@ class PawBackground extends StatelessWidget {
               : const [PawPalette.creamTop, PawPalette.creamBottom],
           stops: dark ? const [0.0, 0.5, 1.0] : const [0.0, 1.0],
         ),
-      ),
+    };
+
+    // The hand-painted botanicals belong to the teal system; on the redesign's
+    // near-black canvas they read as smudges.
+    final decor = showDecor && system == PawSystem.legacy;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(gradient: gradient),
       child: Stack(
         children: [
-          if (showDecor)
+          if (decor)
             Positioned.fill(
               child: ExcludeSemantics(
                 child: CustomPaint(painter: _PawDecorPainter(dark: dark)),
