@@ -1,6 +1,7 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,6 +37,7 @@ import '../prep/vet_visit_prep_screen.dart';
 import '../text_input/symptom_text_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_components.dart';
 import '../theme/paw_ui.dart';
 import '../walks/walk_card.dart';
 
@@ -224,64 +226,68 @@ class HomeScreen extends ConsumerWidget {
                   // Next Evolution Phase 6: opt-in social layer.
                   const CommunityCard(),
                   const SizedBox(height: AppSpace.s8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          key: const Key('home_view_history'),
-                          onPressed: () => context.push('/history'),
-                          icon: const Icon(Icons.history),
-                          label: const Text('History'),
+                  // Secondary navigation, laid out as the mockup's pill grid.
+                  // Keys are preserved verbatim — the home tests address these
+                  // by key, and the redesign must not silently move them.
+                  _PillGrid(
+                    rows: [
+                      [
+                        (
+                          const Key('home_view_history'),
+                          LucideIcons.history,
+                          'History',
+                          () => context.push('/history'),
                         ),
-                      ),
-                      const SizedBox(width: AppSpace.s8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          key: const Key('home_log_event'),
-                          onPressed: () => _logEvent(context, ref, pet),
-                          icon: const Icon(Icons.add_chart),
-                          label: const Text('Log event'),
+                        (
+                          const Key('home_log_event'),
+                          LucideIcons.chartNoAxesColumnIncreasing,
+                          'Log event',
+                          () => _logEvent(context, ref, pet),
                         ),
-                      ),
+                      ],
+                      [
+                        (
+                          const Key('home_memories'),
+                          LucideIcons.images,
+                          'Memories with ${pet.name}',
+                          () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) => MemoriesScreen(pet: pet)),
+                              ),
+                        ),
+                      ],
+                      [
+                        (
+                          const Key('home_vet_prep'),
+                          LucideIcons.clipboardList,
+                          'Prepare for a vet visit',
+                          () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) => VetVisitPrepScreen(pet: pet)),
+                              ),
+                        ),
+                      ],
+                      [
+                        (
+                          const Key('home_encyclopedia'),
+                          LucideIcons.bookOpen,
+                          'Breed Encyclopedia',
+                          () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                    builder: (_) => EncyclopediaScreen(
+                                        initialSpecies: pet.species)),
+                              ),
+                        ),
+                      ],
+                      [
+                        (
+                          const Key('home_manage_pets'),
+                          LucideIcons.pawPrint,
+                          'Manage pets',
+                          () => context.push('/pets'),
+                        ),
+                      ],
                     ],
-                  ),
-                  // Next Evolution Phase 2: the pet journal — "paid = memory"
-                  // as a first-class, joyful surface.
-                  OutlinedButton.icon(
-                    key: const Key('home_memories'),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => MemoriesScreen(pet: pet)),
-                    ),
-                    icon: const Icon(Icons.photo_library_outlined),
-                    label: Text('Memories with ${pet.name}'),
-                  ),
-                  // Phase 5: the record product's centerpiece gets a first-
-                  // class home entry (it was buried in an overflow menu).
-                  OutlinedButton.icon(
-                    key: const Key('home_vet_prep'),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => VetVisitPrepScreen(pet: pet)),
-                    ),
-                    icon: const Icon(Icons.assignment_outlined),
-                    label: const Text('Prepare for a vet visit'),
-                  ),
-                  // Next Evolution Phase 3: the premium breed field guide.
-                  OutlinedButton.icon(
-                    key: const Key('home_encyclopedia'),
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => EncyclopediaScreen(
-                              initialSpecies: pet.species)),
-                    ),
-                    icon: const Icon(Icons.menu_book_outlined),
-                    label: const Text('Breed Encyclopedia'),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => context.push('/pets'),
-                    icon: const Icon(Icons.pets),
-                    label: const Text('Manage pets'),
                   ),
                   const SizedBox(height: AppSpace.s8),
                   profile.maybeWhen(
@@ -744,6 +750,41 @@ class _CaptureModeTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The mockup's secondary-navigation pill grid: full-width rows, or two
+/// side-by-side where both labels are short enough to survive 320dp.
+class _PillGrid extends StatelessWidget {
+  const _PillGrid({required this.rows});
+
+  final List<List<(Key, IconData, String, VoidCallback)>> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (final row in rows)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpace.s8),
+            child: Row(
+              children: [
+                for (var i = 0; i < row.length; i++) ...[
+                  if (i > 0) const SizedBox(width: AppSpace.s8),
+                  Expanded(
+                    child: PawPillButton(
+                      key: row[i].$1,
+                      icon: row[i].$2,
+                      label: row[i].$3,
+                      onTap: row[i].$4,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
