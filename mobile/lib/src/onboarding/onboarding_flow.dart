@@ -225,36 +225,19 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   // 2 · AI insights (mockup 003)
   // -------------------------------------------------------------------------
   Widget _aiInsights() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s8),
+        const SizedBox(height: AppSpace.s4),
         const OnbHeadline('AI insights,', 'real-time clarity.'),
         const SizedBox(height: AppSpace.s12),
         const OnbSubtitle(
             'Describe symptoms or upload a photo. PawDoc helps you understand '
             'how soon to act.'),
-        const SizedBox(height: AppSpace.s20),
-        // The mockup's sample result reads "Monitor at Home / Low urgency /
-        // No critical signs detected" — an all-clear with no action and no
-        // timeframe. Rewritten to the compliant voice of `007`.
-        const _SamplePhone(
-          title: 'AI Health Check',
-          disclaimer:
-              'This is AI-generated guidance, not a diagnosis. Always consult '
-              'your veterinarian.',
-          children: [
-            _SampleRow(
-                label: 'What we observed',
-                body: 'An occasional dry cough, no change in appetite or energy.'),
-            _SampleRow(
-                label: 'What to do',
-                body: 'Keep them rested and watch breathing and appetite.'),
-            _SampleRow(
-                label: 'Timing',
-                body:
-                    'If it continues past 24–48 hours, or worsens at any point, '
-                    'contact your vet.'),
-          ],
-        ),
-        const SizedBox(height: AppSpace.s20),
+
+        // Device mockup on a lit stage, with orbiting glyphs and the scan ring
+        // behind it — the reference's whole composition, not a bare card.
+        const SizedBox(height: AppSpace.s8),
+        const _AiStage(),
+
+        const SizedBox(height: AppSpace.s16),
         const Row(children: [
           Expanded(
               child: OnbFeatureCard(
@@ -1073,6 +1056,196 @@ class _PlateEdgeFade extends StatelessWidget {
         Positioned.fill(child: edge(Alignment.centerRight, Alignment.centerLeft, 0.22)),
         Positioned.fill(child: edge(Alignment.topCenter, Alignment.bottomCenter, 0.16)),
       ]),
+    );
+  }
+}
+
+/// `003`'s stage: the scan ring and hologram art behind a real device mockup,
+/// with orbiting capability glyphs — the reference's full composition.
+class _AiStage extends StatelessWidget {
+  const _AiStage();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 430,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Scan ring bloom behind everything.
+          Positioned(
+            top: 22,
+            child: Opacity(
+              opacity: 0.55,
+              child: BlendMask(
+                blendMode: BlendMode.screen,
+                child: Image.asset(UiAssets.aiLoadingScanRing,
+                    height: 300,
+                    excludeFromSemantics: true,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink()),
+              ),
+            ),
+          ),
+          const Positioned(
+            left: 4,
+            top: 16,
+            child: _OrbGlyph(icon: Icons.psychology_outlined, tint: AppColors.cyan300),
+          ),
+          const Positioned(
+            right: 6,
+            top: 60,
+            child: _OrbGlyph(
+                icon: Icons.monitor_heart_outlined, tint: AppColors.emerald400),
+          ),
+          const Positioned(
+            left: 10,
+            bottom: 92,
+            child: _OrbGlyph(
+                icon: Icons.photo_camera_outlined, tint: AppColors.emerald400),
+          ),
+          const Positioned(
+            right: 4,
+            bottom: 46,
+            child: _OrbGlyph(
+                icon: Icons.description_outlined, tint: AppColors.cyan400),
+          ),
+          // The device itself.
+          const OnbPhoneMockup(height: 404, child: _AiResultScreen()),
+        ],
+      ),
+    );
+  }
+}
+
+/// A small circled glyph orbiting the device.
+class _OrbGlyph extends StatelessWidget {
+  const _OrbGlyph({required this.icon, required this.tint});
+
+  final IconData icon;
+  final Color tint;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF0A1120).withValues(alpha: 0.85),
+          border: Border.all(color: tint.withValues(alpha: 0.40)),
+          boxShadow: [
+            BoxShadow(
+                color: tint.withValues(alpha: 0.22),
+                blurRadius: 16,
+                spreadRadius: -3),
+          ],
+        ),
+        child: Icon(icon, size: 23, color: tint),
+      );
+}
+
+/// What the phone is showing on `003`.
+///
+/// The reference renders "Monitor at Home / Low urgency / No critical signs
+/// detected" here — an all-clear that terminates with reassurance and no
+/// action (review V-14). This is the compliant equivalent: an observation, a
+/// next step, a timeframe, and the disclaimer.
+class _AiResultScreen extends StatelessWidget {
+  const _AiResultScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    const label = TextStyle(
+        color: AppColors.cyan300, fontSize: 8.5, fontWeight: FontWeight.w700);
+    const body =
+        TextStyle(color: Color(0xFFD3DBE6), fontSize: 9, height: 1.3);
+    // The aperture is ~152x351. FittedBox lets the screen be authored at a
+    // comfortable size and scaled down to fit, rather than tuning every font
+    // against one device height — and it keeps the copy real text.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 26, 10, 10),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: 152,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+          Row(children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.emerald500.withValues(alpha: 0.16),
+                border: Border.all(
+                    color: AppColors.emerald400.withValues(alpha: 0.6)),
+              ),
+              child: const Icon(Icons.pets_rounded,
+                  size: 12, color: AppColors.emerald400),
+            ),
+            const SizedBox(width: 6),
+            // Flexible: the screen aperture is ~150dp wide, so a fixed-width
+            // title overflows the mockup before it ever reaches the device.
+            const Expanded(
+              child: Text('AI Health Check',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700)),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          // A thumbnail of what the owner submitted.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.asset(UiAssets.petBuddyAvatar,
+                height: 66,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                excludeFromSemantics: true,
+                errorBuilder: (_, _, _) => Container(
+                    height: 66, color: const Color(0xFF14203A))),
+          ),
+          const SizedBox(height: 9),
+          const Text('What we observed', style: label),
+          const Text('An occasional dry cough. Appetite and energy unchanged.',
+              style: body),
+          const SizedBox(height: 7),
+          const Text('What to do', style: label),
+          const Text('Keep them rested and watch breathing and appetite.',
+              style: body),
+          const SizedBox(height: 7),
+          const Text('Timing', style: label),
+          const Text('If it continues past 24–48 hours, or worsens, contact '
+              'your vet.', style: body),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.emerald500.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(7),
+              border: Border.all(
+                  color: AppColors.emerald500.withValues(alpha: 0.32)),
+            ),
+            child: const Row(children: [
+              Icon(Icons.verified_user_outlined,
+                  size: 10, color: AppColors.emerald400),
+              SizedBox(width: 4),
+              Expanded(
+                child: Text('AI-generated guidance, not a diagnosis.',
+                    style: TextStyle(
+                        color: Color(0xFFBFE8CB), fontSize: 8, height: 1.25)),
+              ),
+            ]),
+          ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
