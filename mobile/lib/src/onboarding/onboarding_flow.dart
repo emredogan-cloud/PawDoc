@@ -13,7 +13,8 @@ import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
 import '../pets/species_chip.dart';
 import '../theme/app_assets.dart';
-import '../theme/app_theme.dart';
+import '../theme/design_tokens.dart';
+import '../theme/paw_components.dart';
 import '../theme/paw_ui.dart';
 
 /// The 3-screen onboarding wizard (J2):
@@ -111,23 +112,30 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
 
   @override
   Widget build(BuildContext context) {
-    return PawScaffold(
-      variant: PawSurface.dark,
-      body: Column(
-        children: [
-          _OnboardingHeader(step: _page, total: _names.length, onSkip: _skip),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _valueHook(),
-                _petSetup(),
-                _activation(),
-              ],
+    // System A — the onboarding/marketing palette (UI_ASSET_SPECIFICATION §1.3).
+    // Declared here rather than inherited: the app root is System B, and the
+    // two systems' assets are not interchangeable, so the boundary has to be
+    // explicit or emerald/cyan silently becomes lime.
+    return PawSystemScope(
+      system: PawSystem.a,
+      child: PawScaffold(
+        variant: PawSurface.dark,
+        body: Column(
+          children: [
+            _OnboardingHeader(step: _page, total: _names.length, onSkip: _skip),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _valueHook(),
+                  _petSetup(),
+                  _activation(),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
