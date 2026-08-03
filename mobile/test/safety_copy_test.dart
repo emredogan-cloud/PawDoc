@@ -186,6 +186,40 @@ void main() {
               '(CLAUDE.md rule 4; review V-16/V-17)\n${hits.join('\n')}');
     });
 
+    test('the elements owner decision D-1 removed cannot come back', () {
+      // Decision 1 (final, owner-approved) strips every rule-violating element
+      // from `emergency_hub`. Two were catalogued by the review — the AI Triage
+      // quick action (V-16) and the Heat Alert promo strip (C-6). Reading the
+      // mockup for this phase surfaced a third the review did not list: an
+      // "At Risk Pets / Needs Attention / View Triage" card, which puts a
+      // model-derived triage verdict ("Based on recent symptoms") directly on
+      // the red path. All three are pinned here so a later hub build cannot
+      // reintroduce them.
+      final emergency =
+          _sourceFiles().where((f) => f.path.contains('/emergency/')).toList();
+      final hits = <String>[];
+      for (final f in emergency) {
+        final code = _codeOnly(f.readAsStringSync());
+        for (final p in [
+          RegExp(r'''["'][^"']*at risk pets[^"']*["']''', caseSensitive: false),
+          RegExp(r'''["'][^"']*needs attention[^"']*["']''', caseSensitive: false),
+          RegExp(r'''["'][^"']*view triage[^"']*["']''', caseSensitive: false),
+          RegExp(r'''["'][^"']*based on recent symptoms[^"']*["']''',
+              caseSensitive: false),
+          RegExp(r'''["'][^"']*check symptoms now[^"']*["']''',
+              caseSensitive: false),
+        ]) {
+          for (final m in p.allMatches(code)) {
+            hits.add('${f.path}: "${m.group(0)}"');
+          }
+        }
+      }
+      expect(hits, isEmpty,
+          reason: 'owner decision D-1: the emergency surface carries help '
+              'contacts, first aid, the disclaimer and the acknowledgment gate '
+              '— no triage verdict, no AI shortcut, no promo\n${hits.join('\n')}');
+    });
+
     test('emergency sources import no analysis or monetisation code', () {
       for (final f in _sourceFiles().where((f) => f.path.contains('/emergency/'))) {
         final src = f.readAsStringSync();
