@@ -3,7 +3,7 @@
 Resume file for the UI migration. Read this first; the roadmap
 (`UI_IMPLEMENTATION_ROADMAP.md`) carries the per-phase detail.
 
-**Last updated:** 2026-08-03 · after Phase Q (all phases complete)
+**Last updated:** 2026-08-03 · onboarding rebuild in progress (scope narrowed to onboarding only)
 
 ---
 
@@ -93,6 +93,55 @@ the confidence scan, because `AnalysisResult` must keep parsing the wire value).
 - A release build can **fail silently** behind `cmd | tail -n` — check the APK mtime against source mtime before concluding "the fix didn't work".
 - Device is locked on wake; swipe up before screenshotting or you capture the lock screen.
 - `new-interface/` (57 mockups, 93 MB) is still untracked — owner's call.
+
+---
+
+## Onboarding rebuild — current work
+
+Scope was narrowed by the owner to **onboarding only**; other screens are
+paused. Reference fidelity is the priority — no asset, mockup, glow, card or
+decorative element may be skipped, and "it doesn't fit" is not a reason to drop
+one (scroll instead).
+
+**New flow, shipped (`70b8aa1`):**
+
+    app open -> 0001 -> onboarding 002..009 -> 000 gateway
+             -> Google | Email | Guest -> Home
+
+- `0001` app-open screen — **done, device-verified against the reference.**
+  Supplied artwork composited with `BlendMode.screen` (neon on black; `screen`
+  makes black the identity, so no mask or alpha is needed). New `BlendMask`
+  render object in `onboarding_ui.dart`.
+- `000` auth gateway — built (hero + orbit rings + 4 floating cards + shield +
+  social proof + 3 sign-in routes, guest = real Supabase anonymous session).
+  **Not yet walked on device.**
+- Routing: four pre-auth routes; `FirstRun` flag cached in memory, loaded
+  before first frame.
+
+**Still to do — 002..009 need their reference richness:**
+
+| Page | Missing vs reference |
+|---|---|
+| 002 | hero is cropped/oversized; needs full subject + backing glow + decor |
+| 003 | **phone mockup, AI screen, background art, icons, glow** — currently text only |
+| 004 | glass cards with blur/opacity/backing glow — currently two plain containers |
+| 005 | phone mockup + animal on the right + glow + small info cards |
+| 006 | same — phone, animal, assets |
+| 007 | pet-create screen: cards, animals, preview, upload area, photo, chips |
+| 008 | hero, badge, icon grid, privacy section, CTA |
+| 009 | hero, success feel, feature cards, CTA |
+
+Copy may also broaden beyond AI triage — Assistant, Memories, Smart Walks,
+Encyclopedia, Nearby Owners, Community, Timeline, Vaccination, Medication,
+PDF export, Vet prep, Weather — while keeping the safety rules (no condition
+named, no diagnosis, no percentage, no risk score).
+
+**Two defects worth remembering:**
+- Flutter does **not** recurse into asset sub-directories. `firstrun/` was
+  undeclared and the screen silently rendered fallback icons.
+- A negative `Container` margin asserts, and **release builds strip asserts** —
+  so a full-bleed hack rendered fine on device while crashing in debug and in
+  every widget test. Use `OverflowBox`.
 
 ---
 
