@@ -9,7 +9,7 @@ Resume file for the UI migration. Read this first; the roadmap
 
 ## Status
 
-**8 of 18 complete (44%).** ✅ Phase 0 · A · B · C · D · E · F · G — ▶ H — ⏳ I–Q
+**9 of 18 complete (50%).** ✅ Phase 0 · A–H — ▶ I — ⏳ J–Q
 
 | PR | Contents | CI |
 |---|---|---|
@@ -48,7 +48,8 @@ the confidence scan, because `AnalysisResult` must keep parsing the wire value).
 | D | `00924e7`, `9d846d9` | Pill grid; `PawCard` migrated all its consumers at once |
 | E | `6b5f7da` | `safety_copy_test`; `PawBackground` follows `PawSystemScope` |
 | F | `4d272e2` | D-1 pinned on emergency surfaces |
-| G | *(branch)* | **App-wide System B `ColorScheme`**; V-22 provenance markers in the exported report |
+| G | `76e3ab4` | **App-wide System B `ColorScheme`**; V-22 provenance markers in the exported report |
+| H | *(branch)* | Species art wired; `AppAssets.species()` had pointed at an empty folder since M2 |
 
 ---
 
@@ -56,7 +57,7 @@ the confidence scan, because `AnalysisResult` must keep parsing the wire value).
 
 - **D-1** Emergency surfaces carry help contacts, first aid, disclaimer, ack gate — nothing else. AI Triage tile, Heat Alert strip **and** the "At Risk Pets / Needs Attention / View Triage" card (found during F, *not* in the review) are all pinned as absent.
 - **D-2** Health Score is a lightweight wellness metric only — never diagnosis, clinical score, severity or probability.
-- **D-3** Pet cast — **Buddy** golden retriever · **Luna** golden retriever (`pet-luna-retriever-portrait`) · **Milo** tabby cat · **Coco** lop rabbit. One animal per name. `pet-luna-rabbit-avatar` and `pet-milo-shorthair-avatar` become generic species samples. **Specified, not yet applied — do this in Phase H.**
+- **D-3** Pet cast — **Buddy** golden retriever · **Luna** golden retriever (`pet-luna-retriever-portrait`) · **Milo** tabby cat · **Coco** lop rabbit. One animal per name. `pet-luna-rabbit-avatar` and `pet-milo-shorthair-avatar` become generic species samples. Species→art mapping applied in H. Name→animal binding is sample-data only and lands with the screens that show the cast.
 - **D-4** Regenerate only the minimum. Six gaps: `INF-504`, `CMN-1403`, `BRE-1301` cat/rabbit/bird, AVT map/group, `onb-hero-puppy-kitten-splash`, `onb-glyph-cross`. `OPENAI_API_KEY` is in `.env`. **Not yet run.**
 - **D-5** Payment marks from official brand kits only; never AI-generated. **Not sourced.**
 - **D-6** Lucide for the core + nav icon set; bespoke medical families stay as tinted PNG (Lucide has no `parvovirus` glyph).

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pawdoc/src/theme/ui_assets.dart';
 import 'package:pawdoc/l10n/app_localizations.dart';
 import 'package:pawdoc/src/analysis/result_screen.dart';
 import 'package:pawdoc/src/core/app_image.dart';
@@ -64,7 +65,7 @@ void main() {
     expect(find.byType(Rive), findsNothing);
     final image = tester.widget<Image>(find.byType(Image));
     expect((image.image as AssetImage).assetName,
-        'assets/icons/species/species_dog.png');
+        UiAssets.petSpeciesDog);
   });
 
   testWidgets('unknown species maps to the other-paw still', (tester) async {
@@ -76,7 +77,7 @@ void main() {
 
     final image = tester.widget<Image>(find.byType(Image));
     expect((image.image as AssetImage).assetName,
-        'assets/icons/species/species_other_paw.png');
+        UiAssets.petSpeciesOther);
   });
 
   testWidgets(
