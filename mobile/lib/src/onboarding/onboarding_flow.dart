@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../analytics/analytics.dart';
 import '../core/living_pet_avatar.dart';
@@ -12,6 +13,7 @@ import '../pets/pets_repository.dart';
 import '../pets/species_chip.dart';
 import '../theme/design_tokens.dart';
 import '../theme/ui_assets.dart';
+import 'onboarding_stages.dart';
 import 'onboarding_ui.dart';
 
 /// The 8-screen onboarding wizard, rebuilt against mockups `002`–`009`.
@@ -260,120 +262,127 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
       ]);
 
   // -------------------------------------------------------------------------
-  // 3 · Emergency (mockup 004)
+  // 3 · Emergency guidance (mockup 004)
   // -------------------------------------------------------------------------
+  //
+  // Two copy departures from the mockup, both deliberate:
+  //
+  // * the right card is titled "Not Urgent" in the reference — a triage verdict,
+  //   and the closest thing in the whole flow to an all-clear. The action ladder
+  //   has no "do nothing" rung, so the card is titled by its *action*.
+  // * the deck reads "Instant emergency detection" in the reference, which
+  //   promises a reliability the pipeline does not claim. What is true — and
+  //   what actually matters here — is that the guidance is free and always
+  //   reachable, so that is what it says.
   Widget _emergency() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s8),
-        Center(
-            child: OnbGlowIcon(Icons.shield_outlined,
-                color: AppColors.cyan300, size: 68)),
-        const SizedBox(height: AppSpace.s16),
-        const OnbHeadline('When it\'s urgent,', 'PawDoc guides you.'),
+        const SizedBox(height: AppSpace.s4),
+        const Center(
+            child: OnbCrest(
+                asset: UiAssets.onbShieldPawTeal3d,
+                height: 76,
+                tint: AppColors.cyan300)),
         const SizedBox(height: AppSpace.s12),
-        const OnbSubtitle(
-            'Emergency guidance works offline and is always free — no account '
-            'limits, no paywall.'),
-        const SizedBox(height: AppSpace.s20),
-        Row(children: [
+        const OnbHeadline('When it\u2019s urgent,', 'PawDoc guides you.'),
+        const SizedBox(height: AppSpace.s12),
+        const OnbSubtitle.rich([
+          ('Step-by-step emergency guidance —\n', null),
+          ('always free', AppColors.emerald400),
+          (', always available.', null),
+        ]),
+        const SizedBox(height: AppSpace.s24),
+        const EmergencyCompareStage(),
+        const SizedBox(height: AppSpace.s24),
+        const DoesNotDiagnosePanel(),
+        const SizedBox(height: AppSpace.s24),
+        const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(
-            child: _CompareCard(
-              tint: AppColors.emergencyDark,
-              title: 'Emergency',
-              subtitle: 'Act now',
-              rows: [
-                (Icons.monitor_heart_outlined, 'Immediate guidance'),
-                (Icons.medical_services_outlined, 'First-aid steps'),
-                (Icons.location_on_outlined, 'Find a vet near you'),
-              ],
-              chip: 'Always free',
+            child: _TrustColumn(
+              art: OnbAlwaysOnDial(size: 56),
+              title: 'Always Available',
+              caption: 'Guidance anytime,\nday or night.',
             ),
           ),
-          const SizedBox(width: AppSpace.s8),
+          _TrustDivider(),
           Expanded(
-            child: _CompareCard(
-              tint: AppColors.emerald500,
-              title: 'Keep watching',
-              subtitle: 'With a timeframe',
-              rows: [
-                (Icons.visibility_outlined, 'What to look for'),
-                (Icons.calendar_today_outlined, 'Track changes over time'),
-                (Icons.schedule_rounded, 'When to call the vet'),
-              ],
-              chip: 'Clear next step',
+            child: _TrustColumn(
+              art: OnbHaloIcon(LucideIcons.bookOpen,
+                  tint: AppColors.cyan300, size: 42, halo: 72),
+              title: 'Clear Steps',
+              caption: 'Easy-to-follow\ninstructions.',
+            ),
+          ),
+          _TrustDivider(),
+          Expanded(
+            child: _TrustColumn(
+              art: OnbHaloIcon(LucideIcons.handHeart,
+                  tint: AppColors.cyan300, size: 42, halo: 72),
+              title: 'Safer Decisions',
+              caption: 'Know when to act\nand what to do.',
             ),
           ),
         ]),
-        const SizedBox(height: AppSpace.s16),
-        // Kept verbatim from the mockup — the review calls this framing correct.
-        OnbPanel(
-          child: Row(children: [
-            const OnbGlowIcon(Icons.health_and_safety_outlined, size: 46),
-            const SizedBox(width: AppSpace.s12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('PawDoc does not diagnose.',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: AppColors.emerald400)),
-                  const SizedBox(height: 2),
-                  Text(
-                    'We provide AI-powered guidance, not a replacement for '
-                    'your veterinarian.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFFA9B4C4), height: 1.35),
-                  ),
-                ],
-              ),
-            ),
-          ]),
-        ),
-        ..._footer(OnbCta(
+        const SizedBox(height: AppSpace.s24),
+        OnbCta(
           key: const Key('onb_next_diary'),
-          label: 'Next: Your pet\'s health diary',
+          label: 'Next: Your Pet\'s Health Diary',
           onPressed: _advance,
-        )),
+        ),
+        const SizedBox(height: AppSpace.s16),
+        OnbDots(step: _page, total: _names.length),
       ]);
 
   // -------------------------------------------------------------------------
   // 4 · Health diary (mockup 005)
   // -------------------------------------------------------------------------
   Widget _healthDiary() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s8),
-        Center(
-            child: OnbGlowIcon(Icons.auto_stories_outlined,
-                color: AppColors.cyan400, size: 64)),
-        const SizedBox(height: AppSpace.s16),
-        const OnbHeadline('All your pet\'s health,', 'in one place.'),
+        const SizedBox(height: AppSpace.s4),
+        const Center(
+            child: OnbCrest(
+                asset: UiAssets.onbGlyphDiaryPawCyan,
+                height: 74,
+                tint: AppColors.cyan400)),
         const SizedBox(height: AppSpace.s12),
-        const OnbSubtitle(
-            'Checks, vaccines, weight and notes on a single timeline — easy to '
-            'track, easy to share with your vet.'),
-        const SizedBox(height: AppSpace.s20),
-        // The mockup's timeline row reads "Mild coughing detected" with a `Low`
-        // badge — a finding plus a severity grade. Reframed as an observation.
-        const _SamplePhone(
-          title: 'Timeline',
-          children: [
-            _SampleRow(label: 'Today', body: 'AI check — cough noted, keep watching'),
-            _SampleRow(label: 'May 28', body: 'Rabies vaccine — next due May 2026'),
-            _SampleRow(label: 'May 20', body: 'Weight — 24.3 kg'),
-            _SampleRow(label: 'May 10', body: 'Memory — first beach day'),
-          ],
-        ),
+        const OnbHeadline('All your pet’s health,', 'organized beautifully.'),
+        const SizedBox(height: AppSpace.s12),
+        const OnbSubtitle.rich([
+          ('PawDoc keeps every important moment in one\nsmart timeline — ', null),
+          ('easy to track, easy to share.', AppColors.emerald400),
+        ]),
+        const SizedBox(height: AppSpace.s16),
+        const DiaryStage(),
         const SizedBox(height: AppSpace.s20),
         const OnbPanel(
+          padding: EdgeInsets.fromLTRB(
+              AppSpace.s8, AppSpace.s16, AppSpace.s8, AppSpace.s16),
           child: OnbTrustRow(items: [
-            (Icons.lock_outline_rounded, 'Always private', 'Only you can see it.'),
-            (Icons.cloud_done_outlined, 'Always safe', 'Backed up securely.'),
-            (Icons.ios_share_rounded, 'Easy to share', 'Export for your vet.'),
+            (
+              LucideIcons.shieldCheck,
+              'Always private',
+              'Only you can see your pet’s data.',
+              AppColors.cyan400
+            ),
+            (
+              LucideIcons.cloudUpload,
+              'Always safe',
+              'Secure cloud backup you can trust.',
+              AppColors.emerald400
+            ),
+            (
+              LucideIcons.share2,
+              'Easy to share',
+              'Share reports instantly with your vet.',
+              AppColors.cyan400
+            ),
           ]),
         ),
-        ..._footer(OnbCta(
+        const SizedBox(height: AppSpace.s20),
+        OnbCta(
           key: const Key('onb_next_assistant'),
-          label: 'Next: Meet your assistant',
+          label: 'Next: Meet Your AI Assistant',
           onPressed: _advance,
-        )),
+        ),
+        const SizedBox(height: AppSpace.s16),
+        OnbDots(step: _page, total: _names.length),
       ]);
 
   // -------------------------------------------------------------------------
@@ -520,9 +529,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         const SizedBox(height: AppSpace.s24),
         const OnbPanel(
           child: OnbTrustRow(items: [
-            (Icons.bolt_rounded, 'Text checks', 'Always free.'),
-            (Icons.notifications_none_rounded, 'Reminders', 'Asked for only when you add one.'),
-            (Icons.health_and_safety_outlined, 'Emergency', 'Never paywalled.'),
+            (Icons.bolt_rounded, 'Text checks', 'Always free.', null),
+            (Icons.notifications_none_rounded, 'Reminders', 'Asked for only when you add one.', null),
+            (Icons.health_and_safety_outlined, 'Emergency', 'Never paywalled.', null),
           ]),
         ),
         ..._footer(OnbCta(
@@ -766,66 +775,50 @@ class _SampleRow extends StatelessWidget {
   }
 }
 
-/// The two side-by-side cards on `004`.
-class _CompareCard extends StatelessWidget {
-  const _CompareCard({
-    required this.tint,
+/// One column of the `004` trust strip: art, title, two-line caption.
+class _TrustColumn extends StatelessWidget {
+  const _TrustColumn({
+    required this.art,
     required this.title,
-    required this.subtitle,
-    required this.rows,
-    required this.chip,
+    required this.caption,
   });
 
-  final Color tint;
+  final Widget art;
   final String title;
-  final String subtitle;
-  final List<(IconData, String)> rows;
-  final String chip;
+  final String caption;
 
   @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Container(
-      padding: const EdgeInsets.all(AppSpace.s12),
-      decoration: BoxDecoration(
-        color: tint.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: tint.withValues(alpha: 0.45)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) => Column(
         children: [
-          Text(title, style: text.titleSmall?.copyWith(color: Colors.white)),
-          Text(subtitle, style: text.bodySmall?.copyWith(color: tint)),
-          const SizedBox(height: AppSpace.s12),
-          for (final r in rows)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpace.s8),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Icon(r.$1, size: 16, color: tint),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(r.$2,
-                      style: text.bodySmall?.copyWith(
-                          color: const Color(0xFFD3DBE6), height: 1.3)),
-                ),
-              ]),
-            ),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            decoration: BoxDecoration(
-              color: tint.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(AppRadius.pill),
-            ),
-            child: Text(chip,
-                textAlign: TextAlign.center,
-                style: text.labelMedium?.copyWith(color: tint)),
-          ),
+          art,
+          const SizedBox(height: 6),
+          Text(title,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12.5,
+                  height: 1.2,
+                  fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          Text(caption,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: Color(0xFF97A2B2), fontSize: 11.5, height: 1.3)),
         ],
-      ),
-    );
-  }
+      );
+}
+
+class _TrustDivider extends StatelessWidget {
+  const _TrustDivider();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 1,
+        height: 104,
+        margin: const EdgeInsets.symmetric(horizontal: 1),
+        color: Colors.white.withValues(alpha: 0.07),
+      );
 }
 
 /// `002`'s hero stage: the pets whole and uncropped, the cyan ribbon sweeping
@@ -987,9 +980,9 @@ class _TrustCard extends StatelessWidget {
               ),
               const SizedBox(height: AppSpace.s16),
               const OnbTrustRow(items: [
-                (Icons.verified_user_outlined, 'Trusted by pet parents', null),
-                (Icons.lock_outline_rounded, 'Your data is private', null),
-                (Icons.support_agent_rounded, 'We\'re here to help', null),
+                (Icons.verified_user_outlined, 'Trusted by pet parents', null, null),
+                (Icons.lock_outline_rounded, 'Your data is private', null, null),
+                (Icons.support_agent_rounded, 'We\'re here to help', null, null),
               ]),
             ]),
           ),
