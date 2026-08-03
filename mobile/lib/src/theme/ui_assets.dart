@@ -151,8 +151,10 @@ abstract final class UiAssets {
   static const String petSpeciesBird = 'assets/images/pets/cast/pet-species-bird@3x.webp';
   static const String petSpeciesCat = 'assets/images/pets/cast/pet-species-cat@3x.webp';
   static const String petSpeciesDog = 'assets/images/pets/cast/pet-species-dog@3x.webp';
+  static const String petSpeciesGuineaPig = 'assets/images/pets/cast/pet-species-guinea_pig@3x.webp';
   static const String petSpeciesOther = 'assets/images/pets/cast/pet-species-other@3x.webp';
   static const String petSpeciesRabbit = 'assets/images/pets/cast/pet-species-rabbit@3x.webp';
+  static const String petSpeciesReptile = 'assets/images/pets/cast/pet-species-reptile@3x.webp';
   static const String prm3dAiInsights = 'assets/images/premium/prm-3d-ai-insights@3x.webp';
   static const String prm3dBellPaw = 'assets/images/premium/prm-3d-bell-paw@3x.png';
   static const String prm3dCrownPaw = 'assets/images/premium/prm-3d-crown-paw@3x.png';

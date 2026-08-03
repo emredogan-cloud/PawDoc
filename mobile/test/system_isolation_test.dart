@@ -34,10 +34,16 @@ void main() {
 
   group('System A is declared where it is required', () {
     test('onboarding declares it', () {
-      final src =
-          File('lib/src/onboarding/onboarding_flow.dart').readAsStringSync();
-      expect(src.contains('PawSystemScope'), isTrue);
-      expect(src.contains('PawSystem.a'), isTrue,
+      // Checked across the package rather than one file: the declaration lives
+      // in OnbSurface (onboarding_ui.dart) so every onboarding page inherits it
+      // from one place, and pinning a single filename made this brittle.
+      final declared = Directory('lib/src/onboarding')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .map((f) => f.readAsStringSync())
+          .any((s) => s.contains('PawSystemScope') && s.contains('PawSystem.a'));
+      expect(declared, isTrue,
           reason: 'onboarding inherits System B from the app root otherwise, '
               'and would render lime where the mockups call for emerald/cyan');
     });

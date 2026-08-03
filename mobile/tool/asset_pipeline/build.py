@@ -115,7 +115,11 @@ def save(im: Image.Image, rel: str, fmt: str):
     p = os.path.join(OUT, rel)
     os.makedirs(os.path.dirname(p), exist_ok=True)
     if fmt == "webp":
-        im.convert("RGB").save(p, "WEBP", quality=90, method=6)
+        # WEBP carries alpha. convert("RGB") silently flattened every cut-out
+        # onto black — invisible until one was placed on a light-ish canvas.
+        a = np.asarray(im.convert("RGBA"))[..., 3]
+        mode = "RGBA" if a.min() < 250 else "RGB"
+        im.convert(mode).save(p, "WEBP", quality=90, method=6)
     else:
         im.save(p, "PNG", optimize=True)
     return p, os.path.getsize(p)

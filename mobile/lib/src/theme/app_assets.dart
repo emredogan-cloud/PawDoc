@@ -72,6 +72,8 @@ class AppAssets {
         'cat' => UiAssets.petSpeciesCat,
         'rabbit' => UiAssets.petSpeciesRabbit,
         'bird' => UiAssets.petSpeciesBird,
+        'guinea_pig' => UiAssets.petSpeciesGuineaPig,
+        'reptile' => UiAssets.petSpeciesReptile,
         _ => UiAssets.petSpeciesOther,
       };
 }
