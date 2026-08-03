@@ -326,12 +326,29 @@ class PawCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cream = variant == PawSurface.cream;
-    final bg = cream
-        ? Colors.white.withValues(alpha: 0.85)
-        : Colors.white.withValues(alpha: 0.045);
-    final border = cream
-        ? PawPalette.forestInk.withValues(alpha: 0.10)
-        : Colors.white.withValues(alpha: 0.07);
+    // Inside a migrated system the card takes that system's fill and its
+    // accent-tinted hairline border. Doing it here rather than per screen
+    // migrates every existing PawCard consumer — breed insight, walks,
+    // community, capture — in one place, which is the whole reason the
+    // shipping screens compose from this primitive.
+    final system = PawSystemScope.of(context);
+    final migrated = system != PawSystem.legacy && !cream;
+
+    final Color bg;
+    final Color border;
+    if (migrated) {
+      final t = PawTone.of(context);
+      bg = t.card;
+      border = t.border;
+    } else {
+      bg = cream
+          ? Colors.white.withValues(alpha: 0.85)
+          : Colors.white.withValues(alpha: 0.045);
+      border = cream
+          ? PawPalette.forestInk.withValues(alpha: 0.10)
+          : Colors.white.withValues(alpha: 0.07);
+    }
+
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radius),
       side: BorderSide(color: border),
