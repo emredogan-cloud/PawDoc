@@ -36,12 +36,19 @@ class PawPalette {
   static const Color forestInk = Color(0xFF1E4A40); // cream-screen headings
   static const Color forestBody = Color(0xFF4B6F66); // cream-screen body
 
-  // Mint→teal CTA gradient.
-  static const Color mint = Color(0xFF7FE6D6);
-  static const Color teal = Color(0xFF34C7AE);
+  // Accent pair, used across ~120 call sites as "the brand accent" rather than
+  // as literal mint and teal. Repointed to System B instead of rewriting every
+  // call site: the alternative was ~120 mechanical edits, many inside `const`
+  // constructors that would have had to lose their constness.
+  //
+  // System A screens (onboarding, sign-in) must NOT rely on these — Phase P
+  // gives that subtree PawSystem.a and its own emerald/cyan values. Anything
+  // needing a context-resolved accent should use PawTone.of(context).accent.
+  static const Color mint = AppColors.lime400;
+  static const Color teal = AppColors.lime600;
 
   // Glow + accents.
-  static const Color glow = Color(0xFF2BD8BE);
+  static const Color glow = AppColors.lime500;
   static const Color leaf = Color(0xFF1B4E40);
   static const Color heart = Color(0xFFFF8A80);
 }
@@ -411,10 +418,10 @@ class PawFeatureRow extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: PawPalette.teal.withValues(alpha: cream ? 0.14 : 0.18),
+              color: _tileWash(context, cream),
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
-            child: Icon(icon, size: 20, color: PawPalette.mint),
+            child: Icon(icon, size: 20, color: _glyph(context)),
           ),
           const SizedBox(width: AppSpace.s12),
           Expanded(
@@ -512,3 +519,14 @@ class _PawDecorPainter extends CustomPainter {
   bool shouldRepaint(covariant _PawDecorPainter oldDelegate) =>
       oldDelegate.dark != dark;
 }
+
+
+/// Icon-tile wash for [PawFeatureRow] / [_AccountRow]-style rows, following the
+/// active system rather than the teal palette.
+Color _tileWash(BuildContext context, bool cream) {
+  final t = PawTone.of(context);
+  return t.accent.withValues(alpha: cream ? 0.14 : 0.16);
+}
+
+/// Glyph colour for the same rows.
+Color _glyph(BuildContext context) => PawTone.of(context).accent;

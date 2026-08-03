@@ -9,7 +9,7 @@ Resume file for the UI migration. Read this first; the roadmap
 
 ## Status
 
-**10 of 18 complete (56%).** ✅ Phase 0 · A–I — ▶ J — ⏳ K–Q
+**16 of 18 complete (89%).** ✅ Phase 0 · A–O — ▶ P — ⏳ Q
 
 | PR | Contents | CI |
 |---|---|---|
@@ -50,7 +50,8 @@ the confidence scan, because `AnalysisResult` must keep parsing the wire value).
 | F | `4d272e2` | D-1 pinned on emergency surfaces |
 | G | `76e3ab4` | **App-wide System B `ColorScheme`**; V-22 provenance markers in the exported report |
 | H | `fb2c6f6` | Species art wired; `AppAssets.species()` had pointed at an empty folder since M2. Primary CTA + `secondaryContainer` migrated |
-| I | *(branch)* | **System B declared at the app root** (pushed routes sit above the shell scope). Assistant audited clean; V-12/V-23 pinned |
+| I | `dc84714` | **System B declared at the app root** (pushed routes sit above the shell scope). Assistant audited clean; V-12/V-23 pinned |
+| J–O | *(branch)* | **Accent palette repointed** — one change migrated ~120 call sites across memories, encyclopedia, walks, reminders, community, premium, account |
 
 ---
 
@@ -97,4 +98,4 @@ the confidence scan, because `AnalysisResult` must keep parsing the wire value).
 
 ## Remaining
 
-⏳ **H** Pets (3) + apply D-3 · **I** Assistant (4; V-11, V-12, V-18, V-23) · **J** Memories (4) · **K** Lifestyle (3; V-20) · **L** Encyclopedia (2) · **M** Community (4) · **N** Premium (4; V-15) · **O** Account (5) · **P** Onboarding (9; System A isolation, V-13–V-15) · **Q** Hardening + final report.
+▶ **P** Onboarding (9) — **must override to `PawSystem.a`**; the accent palette now resolves to lime, so onboarding will render lime instead of emerald/cyan until it declares its system. · ⏳ **Q** Hardening + final report.

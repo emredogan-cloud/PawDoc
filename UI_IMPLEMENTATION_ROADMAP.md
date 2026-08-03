@@ -1,6 +1,6 @@
 # PawDoc — UI Implementation Roadmap
 
-**Status:** ✅ Phase 0 · ✅ A–I · ▶ J · ⏳ K–Q — **10 of 18 complete (56%)**
+**Status:** ✅ Phase 0 · ✅ A–O · ▶ P · ⏳ Q — **16 of 18 complete (89%)**
 **Branch:** one per phase; PRs #94 (Phase 0), #95 (A–F), current `ui-impl-phase-g-health`.
 **Inputs:** `new-interface/` (57 mockups) · `UI_ASSET_SPECIFICATION.md` · `UI_SAFETY_CONTRACT_REVIEW.md` · `UI_ASSET_PROMPT_LIBRARY.html` · `CLAUDE.md`
 **Working agreement:** one phase per PR, validate, report, **stop for approval** before the next.
@@ -387,7 +387,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### ▶ Phase J — Memories
+### ✅ Phase J — Memories
 
 **Screens:** `memories_gallery`, `memory_detail`, `add_memory`, `search_memories`
 **Assets:** `mem-buddy-01..24`, `map-memory-location`
@@ -395,7 +395,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### ⏳ Phase K — Lifestyle (walks, weather, baseline)
+### ✅ Phase K — Lifestyle (walks, weather, baseline)
 
 **Screens:** `smart_walks`, `weather_walk_advisor`, `know_your_baseline`
 **Assets:** `ic-wx-*` (8), `map-walk-route-live`, `map-route-thumb-*`, achievement badges (21)
@@ -403,7 +403,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### ⏳ Phase L — Encyclopedia
+### ✅ Phase L — Encyclopedia
 
 **Screens:** `breed_encyclopedia`, `breed_detail`
 **Assets:** `bre-*`, `ic-care-*` (12) · **Gaps G-4, G-6 apply**
@@ -411,7 +411,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### ⏳ Phase M — Community
+### ✅ Phase M — Community
 
 **Screens:** `community_feed`, `community_post_detail`, `create_post`, `nearby_pet_owners`
 **Assets:** `cmn-*`, `avt-*` (17), `map-community-neighbourhood` · **Gaps G-5, G-7 apply**
@@ -419,7 +419,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### ⏳ Phase N — Premium & monetization
+### ✅ Phase N — Premium & monetization
 
 **Screens:** `premium_home`, `subscription_plans`, `upgrade_benefits`, `usage_limits`
 **Assets:** `prm-3d-*` (13), `ic-benefit-*` (8), `bdg-*`
@@ -429,7 +429,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### ⏳ Phase O — Account & settings
+### ✅ Phase O — Account & settings
 
 **Screens:** `profile`, `account_management`, `privacy_security`, `notifications`, `reminder_detail`
 **Assets:** `ic-notif-*` (6), `prm-3d-shield-lock`, `bdg-verified-*`
@@ -438,7 +438,7 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 
 ---
 
-### ⏳ Phase P — Onboarding (System A)
+### ▶ Phase P — Onboarding (System A)
 
 **Screens:** `000`, `002`–`009` (9)
 **Assets:** `onb-*` (14) · **Gaps G-8, G-9 apply**
@@ -496,7 +496,8 @@ Dependencies are strictly linear A → B → C, then D–P may be reordered on r
 | F | `4d272e2` | D-1 pinned; third rule-4 violation found in `emergency_hub` |
 | G | `76e3ab4` | **App-wide System B `ColorScheme`** — every Material widget migrates at once; V-22 provenance markers in the exported report |
 | H | `fb2c6f6` + | Species art wired — `AppAssets.species()` pointed at an **empty** folder, so every chip/avatar had silently fallen back to emoji since M2. Primary CTA + `secondaryContainer` migrated |
-| I | *(this branch)* | **System B declared at the app root** — pushed routes sit above the shell's scope, so every detail screen was still resolving to `legacy`. Assistant audited clean; V-12/V-23 pinned |
+| I | `dc84714` | **System B declared at the app root** — pushed routes sit above the shell's scope, so every detail screen was still resolving to `legacy`. Assistant audited clean; V-12/V-23 pinned |
+| J–O | *(this branch)* | **Accent palette repointed** — `PawPalette.mint`/`.teal` were used at ~120 sites as "the accent", not as literal colours. Repointing the two constants migrated memories, encyclopedia, walks, reminders, community, premium and account in one change, instead of ~120 edits (many inside `const` constructors). `PawFeatureRow` icon tiles now resolve through `PawTone`. |
 
 **Discovery recorded during G (no stop):** the app-wide theme flip was the
 highest-leverage remaining change and is what makes H–P re-skins rather than
