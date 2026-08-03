@@ -122,8 +122,8 @@ one (scroll instead).
 
 | Page | Missing vs reference |
 |---|---|
-| 002 | hero is cropped/oversized; needs full subject + backing glow + decor |
-| 003 | **phone mockup, AI screen, background art, icons, glow** — currently text only |
+| ~~002~~ | ✅ done (`e26b441`) — whole uncropped hero, `_PlateEdgeFade` on 3 edges, cyan ribbon in FRONT, side notes, shield + trust card |
+| ~~003~~ | ✅ done (`dc67e5e`) — real iPhone plate via `OnbPhoneMockup`, live AI screen, scan-ring bloom, 4 orbiting glyphs |
 | 004 | glass cards with blur/opacity/backing glow — currently two plain containers |
 | 005 | phone mockup + animal on the right + glow + small info cards |
 | 006 | same — phone, animal, assets |
@@ -136,7 +136,17 @@ Encyclopedia, Nearby Owners, Community, Timeline, Vaccination, Medication,
 PDF export, Vet prep, Weather — while keeping the safety rules (no condition
 named, no diagnosis, no percentage, no risk score).
 
-**Two defects worth remembering:**
+**Reusable primitives now available for 004-009:**
+- `OnbPhoneMockup` — supplied iPhone plate trimmed to the device; live child
+  inside the aperture (~152x351), text scaling pinned, `FittedBox` to fit.
+- `OnbSwoosh` — the cyan light ribbon (draw it in FRONT of an opaque hero).
+- `BlendMask(BlendMode.screen)` — drops the black plate out of neon art.
+- `_PlateEdgeFade` — dissolves an opaque photo's top+side edges, keeps bottom.
+
+**Three defects worth remembering:**
+- The generated heroes are **opaque rectangles**, not cut-outs. A symmetric
+  radial mask fades all four edges and eats the animals' feet — fade the top
+  and sides only.
 - Flutter does **not** recurse into asset sub-directories. `firstrun/` was
   undeclared and the screen silently rendered fallback icons.
 - A negative `Container` margin asserts, and **release builds strip asserts** —
