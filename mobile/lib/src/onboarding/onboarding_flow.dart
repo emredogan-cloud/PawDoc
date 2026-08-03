@@ -1,15 +1,23 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../analytics/analytics.dart';
+import '../auth/supabase_providers.dart';
+import '../capture/image_compressor.dart' show SquareCrop;
 import '../pets/pet.dart';
+import '../pets/pet_photo_crop_screen.dart';
+import '../pets/pet_photo_service.dart';
 import '../pets/pets_repository.dart';
-import '../pets/species_chip.dart';
+import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/ui_assets.dart';
 import 'onboarding_stages.dart';
+import 'pending_pet.dart';
 import 'onboarding_ui.dart';
 
 /// The 8-screen onboarding wizard, rebuilt against mockups `002`–`009`.
@@ -50,8 +58,17 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   final _breed = TextEditingController();
   String _species = kSpecies.first;
   DateTime? _birthDate;
+  String? _sex;
   bool _busy = false;
   int _page = 0;
+
+  /// The photo is picked and cropped locally and uploaded only once there is a
+  /// session — onboarding runs before authentication, and the presigned-PUT
+  /// Edge Function needs a JWT.
+  Uint8List? _photoRaw;
+  Uint8List? _photoPreview;
+  SquareCrop? _photoCrop;
+  bool _photoBusy = false;
 
   /// One page per mockup, `002`–`009` — which is also the `Step N of 8` the
   /// later mockups print in their own footers.
@@ -84,6 +101,14 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     );
   }
 
+  /// Saves the pet, or holds it for the gateway.
+  ///
+  /// Onboarding now runs BEFORE authentication, and `PetsRepository.create`
+  /// reads `auth.currentUser!.id` — so writing here threw a null check the
+  /// page swallowed as "Could not save your pet", and step 7 could not be
+  /// passed at all on a cold install. Signed out, the draft is held and
+  /// created by [PendingPet.flush] on the first authenticated frame; signed in
+  /// (onboarding is also reachable from home's empty state) it is written now.
   Future<void> _submitPetSetup() async {
     if (_name.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -91,17 +116,34 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
       return;
     }
     setState(() => _busy = true);
+    final draft = Pet(
+      userId: '',
+      name: _name.text.trim(),
+      species: _species,
+      breed: _breed.text.trim().isEmpty ? null : _breed.text.trim(),
+      birthDate: _birthDate,
+      sex: _sex,
+    );
     try {
-      await ref.read(petsRepositoryProvider).create(
-            Pet(
-              userId: '',
-              name: _name.text.trim(),
-              species: _species,
-              breed: _breed.text.trim().isEmpty ? null : _breed.text.trim(),
-              birthDate: _birthDate,
-            ),
-          );
-      ref.invalidate(petsListProvider);
+      if (ref.read(supabaseClientProvider).auth.currentUser == null) {
+        PendingPet.hold(
+          draft,
+          photo: _photoRaw != null && _photoCrop != null
+              ? (_photoRaw!, _photoCrop!)
+              : null,
+        );
+      } else {
+        String? photoKey;
+        if (_photoRaw != null && _photoCrop != null) {
+          photoKey = await ref
+              .read(petPhotoServiceProvider)
+              .cropAndUpload(_photoRaw!, _photoCrop!);
+        }
+        await ref.read(petsRepositoryProvider).create(
+              photoKey == null ? draft : draft.copyWith(photoKey: photoKey),
+            );
+        ref.invalidate(petsListProvider);
+      }
       await _advance();
     } catch (_) {
       if (mounted) {
@@ -113,15 +155,91 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     }
   }
 
-  Future<void> _finish() async {
-    await Analytics.onboardingCompleted();
-    if (mounted) context.go('/');
+  Future<void> _pickBirthDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _birthDate ?? DateTime(now.year - 1, now.month, now.day),
+      firstDate: DateTime(now.year - 40),
+      lastDate: now,
+    );
+    if (picked != null) setState(() => _birthDate = picked);
   }
 
-  /// Top-right Skip → home. Routing is unchanged: onboarding is an optional
-  /// flow entered from the home empty state, so leaving returns to home (which
-  /// re-shows the "set up your pet" prompt if no pet exists).
-  void _skip() => context.go('/');
+  static String _formatDate(DateTime d) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${months[d.month - 1]} ${d.day}, ${d.year}';
+  }
+
+  /// `2y 2m`, as the mockup prints it beside the date.
+  static String _ageLabel(DateTime birth) {
+    final now = DateTime.now();
+    var months = (now.year - birth.year) * 12 + now.month - birth.month;
+    if (now.day < birth.day) months -= 1;
+    if (months < 0) months = 0;
+    return months < 12 ? '${months}m' : '${months ~/ 12}y ${months % 12}m';
+  }
+
+  /// Picks and crops locally. The upload waits for a session — see
+  /// [_submitPetSetup].
+  Future<void> _pickPhoto() async {
+    if (_photoBusy) return;
+    setState(() => _photoBusy = true);
+    final service = ref.read(petPhotoServiceProvider);
+    try {
+      final raw = await service.pick(ImageSource.gallery);
+      if (raw == null || !mounted) return;
+      final crop = await Navigator.of(context).push<SquareCrop>(
+        MaterialPageRoute(
+          builder: (_) => PetPhotoCropScreen(
+            bytes: raw,
+            petName: _name.text.trim().isEmpty ? null : _name.text.trim(),
+          ),
+        ),
+      );
+      if (crop == null || !mounted) return;
+      setState(() {
+        _photoRaw = raw;
+        _photoCrop = crop;
+        _photoPreview = raw;
+      });
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Couldn’t add that photo. Please try again.')));
+      }
+    } finally {
+      if (mounted) setState(() => _photoBusy = false);
+    }
+  }
+
+  Future<void> _finish() async {
+    await Analytics.onboardingCompleted();
+    if (mounted) _leave();
+  }
+
+  /// Top-right Skip, and the exit at the end of the journey.
+  void _skip() => _leave();
+
+  /// Where onboarding hands off.
+  ///
+  /// Signed out this is the auth gateway (`000`), which is the next screen in
+  /// the first-run journey. Going to `/` instead sent the user back to the
+  /// app-open screen: the router redirects an unauthenticated `/` to
+  /// `/welcome` until `FirstRun` is marked done, and only the gateway marks it
+  /// — so finishing onboarding looped straight back to its own beginning.
+  /// Device-confirmed on the Redmi before this existed.
+  ///
+  /// Signed in — onboarding is also reachable from home's empty state — home
+  /// is still the right destination.
+  void _leave() {
+    final loggedIn =
+        ref.read(supabaseClientProvider).auth.currentSession != null;
+    context.go(loggedIn ? '/' : '/auth-gateway');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -631,140 +749,525 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
           color: AppColors.emerald400, fontWeight: FontWeight.w700));
 
   // -------------------------------------------------------------------------
-  // 6 · Add first pet (mockup 008)
+  // 7 · Add the first pet (mockup 008)
   // -------------------------------------------------------------------------
+  //
+  // Every control here already exists in the product — `Pet` carries name,
+  // breed, birth date, sex and a photo key, and `PetFormScreen` edits all five.
+  // The mockup simply asks for them at the start, so nothing new is invented;
+  // the page reaches for the same repository, the same photo service and the
+  // same crop screen.
   Widget _petSetup() => OnbPage(children: [
+        const SizedBox(height: AppSpace.s4),
+        const Center(child: PawPlusCrest(tint: AppColors.cyan400, size: 58)),
         const SizedBox(height: AppSpace.s8),
-        Center(
-            child: OnbGlowIcon(Icons.add_circle_outline_rounded,
-                color: AppColors.cyan400, size: 62)),
-        const SizedBox(height: AppSpace.s16),
-        const OnbHeadline('Let\'s add your', 'first furry friend'),
+        const OnbHeadline('Let’s add your', 'first furry friend',
+            trailing: Icon(LucideIcons.pawPrint,
+                size: 22, color: AppColors.cyan400)),
         const SizedBox(height: AppSpace.s12),
         const OnbSubtitle(
-            'Adding your pet unlocks personalised reminders and a complete '
-            'health diary.'),
-        const SizedBox(height: AppSpace.s20),
-        Text('What kind of pet are they?',
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(color: const Color(0xFFA9B4C4))),
-        const SizedBox(height: AppSpace.s12),
-        // Horizontal rail of photo cards, as mockup 008 draws it. Scrolls
-        // rather than wrapping so the row reads as one gallery at 320dp.
-        SizedBox(
-          height: 132,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: kSpecies.length,
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            separatorBuilder: (_, _) => const SizedBox(width: AppSpace.s8),
-            itemBuilder: (_, i) => SpeciesChip(
-              species: kSpecies[i],
-              selected: _species == kSpecies[i],
-              variant: SpeciesChipVariant.card,
-              onTap: () => setState(() => _species = kSpecies[i]),
-            ),
+            'Add your pet to unlock personalized AI insights, reminders and a '
+            'complete health diary.'),
+        const SizedBox(height: AppSpace.s16),
+        SpeciesGallery(
+          species: kSpecies,
+          selected: _species,
+          onSelect: (s) => setState(() => _species = s),
+        ),
+        const SizedBox(height: AppSpace.s16),
+        OnbNeonCard(
+          tint: AppColors.emerald500,
+          radius: 20,
+          borderAlpha: 0.20,
+          glow: 0.08,
+          fill: 0.014,
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left: the record fields, in the mockup's order.
+              Expanded(
+                child: Column(
+                  children: [
+                    OnbFormField(
+                      icon: LucideIcons.pawPrint,
+                      label: 'Pet’s name',
+                      child: OnbFieldShell(
+                        tint: _name.text.trim().isEmpty
+                            ? null
+                            : AppColors.emerald400,
+                        child: Row(children: [
+                          Expanded(
+                            child: TextField(
+                              key: const Key('onb_pet_name'),
+                              controller: _name,
+                              textCapitalization: TextCapitalization.words,
+                              onChanged: (_) => setState(() {}),
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 13),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: InputBorder.none,
+                                hintText: 'Buddy',
+                                hintStyle: TextStyle(
+                                    color: Color(0xFF5D6A7C), fontSize: 13),
+                              ),
+                            ),
+                          ),
+                          if (_name.text.trim().isNotEmpty)
+                            const Icon(LucideIcons.circleCheck,
+                                size: 15, color: AppColors.emerald400),
+                        ]),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    OnbFormField(
+                      icon: LucideIcons.shieldCheck,
+                      label: 'Breed (optional)',
+                      child: OnbFieldShell(
+                        child: Row(children: [
+                          Expanded(
+                            child: TextField(
+                              key: const Key('onb_pet_breed'),
+                              controller: _breed,
+                              textCapitalization: TextCapitalization.words,
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 13),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: InputBorder.none,
+                                hintText: 'Golden Retriever',
+                                hintStyle: TextStyle(
+                                    color: Color(0xFF5D6A7C), fontSize: 13),
+                              ),
+                            ),
+                          ),
+                        ]),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    OnbFormField(
+                      icon: LucideIcons.calendarDays,
+                      label: 'Birth date / Age',
+                      child: GestureDetector(
+                        key: const Key('onb_pet_birthdate'),
+                        onTap: _pickBirthDate,
+                        child: OnbFieldShell(
+                          child: Row(children: [
+                            Expanded(
+                              child: Text(
+                                _birthDate == null
+                                    ? 'Select a date'
+                                    : _formatDate(_birthDate!),
+                                style: TextStyle(
+                                    color: _birthDate == null
+                                        ? const Color(0xFF5D6A7C)
+                                        : Colors.white,
+                                    fontSize: 13),
+                              ),
+                            ),
+                            if (_birthDate != null)
+                              Text(_ageLabel(_birthDate!),
+                                  style: const TextStyle(
+                                      color: AppColors.emerald400,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    OnbFormField(
+                      icon: LucideIcons.venusAndMars,
+                      label: 'Gender',
+                      child: Row(children: [
+                        for (final (value, label, glyph) in const [
+                          ('male', 'Male', LucideIcons.mars),
+                          ('female', 'Female', LucideIcons.venus),
+                        ])
+                          Padding(
+                            padding: const EdgeInsets.only(right: 7),
+                            child: GestureDetector(
+                              key: Key('onb_pet_sex_$value'),
+                              onTap: () => setState(
+                                  () => _sex = _sex == value ? null : value),
+                              child: OnbFieldShell(
+                                height: 30,
+                                tint: _sex == value
+                                    ? AppColors.emerald400
+                                    : null,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(label,
+                                        style: TextStyle(
+                                            color: _sex == value
+                                                ? AppColors.emerald400
+                                                : Colors.white,
+                                            fontSize: 12.5)),
+                                    const SizedBox(width: 3),
+                                    Icon(glyph,
+                                        size: 12,
+                                        color: _sex == value
+                                            ? AppColors.emerald400
+                                            : const Color(0xFF8B96A6)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ]),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Right: the photo, and the well that asks for one.
+              SizedBox(
+                width: 136,
+                child: Column(
+                  children: [
+                    _PhotoPreview(
+                      bytes: _photoPreview,
+                      species: _species,
+                      busy: _photoBusy,
+                      onTap: _pickPhoto,
+                    ),
+                    const SizedBox(height: 9),
+                    OnbUploadWell(
+                      onTap: _pickPhoto,
+                      hint: 'This helps AI provide better insights.',
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: AppSpace.s20),
-        OnbPanel(
-          child: Column(children: [
-            TextField(
-              key: const Key('onb_pet_name'),
-              controller: _name,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                  labelText: 'Pet\'s name', filled: true),
+        const SizedBox(height: AppSpace.s12),
+        const MoreDetailsCard(),
+        const SizedBox(height: AppSpace.s12),
+        const OnbPanel(
+          padding: EdgeInsets.fromLTRB(
+              AppSpace.s8, AppSpace.s16, AppSpace.s8, AppSpace.s16),
+          child: OnbTrustRow(items: [
+            (
+              LucideIcons.heartHandshake,
+              'Personalized Care',
+              'Tailored insights & health tracking.',
+              AppColors.emerald400
             ),
-            const SizedBox(height: AppSpace.s16),
-            TextField(
-              controller: _breed,
-              decoration: const InputDecoration(
-                  labelText: 'Breed (optional)', filled: true),
+            (
+              LucideIcons.bell,
+              'Smart Reminders',
+              'Never miss vaccines, meds or checkups.',
+              AppColors.emerald400
+            ),
+            (
+              LucideIcons.notebookPen,
+              'Complete Diary',
+              'All records, all moments, in one secure place.',
+              OnbAccent.violet
             ),
           ]),
         ),
-        ..._footer(OnbCta(
+        const SizedBox(height: AppSpace.s12),
+        OnbPanel(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s16, vertical: AppSpace.s12),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const OnbNeonGlyph(LucideIcons.shieldCheck,
+                tint: AppColors.emerald400, size: 17),
+            const SizedBox(width: AppSpace.s8),
+            Flexible(
+              child: Text.rich(
+                TextSpan(children: [
+                  const TextSpan(text: 'Your pet’s data is '),
+                  _accent('private'),
+                  const TextSpan(text: ', '),
+                  _accent('secure'),
+                  const TextSpan(text: ' and encrypted.'),
+                ]),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Color(0xFFC3CCD9), fontSize: 12.5, height: 1.3),
+              ),
+            ),
+          ]),
+        ),
+        const SizedBox(height: AppSpace.s20),
+        OnbCta(
           key: const Key('onb_pet_continue'),
-          label: _busy ? 'Saving…' : 'Next: Enable smart features',
+          label: _busy ? 'Saving…' : 'Next: Enable Smart Features',
           busy: _busy,
           onPressed: _busy ? null : _submitPetSetup,
-        )),
-        const SizedBox(height: AppSpace.s8),
-        const OnbFooterNote('Your pet\'s data is private and encrypted.',
-            icon: Icons.lock_outline_rounded),
+        ),
+        const SizedBox(height: AppSpace.s12),
+        OnbStepLabel(step: _page, total: _names.length),
       ]);
 
   // -------------------------------------------------------------------------
   // 8 · Welcome (mockup 009)
   // -------------------------------------------------------------------------
   Widget _welcome() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s16),
-        Center(
-            child: OnbGlowIcon(Icons.check_circle_outline_rounded,
-                color: AppColors.emerald400, size: 78)),
-        const SizedBox(height: AppSpace.s16),
-        const OnbHeadline('You\'re all set,', 'welcome to PawDoc!'),
+        const SizedBox(height: AppSpace.s8),
+        const Center(child: SuccessCrest(size: 74)),
+        const SizedBox(height: AppSpace.s8),
+        const OnbHeadline('You’re all set,', 'welcome to PawDoc!',
+            trailing:
+                Icon(LucideIcons.heart, size: 18, color: AppColors.emerald400)),
         const SizedBox(height: AppSpace.s12),
-        const OnbSubtitle(
-            'Everything you need to care better, track smarter, and be there '
-            'when it matters most.'),
-        const SizedBox(height: AppSpace.s20),
-        const Center(child: OnbHero(UiAssets.onbHeroDogKittenCelebration, height: 210)),
-        const SizedBox(height: AppSpace.s20),
-        Text('Here\'s what you can do now',
-            textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(color: const Color(0xFFA9B4C4))),
-        const SizedBox(height: AppSpace.s12),
-        const Row(children: [
-          Expanded(
-              child: OnbFeatureCard(
-                  icon: Icons.auto_stories_outlined,
-                  title: 'Health diary',
-                  caption: 'Track every moment.')),
-          SizedBox(width: AppSpace.s8),
-          Expanded(
-              child: OnbFeatureCard(
-                  icon: Icons.smart_toy_outlined,
-                  title: 'Assistant',
-                  caption: 'Guidance, anytime.',
-                  color: AppColors.cyan400)),
+        const OnbSubtitle.rich([
+          ('Everything you need to care better,\ntrack smarter, and ', null),
+          ('be there when it matters most.', AppColors.emerald400),
         ]),
         const SizedBox(height: AppSpace.s8),
-        const Row(children: [
-          Expanded(
-              child: OnbFeatureCard(
-                  icon: Icons.notifications_none_rounded,
-                  title: 'Reminders',
-                  caption: 'Vaccines, meds, checkups.',
-                  color: AppColors.cyan400)),
-          SizedBox(width: AppSpace.s8),
-          Expanded(
-              child: OnbFeatureCard(
-                  icon: Icons.ios_share_rounded,
-                  title: 'Share & export',
-                  caption: 'Reports for your vet.')),
-        ]),
-        ..._footer(OnbCta(
+        const WelcomeHero(height: 250),
+        // The trust card rides up over the hero's foot, as the mockup overlaps
+        // them.
+        Transform.translate(
+          offset: const Offset(0, -34),
+          child: OnbPanel(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s12, vertical: AppSpace.s12),
+            child: Row(children: [
+              Image.asset(
+                UiAssets.onbShieldPawTeal3d,
+                height: 46,
+                excludeFromSemantics: true,
+                errorBuilder: (_, _, _) => const OnbNeonGlyph(
+                    LucideIcons.shieldCheck,
+                    tint: AppColors.emerald400,
+                    size: 26),
+              ),
+              const SizedBox(width: AppSpace.s8),
+              Flexible(
+                child: Text.rich(
+                  TextSpan(children: [
+                    const TextSpan(
+                        text: 'Built with love, backed by science,\n'
+                            'and designed for your '),
+                    _accent('pet’s well-being.'),
+                  ]),
+                  style: const TextStyle(
+                      color: Color(0xFFC3CCD9), fontSize: 13, height: 1.36),
+                ),
+              ),
+            ]),
+          ),
+        ),
+        const OnbSparkRule('Here’s what you can do now'),
+        const SizedBox(height: AppSpace.s12),
+        const IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: OnbBenefitCard(
+                    icon: LucideIcons.notebookPen,
+                    title: 'Complete\nHealth Diary',
+                    caption: 'Track every moment, from today and for years '
+                        'ahead.',
+                    tint: AppColors.emerald400),
+              ),
+              SizedBox(width: 7),
+              Expanded(
+                child: OnbBenefitCard(
+                    icon: LucideIcons.brain,
+                    title: 'AI Assistant',
+                    caption: 'Get instant guidance and answers, anytime.',
+                    tint: AppColors.emerald400),
+              ),
+              SizedBox(width: 7),
+              Expanded(
+                child: OnbBenefitCard(
+                    icon: LucideIcons.bell,
+                    title: 'Smart Reminders',
+                    caption: 'Never miss vaccines, meds or important '
+                        'checkups.',
+                    tint: AppColors.cyan300),
+              ),
+              SizedBox(width: 7),
+              Expanded(
+                child: OnbBenefitCard(
+                    icon: LucideIcons.fileText,
+                    title: 'Share & Export',
+                    caption: 'Export reports and share easily with your '
+                        'veterinarian.',
+                    tint: OnbAccent.violet),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpace.s12),
+        OnbPanel(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s12, vertical: AppSpace.s12),
+          child: Row(children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: AppColors.emerald400.withValues(alpha: 0.55)),
+              ),
+              child: const OnbNeonGlyph(LucideIcons.lockKeyhole,
+                  tint: AppColors.emerald400, size: 19),
+            ),
+            const SizedBox(width: AppSpace.s12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Your pet’s data is safe and private.',
+                      maxLines: 1,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700)),
+                  SizedBox(height: 2),
+                  Text('We never sell your data. Ever.',
+                      style:
+                          TextStyle(color: Color(0xFF9AA6B6), fontSize: 12)),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpace.s8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(
+                    color: AppColors.emerald400.withValues(alpha: 0.45)),
+              ),
+              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(LucideIcons.shieldCheck,
+                    size: 13, color: AppColors.emerald400),
+                SizedBox(width: 4),
+                Text('PRIVATE BY\nDESIGN',
+                    style: TextStyle(
+                        color: AppColors.emerald400,
+                        fontSize: 8,
+                        height: 1.25,
+                        letterSpacing: 0.4,
+                        fontWeight: FontWeight.w700)),
+              ]),
+            ),
+          ]),
+        ),
+        const SizedBox(height: AppSpace.s16),
+        // The mockup signs off in a handwriting face; the bundle ships
+        // Bricolage and Inter, so the closest true statement is an italic in
+        // the accent rather than a fifth webfont for one line.
+        const Center(
+          child: Text('Let’s give them the best life  ♡',
+              style: TextStyle(
+                  color: AppColors.emerald400,
+                  fontSize: 15,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w600)),
+        ),
+        const SizedBox(height: AppSpace.s16),
+        OnbCta(
           key: const Key('onb_finish'),
-          label: 'Start my journey',
-          trailing: Icons.arrow_forward_rounded,
+          label: 'Start My Journey',
+          trailing: LucideIcons.arrowRight,
           onPressed: _finish,
-        )),
-        const SizedBox(height: AppSpace.s8),
-        const OnbFooterNote('We never sell your data. Ever.',
-            icon: Icons.lock_outline_rounded),
+        ),
+        const SizedBox(height: AppSpace.s12),
+        OnbStepLabel(step: _page, total: _names.length),
       ]);
 }
 
 // ---------------------------------------------------------------------------
 // Page-local building blocks
 // ---------------------------------------------------------------------------
+
+/// `008`'s photo well: the chosen picture, or the species portrait standing in
+/// for one, with the camera button the mockup parks in its corner.
+class _PhotoPreview extends StatelessWidget {
+  const _PhotoPreview({
+    required this.bytes,
+    required this.species,
+    required this.busy,
+    required this.onTap,
+  });
+
+  final Uint8List? bytes;
+  final String species;
+  final bool busy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: bytes == null ? 'Add a photo of your pet' : 'Change photo',
+      child: ExcludeSemantics(
+        child: GestureDetector(
+          onTap: onTap,
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: AppColors.emerald400.withValues(alpha: 0.55),
+                          width: 1.4),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      child: bytes != null
+                          ? Image.memory(bytes!, fit: BoxFit.cover)
+                          : Opacity(
+                              opacity: 0.55,
+                              child: Image.asset(
+                                AppAssets.species(species),
+                                fit: BoxFit.cover,
+                                excludeFromSemantics: true,
+                                errorBuilder: (_, _, _) => const ColoredBox(
+                                    color: Color(0xFF14203A)),
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: 6,
+                  bottom: 6,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xE60A1220),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.22)),
+                    ),
+                    child: busy
+                        ? const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: AppColors.emerald400),
+                          )
+                        : const Icon(LucideIcons.camera,
+                            size: 15, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// One column of the `004` trust strip: art, title, two-line caption.
 class _TrustColumn extends StatelessWidget {

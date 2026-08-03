@@ -560,7 +560,7 @@ class OnbTrustRow extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 12.5,
+                        fontSize: 11.5,
                         height: 1.2,
                         fontWeight: FontWeight.w700)),
                 if (items[i].$3 != null) ...[
@@ -568,7 +568,7 @@ class OnbTrustRow extends StatelessWidget {
                   Text(items[i].$3!,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                          color: Color(0xFF97A2B2), fontSize: 11.5, height: 1.28)),
+                          color: Color(0xFF97A2B2), fontSize: 11, height: 1.28)),
                 ],
               ],
             ),

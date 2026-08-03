@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../pets/pet.dart';
+import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/ui_assets.dart';
 import 'onboarding_ui.dart';
@@ -336,13 +338,13 @@ class DoesNotDiagnosePanel extends StatelessWidget {
 // 005 · the health diary
 // ---------------------------------------------------------------------------
 
-/// Decorative rail hues.
+/// Decorative hues used by the onboarding illustrations.
 ///
 /// The mockup tints the fourth item amber, but amber is `monitorLight` — a
 /// safety-locked status colour that design_tokens forbids using as decoration —
 /// so Memories takes a rose that carries no triage meaning.
-class _RailHue {
-  const _RailHue._();
+class OnbAccent {
+  const OnbAccent._();
   static const violet = Color(0xFFA78BFA);
   static const rose = Color(0xFFF472B6);
   static const azure = Color(0xFF60A5FA);
@@ -431,8 +433,8 @@ class _DiaryRail extends StatelessWidget {
     (LucideIcons.syringe, 'Vaccinations', 'Never miss an important shot.',
         AppColors.emerald400),
     (LucideIcons.calendarDays, 'Reminders', 'Smart alerts for what matters.',
-        _RailHue.violet),
-    (LucideIcons.image, 'Memories', 'Save moments that matter.', _RailHue.rose),
+        OnbAccent.violet),
+    (LucideIcons.image, 'Memories', 'Save moments that matter.', OnbAccent.rose),
     (LucideIcons.fileText, 'Reports', 'Export beautiful PDF summaries.',
         AppColors.cyan300),
   ];
@@ -667,7 +669,7 @@ class _DiaryScreen extends StatelessWidget {
                 thumb: UiAssets.petBuddyAvatar,
               ),
               const _TimelineRow(
-                tint: _RailHue.azure,
+                tint: OnbAccent.azure,
                 icon: LucideIcons.syringe,
                 title: 'Rabies Vaccine',
                 date: 'May 28',
@@ -681,14 +683,14 @@ class _DiaryScreen extends StatelessWidget {
                 body: '24.3 kg',
               ),
               const _TimelineRow(
-                tint: _RailHue.violet,
+                tint: OnbAccent.violet,
                 icon: LucideIcons.notebookPen,
                 title: 'Note Added',
                 date: 'May 18',
                 body: 'Changed food brand to\ngrain-free formula.',
               ),
               const _TimelineRow(
-                tint: _RailHue.rose,
+                tint: OnbAccent.rose,
                 icon: LucideIcons.image,
                 title: 'Memory',
                 date: 'May 10',
@@ -1352,6 +1354,612 @@ class ChatScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// 008 · add the first pet
+// ---------------------------------------------------------------------------
+
+/// The photo gallery of species, as `008` lays it out: the selection carries a
+/// lit emerald border and a check badge, the rest sit dark.
+///
+/// The shipping `SpeciesChip` resolves its accent through the app palette,
+/// which now points at lime — so on this System A page the selected card came
+/// out lime-on-navy. This one takes its colour from the page.
+class SpeciesGallery extends StatelessWidget {
+  const SpeciesGallery({
+    required this.species,
+    required this.selected,
+    required this.onSelect,
+    super.key,
+  });
+
+  final List<String> species;
+  final String selected;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 128,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        itemCount: species.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 9),
+        itemBuilder: (_, i) => _SpeciesCard(
+          species: species[i],
+          selected: species[i] == selected,
+          onTap: () => onSelect(species[i]),
+        ),
+      ),
+    );
+  }
+}
+
+class _SpeciesCard extends StatelessWidget {
+  const _SpeciesCard({
+    required this.species,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String species;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const tint = AppColors.emerald400;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: speciesName(species),
+      child: ExcludeSemantics(
+        child: GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: 88,
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: selected
+                  ? tint.withValues(alpha: 0.07)
+                  : const Color(0xFF0B1322),
+              border: Border.all(
+                color: selected
+                    ? tint
+                    : Colors.white.withValues(alpha: 0.10),
+                width: selected ? 1.8 : 1,
+              ),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                          color: tint.withValues(alpha: 0.34),
+                          blurRadius: 20,
+                          spreadRadius: -3)
+                    ]
+                  : null,
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(11),
+                          child: Image.asset(
+                            AppAssets.species(species),
+                            fit: BoxFit.cover,
+                            excludeFromSemantics: true,
+                            errorBuilder: (_, _, _) => ColoredBox(
+                              color: const Color(0xFF14203A),
+                              child: Center(
+                                  child: Text(speciesEmoji(species),
+                                      style: const TextStyle(fontSize: 26))),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (selected)
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Container(
+                            width: 19,
+                            height: 19,
+                            decoration: const BoxDecoration(
+                                shape: BoxShape.circle, color: tint),
+                            child: const Icon(LucideIcons.check,
+                                size: 12, color: Color(0xFF04140A)),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(LucideIcons.pawPrint,
+                        size: 11,
+                        color: selected
+                            ? tint
+                            : Colors.white.withValues(alpha: 0.45)),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(speciesName(species),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              color: selected ? tint : Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One labelled control in `008`'s form: a tinted glyph in the gutter, a small
+/// caption, and the field beneath it.
+class OnbFormField extends StatelessWidget {
+  const OnbFormField({
+    required this.icon,
+    required this.label,
+    required this.child,
+    this.tint = AppColors.emerald400,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final Widget child;
+  final Color tint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 15),
+          child: OnbNeonGlyph(icon, tint: tint, size: 15, strength: 0.5),
+        ),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: const TextStyle(
+                      color: Color(0xFFA9B4C4), fontSize: 10.5, height: 1.4)),
+              const SizedBox(height: 4),
+              child,
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The dark, hairlined box every control in `008` sits in.
+class OnbFieldShell extends StatelessWidget {
+  const OnbFieldShell({
+    required this.child,
+    this.tint,
+    this.height = 34,
+    super.key,
+  });
+
+  final Widget child;
+  final Color? tint;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        height: height,
+        padding: const EdgeInsets.symmetric(horizontal: 9),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A1220),
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(
+              color: tint?.withValues(alpha: 0.55) ??
+                  Colors.white.withValues(alpha: 0.11)),
+        ),
+        child: child,
+      );
+}
+
+/// `008`'s dashed upload well.
+class OnbUploadWell extends StatelessWidget {
+  const OnbUploadWell({required this.onTap, required this.hint, super.key});
+
+  final VoidCallback onTap;
+  final String hint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Add a clear photo',
+      child: ExcludeSemantics(
+        child: GestureDetector(
+          onTap: onTap,
+          child: CustomPaint(
+            painter: _DashedBoxPainter(),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(9, 9, 9, 9),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const OnbNeonGlyph(LucideIcons.cloudUpload,
+                      tint: AppColors.emerald400, size: 16, strength: 0.5),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Add a clear photo',
+                            maxLines: 1,
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text(hint,
+                            style: const TextStyle(
+                                color: Color(0xFF8B96A6),
+                                fontSize: 9.5,
+                                height: 1.25)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedBoxPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = Colors.white.withValues(alpha: 0.20);
+    final rrect = RRect.fromRectAndRadius(
+        Offset.zero & size, const Radius.circular(10));
+    final path = Path()..addRRect(rrect);
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        canvas.drawPath(metric.extractPath(d, d + 4), p);
+        d += 8;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+/// `008`'s "the more details, the better" card, art and all.
+class MoreDetailsCard extends StatelessWidget {
+  const MoreDetailsCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return OnbNeonCard(
+      tint: AppColors.emerald500,
+      radius: 18,
+      borderAlpha: 0.26,
+      glow: 0.10,
+      fill: 0.02,
+      padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                  color: AppColors.emerald400.withValues(alpha: 0.55)),
+            ),
+            child: const OnbNeonGlyph(LucideIcons.sparkles,
+                tint: AppColors.emerald400, size: 21),
+          ),
+          const SizedBox(width: 11),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('The more details, the better.',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700)),
+                SizedBox(height: 3),
+                Text(
+                    'Accurate info helps PawDoc AI give you smarter, more '
+                    'personalized guidance.',
+                    style: TextStyle(
+                        color: Color(0xFF9AA6B6), fontSize: 11, height: 1.3)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          const _ClipboardArt(),
+        ],
+      ),
+    );
+  }
+}
+
+/// The little clipboard-and-shield the mockup parks at the card's right edge.
+class _ClipboardArt extends StatelessWidget {
+  const _ClipboardArt();
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: 42,
+        height: 44,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const Positioned(
+              left: 0,
+              top: 0,
+              child: OnbNeonGlyph(LucideIcons.clipboardList,
+                  tint: AppColors.emerald400, size: 34, strength: 0.6),
+            ),
+            Positioned(
+              right: -2,
+              bottom: 0,
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                    shape: BoxShape.circle, color: Color(0xFF050B14)),
+                child: const OnbNeonGlyph(LucideIcons.shieldCheck,
+                    tint: AppColors.emerald400, size: 18, strength: 0.6),
+              ),
+            ),
+            const Positioned(
+              right: 2,
+              top: -2,
+              child: Icon(LucideIcons.sparkles,
+                  size: 9, color: AppColors.cyan300),
+            ),
+          ],
+        ),
+      );
+}
+
+// ---------------------------------------------------------------------------
+// 009 · you're all set
+// ---------------------------------------------------------------------------
+
+/// The ring-and-check crest `009` opens with, sparks included.
+class SuccessCrest extends StatelessWidget {
+  const SuccessCrest({this.size = 78, super.key});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    const tint = AppColors.emerald400;
+    return SizedBox(
+      width: size * 2.4,
+      height: size + 8,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+              left: size * 0.30,
+              top: 2,
+              child: Icon(LucideIcons.sparkles,
+                  size: size * 0.18, color: tint.withValues(alpha: 0.85))),
+          Positioned(
+              right: size * 0.34,
+              top: size * 0.10,
+              child: Icon(LucideIcons.sparkles,
+                  size: size * 0.14, color: tint.withValues(alpha: 0.70))),
+          Positioned(
+              left: size * 0.42,
+              bottom: size * 0.06,
+              child: Icon(LucideIcons.sparkles,
+                  size: size * 0.12, color: tint.withValues(alpha: 0.55))),
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: tint, width: 3),
+              boxShadow: [
+                BoxShadow(
+                    color: tint.withValues(alpha: 0.42),
+                    blurRadius: 30,
+                    spreadRadius: -2),
+              ],
+            ),
+            child: Icon(LucideIcons.check, size: size * 0.46, color: tint),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The celebration hero, floating in the mockup's field of paw watermarks.
+class WelcomeHero extends StatelessWidget {
+  const WelcomeHero({this.height = 268, super.key});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: height,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            const Positioned.fill(child: _PawField()),
+            HeroPlate(UiAssets.onbHeroDogKittenCelebration, height: height),
+            Positioned(
+              right: 62,
+              top: height * 0.13,
+              child: const OnbNeonGlyph(LucideIcons.heart,
+                  tint: AppColors.emerald400, size: 26),
+            ),
+          ],
+        ),
+      );
+}
+
+/// Green paw prints drifting behind `009`'s hero — decorative only.
+class _PawField extends StatelessWidget {
+  const _PawField();
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+      child: CustomPaint(painter: _PawFieldPainter(), size: Size.infinite));
+}
+
+class _PawFieldPainter extends CustomPainter {
+  // Hand-placed rather than random: they must never land on the animals'
+  // faces, and a seeded RNG still drifts when the box resizes.
+  static const _spots = <(double, double, double, double)>[
+    (0.04, 0.08, 22, 0.30), (0.16, 0.30, 15, 0.22), (0.06, 0.52, 18, 0.26),
+    (0.90, 0.10, 20, 0.28), (0.94, 0.36, 15, 0.22), (0.86, 0.58, 17, 0.24),
+    (0.12, 0.80, 13, 0.16), (0.92, 0.80, 13, 0.16),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final (fx, fy, s, a) in _spots) {
+      final o = Offset(fx * size.width, fy * size.height);
+      final p = Paint()..color = AppColors.emerald400.withValues(alpha: a);
+      canvas.drawOval(
+          Rect.fromCenter(
+              center: o.translate(0, s * .28), width: s * .78, height: s * .66),
+          p);
+      for (final ang in [-0.62, -0.21, 0.21, 0.62]) {
+        canvas.drawOval(
+          Rect.fromCenter(
+            center: o.translate(
+                math.sin(ang) * s * .46, -math.cos(ang) * s * .42),
+            width: s * .27,
+            height: s * .34,
+          ),
+          p,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+/// `009`'s "Here's what you can do now" rule — a label between two sparked
+/// hairlines.
+class OnbSparkRule extends StatelessWidget {
+  const OnbSparkRule(this.label, {super.key});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget side({required bool flip}) => Expanded(
+          child: Row(
+            textDirection: flip ? TextDirection.rtl : TextDirection.ltr,
+            children: [
+              Expanded(
+                child: Container(
+                  height: 1,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [
+                      Colors.transparent,
+                      AppColors.emerald400.withValues(alpha: 0.55),
+                    ]),
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 5),
+                child: Icon(LucideIcons.sparkles,
+                    size: 10, color: AppColors.emerald400),
+              ),
+            ],
+          ),
+        );
+
+    return Row(children: [
+      side(flip: false),
+      Text(label,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w700)),
+      side(flip: true),
+    ]);
+  }
+}
+
+/// One of `009`'s four capability tiles.
+class OnbBenefitCard extends StatelessWidget {
+  const OnbBenefitCard({
+    required this.icon,
+    required this.title,
+    required this.caption,
+    required this.tint,
+    super.key,
+  });
+
+  final IconData icon;
+  final String title;
+  final String caption;
+  final Color tint;
+
+  @override
+  Widget build(BuildContext context) => OnbNeonCard(
+        tint: tint,
+        radius: 14,
+        borderAlpha: 0.22,
+        glow: 0.08,
+        fill: 0.016,
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 11),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            OnbNeonGlyph(icon, tint: tint, size: 27, strength: 0.7),
+            const SizedBox(height: 7),
+            Text(title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 3),
+            Text(caption,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Color(0xFF8B96A6), fontSize: 8.5, height: 1.28)),
+          ],
+        ),
+      );
 }
 
 /// The `24/7` dial the `004` trust strip opens with. Lucide has a clock, but

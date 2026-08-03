@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../assistant/assistant_screen.dart';
@@ -6,6 +7,7 @@ import '../capture/camera_screen.dart';
 import '../emergency/emergency_help_screen.dart';
 import '../health/history_timeline_screen.dart';
 import '../home/home_screen.dart';
+import '../onboarding/pending_pet.dart';
 import '../pets/pets_list_screen.dart';
 import '../text_input/symptom_text_screen.dart';
 import '../theme/design_tokens.dart';
@@ -30,15 +32,26 @@ import '../theme/paw_components.dart';
 /// about something") alongside photo and text capture, and four destinations
 /// keeps every target comfortably above 48dp at 320dp width. Account keeps its
 /// existing Home app-bar entry point, so nothing became unreachable.
-class RootShell extends StatefulWidget {
+class RootShell extends ConsumerStatefulWidget {
   const RootShell({super.key});
 
   @override
-  State<RootShell> createState() => _RootShellState();
+  ConsumerState<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> {
+class _RootShellState extends ConsumerState<RootShell> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // The pet collected during the pre-auth onboarding journey has no owner
+    // until now. This is the first authenticated surface every sign-in path
+    // lands on — Google, email, guest and a returning user alike — so it is
+    // the one place the draft can be flushed once.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => PendingPet.flush(ref));
+  }
 
   static const _pages = <Widget>[
     HomeScreen(),
