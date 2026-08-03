@@ -60,9 +60,11 @@ Resolves conflict **C-7 / review V-24**. The mockups' Variant B puts Premium in 
 
 The result is **stronger than what shipped**: Emergency previously lived only on Home — one tap from one screen. It is now one tap from every tab.
 
-### Phase D — Home (`00924e7`)
+### Phase D — Home (`00924e7`, `9d846d9`)
 
 Secondary navigation moved onto the mockup's pill grid. Every widget key preserved verbatim, because the home tests address them by key.
+
+`PawCard` then moved to the active system too. Doing it in the primitive rather than per screen migrated every existing consumer at once — breed insight, smart walks, community, capture — which is the reason those screens compose from it. Device-verified: Smart walks and Paw Community now render on the near-black fill with lime icons and an accent-tinted hairline border.
 
 ### Phase E — Safety tripwire (`6b5f7da`)
 
@@ -117,7 +119,7 @@ New tests: `ui_assets_test` (5) · `design_tokens_test` (11) · `paw_components_
 
 ## 5. Visual accuracy
 
-**Honest estimate: ~35% of the redesign is on screen**, and that number is not comparable to the brief's 99% target, because the target measures per-screen fidelity of *implemented* screens while this measures how much of the app has been migrated at all.
+**Honest estimate: ~40% of the redesign is on screen**, and that number is not comparable to the brief's 99% target, because the target measures per-screen fidelity of *implemented* screens while this measures how much of the app has been migrated at all.
 
 Of what has been migrated:
 
@@ -126,7 +128,8 @@ Of what has been migrated:
 | Canvas / colour system | High — pure black, correct lime |
 | Bottom navigation | High, with a deliberate structural change (Emergency added, Settings to header) |
 | Pill grid, icons | High |
-| Home feature cards (pet hero, breed insight, walks, community) | **Not migrated** — still legacy teal |
+| Home cards: walks, community | Migrated — black fill, lime accents |
+| Home: pet hero CTA, "Show" button, breed insight | **Not migrated** — still legacy teal. The breed-insight card reads `scheme.secondaryContainer` from the Material theme rather than composing from `PawCard`, so it needs its own change rather than inheriting one. |
 | All other screens | **Not migrated** |
 
 ---
