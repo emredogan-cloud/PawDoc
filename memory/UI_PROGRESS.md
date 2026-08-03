@@ -3,7 +3,7 @@
 Resume file for the UI migration. Read this first; the roadmap
 (`UI_IMPLEMENTATION_ROADMAP.md`) carries the per-phase detail.
 
-**Last updated:** 2026-08-03 · onboarding rebuild in progress (scope narrowed to onboarding only)
+**Last updated:** 2026-08-03 · onboarding rebuild COMPLETE (002-009, all device-walked)
 
 ---
 
@@ -96,64 +96,96 @@ the confidence scan, because `AnalysisResult` must keep parsing the wire value).
 
 ---
 
-## Onboarding rebuild — current work
+## Onboarding rebuild — COMPLETE
 
-Scope was narrowed by the owner to **onboarding only**; other screens are
-paused. Reference fidelity is the priority — no asset, mockup, glow, card or
-decorative element may be skipped, and "it doesn't fit" is not a reason to drop
-one (scroll instead).
+Scope was narrowed by the owner to **onboarding only**. All eight mockups
+(`002`–`009`) are implemented, device-walked on the Redmi (393x851 logical,
+the same size the mockups are drawn at) and committed.
 
-**New flow, shipped (`70b8aa1`):**
+**Flow, as shipped:**
 
-    app open -> 0001 -> onboarding 002..009 -> 000 gateway
-             -> Google | Email | Guest -> Home
+    app open (0001) -> onboarding 002..009 -> auth gateway (000)
+                    -> Google | Email | Guest -> Home
 
-- `0001` app-open screen — **done, device-verified against the reference.**
-  Supplied artwork composited with `BlendMode.screen` (neon on black; `screen`
-  makes black the identity, so no mask or alpha is needed). New `BlendMask`
-  render object in `onboarding_ui.dart`.
-- `000` auth gateway — built (hero + orbit rings + 4 floating cards + shield +
-  social proof + 3 sign-in routes, guest = real Supabase anonymous session).
-  **Not yet walked on device.**
-- Routing: four pre-auth routes; `FirstRun` flag cached in memory, loaded
-  before first frame.
+**One page per mockup.** The flow used to collapse `006`+`007` into one page
+and invent an activation page to fill the gap, so neither assistant mockup was
+on screen. It is now 1:1, which is also the `Step N of 8` the later mockups
+print in their own footers. Page keys: `onb_get_started`, `onb_next_emergency`,
+`onb_next_diary`, `onb_next_assistant`, `onb_next_chat`, `onb_next_pet`,
+`onb_pet_continue`, `onb_finish`.
 
-**Still to do — 002..009 need their reference richness:**
+| Page | Commit | What landed |
+|---|---|---|
+| 002 | `e26b441` | whole uncropped hero, `_PlateEdgeFade`, cyan ribbon in FRONT, side notes, trust card |
+| 003 | `dc67e5e` | real iPhone plate, live AI screen, scan-ring bloom, 4 orbiting glyphs |
+| 004 | `699f503` | two neon glass cards + the `≠` light collision, transparency panel, 24/7 trust strip |
+| 005 | `699f503` | 5-stop rail + dotted spine, device with a live diary, callout bubble, the pair bleeding off the right |
+| 006 | `e61aab5` | robot crest, chat device, 2+2 tethered cards, privacy strip, blanket hero under the CTA |
+| 007 | `e61aab5` | paw+plus crest, chat device, 3+3 tethered cards, safety strip, halo hero |
+| 008 | `76b9988` | species photo gallery, 2-column record card, photo well + dashed upload, benefits, privacy |
+| 009 | `76b9988` | success crest, celebration hero in a paw field, spark rule, 4 tiles, PRIVATE BY DESIGN |
 
-| Page | Missing vs reference |
-|---|---|
-| ~~002~~ | ✅ done (`e26b441`) — whole uncropped hero, `_PlateEdgeFade` on 3 edges, cyan ribbon in FRONT, side notes, shield + trust card |
-| ~~003~~ | ✅ done (`dc67e5e`) — real iPhone plate via `OnbPhoneMockup`, live AI screen, scan-ring bloom, 4 orbiting glyphs |
-| 004 | glass cards with blur/opacity/backing glow — currently two plain containers |
-| 005 | phone mockup + animal on the right + glow + small info cards |
-| 006 | same — phone, animal, assets |
-| 007 | pet-create screen: cards, animals, preview, upload area, photo, chips |
-| 008 | hero, badge, icon grid, privacy section, CTA |
-| 009 | hero, success feel, feature cards, CTA |
+### Two blockers found by walking the flow (not by any test)
 
-Copy may also broaden beyond AI triage — Assistant, Memories, Smart Walks,
-Encyclopedia, Nearby Owners, Community, Timeline, Vaccination, Medication,
-PDF export, Vet prep, Weather — while keeping the safety rules (no condition
-named, no diagnosis, no percentage, no risk score).
+1. **The add-pet step could not be passed at all.** The journey now runs
+   *before* authentication and `PetsRepository.create` reads
+   `auth.currentUser!.id`, so the write threw a null check the page swallowed
+   as "Could not save your pet. Try again." Fixed with `PendingPet` — the draft
+   (and the photo bytes + crop, since uploading also needs a JWT) is held in
+   memory and created on the first authenticated frame in `RootShell`, the one
+   surface every sign-in path lands on.
+2. **Finishing looped back to the beginning.** `_finish` went to `/`, and the
+   router redirects an unauthenticated `/` to `/welcome` until `FirstRun` is
+   marked done — which only the gateway does. Onboarding now exits to
+   `/auth-gateway` signed out, home signed in.
 
-**Reusable primitives now available for 004-009:**
-- `OnbPhoneMockup` — supplied iPhone plate trimmed to the device; live child
-  inside the aperture (~152x351), text scaling pinned, `FittedBox` to fit.
-- `OnbSwoosh` — the cyan light ribbon (draw it in FRONT of an opaque hero).
-- `BlendMask(BlendMode.screen)` — drops the black plate out of neon art.
-- `_PlateEdgeFade` — dissolves an opaque photo's top+side edges, keeps bottom.
+### Things worth knowing before touching this again
 
-**Three defects worth remembering:**
-- The generated heroes are **opaque rectangles**, not cut-outs. A symmetric
-  radial mask fades all four edges and eats the animals' feet — fade the top
-  and sides only.
-- Flutter does **not** recurse into asset sub-directories. `firstrun/` was
-  undeclared and the screen silently rendered fallback icons.
-- A negative `Container` margin asserts, and **release builds strip asserts** —
-  so a full-bleed hack rendered fine on device while crashing in debug and in
-  every widget test. Use `OverflowBox`.
+- **The mockups are AI-rendered pictures, not exported frames.** At 853px for a
+  393dp screen the type measures ~27dp display, ~12dp deck, ~9.5dp body and
+  ~8dp inside the rails — the last two are unreadable on a handset. Layout,
+  spacing and composition are matched exactly; type sits ~15% above the naive
+  scale and the device gives back the width that costs. Page gutter is 18dp,
+  measured, not 20.
+- **`onb-hero-dog-kitten-cutout` was never a cutout** — a rendered checkerboard
+  baked into RGB. The auth gateway had been drawing that checkerboard. Keyed by
+  flood-filling the light neutral **from the border only** (interiors survive),
+  eroded 2px to swallow the matte fringe, then feathered.
+- **`BlendMode.screen` is the tool for every supplied hero.** They are rendered
+  on black, black is `screen`'s identity, and the canvas is nearly black — so
+  the plate merges with no matte line and the animals come through unchanged.
+- **A notched card in an `IntrinsicHeight` row needs `StackFit.passthrough`**,
+  or each card keeps its own intrinsic height and the borders end at different
+  places.
+- **Size a flanking-card stage from the card row, not a fixed box.** `007`
+  stacks three cards a side, taller than the device; a hard height clipped them
+  by 35px and only device validation showed it.
+- **`SpeciesChip` resolves its accent through the app palette**, which points at
+  lime — so on a System A page the selected chip renders lime-on-navy. The
+  isolation test does not reach it. `SpeciesGallery` takes its colour from the
+  page instead.
 
----
+### Deliberate departures from the reference
+
+| Where | Reference | Shipped | Why |
+|---|---|---|---|
+| `004` right card | "Not Urgent" | "Keep Watching" | a triage verdict, and the closest thing in the flow to an all-clear; the ladder has no "do nothing" rung |
+| `004` deck | "Instant emergency detection" | "Step-by-step emergency guidance" | promises a reliability the pipeline does not claim |
+| `005` diary row | "Mild coughing detected" + `Low` badge + "Monitor at home" | an observation + a recheck window, no badge | finding + severity grade + terminating instruction (V-14) |
+| `006` answer | "Sneezing can be caused by mild irritants, allergies, or infections" | checks observations, closes on a timeframe | names conditions as causes (V-13) |
+| `005` rail hue | amber | rose | amber is `monitorLight`, a safety-locked status colour |
+| `009` sign-off | handwriting face | italic accent | the bundle ships Bricolage + Inter; a fifth webfont for one line is not worth it |
+| `004`/`005` footer | dots | dots | kept; `006`–`009` keep `Step N of 8`, as each mockup draws it |
+
+### Known limitations
+
+- The `008` photo preview shows the picked image under `BoxFit.cover`, which is
+  exactly the crop for an untouched (centred) frame but not for a moved one.
+  The upload always uses the real crop.
+- The auth gateway (`000`) has not been re-walked against its own mockup — its
+  hero shield overlaps the dog and the social-proof line ellipsizes. Out of the
+  004-009 scope; next candidate.
+- `002`'s hero still shows faint plate edges at the sides.
 
 ## Remaining
 
