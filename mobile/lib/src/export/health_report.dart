@@ -29,16 +29,22 @@ String buildHealthReport({
   if (pet.weightKg != null) b.writeln('- Weight: ${pet.weightKg} kg');
   b.writeln();
 
-  b.writeln('## Most recent AI triage');
+  // V-22 / review §4.2 — provenance. A vet reading this must be able to tell,
+  // line by line, what a model produced from what the owner recorded. Without
+  // the marker the two sections render identically and an AI observation can be
+  // mistaken for a clinical finding.
+  b.writeln('## Most recent AI check');
+  b.writeln('_Source: PawDoc AI — generated from an owner-submitted photo or '
+      'description. Not examined by a veterinarian._');
   if (latestAnalysis == null) {
-    b.writeln('No AI analyses recorded yet.');
+    b.writeln('No AI checks recorded yet.');
   } else {
     final created = DateTime.tryParse((latestAnalysis['created_at'] as String?) ?? '');
     final level = (latestAnalysis['action'] as String?) ?? 'UNKNOWN';
     final concern = (latestAnalysis['observation'] as String?) ?? '';
     if (created != null) b.writeln('- Date: ${shortDate(created)}');
     b.writeln('- Result: $level');
-    if (concern.isNotEmpty) b.writeln('- Primary concern: $concern');
+    if (concern.isNotEmpty) b.writeln('- What the AI observed: $concern');
     final full = latestAnalysis['full_response'];
     if (full is Map) {
       final urgency = full['urgency_timeframe'] as String?;
@@ -55,6 +61,7 @@ String buildHealthReport({
   b.writeln();
 
   b.writeln('## Recent health events');
+  b.writeln('_Source: entered by the owner in PawDoc._');
   if (events.isEmpty) {
     b.writeln('No logged events.');
   } else {
@@ -116,7 +123,9 @@ String buildVetVisitPrepPack({
   }
   b.writeln();
 
-  b.writeln('## Recent checks (what the owner recorded)');
+  b.writeln('## Recent AI checks');
+  b.writeln('_Source: PawDoc AI — generated from owner-submitted photos or '
+      'descriptions. Not examined by a veterinarian._');
   if (recentAnalyses.isEmpty) {
     b.writeln('No checks recorded.');
   } else {
@@ -140,6 +149,7 @@ String buildVetVisitPrepPack({
       .toList(growable: false);
 
   b.writeln('## Vaccinations');
+  b.writeln('_Source: entered by the owner._');
   if (vaccines.isEmpty) {
     b.writeln('None logged.');
   } else {
@@ -153,6 +163,7 @@ String buildVetVisitPrepPack({
   b.writeln();
 
   b.writeln('## Medications');
+  b.writeln('_Source: entered by the owner._');
   if (meds.isEmpty) {
     b.writeln('None logged.');
   } else {
@@ -171,6 +182,7 @@ String buildVetVisitPrepPack({
   }
 
   b.writeln('## Other recent events');
+  b.writeln('_Source: entered by the owner._');
   final other = events
       .where((e) =>
           e.eventType != 'vaccination' &&

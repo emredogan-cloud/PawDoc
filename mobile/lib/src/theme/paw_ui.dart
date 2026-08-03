@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../core/motion.dart';
 import 'design_tokens.dart';
+import 'paw_components.dart';
 
 /// NEW UI translation design-system layer (OLD→NEW migration, 2026-06-12).
 ///
@@ -62,9 +63,26 @@ class PawBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = variant == PawSurface.dark;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
+    // A subtree inside a migrated shell declares its system, and the canvas has
+    // to follow: device validation of Phase D showed the new black cards and
+    // black nav bar sitting on the old teal gradient, which read as two
+    // different apps stacked on top of each other.
+    final system = PawSystemScope.of(context);
+
+    final gradient = switch (system) {
+      PawSystem.b when dark => const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.carbon900, Color(0xFF060806), AppColors.carbon900],
+          stops: [0.0, 0.5, 1.0],
+        ),
+      PawSystem.a when dark => const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.navy900, AppColors.navy850, AppColors.navy900],
+          stops: [0.0, 0.5, 1.0],
+        ),
+      _ => LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: dark
@@ -72,10 +90,17 @@ class PawBackground extends StatelessWidget {
               : const [PawPalette.creamTop, PawPalette.creamBottom],
           stops: dark ? const [0.0, 0.5, 1.0] : const [0.0, 1.0],
         ),
-      ),
+    };
+
+    // The hand-painted botanicals belong to the teal system; on the redesign's
+    // near-black canvas they read as smudges.
+    final decor = showDecor && system == PawSystem.legacy;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(gradient: gradient),
       child: Stack(
         children: [
-          if (showDecor)
+          if (decor)
             Positioned.fill(
               child: ExcludeSemantics(
                 child: CustomPaint(painter: _PawDecorPainter(dark: dark)),
@@ -169,10 +194,18 @@ class _PawPrimaryButtonState extends State<PawPrimaryButton> {
   Widget build(BuildContext context) {
     final enabled = widget.onPressed != null;
     final cream = widget.variant == PawSurface.cream;
-    final fg = cream ? Colors.white : PawPalette.bgBottom;
+    final fg = cream ? Colors.white : const Color(0xFF0A0F06);
+    // Follows the active system: this button is the primary CTA on most
+    // screens, so leaving it mint kept the teal palette visible everywhere the
+    // scheme flip had already landed.
+    final system = PawSystemScope.of(context);
     final gradientColors = cream
         ? const [Color(0xFF2FA28E), Color(0xFF1B7565)]
-        : const [PawPalette.mint, PawPalette.teal];
+        : switch (system) {
+            PawSystem.b => const [AppColors.lime400, AppColors.lime600],
+            PawSystem.a => const [AppColors.emerald400, AppColors.emerald500],
+            PawSystem.legacy => const [PawPalette.mint, PawPalette.teal],
+          };
     final label = DefaultTextStyle.merge(
       style: Theme.of(context).textTheme.labelLarge?.copyWith(
             color: fg,
@@ -301,12 +334,29 @@ class PawCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cream = variant == PawSurface.cream;
-    final bg = cream
-        ? Colors.white.withValues(alpha: 0.85)
-        : Colors.white.withValues(alpha: 0.045);
-    final border = cream
-        ? PawPalette.forestInk.withValues(alpha: 0.10)
-        : Colors.white.withValues(alpha: 0.07);
+    // Inside a migrated system the card takes that system's fill and its
+    // accent-tinted hairline border. Doing it here rather than per screen
+    // migrates every existing PawCard consumer — breed insight, walks,
+    // community, capture — in one place, which is the whole reason the
+    // shipping screens compose from this primitive.
+    final system = PawSystemScope.of(context);
+    final migrated = system != PawSystem.legacy && !cream;
+
+    final Color bg;
+    final Color border;
+    if (migrated) {
+      final t = PawTone.of(context);
+      bg = t.card;
+      border = t.border;
+    } else {
+      bg = cream
+          ? Colors.white.withValues(alpha: 0.85)
+          : Colors.white.withValues(alpha: 0.045);
+      border = cream
+          ? PawPalette.forestInk.withValues(alpha: 0.10)
+          : Colors.white.withValues(alpha: 0.07);
+    }
+
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radius),
       side: BorderSide(color: border),

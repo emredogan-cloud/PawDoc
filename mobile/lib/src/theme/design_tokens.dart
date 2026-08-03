@@ -13,6 +13,23 @@ import 'package:google_fonts/google_fonts.dart';
 /// normal language and must never be repurposed for decoration, and must always
 /// pair with an icon + text label (never color alone). See §2.2.
 
+/// Which of the redesign's two visual systems a subtree belongs to.
+///
+/// The mockups are not one uniform system (UI_ASSET_SPECIFICATION §1.3):
+/// onboarding is navy + emerald + cyan, the in-app product is near-black +
+/// lime, and an asset drawn for one looks wrong in the other. Declaring the
+/// system at the subtree root is what keeps System A isolated to onboarding.
+enum PawSystem {
+  /// Onboarding / marketing — `000`, `002`–`009`.
+  a,
+
+  /// In-app product — the other 48 screens.
+  b,
+
+  /// The shipping teal system, until a screen is migrated.
+  legacy,
+}
+
 /// Brand, accent, semantic-status and warm-ink neutral colors (§2.2).
 class AppColors {
   const AppColors._();
@@ -62,6 +79,61 @@ class AppColors {
   static const Color lightText = Color(0xFF1A2220);
   static const Color lightTextSecondary = Color(0xFF4C5A56);
   static const Color lightOutline = Color(0xFFC9D6D1);
+
+  // ==== REDESIGN RAMPS =====================================================
+  // The mockups are two deliberately different systems (UI_ASSET_SPECIFICATION
+  // §1.3); assets are not interchangeable between them. Both ramps live here so
+  // a subtree only declares *which* system it belongs to — see PawSurface.
+  //
+  // These are BRAND accents. None of them may signal a triage outcome: the
+  // action ladder's colour language is the safety-locked block above, and lime
+  // reading as "all clear" is exactly the failure mode the contract forbids.
+
+  // ---- System B — in-app product (48 of the 57 screens) ----
+  // Lime on near-black. Contrast measured, not assumed:
+  //   A3E635 on 000000 = 13.93:1 · on carbon850 = 12.81:1 · BEF264 on black = 16.07:1
+  static const Color lime500 = Color(0xFFA3E635); // primary accent
+  static const Color lime400 = Color(0xFFBEF264); // hover / highlight
+  static const Color lime600 = Color(0xFF84CC16); // pressed
+  static const Color carbon900 = Color(0xFF000000); // canvas
+  static const Color carbon850 = Color(0xFF0B0F0B); // cards
+  static const Color carbon800 = Color(0xFF11160F); // raised cards
+  static const Color carbon700 = Color(0xFF1B2118); // outline / dividers
+
+  /// Light-theme lime. `lime500` is **1.51:1 on white** — unusable for text —
+  /// and the obvious darkening (`#65A30D`) still only reaches 3.09:1, which is
+  /// large/UI only. This value is 4.99:1 on white and 4.75:1 on
+  /// [lightBackground], so it clears AA for body text on both.
+  static const Color lime700OnLight = Color(0xFF4D7C0F);
+
+  // ---- System A — onboarding / marketing (000, 002–009) ----
+  // Navy canvas, emerald primary, heavy cyan co-accent.
+  //   22C55E on 050B14 = 8.66:1 · 22D3EE on 050B14 = 10.92:1
+  static const Color navy900 = Color(0xFF050B14); // canvas
+  static const Color navy850 = Color(0xFF070D1A); // cards
+  static const Color emerald500 = Color(0xFF22C55E); // primary accent
+  static const Color emerald400 = Color(0xFF3DDC4E); // highlight
+  static const Color cyan400 = Color(0xFF22D3EE); // co-accent
+  static const Color cyan300 = Color(0xFF5EEAD4); // co-accent light
+
+  /// Brand accent for [system], resolved for the active [brightness].
+  /// In light mode System B must fall back to [lime700OnLight] — see above.
+  static Color accent(PawSystem system, Brightness brightness) => switch (system) {
+        PawSystem.a => emerald500,
+        PawSystem.b => brightness == Brightness.dark ? lime500 : lime700OnLight,
+        PawSystem.legacy => brightness == Brightness.dark ? teal600Dark : teal600Light,
+      };
+
+  /// Canvas colour for [system]. Light mode keeps the existing warm off-white
+  /// for both systems — the dark canvases are what make the accents legible.
+  static Color canvas(PawSystem system, Brightness brightness) {
+    if (brightness == Brightness.light) return lightBackground;
+    return switch (system) {
+      PawSystem.a => navy900,
+      PawSystem.b => carbon900,
+      PawSystem.legacy => ink900,
+    };
+  }
 
   // ---- Back-compat aliases (existing call-sites referenced these) ----
   static const Color teal = teal700;
