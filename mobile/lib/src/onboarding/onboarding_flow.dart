@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../analytics/analytics.dart';
-import '../core/living_pet_avatar.dart';
-import '../core/motion.dart';
-import '../core/pet_display.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
 import '../pets/species_chip.dart';
@@ -54,18 +50,19 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   final _breed = TextEditingController();
   String _species = kSpecies.first;
   DateTime? _birthDate;
-  Pet? _createdPet;
   bool _busy = false;
   int _page = 0;
 
+  /// One page per mockup, `002`–`009` — which is also the `Step N of 8` the
+  /// later mockups print in their own footers.
   static const _names = [
     'value_hook',
     'ai_insights',
     'emergency_guidance',
     'health_diary',
-    'assistant',
+    'assistant_intro',
+    'assistant_chat',
     'pet_setup',
-    'activation',
     'welcome',
   ];
 
@@ -95,7 +92,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     }
     setState(() => _busy = true);
     try {
-      _createdPet = await ref.read(petsRepositoryProvider).create(
+      await ref.read(petsRepositoryProvider).create(
             Pet(
               userId: '',
               name: _name.text.trim(),
@@ -126,8 +123,6 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   /// re-shows the "set up your pet" prompt if no pet exists).
   void _skip() => context.go('/');
 
-  String get _petName => petDisplayName(_createdPet?.name);
-
   @override
   Widget build(BuildContext context) {
     return OnbSurface(
@@ -146,9 +141,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                     _aiInsights(),
                     _emergency(),
                     _healthDiary(),
-                    _assistant(),
+                    _assistantIntro(),
+                    _assistantChat(),
                     _petSetup(),
-                    _activation(),
                     _welcome(),
                   ],
                 ),
@@ -386,68 +381,254 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
       ]);
 
   // -------------------------------------------------------------------------
-  // 5 · Assistant (mockups 006 + 007)
+  // 5 · Meet the assistant (mockup 006)
   // -------------------------------------------------------------------------
-  Widget _assistant() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s8),
+  //
+  // The mockup's sample answer opens "Sneezing can be caused by mild irritants,
+  // allergies, or infections" — three conditions named as causes (review V-13).
+  // The reply here checks observations instead and closes on a timeframe.
+  Widget _assistantIntro() => OnbPage(children: [
+        const SizedBox(height: AppSpace.s4),
         Center(
-            child: OnbGlowIcon(Icons.smart_toy_outlined,
-                color: AppColors.cyan400, size: 68)),
+          child: Image.asset(
+            UiAssets.aiRobotMascotNeon,
+            height: 104,
+            excludeFromSemantics: true,
+            errorBuilder: (_, _, _) => const OnbNeonGlyph(LucideIcons.bot,
+                tint: AppColors.cyan400, size: 74),
+          ),
+        ),
+        const SizedBox(height: AppSpace.s8),
+        const OnbHeadline('Meet your', 'AI Pet Assistant.'),
+        const SizedBox(height: AppSpace.s12),
+        const OnbSubtitle(
+            'Your personal AI guide that remembers your pets, answers '
+            'questions, and helps you make smarter decisions every day.'),
         const SizedBox(height: AppSpace.s16),
+        const AssistantStage(
+          phoneHeight: 322,
+          left: [
+            OnbSideCard(
+                icon: LucideIcons.brain,
+                title: 'Pet-Aware Conversations',
+                caption: 'AI remembers your pets and context.',
+                tint: AppColors.cyan400,
+                width: 90),
+            OnbSideCard(
+                icon: LucideIcons.messageCircle,
+                title: 'Instant Answers',
+                caption: 'Get clear guidance in seconds.',
+                tint: AppColors.cyan400,
+                width: 90),
+          ],
+          right: [
+            OnbSideCard(
+                icon: LucideIcons.history,
+                title: 'Chat History',
+                caption: 'All conversations saved and easy to revisit.',
+                tint: AppColors.cyan400,
+                width: 90),
+            OnbSideCard(
+                icon: LucideIcons.shieldCheck,
+                title: 'Safe & Responsible',
+                caption: 'Always educational, never a substitute for a vet.',
+                tint: AppColors.emerald400,
+                width: 90),
+          ],
+          screen: ChatScreen(
+            title: 'PawDoc AI',
+            subtitle: 'Your Pet Assistant',
+            question:
+                'My cat has been sneezing for two days. Should I be worried?',
+            time: '9:40 AM',
+            opening: 'Thanks for sharing — I can help you think this through.',
+            leadIn: 'Here’s what I’d check:',
+            checks: [
+              'Any other changes (appetite, energy, breathing)',
+              'Keep their space clean and dust-free',
+              'If it continues beyond 2–3 days, or worsens, contact your vet',
+            ],
+            closing: null,
+            disclaimer: 'This is not a diagnosis. For serious or worsening '
+                'symptoms, contact your veterinarian.',
+            avatar: UiAssets.petMiloTabbyAvatar,
+          ),
+        ),
+        const SizedBox(height: AppSpace.s16),
+        OnbPanel(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s16, vertical: AppSpace.s12),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const OnbNeonGlyph(LucideIcons.lockKeyhole,
+                tint: AppColors.emerald400, size: 18),
+            const SizedBox(width: AppSpace.s8),
+            Flexible(
+              child: Text.rich(
+                TextSpan(children: [
+                  const TextSpan(text: 'Your chats are '),
+                  _accent('private'),
+                  const TextSpan(text: ' and securely stored.'),
+                ]),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Color(0xFFC3CCD9), fontSize: 13, height: 1.3),
+              ),
+            ),
+          ]),
+        ),
+        const SizedBox(height: AppSpace.s12),
+        // The pair sit behind the CTA, as the mockup overlaps them.
+        Transform.translate(
+          offset: const Offset(0, 24),
+          child: const HeroWithHearts(
+              asset: UiAssets.onbHeroPuppyKittenBlanket,
+              height: 150,
+              tint: AppColors.cyan400),
+        ),
+        OnbCta(
+          key: const Key('onb_next_chat'),
+          label: 'Next: Add Your First Pet',
+          onPressed: _advance,
+        ),
+        const SizedBox(height: AppSpace.s12),
+        OnbStepLabel(step: _page, total: _names.length),
+      ]);
+
+  // -------------------------------------------------------------------------
+  // 6 · One assistant, all paws covered (mockup 007)
+  // -------------------------------------------------------------------------
+  //
+  // The safety review names this mockup's sample answer the compliant
+  // reference — no condition named, no cause asserted, an action and a
+  // timeframe — so it is reproduced as drawn.
+  Widget _assistantChat() => OnbPage(children: [
+        const SizedBox(height: AppSpace.s4),
+        const Center(child: PawPlusCrest(tint: AppColors.emerald400, size: 60)),
+        const SizedBox(height: AppSpace.s8),
         const OnbHeadline('One assistant.', 'All paws covered.'),
         const SizedBox(height: AppSpace.s12),
         const OnbSubtitle(
-            'Ask about anything to do with your pet and get clear, practical '
-            'guidance — any time, day or night.'),
-        const SizedBox(height: AppSpace.s20),
-        // `007` is the safety review's compliant reference: no condition named,
-        // no cause asserted, an action and a timeframe. `006`'s reply ("mild
-        // irritants, allergies, or infections") is not reproduced.
-        const _SamplePhone(
-          title: 'PawDoc Assistant',
-          question: 'My dog is eating less than usual. Should I be worried?',
-          disclaimer:
-              'This is AI-generated guidance, not a diagnosis. Always consult '
-              'your veterinarian.',
-          children: [
-            _SampleRow(
-                label: '',
-                body:
-                    'It depends on a few factors. A mild loss of appetite can '
-                    'happen for many reasons.'),
-            _SampleRow(
-                label: 'Things to check',
-                body:
-                    'Any other symptoms, recent diet or environment changes, '
-                    'hydration and energy levels.'),
-            _SampleRow(
-                label: 'Timing',
-                body:
-                    'If it continues for more than 24–48 hours or worsens, '
-                    'please consult your veterinarian.'),
+            'Chat with PawDoc AI about anything related to your pet. Get '
+            'helpful answers, guidance, and peace of mind — any time, day or '
+            'night.'),
+        const SizedBox(height: AppSpace.s16),
+        const AssistantStage(
+          phoneHeight: 322,
+          left: [
+            OnbSideCard(
+                icon: LucideIcons.messageCircle,
+                title: 'Pet-Aware Conversations',
+                caption: 'Understands your pet’s details and history.',
+                tint: AppColors.emerald400,
+                width: 90),
+            OnbSideCard(
+                icon: LucideIcons.brain,
+                title: 'Smart Guidance',
+                caption: 'Clear, reliable answers in seconds.',
+                tint: AppColors.emerald400,
+                width: 90),
+            OnbSideCard(
+                icon: LucideIcons.history,
+                title: 'Chat History',
+                caption: 'Pick up where you left off, anytime.',
+                tint: AppColors.emerald400,
+                width: 90),
           ],
+          right: [
+            OnbSideCard(
+                icon: LucideIcons.shieldCheck,
+                title: 'Safe & Responsible',
+                caption: 'Always educational, never a substitute for a vet.',
+                tint: AppColors.emerald400,
+                width: 90),
+            OnbSideCard(
+                icon: LucideIcons.lockKeyhole,
+                title: 'Private by Design',
+                caption: 'Your conversations are encrypted and secure.',
+                tint: AppColors.emerald400,
+                width: 90),
+            OnbSideCard(
+                icon: LucideIcons.heart,
+                title: 'Here for You',
+                caption: 'Day or night, PawDoc is always ready.',
+                tint: AppColors.emerald400,
+                width: 90),
+          ],
+          screen: ChatScreen(
+            title: 'PawDoc AI',
+            subtitle: 'AI Pet Assistant',
+            question: 'My dog is eating less than usual. Should I be worried?',
+            time: '09:41 AM',
+            opening: 'It depends on a few factors. A mild loss of appetite can '
+                'happen for many reasons.',
+            leadIn: 'Here are some things to check first:',
+            checks: [
+              'Any other symptoms (vomiting, lethargy, diarrhea)',
+              'Recent diet or environment changes',
+              'Hydration and energy levels',
+            ],
+            closing: 'If it continues for more than 24–48 hours or worsens, '
+                'please consult your veterinarian.',
+            disclaimer: 'This is AI-generated guidance, not a diagnosis. '
+                'Always consult your veterinarian.',
+            avatar: UiAssets.petBuddyAvatar,
+            sendIcon: LucideIcons.mic,
+          ),
         ),
-        const SizedBox(height: AppSpace.s20),
-        const Row(children: [
-          Expanded(
-              child: OnbFeatureCard(
-                  icon: Icons.pets_rounded,
-                  title: 'Pet-aware',
-                  caption: 'Remembers your pet\'s details.')),
-          SizedBox(width: AppSpace.s8),
-          Expanded(
-              child: OnbFeatureCard(
-                  icon: Icons.verified_user_outlined,
-                  title: 'Safe & responsible',
-                  caption: 'Educational — never a substitute for a vet.',
-                  color: AppColors.cyan400)),
-        ]),
-        ..._footer(OnbCta(
+        const SizedBox(height: AppSpace.s16),
+        OnbPanel(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s12, vertical: AppSpace.s12),
+          child: Row(children: [
+            Image.asset(
+              UiAssets.onbShieldPawTeal3d,
+              height: 46,
+              excludeFromSemantics: true,
+              errorBuilder: (_, _, _) => const OnbNeonGlyph(
+                  LucideIcons.shieldCheck,
+                  tint: AppColors.emerald400,
+                  size: 26),
+            ),
+            const SizedBox(width: AppSpace.s8),
+            Flexible(
+              child: Text.rich(
+                TextSpan(children: [
+                  const TextSpan(text: 'PawDoc AI is built with '),
+                  _accent('safety'),
+                  const TextSpan(text: ', '),
+                  _accent('transparency'),
+                  const TextSpan(text: ', and your pet’s '),
+                  _accent('wellbeing'),
+                  const TextSpan(text: ' at the core.'),
+                ]),
+                style: const TextStyle(
+                    color: Color(0xFFC3CCD9), fontSize: 13, height: 1.34),
+              ),
+            ),
+          ]),
+        ),
+        const SizedBox(height: AppSpace.s12),
+        Transform.translate(
+          offset: const Offset(0, 28),
+          child: const HeroWithHearts(
+              asset: UiAssets.onbHeroDogCatHalo,
+              height: 176,
+              tint: AppColors.emerald400),
+        ),
+        OnbCta(
           key: const Key('onb_next_pet'),
-          label: 'Next: Add your first pet',
+          label: 'Next: Personalize Your Experience',
           onPressed: _advance,
-        )),
+        ),
+        const SizedBox(height: AppSpace.s12),
+        OnbStepLabel(step: _page, total: _names.length),
       ]);
+
+  /// An emerald clause inside a run of deck copy — the mockups' inline accent.
+  static TextSpan _accent(String text) => TextSpan(
+      text: text,
+      style: const TextStyle(
+          color: AppColors.emerald400, fontWeight: FontWeight.w700));
 
   // -------------------------------------------------------------------------
   // 6 · Add first pet (mockup 008)
@@ -517,31 +698,6 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
       ]);
 
   // -------------------------------------------------------------------------
-  // 7 · Activation
-  // -------------------------------------------------------------------------
-  Widget _activation() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s24),
-        Center(child: _petAvatar()),
-        const SizedBox(height: AppSpace.s20),
-        OnbHeadline('Ready to check on', '$_petName?'),
-        const SizedBox(height: AppSpace.s12),
-        const OnbSubtitle('Symptom checks are free — no card, no limit.'),
-        const SizedBox(height: AppSpace.s24),
-        const OnbPanel(
-          child: OnbTrustRow(items: [
-            (Icons.bolt_rounded, 'Text checks', 'Always free.', null),
-            (Icons.notifications_none_rounded, 'Reminders', 'Asked for only when you add one.', null),
-            (Icons.health_and_safety_outlined, 'Emergency', 'Never paywalled.', null),
-          ]),
-        ),
-        ..._footer(OnbCta(
-          key: const Key('onb_activation_continue'),
-          label: 'Continue',
-          onPressed: _advance,
-        )),
-      ]);
-
-  // -------------------------------------------------------------------------
   // 8 · Welcome (mockup 009)
   // -------------------------------------------------------------------------
   Widget _welcome() => OnbPage(children: [
@@ -604,176 +760,11 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         const OnbFooterNote('We never sell your data. Ever.',
             icon: Icons.lock_outline_rounded),
       ]);
-
-  Widget _petAvatar() {
-    final key = _createdPet?.species ?? 'other';
-    // The first emotional moment — the species Paw Pal arrives, does one happy
-    // beat, then idles. Reduce-motion renders the static species art.
-    final avatar = LivingPetAvatar(
-      species: key,
-      size: 108,
-      seed: _createdPet?.id,
-      photoKey: _createdPet?.photoKey,
-      mountBeat: PalBeat.happy,
-    );
-    if (reduceMotion(context)) return avatar;
-    return avatar
-        .animate()
-        .scaleXY(
-            begin: 0.8,
-            end: 1.0,
-            duration: AppMotion.hero,
-            curve: Curves.easeOutBack)
-        .then(delay: const Duration(milliseconds: 80))
-        .shimmer(
-            duration: const Duration(milliseconds: 900),
-            color: AppColors.emerald400);
-  }
 }
 
 // ---------------------------------------------------------------------------
 // Page-local building blocks
 // ---------------------------------------------------------------------------
-
-/// A device-framed preview of product output.
-///
-/// Drawn rather than composited over the `onb-device-iphone-frame` raster: the
-/// frame is a rounded rectangle and a notch, and drawing it keeps the sample
-/// copy live text — which matters, because this copy is safety-relevant and
-/// must stay translatable and screen-reader accessible rather than baked into
-/// an image.
-class _SamplePhone extends StatelessWidget {
-  const _SamplePhone({
-    required this.title,
-    required this.children,
-    this.question,
-    this.disclaimer,
-  });
-
-  final String title;
-  final String? question;
-  final List<_SampleRow> children;
-  final String? disclaimer;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A1220),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14), width: 2),
-        boxShadow: [
-          BoxShadow(
-              color: AppColors.cyan400.withValues(alpha: 0.10),
-              blurRadius: 26,
-              spreadRadius: -6),
-        ],
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpace.s12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF070E19),
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 54,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: AppSpace.s12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Row(children: [
-              const OnbGlowIcon(Icons.pets_rounded,
-                  color: AppColors.emerald400, size: 26),
-              const SizedBox(width: AppSpace.s8),
-              Text(title,
-                  style: text.titleSmall?.copyWith(color: Colors.white)),
-            ]),
-            const SizedBox(height: AppSpace.s12),
-            if (question != null) ...[
-              Align(
-                alignment: Alignment.centerRight,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s12, vertical: AppSpace.s8),
-                  decoration: BoxDecoration(
-                    color: AppColors.emerald500.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(question!,
-                      style: text.bodySmall
-                          ?.copyWith(color: Colors.white, height: 1.35)),
-                ),
-              ),
-              const SizedBox(height: AppSpace.s8),
-            ],
-            ...children,
-            if (disclaimer != null) ...[
-              const SizedBox(height: AppSpace.s8),
-              Container(
-                padding: const EdgeInsets.all(AppSpace.s8),
-                decoration: BoxDecoration(
-                  color: AppColors.emerald500.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: AppColors.emerald500.withValues(alpha: 0.30)),
-                ),
-                child: Row(children: [
-                  const Icon(Icons.verified_user_outlined,
-                      size: 14, color: AppColors.emerald400),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(disclaimer!,
-                        style: text.bodySmall?.copyWith(
-                            color: const Color(0xFFBFE8CB),
-                            fontSize: 11,
-                            height: 1.3)),
-                  ),
-                ]),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SampleRow extends StatelessWidget {
-  const _SampleRow({required this.label, required this.body});
-
-  final String label;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpace.s8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (label.isNotEmpty)
-            Text(label,
-                style: text.labelMedium?.copyWith(
-                    color: AppColors.cyan300, fontWeight: FontWeight.w600)),
-          Text(body,
-              style: text.bodySmall
-                  ?.copyWith(color: const Color(0xFFD3DBE6), height: 1.4)),
-        ],
-      ),
-    );
-  }
-}
 
 /// One column of the `004` trust strip: art, title, two-line caption.
 class _TrustColumn extends StatelessWidget {

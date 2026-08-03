@@ -857,6 +857,503 @@ class _TimelineRow extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 006 / 007 · the assistant
+// ---------------------------------------------------------------------------
+
+/// A photographic plate composited with `BlendMode.screen`.
+///
+/// The supplied heroes are rendered on black rather than on alpha. Under
+/// `screen` black is the identity, so the plate merges into the navy canvas
+/// with no matte line — and because the canvas is nearly black the animals come
+/// through essentially unchanged. A soft side-and-top fade finishes the join,
+/// which is how the mockups bleed these into the page.
+class HeroPlate extends StatelessWidget {
+  const HeroPlate(this.asset, {required this.height, this.fade = true, super.key});
+
+  final String asset;
+  final double height;
+  final bool fade;
+
+  @override
+  Widget build(BuildContext context) {
+    final image = BlendMask(
+      blendMode: BlendMode.screen,
+      child: Image.asset(
+        asset,
+        height: height,
+        fit: BoxFit.contain,
+        excludeFromSemantics: true,
+        errorBuilder: (_, _, _) => SizedBox(height: height),
+      ),
+    );
+    if (!fade) return image;
+    // Two passes: the plate is a rectangle, and one gradient cannot dissolve
+    // both axes. Sides first, then the top — the bottom is left alone because
+    // that is where the animals' feet are.
+    return ShaderMask(
+      shaderCallback: (r) => const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Colors.transparent, Colors.white, Colors.white],
+        stops: [0.0, 0.24, 1.0],
+      ).createShader(r),
+      blendMode: BlendMode.dstIn,
+      child: ShaderMask(
+        shaderCallback: (r) => const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Colors.transparent,
+            Colors.white,
+            Colors.white,
+            Colors.transparent
+          ],
+          stops: [0.0, 0.22, 0.78, 1.0],
+        ).createShader(r),
+        blendMode: BlendMode.dstIn,
+        child: image,
+      ),
+    );
+  }
+}
+
+/// The hero plate with the pair of heart bubbles the mockups float beside it.
+class HeroWithHearts extends StatelessWidget {
+  const HeroWithHearts({
+    required this.asset,
+    required this.height,
+    required this.tint,
+    super.key,
+  });
+
+  final String asset;
+  final double height;
+  final Color tint;
+
+  @override
+  Widget build(BuildContext context) => Stack(
+        alignment: Alignment.center,
+        children: [
+          HeroPlate(asset, height: height),
+          Positioned(
+              left: 6,
+              top: height * 0.30,
+              child: OnbNeonGlyph(LucideIcons.messageCircleHeart,
+                  tint: tint, size: 26)),
+          Positioned(
+              right: 8,
+              top: height * 0.22,
+              child: OnbNeonGlyph(LucideIcons.messageCircleHeart,
+                  tint: tint, size: 22)),
+        ],
+      );
+}
+
+/// The device flanked by capability cards, as `006` and `007` both compose it.
+///
+/// The mockups sit the cards at roughly 68dp with ~10pt labels. Here they take
+/// the width back from the device — the reading order (card · tether · screen)
+/// is what the composition is doing, and a card too narrow to hold its own
+/// title would lose it.
+class AssistantStage extends StatelessWidget {
+  const AssistantStage({
+    required this.left,
+    required this.right,
+    required this.screen,
+    this.phoneHeight = 360,
+    super.key,
+  });
+
+  final List<OnbSideCard> left;
+  final List<OnbSideCard> right;
+  final Widget screen;
+  final double phoneHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget column(List<OnbSideCard> cards, {required bool fromLeft}) => Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment:
+              fromLeft ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+          children: [
+            for (var i = 0; i < cards.length; i++) ...[
+              if (i > 0) const SizedBox(height: 10),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: fromLeft
+                    ? [cards[i], OnbDashTether(tint: cards[i].tint, width: 13)]
+                    : [
+                        OnbDashTether(
+                            tint: cards[i].tint, width: 13, fromLeft: false),
+                        cards[i],
+                      ],
+              ),
+            ],
+          ],
+        );
+
+    // The row, not a fixed box, sets the stage height: `007` stacks three cards
+    // a side, which is taller than the device, and a hard height would clip
+    // them (it did — 35px, on the Redmi).
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Positioned(
+            left: -40, right: -40, bottom: -16, height: 130,
+            child: const OnbFloorGlow()),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            column(left, fromLeft: true),
+            OnbPhoneMockup(height: phoneHeight, child: screen),
+            column(right, fromLeft: false),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// The paw-in-a-ring crest with the small `+` badge, drawn on `007` in emerald
+/// and on `008` in cyan. No supplied plate carries it, so it is composed.
+class PawPlusCrest extends StatelessWidget {
+  const PawPlusCrest({required this.tint, this.size = 62, super.key});
+
+  final Color tint;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size * 2.0,
+      height: size + 14,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 22,
+            child: OnbGroundRings(tint: tint),
+          ),
+          Positioned(
+            left: size * 0.18,
+            top: 4,
+            child: Icon(LucideIcons.sparkles,
+                size: size * 0.20, color: tint.withValues(alpha: 0.75)),
+          ),
+          Positioned(
+            right: size * 0.20,
+            top: size * 0.30,
+            child: Icon(LucideIcons.sparkles,
+                size: size * 0.16, color: tint.withValues(alpha: 0.60)),
+          ),
+          Positioned(
+            top: 0,
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: size,
+                    height: size,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                          color: tint.withValues(alpha: 0.90), width: 1.6),
+                      boxShadow: [
+                        BoxShadow(
+                            color: tint.withValues(alpha: 0.34),
+                            blurRadius: 22,
+                            spreadRadius: -2),
+                      ],
+                    ),
+                    child: OnbNeonGlyph(LucideIcons.pawPrint,
+                        tint: tint, size: size * 0.52),
+                  ),
+                  Positioned(
+                    right: -2,
+                    bottom: 0,
+                    child: Container(
+                      width: size * 0.30,
+                      height: size * 0.30,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF050B14),
+                        border: Border.all(
+                            color: tint.withValues(alpha: 0.90), width: 1.4),
+                      ),
+                      child: Icon(LucideIcons.plus,
+                          size: size * 0.18, color: tint),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One turn of an assistant conversation, drawn inside a device.
+///
+/// Neither mockup's answer ships as written. `006` has the assistant reply
+/// *"Sneezing can be caused by mild irritants, allergies, or infections"* —
+/// three named conditions asserted as causes (review V-13). `007` is the
+/// compliant reference the review points at, and its answer is reproduced.
+class ChatScreen extends StatelessWidget {
+  const ChatScreen({
+    required this.title,
+    required this.subtitle,
+    required this.question,
+    required this.time,
+    required this.opening,
+    required this.leadIn,
+    required this.checks,
+    required this.closing,
+    required this.disclaimer,
+    required this.avatar,
+    this.sendIcon = LucideIcons.send,
+    super.key,
+  });
+
+  final String title;
+  final String subtitle;
+  final String question;
+  final String time;
+  final String opening;
+  final String leadIn;
+  final List<String> checks;
+  final String? closing;
+  final String disclaimer;
+  final String avatar;
+  final IconData sendIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    const body = TextStyle(color: Color(0xFFDCE3EC), fontSize: 7, height: 1.34);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 20, 6, 5),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: 150,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(children: [
+                Text('9:41',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 7,
+                        fontWeight: FontWeight.w700)),
+                Spacer(),
+                Icon(LucideIcons.signalHigh, size: 7, color: Colors.white),
+                SizedBox(width: 2),
+                Icon(LucideIcons.wifi, size: 7, color: Colors.white),
+                SizedBox(width: 2),
+                Icon(LucideIcons.batteryFull, size: 8, color: Colors.white),
+              ]),
+              const SizedBox(height: 7),
+              Row(children: [
+                const Icon(LucideIcons.menu, size: 9, color: Color(0xFF9AA6B6)),
+                const SizedBox(width: 6),
+                const Icon(LucideIcons.pawPrint,
+                    size: 10, color: AppColors.emerald400),
+                const SizedBox(width: 3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700)),
+                      Text('• $subtitle',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: AppColors.emerald400, fontSize: 5.5)),
+                    ],
+                  ),
+                ),
+                const Icon(LucideIcons.history, size: 9, color: Color(0xFF9AA6B6)),
+              ]),
+              const SizedBox(height: 8),
+              // Owner turn.
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 22),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.emerald500.withValues(alpha: 0.18),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
+                          bottomLeft: Radius.circular(8),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(question,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 7,
+                                  height: 1.34)),
+                          const SizedBox(height: 1),
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            Text(time,
+                                style: const TextStyle(
+                                    color: Color(0xFF8FB39A), fontSize: 5)),
+                            const SizedBox(width: 2),
+                            const Icon(LucideIcons.checkCheck,
+                                size: 6, color: AppColors.emerald400),
+                          ]),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  ClipOval(
+                    child: Image.asset(avatar,
+                        width: 15,
+                        height: 15,
+                        fit: BoxFit.cover,
+                        excludeFromSemantics: true,
+                        errorBuilder: (_, _, _) => const SizedBox(
+                            width: 15,
+                            height: 15,
+                            child: ColoredBox(color: Color(0xFF14203A)))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+              // Assistant turn.
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111A2B),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(opening, style: body),
+                    const SizedBox(height: 4),
+                    Text(leadIn, style: body),
+                    const SizedBox(height: 3),
+                    for (final c in checks)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2.5),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(top: 1),
+                              child: Icon(LucideIcons.circleCheck,
+                                  size: 7, color: AppColors.emerald400),
+                            ),
+                            const SizedBox(width: 3),
+                            Expanded(child: Text(c, style: body)),
+                          ],
+                        ),
+                      ),
+                    if (closing != null) ...[
+                      const SizedBox(height: 2),
+                      Text(closing!, style: body),
+                    ],
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.emerald500.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(5),
+                        border: Border.all(
+                            color: AppColors.emerald500.withValues(alpha: 0.34)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(LucideIcons.shieldCheck,
+                              size: 7, color: AppColors.emerald400),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(disclaimer,
+                                style: const TextStyle(
+                                    color: Color(0xFFD9C98A),
+                                    fontSize: 6,
+                                    height: 1.3)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 7),
+              Row(children: [
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                      shape: BoxShape.circle, color: Color(0xFF19233A)),
+                  child:
+                      const Icon(LucideIcons.plus, size: 9, color: Colors.white),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Container(
+                    height: 16,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    alignment: Alignment.centerLeft,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF141D30),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text('Ask anything about your pet…',
+                        style:
+                            TextStyle(color: Color(0xFF6C7A8C), fontSize: 6)),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                      shape: BoxShape.circle, color: AppColors.emerald500),
+                  child:
+                      Icon(sendIcon, size: 8, color: const Color(0xFF04140A)),
+                ),
+              ]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// The `24/7` dial the `004` trust strip opens with. Lucide has a clock, but
 /// the mockup draws the literal legend, and that is the thing being promised.
 class OnbAlwaysOnDial extends StatelessWidget {

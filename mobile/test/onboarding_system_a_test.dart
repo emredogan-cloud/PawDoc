@@ -91,10 +91,10 @@ void main() {
           reason: 'the sample result must carry its disclaimer');
     });
 
-    testWidgets('the assistant sample names no condition', (tester) async {
+    testWidgets('neither assistant sample names a condition', (tester) async {
       _stubAnalytics(tester);
       await tester.pumpWidget(_host());
-      // value -> insights -> emergency -> diary -> assistant
+      // value -> insights -> emergency -> diary -> assistant intro (006)
       for (final k in [
         'onb_get_started',
         'onb_next_emergency',
@@ -106,19 +106,54 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      final text = _visibleText(tester).toLowerCase();
-      for (final banned in [
-        'allergies',
-        'infection',
-        'irritants',
-        'can be caused by',
-      ]) {
-        expect(text.contains(banned), isFalse,
+      const banned = ['allergies', 'infection', 'irritants', 'can be caused by'];
+
+      // 006 is the mockup that names three conditions as causes.
+      var text = _visibleText(tester).toLowerCase();
+      for (final b in banned) {
+        expect(text.contains(b), isFalse,
+            reason: 'mockup 006\'s sample must not name a cause (review V-13)');
+      }
+      expect(text.contains('contact your veterinarian'), isTrue,
+          reason: 'the 006 sample must still close on a vet referral');
+
+      // 007 is the compliant reference the review points at.
+      await tester.ensureVisible(find.byKey(const Key('onb_next_chat')));
+      await tester.tap(find.byKey(const Key('onb_next_chat')));
+      await tester.pumpAndSettle();
+
+      text = _visibleText(tester).toLowerCase();
+      for (final b in banned) {
+        expect(text.contains(b), isFalse,
             reason: 'the assistant sample must not name a cause (review V-13)');
       }
       expect(text.contains('many reasons'), isTrue,
           reason: 'it should use the compliant framing from mockup 007');
       expect(text.contains('consult your veterinarian'), isTrue);
+    });
+
+    testWidgets('the diary sample carries no severity grade', (tester) async {
+      _stubAnalytics(tester);
+      await tester.pumpWidget(_host());
+      for (final k in [
+        'onb_get_started',
+        'onb_next_emergency',
+        'onb_next_diary',
+      ]) {
+        await tester.ensureVisible(find.byKey(Key(k)));
+        await tester.tap(find.byKey(Key(k)));
+        await tester.pumpAndSettle();
+      }
+
+      final text = _visibleText(tester).toLowerCase();
+      // Mockup 005 draws "Mild coughing detected", a `Low` badge and
+      // "Monitor at home" — a finding, a grade, and a terminating instruction.
+      for (final banned in ['detected', 'monitor at home', 'low urgency']) {
+        expect(text.contains(banned), isFalse,
+            reason: 'the diary sample must not depict "$banned" (review V-14)');
+      }
+      expect(text.contains('24–48 hours'), isTrue,
+          reason: 'the diary sample must still carry a recheck window');
     });
   });
 
@@ -131,11 +166,13 @@ void main() {
           (w) => w is Semantics && w.properties.label == label);
       expect(progress('Step 1 of 8'), findsOneWidget);
 
+      // One page per mockup, 002-009, so the add-pet page (008) is step 7.
       for (final k in [
         'onb_get_started',
         'onb_next_emergency',
         'onb_next_diary',
         'onb_next_assistant',
+        'onb_next_chat',
         'onb_next_pet',
       ]) {
         await tester.ensureVisible(find.byKey(Key(k)));
@@ -143,7 +180,7 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      expect(progress('Step 6 of 8'), findsOneWidget);
+      expect(progress('Step 7 of 8'), findsOneWidget);
       // Species chips moved from step 2 to the add-pet step; they must survive
       // the rebuild with their plain-text labels (a11y: the emoji-only gap).
       expect(find.text('Dog'), findsOneWidget);
