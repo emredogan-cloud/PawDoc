@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
+import '../theme/paw_components.dart';
 import 'community_home_screen.dart';
 import 'community_onboarding_screen.dart';
 import 'community_repository.dart';
@@ -37,8 +38,8 @@ class CommunityCard extends ConsumerWidget {
             },
             child: Row(
               children: [
-                const Icon(Icons.groups_2_outlined,
-                    color: PawPalette.mint, size: 32),
+                Icon(Icons.groups_2_outlined,
+                    color: PawTone.of(context).accent, size: 32),
                 const SizedBox(width: AppSpace.s12),
                 Expanded(
                   child: Column(
@@ -69,8 +70,8 @@ class CommunityCard extends ConsumerWidget {
               builder: (_) => const CommunityHomeScreen())),
           child: Row(
             children: [
-              const Icon(Icons.groups_2_rounded,
-                  color: PawPalette.mint, size: 32),
+              Icon(Icons.groups_2_rounded,
+                  color: PawTone.of(context).accent, size: 32),
               const SizedBox(width: AppSpace.s12),
               Expanded(
                 child: Column(

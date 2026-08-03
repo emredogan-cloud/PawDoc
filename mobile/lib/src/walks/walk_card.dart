@@ -8,6 +8,7 @@ import '../core/motion.dart';
 import '../pets/active_pet.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
+import '../theme/paw_components.dart';
 import 'walk_scorer.dart';
 import 'walks_controller.dart';
 import 'walks_screen.dart';
@@ -29,8 +30,8 @@ class WalkCard extends ConsumerWidget {
           key: const Key('walk_card_initial'),
           child: Row(
             children: [
-              const Icon(Icons.directions_walk_rounded,
-                  color: PawPalette.mint, size: 32),
+              Icon(Icons.directions_walk_rounded,
+                  color: PawTone.of(context).accent, size: 32),
               const SizedBox(width: AppSpace.s12),
               Expanded(
                 child: Column(
@@ -164,7 +165,7 @@ class WalkCard extends ConsumerWidget {
                       style: Theme.of(context)
                           .textTheme
                           .labelSmall
-                          ?.copyWith(color: PawPalette.mint),
+                          ?.copyWith(color: PawTone.of(context).accent),
                     ),
                   ],
                 ),
@@ -194,7 +195,7 @@ class WalkScoreRing extends StatelessWidget {
         painter: _RingPainter(
           fraction: score / 100,
           color: score >= 70
-              ? PawPalette.mint
+              ? PawTone.of(context).accent
               : score >= 45
                   ? PawPalette.teal
                   : AppColors.ink300,
