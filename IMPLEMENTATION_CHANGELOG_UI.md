@@ -5,6 +5,32 @@ Chronological record of the UI migration (Phase 0 + A–Q). Detail lives in
 `PAWDOC_UI_IMPLEMENTATION_FINAL_REPORT.md`; resume state in
 `memory/UI_PROGRESS.md`.
 
+## 2026-08-04 — home and the AI Health Check flow
+
+- **AI Health Check** `6eb63e5` — the four-screen guided flow
+  (`ai_health_check_start` → `photo_analysis_upload` → `symptom_selection` →
+  `ai_analysis_loading`), sharing one chrome: circled header, node rail,
+  disclaimer strip, pinned action. A gallery pick runs the camera's own
+  pipeline (EXIF/GPS stripped in an isolate, presigned PUT) rather than round
+  it; the offline emergency router runs on the assembled description before any
+  network call. The loading percentage is elapsed-time progress, asymptotic —
+  never confidence, which is never rendered. Copy departures: the mockup's
+  "allergies", "signs of infection" and "Low risk" all name or grade things the
+  product must not claim.
+- **Home** `3881f38` — rebuilt to mockup `010`: brand bar, pet rail, greeting,
+  hero, quick actions, two insight columns, pill grid, stat strip, quota line.
+  The hero's "Buddy is doing great! / No health issues detected" is replaced by
+  the last-check line — both are all-clears `safety_copy_test` bans — and the
+  "Health Score" ring becomes a record-completeness metric under D-2. Fixed
+  three responsiveness defects the two-column layout exposed: `WalkCard` and
+  `CommunityCard` collapsing in a narrow column, an `IntrinsicHeight` that
+  could not measure a `LayoutBuilder` and blanked the block, and
+  `PawPillButton` ellipsising half the grid.
+- **Onboarding** `295fff5` — the CTA is pinned over a fade strip with the
+  content scrolling beneath, so it is reachable on the first frame of all eight
+  pages; the footer measures itself, and page-level gaps scale with the
+  viewport. Artwork and type never scale.
+
 ## 2026-08-03 — onboarding rebuilt against the mockups
 
 - **009 + 008** `76b9988` — the add-pet page (species photo gallery, two-column

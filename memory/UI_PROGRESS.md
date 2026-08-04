@@ -3,7 +3,7 @@
 Resume file for the UI migration. Read this first; the roadmap
 (`UI_IMPLEMENTATION_ROADMAP.md`) carries the per-phase detail.
 
-**Last updated:** 2026-08-03 · onboarding rebuild COMPLETE (002-009, all device-walked)
+**Last updated:** 2026-08-04 · onboarding complete + home and the AI Health Check flow rebuilt
 
 ---
 
@@ -186,6 +186,63 @@ print in their own footers. Page keys: `onb_get_started`, `onb_next_emergency`,
   hero shield overlaps the dog and the social-proof line ellipsizes. Out of the
   004-009 scope; next candidate.
 - `002`'s hero still shows faint plate edges at the sides.
+
+## Post-onboarding screens — mockups 010 and the AI Health Check flow
+
+**Last updated:** 2026-08-04. Five screens, all device-walked on the Redmi.
+
+| Mockup | Where it lives | Commit |
+|---|---|---|
+| `010-home-page` | `home/home_screen.dart` + `home/home_sections.dart` | `3881f38` |
+| `ai_health_check_start` | `health_check/health_check_start_screen.dart` | `6eb63e5` |
+| `photo_analysis_upload` | `health_check/health_check_photo_screen.dart` | `6eb63e5` |
+| `symptom_selection` | `health_check/health_check_symptoms_screen.dart` | `6eb63e5` |
+| `ai_analysis_loading` | `health_check/health_check_loading_view.dart` | `6eb63e5` |
+
+Shared: `health_check/health_check_chrome.dart` (header, node rail, disclaimer
+strip, pinned-action scaffold) and `home/home_sections.dart` (`HomeCard`,
+`HomeCardHeader`, `HomeBrandBar`, `PetRail`, `PetPortrait`, `HomeGreeting`,
+`PetHeroPanel`, `HomeListCard`, `HomeQuickActions`, `HomeStatStrip`).
+
+### Onboarding: the CTA is pinned (`295fff5`)
+
+Every page opened with its Next button below the fold. `OnbPage` now pins the
+footer over a fade strip and scrolls the content beneath it — the CTA lands
+where the mockups draw it and is reachable on the first frame of all eight
+pages. The footer **measures itself**; a constant left `002`'s trust card
+hidden, because that page carries a footnote under its CTA. `OnbSpacing` /
+`OnbGap` scale the page-level gaps with the viewport (0.68–1.08 against the
+780dp the mockups are composed for); artwork and type never scale.
+
+### Safety departures from these five mockups
+
+| Where | Reference | Shipped |
+|---|---|---|
+| `010` hero | "Buddy is doing great!" / "No health issues detected" | the last-check line — both mockup phrasings are all-clears `safety_copy_test` bans by regex |
+| `010` stat ring | "Health Score · 92 · Excellent" | "Care Score", computed from record completeness and captioned as such (D-2) |
+| `010` hero signals | Energy High · Mood Happy · Activity Good | drawn as-is, marked "Soon" — nothing records them, and inventing them is a claim about an animal nobody observed |
+| start screen | "Identify irritation, allergies & more", "Check for signs of infection" | what the owner can *describe* — the mockup names conditions |
+| start screen | Recent check: "Low risk" | the action the check ended on; severity is never graded |
+| symptoms | "understand your pet's condition better" | "understand what you are seeing" |
+
+### Things that bit, worth remembering
+
+- **`IntrinsicHeight` cannot measure a `LayoutBuilder`.** Making `WalkCard`
+  responsive silently blanked the entire two-column block until the
+  `IntrinsicHeight` around it came off.
+- **Full-width cards collapse in a 170dp column.** `WalkCard` and
+  `CommunityCard` put a 32dp glyph, the copy and a trailing control in one row;
+  the copy got ~40dp and rendered one character per line. Both now stack below
+  260dp.
+- **`PawPillButton` ellipsised half the home grid.** It shrinks to fit now — a
+  truncated destination is worse than a smaller one.
+- **`Wrap` sizes each child independently**, so the symptom grid came out
+  ragged until the tiles took a fixed height.
+- **The nav bar is untouched.** The `010` mockup's Assistant/Settings
+  destinations would displace Emergency, which C-7 pins as permanent.
+- **Anonymous sign-in is failing on the dev Supabase project** ("Could not
+  start a guest session"), so device validation went through an email account.
+  Founder-side config, not a code defect.
 
 ## Remaining
 
