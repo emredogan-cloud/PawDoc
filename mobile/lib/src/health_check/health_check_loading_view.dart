@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -26,34 +24,80 @@ import 'health_check_chrome.dart';
 class HealthCheckLoadingView extends StatefulWidget {
   const HealthCheckLoadingView({
     required this.petSpecies,
+    required this.resultReady,
+    required this.onCeremonyComplete,
     this.hasPhoto = true,
     super.key,
   });
 
   final String petSpecies;
+
+  /// True once the backend has answered. The run only *finishes* — reaches
+  /// 100 and hands over — when this is true; until then it holds at 99 with
+  /// the closing stage still working, rather than showing a completed bar
+  /// while the network is still out.
+  final bool resultReady;
+
+  /// Fired once, when the run reaches 100.
+  final VoidCallback onCeremonyComplete;
   final bool hasPhoto;
+
+  /// How long a full run takes when the backend keeps up. The reference sets
+  /// the expectation on screen — "This may take up to 30-45 seconds" — and the
+  /// wait is the product telling the owner it is being careful, so a request
+  /// that happens to return in two seconds must not undercut it.
+  static const ceremony = Duration(milliseconds: 33500);
+
+  /// The six stages, and the percentage each completes at. Percentages, not
+  /// seconds: the bar is what the owner is watching, so the ticks have to land
+  /// against it rather than against a clock that may be held at 99.
+  static const stages = <(IconData, String, int)>[
+    (LucideIcons.image, 'Checking image quality', 14),
+    (LucideIcons.crosshair, 'Detecting visible areas', 30),
+    (LucideIcons.listChecks, 'Matching symptoms', 48),
+    (LucideIcons.brain, 'Running AI model', 74),
+    (LucideIcons.clipboardList, 'Preparing recommendations', 92),
+    (LucideIcons.chartColumn, 'Building report', 100),
+  ];
 
   @override
   State<HealthCheckLoadingView> createState() => _HealthCheckLoadingViewState();
 }
 
 class _HealthCheckLoadingViewState extends State<HealthCheckLoadingView>
-    with SingleTickerProviderStateMixin {
-  Timer? _timer;
+    with TickerProviderStateMixin {
   late final AnimationController _spin;
-  int _elapsed = 0;
-  bool _animate = false;
+  late final AnimationController _run;
+  late final Animation<double> _curve;
+  bool _started = false;
+  bool _handedOver = false;
+  bool _parked = false;
 
-  /// The mockup's five rows. Each becomes "Completed" as the wait passes its
-  /// mark — a plausible cadence for a 30–45s call, and honest about being an
-  /// estimate rather than a report from the server.
-  static const _stages = <(IconData, String, int)>[
-    (LucideIcons.image, 'Photo quality check', 3),
-    (LucideIcons.crosshair, 'Detecting visible areas', 7),
-    (LucideIcons.listChecks, 'Matching with symptoms', 12),
-    (LucideIcons.brain, 'AI model analysis', 26),
-    (LucideIcons.chartColumn, 'Compiling insights', 40),
-  ];
+  /// Fast off the mark, deliberately slow through the model stage, then a
+  /// short close — the shape of a machine actually working, rather than a
+  /// linear bar that reads as a timer.
+  static final _schedule = TweenSequence<double>([
+    TweenSequenceItem(
+        tween: Tween(begin: 0.0, end: 22.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 12),
+    TweenSequenceItem(
+        tween: Tween(begin: 22.0, end: 56.0)
+            .chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 30),
+    TweenSequenceItem(
+        tween: Tween(begin: 56.0, end: 79.0)
+            .chain(CurveTween(curve: Curves.linear)),
+        weight: 26),
+    TweenSequenceItem(
+        tween: Tween(begin: 79.0, end: 96.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 23),
+    TweenSequenceItem(
+        tween: Tween(begin: 96.0, end: 100.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 9),
+  ]);
 
   @override
   void initState() {
@@ -61,31 +105,84 @@ class _HealthCheckLoadingViewState extends State<HealthCheckLoadingView>
     _spin = AnimationController(
         vsync: this, duration: const Duration(seconds: 3))
       ..repeat();
+    _run = AnimationController(
+        vsync: this, duration: HealthCheckLoadingView.ceremony);
+    _curve = _schedule.animate(_run);
+    _run.addListener(_tick);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_animate && !reduceMotion(context)) {
-      _animate = true;
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (mounted) setState(() => _elapsed++);
-      });
-    } else if (reduceMotion(context)) {
+    if (_started) return;
+    _started = true;
+    if (reduceMotion(context)) {
+      // Nobody who has asked the system to stop animating should be held for
+      // half a minute. The run is skipped; the reveal waits on the network
+      // alone.
       _spin.stop();
+      _run.value = 1;
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _handOver());
+    } else {
+      _run.forward();
     }
+  }
+
+  void _tick() {
+    if (!mounted) return;
+    // Park one point short of the finish until the answer is in — a bar that
+    // sits at 100 while the request is still out is a lie the owner can see.
+    // The value has to be pulled back, not just stopped: a single long frame
+    // lands it on 1.0 in one step, and stopping there would still read as
+    // finished (and hand over).
+    if (!widget.resultReady && _run.value > _hold) {
+      _run.stop();
+      _parked = true;
+      _run.value = _hold; // re-enters here once, then falls through
+      return;
+    }
+    setState(() {});
+    if (_run.value >= 1.0 && widget.resultReady) _handOver();
+  }
+
+  /// Where the bar parks while the network is still out — 99 on screen.
+  static const _hold = 0.985;
+
+  @override
+  void didUpdateWidget(HealthCheckLoadingView old) {
+    super.didUpdateWidget(old);
+    if (!widget.resultReady || old.resultReady) return;
+    if (reduceMotion(context)) {
+      _handOver();
+    } else if (_parked) {
+      // Only when the bar is actually parked. Keying this off `isAnimating`
+      // instead collapsed the whole run into 650ms whenever the backend
+      // answered in the same frame the run started — which is every mocked
+      // test and most warm requests.
+      _parked = false;
+      _run.animateTo(1, duration: const Duration(milliseconds: 650));
+    }
+  }
+
+  void _handOver() {
+    if (_handedOver || !mounted) return;
+    _handedOver = true;
+    widget.onCeremonyComplete();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _run.removeListener(_tick);
+    _run.dispose();
     _spin.dispose();
     super.dispose();
   }
 
-  /// Asymptotic: approaches but never reaches 100, so it cannot promise a
-  /// finish the network has not delivered.
-  int get _percent => (92 * (1 - 1 / (1 + _elapsed / 14))).round().clamp(4, 92);
+  int get _percent => _curve.value.floor().clamp(1, 100);
+
+  /// True once the bar is parked short of the finish waiting on the network.
+  bool get _waitingOnNetwork => _parked && !widget.resultReady;
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +200,7 @@ class _HealthCheckLoadingViewState extends State<HealthCheckLoadingView>
               species: widget.petSpecies,
               percent: _percent,
               spin: _spin,
-              animate: _animate,
+              animate: !reduceMotion(context),
             ),
             const SizedBox(width: AppSpace.s16),
             Expanded(
@@ -181,16 +278,18 @@ class _HealthCheckLoadingViewState extends State<HealthCheckLoadingView>
                       fontSize: 17,
                       fontWeight: FontWeight.w700)),
               const SizedBox(height: AppSpace.s12),
-              for (var i = 0; i < _stages.length; i++)
+              for (var i = 0; i < HealthCheckLoadingView.stages.length; i++)
                 _StageRow(
-                  icon: _stages[i].$1,
-                  label: _stages[i].$2,
-                  state: _elapsed >= _stages[i].$3
+                  icon: HealthCheckLoadingView.stages[i].$1,
+                  label: HealthCheckLoadingView.stages[i].$2,
+                  state: _percent >= HealthCheckLoadingView.stages[i].$3
                       ? _StageState.done
-                      : (i == 0 || _elapsed >= _stages[i - 1].$3)
+                      : (i == 0 ||
+                              _percent >=
+                                  HealthCheckLoadingView.stages[i - 1].$3)
                           ? _StageState.active
                           : _StageState.pending,
-                  last: i == _stages.length - 1,
+                  last: i == HealthCheckLoadingView.stages.length - 1,
                 ),
             ],
           ),
@@ -198,16 +297,19 @@ class _HealthCheckLoadingViewState extends State<HealthCheckLoadingView>
         const SizedBox(height: AppSpace.s12),
         const _DidYouKnowCard(),
         const SizedBox(height: AppSpace.s20),
-        Text('Almost there…',
+        Text(_waitingOnNetwork ? 'Finishing up…' : 'Almost there…',
             textAlign: TextAlign.center,
             style: TextStyle(
                 color: t.accent, fontSize: 17, fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
-        const Text(
-            'Our AI is working hard to deliver the best insights for your '
-            'furry friend.',
+        Text(
+            _waitingOnNetwork
+                ? 'Putting the last details together. This one is taking a '
+                    'little longer than usual — thank you for waiting.'
+                : 'Our AI is working hard to deliver the best insights for '
+                    'your furry friend.',
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
                 color: Color(0xFF9BA5A0), fontSize: 13.5, height: 1.4)),
         const SizedBox(height: AppSpace.s16),
         HomeCard(

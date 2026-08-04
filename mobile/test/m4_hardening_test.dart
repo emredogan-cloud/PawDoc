@@ -11,6 +11,7 @@ import 'package:pawdoc/src/analysis/analysis_runner.dart';
 import 'package:pawdoc/src/analysis/analysis_service.dart';
 import 'package:pawdoc/src/analysis/loading_screen.dart';
 import 'package:pawdoc/src/core/app_views.dart';
+import 'package:pawdoc/src/health_check/health_check_loading_view.dart';
 import 'package:pawdoc/src/models/analysis_result.dart';
 import 'package:rive/rive.dart' show Rive;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -72,7 +73,14 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    // Mid-resolve: still the loading surface, result not yet revealed.
+    // The answer is already in, but the analysis run holds it.
+    expect(find.byType(HealthCheckLoadingView), findsOneWidget);
+    expect(find.text('CALL YOUR VET TODAY'), findsNothing);
+
+    await tester.pump(HealthCheckLoadingView.ceremony);
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Mid-resolve: still a loading surface, result not yet revealed.
     expect(find.byType(AnalysisLoadingView), findsOneWidget);
     expect(find.text('CALL YOUR VET TODAY'), findsNothing);
 
