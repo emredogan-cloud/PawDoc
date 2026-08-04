@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -6,6 +7,13 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../analytics/analytics.dart';
+import '../health/health_event_form_screen.dart';
+import '../theme/app_assets.dart';
+import '../theme/paw_components.dart';
+import '../home/home_sections.dart';
+import '../health_check/result_sections.dart';
+import '../health_check/health_check_chrome.dart';
+import '../assistant/assistant_screen.dart';
 import '../config/legal_urls.dart';
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
@@ -87,11 +95,6 @@ IconData _actionIcon(ActionLevel a) => switch (a) {
       ActionLevel.bookVisit => Icons.event_available_rounded,
       ActionLevel.watchAndRecheck => Icons.visibility_outlined,
     };
-
-// On-colour for the action hero. CALL_TODAY amber is light → dark text/icon
-// for AA contrast; the saturated red/blue/slate carry white.
-Color _actionOnColor(ActionLevel a) =>
-    a == ActionLevel.callToday ? AppColors.ink900 : Colors.white;
 
 String _actionLabel(ActionLevel a) => switch (a) {
       ActionLevel.getHelpNow => 'GET HELP NOW',
@@ -265,164 +268,352 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
         if (!r.watchFor.contains(t)) t,
     ];
 
+    // Mockups `ai_analysis_result_low_risk` / `_monitor`: the node rail with
+    // Results lit, a split hero, the action card, the AI summary, two list
+    // cards, the recommendation rows, the three-button bar, the trend and
+    // score cells, and the assistant strip. See `result_sections.dart` for
+    // what those mockups claim and what ships in its place.
+    // Two different colours, deliberately. `accent` dresses the page; the
+    // action card takes the ladder's SAFETY-LOCKED hue, which is calm slate at
+    // the floor and never a reassuring green.
+    final tint = PawTone.of(context).accent;
+    final actionTint = _actionColor(r.action);
+    final name = petDisplayName(widget.petName ?? 'your pet');
+
     return PawBackground(
       variant: PawSurface.dark,
       child: Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text('Result'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        // M1 (matrix #7): sections fade-up in 280ms beats instead of popping
-        // in; instant under reduce-motion. Decorative only — every element is
-        // present and hittable from the first frame.
-        children: _staggered(context, [
-          _ActionHero(action: r.action, timeframe: r.urgencyTimeframe),
-          // M2 (#13): the pet stays ATTENTIVE on every standard result — the
-          // avatar never signals "all clear" (no happy/relief beat; the app
-          // does not own reassurance). GET_HELP_NOW never reaches this screen.
-          if (widget.petSpecies != null) ...[
-            const SizedBox(height: 12),
-            Center(
-              child: LivingPetAvatar(
-                species: widget.petSpecies!,
-                size: 64,
-                seed: widget.analysisId,
-                photoKey: widget.petPhotoKey,
-                mountBeat: PalBeat.attentive,
+        appBar: const HealthCheckAppBar(),
+        // A Column in a scroll view rather than a lazy ListView: the result is
+        // ~15 blocks, and laziness meant the "saved to history" chip and the
+        // Paw Pal simply did not exist until scrolled to — which is also how a
+        // screen reader would have found them.
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpace.s16, AppSpace.s8, AppSpace.s16, AppSpace.s24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+          // M1 (matrix #7): sections fade-up in 280ms beats instead of popping
+          // in; instant under reduce-motion. Decorative only — every element is
+          // present and hittable from the first frame.
+          children: _staggered(context, [
+            const HealthCheckSteps(current: 4, steps: healthCheckSteps5),
+            const SizedBox(height: AppSpace.s20),
+            ResultHero(
+              // The mockup opens "Good news! / No signs of a serious
+              // condition". An output may never terminate on reassurance, so
+              // the headline is what the check is *for*.
+              headline: 'Here’s what our AI found',
+              deck: 'This is not a diagnosis. If symptoms persist or worsen, '
+                  'please consult your veterinarian.',
+              tint: tint,
+              photo: widget.petSpecies == null
+                  ? null
+                  : Image.asset(AppAssets.species(widget.petSpecies!),
+                      fit: BoxFit.cover, excludeFromSemantics: true),
+            ),
+            const SizedBox(height: AppSpace.s12),
+            ResultActionCard(
+              action: _actionLabel(r.action),
+              icon: _actionIcon(r.action),
+              detail: r.urgencyTimeframe,
+              chip: r.recheckHours == null
+                  ? 'Keep watching'
+                  : _recheckLabel(r.recheckHours!),
+              tint: actionTint,
+            ),
+            if (widget.petSpecies != null) ...[
+              const SizedBox(height: AppSpace.s12),
+              // M2 (#13): the pet stays ATTENTIVE on every standard result —
+              // the avatar never signals "all clear". GET_HELP_NOW never
+              // reaches this screen.
+              Center(
+                child: LivingPetAvatar(
+                  species: widget.petSpecies!,
+                  size: 64,
+                  seed: widget.analysisId,
+                  photoKey: widget.petPhotoKey,
+                  mountBeat: PalBeat.attentive,
+                ),
+              ),
+            ],
+            if (widget.analysisId != null && widget.petName != null) ...[
+              const SizedBox(height: AppSpace.s12),
+              _SavedConfirmation(petName: widget.petName!),
+            ],
+            const SizedBox(height: AppSpace.s12),
+            ResultSummaryCard(
+                body: r.observation, stamp: 'Generated just now', tint: tint),
+            const SizedBox(height: AppSpace.s12),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: ResultListCard(
+                      icon: LucideIcons.stethoscope,
+                      // The mockup names a cause here and ranks a differential
+                      // under it. This is the educational equivalent: what a
+                      // vet looks at with this KIND of presentation, never a
+                      // finding about this animal.
+                      title: 'What vets look for',
+                      items: r.vetsLookFor,
+                      emptyLabel: 'Your vet will examine this in person.',
+                      tint: tint,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.s8),
+                  Expanded(
+                    child: ResultListCard(
+                      icon: LucideIcons.search,
+                      title: 'What we noticed',
+                      items: r.visibleSymptoms,
+                      emptyLabel: 'Nothing specific stood out.',
+                      tint: tint,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-          // "Saved to {Pet}'s history" — only when the row truly stored
-          // (honesty: confirmations fire on real events only).
-          if (widget.analysisId != null && widget.petName != null) ...[
-            const SizedBox(height: 12),
-            _SavedConfirmation(petName: widget.petName!),
-          ],
-          const SizedBox(height: 16),
-          _section('What we observed', [r.observation]),
-          if (r.visibleSymptoms.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            _section('What we noticed', [for (final s in r.visibleSymptoms) '• $s']),
-          ],
-          if (r.vetsLookFor.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            // Educational: about this KIND of presentation — never findings
-            // or condition names about this animal.
-            _section('What vets look for with this', [for (final v in r.vetsLookFor) '• $v']),
-          ],
-          const SizedBox(height: 16),
-          _section('Call sooner if you see', [for (final w in watchFor) '• $w']),
-          if (r.recommendedActions.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            _section('What to do', [
-              for (var i = 0; i < r.recommendedActions.length; i++)
-                '${i + 1}. ${r.recommendedActions[i]}',
-            ]),
-          ],
-          const SizedBox(height: 16),
-          _section('Timing', [r.urgencyTimeframe]),
-          if (r.disclaimerRequired) ...[
-            const SizedBox(height: 16),
-            // The disclaimer card is tappable and opens the full Veterinary
-            // Disclaimer page.
-            GestureDetector(
-              onTap: () => LegalUrls.open(LegalUrls.vetDisclaimer),
-              behavior: HitTestBehavior.opaque,
-              child: Container(
-                padding: const EdgeInsets.all(AppSpace.s12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: AppRadius.brSm,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.info_outline_rounded,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    const SizedBox(width: AppSpace.s8),
-                    Expanded(
-                      child: Text(
-                        // GAP-E13: localized (en/de). Null-safe EN fallback so
-                        // this safety string is NEVER empty if delegates are
-                        // absent. The server still forces WHETHER it shows.
-                        AppLocalizations.of(context)?.resultDisclaimer ??
-                            'PawDoc provides information, not a veterinary diagnosis. When in doubt, contact your vet.',
+            const SizedBox(height: AppSpace.s12),
+            HomeCard(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Icon(LucideIcons.heartPulse, size: 17, color: tint),
+                    const SizedBox(width: 7),
+                    const Text('Recommendations',
                         style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurface),
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700)),
+                  ]),
+                  const SizedBox(height: 10),
+                  for (var i = 0; i < r.recommendedActions.length; i++)
+                    ResultActionRow(
+                      icon: LucideIcons.circleCheck,
+                      title: r.recommendedActions[i],
+                      detail: i == r.recommendedActions.length - 1
+                          ? r.urgencyTimeframe
+                          : 'Step ${i + 1}',
+                      badge: i == r.recommendedActions.length - 1
+                          ? 'Timing'
+                          : 'Care',
+                      tint: tint,
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpace.s4),
+            // "Call sooner if you see" — the AI's signs plus the hardcoded
+            // floor, deduped. The floor triggers can never be prompted away.
+            ResultListCard(
+              icon: LucideIcons.triangleAlert,
+              title: 'Call sooner if you see',
+              items: watchFor,
+              tint: tint,
+            ),
+            const SizedBox(height: AppSpace.s12),
+            if (r.action == ActionLevel.callToday ||
+                r.action == ActionLevel.bookVisit) ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  key: const Key('result_find_vet'),
+                  onPressed: () {
+                    Analytics.vetFinderOpened();
+                    launchUrl(vetSearchMapsUri(),
+                        mode: LaunchMode.externalApplication);
+                  },
+                  icon: const Icon(Icons.local_hospital_outlined),
+                  label: const Text('Find a nearby vet'),
+                ),
+              ),
+              const SizedBox(height: AppSpace.s8),
+            ],
+            if (r.action == ActionLevel.watchAndRecheck &&
+                widget.petId != null) ...[
+              // The mockup's "Reminder set · We'll remind you to check Buddy
+              // again in 2 days" row — live, not decorative.
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  key: const Key('result_recheck'),
+                  onPressed: _recheckScheduled || _schedulingRecheck
+                      ? null
+                      : _scheduleRecheck,
+                  icon: Icon(_recheckScheduled
+                      ? Icons.check_rounded
+                      : Icons.update_rounded),
+                  label: Text(_recheckScheduled
+                      ? 'Re-check scheduled'
+                      : _recheckLabel(r.recheckHours ?? 24)),
+                ),
+              ),
+              const SizedBox(height: AppSpace.s8),
+            ],
+            ResultActionBar(
+              shareKey: const Key('result_share'),
+              // The PDF export exists for the vet-prep pack, not yet from a
+              // single result — so the mockup's button stays put and says so.
+              saveSoon: true,
+              onSave: () => ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text(
+                          'Saving a single result as a PDF is coming soon. '
+                          'Share with Vet sends it now.'))),
+              onShare: _share,
+              onDiary: widget.petId == null
+                  ? _share
+                  : () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => HealthEventFormScreen(
+                            petId: widget.petId!, petName: name),
+                      )),
+              tint: tint,
+            ),
+            const SizedBox(height: AppSpace.s12),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: ResultTrendCard(
+                      petName: name,
+                      points: const [],
+                      onTap: () => Navigator.of(context).maybePop(),
+                      tint: tint,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpace.s8),
+                  Expanded(
+                    child: HomeCard(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // The mockup's "Health Score 92 · Excellent". D-2:
+                          // wellness only, never a verdict — so it counts how
+                          // complete the record is and says so.
+                          const Text('Care Score',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 3),
+                          const Text('How complete the record is.',
+                              style: TextStyle(
+                                  color: Color(0xFF8A948D),
+                                  fontSize: 11.5,
+                                  height: 1.3)),
+                          const SizedBox(height: 12),
+                          Row(children: [
+                            SizedBox(
+                              width: 46,
+                              height: 46,
+                              child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    CircularProgressIndicator(
+                                      value: widget.analysisId == null ? 0.4 : 0.6,
+                                      strokeWidth: 4,
+                                      strokeCap: StrokeCap.round,
+                                      backgroundColor:
+                                          Colors.white.withValues(alpha: 0.08),
+                                      valueColor:
+                                          AlwaysStoppedAnimation(tint),
+                                    ),
+                                    Text(widget.analysisId == null ? '40' : '60',
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700)),
+                                  ]),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text('This check is now\npart of it',
+                                  style: TextStyle(
+                                      color: tint,
+                                      fontSize: 11,
+                                      height: 1.25,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                          ]),
+                        ],
                       ),
                     ),
-                    Icon(Icons.chevron_right_rounded,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-          const SizedBox(height: 24),
-          // Per-action CTAs. CALL_TODAY / BOOK_VISIT surface the maps deep
-          // link (no location permission — the OS handles it); the floor
-          // surfaces the one-tap re-check.
-          if (r.action == ActionLevel.callToday ||
-              r.action == ActionLevel.bookVisit) ...[
-            OutlinedButton.icon(
-              key: const Key('result_find_vet'),
-              onPressed: () {
-                Analytics.vetFinderOpened();
-                launchUrl(vetSearchMapsUri(),
-                    mode: LaunchMode.externalApplication);
-              },
-              icon: const Icon(Icons.local_hospital_outlined),
-              label: const Text('Find a nearby vet'),
+            const SizedBox(height: AppSpace.s12),
+            ResultAssistantStrip(
+              title: 'Still have questions?',
+              detail: 'Ask PawDoc AI for more about $name.',
+              onAsk: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AssistantScreen())),
+              tint: tint,
             ),
-            const SizedBox(height: 8),
-          ],
-          if (r.action == ActionLevel.watchAndRecheck && widget.petId != null) ...[
-            FilledButton.tonalIcon(
-              key: const Key('result_recheck'),
-              onPressed: _recheckScheduled || _schedulingRecheck
-                  ? null
-                  : _scheduleRecheck,
-              icon: Icon(_recheckScheduled
-                  ? Icons.check_rounded
-                  : Icons.update_rounded),
-              label: Text(_recheckScheduled
-                  ? 'Re-check scheduled'
-                  : _recheckLabel(r.recheckHours ?? 24)),
+            // In-app feedback (Phase 4.1) — only when the analysis was stored.
+            if (widget.analysisId != null) ...[
+              const SizedBox(height: AppSpace.s16),
+              ResultFeedbackWidget(analysisId: widget.analysisId!),
+            ],
+            if (r.disclaimerRequired) ...[
+              const SizedBox(height: AppSpace.s16),
+              // The disclaimer card is tappable and opens the full Veterinary
+              // Disclaimer page. Whether it shows at all is forced server-side.
+              GestureDetector(
+                onTap: () => LegalUrls.open(LegalUrls.vetDisclaimer),
+                behavior: HitTestBehavior.opaque,
+                child: HomeCard(
+                  padding: const EdgeInsets.all(AppSpace.s12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.info_outline_rounded,
+                          size: 16, color: Color(0xFF9BA5A0)),
+                      const SizedBox(width: AppSpace.s8),
+                      Expanded(
+                        child: Text(
+                          // GAP-E13: localized (en/de). Null-safe EN fallback
+                          // so this safety string is NEVER empty if delegates
+                          // are absent.
+                          AppLocalizations.of(context)?.resultDisclaimer ??
+                              'PawDoc provides information, not a veterinary diagnosis. When in doubt, contact your vet.',
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFB8C2BB),
+                              height: 1.35),
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right_rounded,
+                          size: 18, color: Color(0xFF9BA5A0)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: AppSpace.s16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                key: const Key('result_done'),
+                onPressed:
+                    widget.onDone ?? () => Navigator.of(context).maybePop(),
+                child: const Text('Done'),
+              ),
             ),
-            const SizedBox(height: 8),
-          ],
-          OutlinedButton.icon(
-            key: const Key('result_share'),
-            onPressed: _share,
-            icon: const Icon(Icons.share),
-            label: const Text('Share this entry'),
+            ]),
           ),
-          // In-app feedback (Phase 4.1) — only when the analysis was stored.
-          if (widget.analysisId != null) ...[
-            const SizedBox(height: 16),
-            ResultFeedbackWidget(analysisId: widget.analysisId!),
-          ],
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              key: const Key('result_done'),
-              onPressed: widget.onDone ?? () => Navigator.of(context).maybePop(),
-              child: const Text('Done'),
-            ),
-          ),
-        ]),
-      ),
+        ),
       ),
     );
   }
+
 
   /// 280ms fade-up beats, 40ms apart (M1 #7). Widgets are in the tree (and
   /// tappable) immediately; only opacity/offset animate. Reduce-motion: none.
@@ -442,15 +633,6 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
                 curve: AppMotion.emphasized),
     ];
   }
-
-  Widget _section(String title, List<String> lines) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 4),
-          for (final l in lines) Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Text(l)),
-        ],
-      );
 }
 
 /// M1 (matrix #7): the quiet "it's in the record" reassurance beat — a calm
@@ -458,6 +640,7 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
 /// static under reduce-motion.
 class _SavedConfirmation extends StatelessWidget {
   const _SavedConfirmation({required this.petName});
+
   final String petName;
 
   @override
@@ -506,59 +689,3 @@ class _SavedConfirmation extends StatelessWidget {
 
 /// Action hero: colour + distinct shape (icon) + text label + timeframe —
 /// never colour alone (a11y). AA on-colour; live-region announces the action
-/// first. Gentle reduce-motion-gated reveal; no bounce.
-class _ActionHero extends StatelessWidget {
-  const _ActionHero({required this.action, required this.timeframe});
-  final ActionLevel action;
-  final String timeframe;
-
-  @override
-  Widget build(BuildContext context) {
-    final onColor = _actionOnColor(action);
-    final hero = Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpace.s20),
-      decoration: BoxDecoration(
-        color: _actionColor(action),
-        borderRadius: AppRadius.brXl,
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(_actionIcon(action), color: onColor, size: 28),
-              const SizedBox(width: AppSpace.s12),
-              Flexible(
-                child: Semantics(
-                  liveRegion: true,
-                  child: Text(
-                    _actionLabel(action),
-                    style: TextStyle(
-                        color: onColor,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            timeframe,
-            style: TextStyle(
-                color: onColor.withValues(alpha: 0.9), fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-    if (reduceMotion(context)) return hero;
-    return hero.animate().fadeIn(duration: AppMotion.standard).scaleXY(
-        begin: 0.98,
-        end: 1.0,
-        duration: AppMotion.standard,
-        curve: AppMotion.emphasized);
-  }
-}
