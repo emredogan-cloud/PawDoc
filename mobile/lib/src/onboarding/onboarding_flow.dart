@@ -273,21 +273,30 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
     );
   }
 
-  /// Every page closes with its CTA and the step counter.
-  List<Widget> _footer(Widget cta) => [
-        const SizedBox(height: AppSpace.s20),
-        cta,
-        const SizedBox(height: AppSpace.s12),
-        OnbStepLabel(step: _page, total: _names.length),
-      ];
+  /// The pinned action footer every page closes with.
+  ///
+  /// `004` and `005` print a dot rail where the rest print `Step N of 8` —
+  /// each mockup draws its own, so both are kept.
+  Widget _cta(Widget cta, {bool dots = false, Widget? note}) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          cta,
+          const SizedBox(height: AppSpace.s12),
+          if (dots)
+            OnbDots(step: _page, total: _names.length)
+          else
+            OnbStepLabel(step: _page, total: _names.length),
+          if (note != null) ...[const SizedBox(height: 6), note],
+        ],
+      );
 
   // -------------------------------------------------------------------------
   // 1 · Value hook (mockup 002)
   // -------------------------------------------------------------------------
-  Widget _valueHook() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s4),
+  Widget _valueHook() => OnbPage(body: [
+        const OnbGap(4),
         const OnbHeadline('Every pet deserves', 'calm, informed care.'),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const OnbSubtitle(
             'PawDoc helps you understand your pet\'s health and make the best '
             'decisions, together.'),
@@ -295,20 +304,18 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
         // Hero stage: the pets sit whole and uncropped, with the cyan ribbon
         // sweeping behind them and a labelled glyph on each side — the
         // composition the reference builds, not just the photo.
-        const SizedBox(height: AppSpace.s8),
+        const OnbGap(8),
         const _ValueHeroStage(),
 
         // Shield badge overlapping the top edge of the trust card.
-        const SizedBox(height: AppSpace.s20),
+        const OnbGap(20),
         const _TrustCard(),
 
-        ..._footer(OnbCta(
-          key: const Key('onb_get_started'),
-          label: 'Let\'s Continue',
-          onPressed: _advance,
-        )),
-        const SizedBox(height: AppSpace.s8),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+      ], footer: _cta(OnbCta(
+        key: const Key('onb_get_started'),
+        label: 'Let\'s Continue',
+        onPressed: _advance,
+      ), note: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           const Icon(Icons.verified_user_outlined,
               size: 16, color: AppColors.emerald500),
           const SizedBox(width: 6),
@@ -333,26 +340,25 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                       ?.copyWith(color: const Color(0xFF8C97A8))),
             ]),
           ),
-        ]),
-      ]);
+        ])));
 
   // -------------------------------------------------------------------------
   // 2 · AI insights (mockup 003)
   // -------------------------------------------------------------------------
-  Widget _aiInsights() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s4),
+  Widget _aiInsights() => OnbPage(body: [
+        const OnbGap(4),
         const OnbHeadline('AI insights,', 'real-time clarity.'),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const OnbSubtitle(
             'Describe symptoms or upload a photo. PawDoc helps you understand '
             'how soon to act.'),
 
         // Device mockup on a lit stage, with orbiting glyphs and the scan ring
         // behind it — the reference's whole composition, not a bare card.
-        const SizedBox(height: AppSpace.s8),
+        const OnbGap(8),
         const _AiStage(),
 
-        const SizedBox(height: AppSpace.s16),
+        const OnbGap(16),
         const Row(children: [
           Expanded(
               child: OnbFeatureCard(
@@ -367,12 +373,11 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                   caption: 'Answer a few questions.',
                   color: AppColors.cyan400)),
         ]),
-        ..._footer(OnbCta(
-          key: const Key('onb_next_emergency'),
-          label: 'Next: Emergency guidance',
-          onPressed: _advance,
-        )),
-      ]);
+      ], footer: _cta(OnbCta(
+        key: const Key('onb_next_emergency'),
+        label: 'Next: Emergency Guidance',
+        onPressed: _advance,
+      )));
 
   // -------------------------------------------------------------------------
   // 3 · Emergency guidance (mockup 004)
@@ -387,26 +392,26 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   //   promises a reliability the pipeline does not claim. What is true — and
   //   what actually matters here — is that the guidance is free and always
   //   reachable, so that is what it says.
-  Widget _emergency() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s4),
+  Widget _emergency() => OnbPage(body: [
+        const OnbGap(4),
         const Center(
             child: OnbCrest(
                 asset: UiAssets.onbShieldPawTeal3d,
                 height: 76,
                 tint: AppColors.cyan300)),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const OnbHeadline('When it\u2019s urgent,', 'PawDoc guides you.'),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const OnbSubtitle.rich([
           ('Step-by-step emergency guidance —\n', null),
           ('always free', AppColors.emerald400),
           (', always available.', null),
         ]),
-        const SizedBox(height: AppSpace.s24),
+        const OnbGap(24),
         const EmergencyCompareStage(),
-        const SizedBox(height: AppSpace.s24),
+        const OnbGap(24),
         const DoesNotDiagnosePanel(),
-        const SizedBox(height: AppSpace.s24),
+        const OnbGap(24),
         const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(
             child: _TrustColumn(
@@ -434,36 +439,33 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             ),
           ),
         ]),
-        const SizedBox(height: AppSpace.s24),
-        OnbCta(
-          key: const Key('onb_next_diary'),
-          label: 'Next: Your Pet\'s Health Diary',
-          onPressed: _advance,
-        ),
-        const SizedBox(height: AppSpace.s16),
-        OnbDots(step: _page, total: _names.length),
-      ]);
+        const OnbGap(24),
+      ], footer: _cta(OnbCta(
+        key: const Key('onb_next_diary'),
+        label: 'Next: Your Pet\'s Health Diary',
+        onPressed: _advance,
+      ), dots: true));
 
   // -------------------------------------------------------------------------
   // 4 · Health diary (mockup 005)
   // -------------------------------------------------------------------------
-  Widget _healthDiary() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s4),
+  Widget _healthDiary() => OnbPage(body: [
+        const OnbGap(4),
         const Center(
             child: OnbCrest(
                 asset: UiAssets.onbGlyphDiaryPawCyan,
                 height: 74,
                 tint: AppColors.cyan400)),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const OnbHeadline('All your pet’s health,', 'organized beautifully.'),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const OnbSubtitle.rich([
           ('PawDoc keeps every important moment in one\nsmart timeline — ', null),
           ('easy to track, easy to share.', AppColors.emerald400),
         ]),
-        const SizedBox(height: AppSpace.s16),
+        const OnbGap(16),
         const DiaryStage(),
-        const SizedBox(height: AppSpace.s20),
+        const OnbGap(20),
         const OnbPanel(
           padding: EdgeInsets.fromLTRB(
               AppSpace.s8, AppSpace.s16, AppSpace.s8, AppSpace.s16),
@@ -488,15 +490,12 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             ),
           ]),
         ),
-        const SizedBox(height: AppSpace.s20),
-        OnbCta(
-          key: const Key('onb_next_assistant'),
-          label: 'Next: Meet Your AI Assistant',
-          onPressed: _advance,
-        ),
-        const SizedBox(height: AppSpace.s16),
-        OnbDots(step: _page, total: _names.length),
-      ]);
+        const OnbGap(20),
+      ], footer: _cta(OnbCta(
+        key: const Key('onb_next_assistant'),
+        label: 'Next: Meet Your AI Assistant',
+        onPressed: _advance,
+      ), dots: true));
 
   // -------------------------------------------------------------------------
   // 5 · Meet the assistant (mockup 006)
@@ -505,8 +504,8 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   // The mockup's sample answer opens "Sneezing can be caused by mild irritants,
   // allergies, or infections" — three conditions named as causes (review V-13).
   // The reply here checks observations instead and closes on a timeframe.
-  Widget _assistantIntro() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s4),
+  Widget _assistantIntro() => OnbPage(body: [
+        const OnbGap(4),
         Center(
           child: Image.asset(
             UiAssets.aiRobotMascotNeon,
@@ -516,13 +515,13 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                 tint: AppColors.cyan400, size: 74),
           ),
         ),
-        const SizedBox(height: AppSpace.s8),
+        const OnbGap(8),
         const OnbHeadline('Meet your', 'AI Pet Assistant.'),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const OnbSubtitle(
             'Your personal AI guide that remembers your pets, answers '
             'questions, and helps you make smarter decisions every day.'),
-        const SizedBox(height: AppSpace.s16),
+        const OnbGap(16),
         const AssistantStage(
           phoneHeight: 322,
           left: [
@@ -572,7 +571,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             avatar: UiAssets.petMiloTabbyAvatar,
           ),
         ),
-        const SizedBox(height: AppSpace.s16),
+        const OnbGap(16),
         OnbPanel(
           padding: const EdgeInsets.symmetric(
               horizontal: AppSpace.s16, vertical: AppSpace.s12),
@@ -594,23 +593,20 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             ),
           ]),
         ),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         // The pair sit behind the CTA, as the mockup overlaps them.
-        Transform.translate(
-          offset: const Offset(0, 24),
-          child: const HeroWithHearts(
-              asset: UiAssets.onbHeroPuppyKittenBlanket,
-              height: 150,
-              tint: AppColors.cyan400),
+        const Center(
+          child: HeroWithHearts(
+            asset: UiAssets.onbHeroPuppyKittenBlanket,
+            height: 150,
+            tint: AppColors.cyan400,
+          ),
         ),
-        OnbCta(
-          key: const Key('onb_next_chat'),
-          label: 'Next: Add Your First Pet',
-          onPressed: _advance,
-        ),
-        const SizedBox(height: AppSpace.s12),
-        OnbStepLabel(step: _page, total: _names.length),
-      ]);
+      ], footerOverlap: 46, footer: _cta(OnbCta(
+        key: const Key('onb_next_chat'),
+        label: 'Next: Add Your First Pet',
+        onPressed: _advance,
+      )));
 
   // -------------------------------------------------------------------------
   // 6 · One assistant, all paws covered (mockup 007)
@@ -619,17 +615,17 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   // The safety review names this mockup's sample answer the compliant
   // reference — no condition named, no cause asserted, an action and a
   // timeframe — so it is reproduced as drawn.
-  Widget _assistantChat() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s4),
+  Widget _assistantChat() => OnbPage(body: [
+        const OnbGap(4),
         const Center(child: PawPlusCrest(tint: AppColors.emerald400, size: 60)),
-        const SizedBox(height: AppSpace.s8),
+        const OnbGap(8),
         const OnbHeadline('One assistant.', 'All paws covered.'),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const OnbSubtitle(
             'Chat with PawDoc AI about anything related to your pet. Get '
             'helpful answers, guidance, and peace of mind — any time, day or '
             'night.'),
-        const SizedBox(height: AppSpace.s16),
+        const OnbGap(16),
         const AssistantStage(
           phoneHeight: 322,
           left: [
@@ -693,7 +689,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             sendIcon: LucideIcons.mic,
           ),
         ),
-        const SizedBox(height: AppSpace.s16),
+        const OnbGap(16),
         OnbPanel(
           padding: const EdgeInsets.symmetric(
               horizontal: AppSpace.s12, vertical: AppSpace.s12),
@@ -725,22 +721,19 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             ),
           ]),
         ),
-        const SizedBox(height: AppSpace.s12),
-        Transform.translate(
-          offset: const Offset(0, 28),
-          child: const HeroWithHearts(
-              asset: UiAssets.onbHeroDogCatHalo,
-              height: 176,
-              tint: AppColors.emerald400),
+        const OnbGap(12),
+        const Center(
+          child: HeroWithHearts(
+            asset: UiAssets.onbHeroDogCatHalo,
+            height: 176,
+            tint: AppColors.emerald400,
+          ),
         ),
-        OnbCta(
-          key: const Key('onb_next_pet'),
-          label: 'Next: Personalize Your Experience',
-          onPressed: _advance,
-        ),
-        const SizedBox(height: AppSpace.s12),
-        OnbStepLabel(step: _page, total: _names.length),
-      ]);
+      ], footerOverlap: 52, footer: _cta(OnbCta(
+        key: const Key('onb_next_pet'),
+        label: 'Next: Personalize Your Experience',
+        onPressed: _advance,
+      )));
 
   /// An emerald clause inside a run of deck copy — the mockups' inline accent.
   static TextSpan _accent(String text) => TextSpan(
@@ -757,24 +750,24 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   // The mockup simply asks for them at the start, so nothing new is invented;
   // the page reaches for the same repository, the same photo service and the
   // same crop screen.
-  Widget _petSetup() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s4),
+  Widget _petSetup() => OnbPage(body: [
+        const OnbGap(4),
         const Center(child: PawPlusCrest(tint: AppColors.cyan400, size: 58)),
-        const SizedBox(height: AppSpace.s8),
+        const OnbGap(8),
         const OnbHeadline('Let’s add your', 'first furry friend',
             trailing: Icon(LucideIcons.pawPrint,
                 size: 22, color: AppColors.cyan400)),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const OnbSubtitle(
             'Add your pet to unlock personalized AI insights, reminders and a '
             'complete health diary.'),
-        const SizedBox(height: AppSpace.s16),
+        const OnbGap(16),
         SpeciesGallery(
           species: kSpecies,
           selected: _species,
           onSelect: (s) => setState(() => _species = s),
         ),
-        const SizedBox(height: AppSpace.s16),
+        const OnbGap(16),
         OnbNeonCard(
           tint: AppColors.emerald500,
           radius: 20,
@@ -944,9 +937,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             ],
           ),
         ),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const MoreDetailsCard(),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const OnbPanel(
           padding: EdgeInsets.fromLTRB(
               AppSpace.s8, AppSpace.s16, AppSpace.s8, AppSpace.s16),
@@ -971,7 +964,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             ),
           ]),
         ),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         OnbPanel(
           padding: const EdgeInsets.symmetric(
               horizontal: AppSpace.s16, vertical: AppSpace.s12),
@@ -995,33 +988,30 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             ),
           ]),
         ),
-        const SizedBox(height: AppSpace.s20),
-        OnbCta(
-          key: const Key('onb_pet_continue'),
-          label: _busy ? 'Saving…' : 'Next: Enable Smart Features',
-          busy: _busy,
-          onPressed: _busy ? null : _submitPetSetup,
-        ),
-        const SizedBox(height: AppSpace.s12),
-        OnbStepLabel(step: _page, total: _names.length),
-      ]);
+        const OnbGap(20),
+      ], footer: _cta(OnbCta(
+        key: const Key('onb_pet_continue'),
+        label: _busy ? 'Saving…' : 'Next: Enable Smart Features',
+        busy: _busy,
+        onPressed: _busy ? null : _submitPetSetup,
+      )));
 
   // -------------------------------------------------------------------------
   // 8 · Welcome (mockup 009)
   // -------------------------------------------------------------------------
-  Widget _welcome() => OnbPage(children: [
-        const SizedBox(height: AppSpace.s8),
+  Widget _welcome() => OnbPage(body: [
+        const OnbGap(8),
         const Center(child: SuccessCrest(size: 74)),
-        const SizedBox(height: AppSpace.s8),
+        const OnbGap(8),
         const OnbHeadline('You’re all set,', 'welcome to PawDoc!',
             trailing:
                 Icon(LucideIcons.heart, size: 18, color: AppColors.emerald400)),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const OnbSubtitle.rich([
           ('Everything you need to care better,\ntrack smarter, and ', null),
           ('be there when it matters most.', AppColors.emerald400),
         ]),
-        const SizedBox(height: AppSpace.s8),
+        const OnbGap(8),
         const WelcomeHero(height: 250),
         // The trust card rides up over the hero's foot, as the mockup overlaps
         // them.
@@ -1057,7 +1047,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
           ),
         ),
         const OnbSparkRule('Here’s what you can do now'),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         const IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1099,7 +1089,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             ],
           ),
         ),
-        const SizedBox(height: AppSpace.s12),
+        const OnbGap(12),
         OnbPanel(
           padding: const EdgeInsets.symmetric(
               horizontal: AppSpace.s12, vertical: AppSpace.s12),
@@ -1157,7 +1147,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
             ),
           ]),
         ),
-        const SizedBox(height: AppSpace.s16),
+        const OnbGap(16),
         // The mockup signs off in a handwriting face; the bundle ships
         // Bricolage and Inter, so the closest true statement is an italic in
         // the accent rather than a fifth webfont for one line.
@@ -1169,16 +1159,13 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                   fontStyle: FontStyle.italic,
                   fontWeight: FontWeight.w600)),
         ),
-        const SizedBox(height: AppSpace.s16),
-        OnbCta(
-          key: const Key('onb_finish'),
-          label: 'Start My Journey',
-          trailing: LucideIcons.arrowRight,
-          onPressed: _finish,
-        ),
-        const SizedBox(height: AppSpace.s12),
-        OnbStepLabel(step: _page, total: _names.length),
-      ]);
+        const OnbGap(16),
+      ], footer: _cta(OnbCta(
+        key: const Key('onb_finish'),
+        label: 'Start My Journey',
+        trailing: LucideIcons.arrowRight,
+        onPressed: _finish,
+      )));
 }
 
 // ---------------------------------------------------------------------------

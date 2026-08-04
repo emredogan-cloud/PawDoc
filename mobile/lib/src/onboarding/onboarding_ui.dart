@@ -730,25 +730,200 @@ class OnbCta extends StatelessWidget {
 
 /// Scrolls on short screens instead of overflowing, so a CTA is always
 /// reachable — carried over from the previous flow, which fixed exactly that.
-class OnbPage extends StatelessWidget {
-  const OnbPage({required this.children, super.key});
+/// The vertical-rhythm multiplier for the page currently being laid out.
+///
+/// The mockups are composed for a 393x851 handset. On anything shorter the
+/// choice is to shrink the artwork, drop something, or close the gaps — and
+/// the gaps are the only one of the three that costs nothing. [OnbGap] reads
+/// this; the artwork never does.
+class OnbSpacing extends InheritedWidget {
+  const OnbSpacing({required this.scale, required super.child, super.key});
 
-  final List<Widget> children;
+  final double scale;
+
+  static double of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<OnbSpacing>()?.scale ?? 1.0;
+
+  @override
+  bool updateShouldNotify(OnbSpacing old) => old.scale != scale;
+}
+
+/// A vertical gap that breathes with the viewport. `OnbGap(20)` is 20dp on the
+/// reference handset and proportionally tighter on a short one.
+class OnbGap extends StatelessWidget {
+  const OnbGap(this.height, {super.key});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) =>
+      SizedBox(height: height * OnbSpacing.of(context));
+}
+
+/// An onboarding page: scrolling content under a **pinned** action footer.
+///
+/// Every mockup puts its CTA at the foot of the screen, and every one of them
+/// is drawn with ~9dp body copy that cannot ship. At readable sizes the
+/// composition runs past the viewport, and the CTA went with it — so the first
+/// thing a new user had to do on all eight pages was scroll to find the button.
+///
+/// The fix keeps the artwork at full size and pins the footer instead: the
+/// content scrolls independently beneath it, dissolving into a scrim so the
+/// join reads as depth rather than as a bar. The CTA lands exactly where the
+/// mockups draw it and is reachable on the first frame.
+///
+/// [footerOverlap] lets the last block run *under* the footer — `006`, `007`
+/// and `009` draw their hero with the CTA sitting on top of it.
+class OnbPage extends StatefulWidget {
+  const OnbPage({
+    required this.body,
+    required this.footer,
+    this.footerOverlap = 0,
+    super.key,
+  });
+
+  /// Named `body` rather than `children` so the analyzer's
+  /// `sort_child_properties_last` does not demand the pinned footer be
+  /// declared before the page it belongs under.
+  final List<Widget> body;
+
+  /// CTA plus its step indicator. Pinned; never scrolls away.
+  final Widget footer;
+
+  /// How far the last block is allowed to run *under* the footer. `006`, `007`
+  /// and `009` draw their hero with the CTA sitting on top of it.
+  final double footerOverlap;
+
+  /// Used for the first frame, before the footer has reported its real height.
+  static const double _initialReserve = 136;
+
+  /// The height the mockups are composed for.
+  static const double _referenceHeight = 780;
+
+  @override
+  State<OnbPage> createState() => _OnbPageState();
+}
+
+class _OnbPageState extends State<OnbPage> {
+  double _footerHeight = OnbPage._initialReserve;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(18, AppSpace.s8, 18, AppSpace.s24),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: children,
+      builder: (context, constraints) {
+        final scale =
+            (constraints.maxHeight / OnbPage._referenceHeight).clamp(0.68, 1.08);
+        final reserve =
+            (_footerHeight - widget.footerOverlap).clamp(0.0, 400.0) + 8;
+        return OnbSpacing(
+          scale: scale,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(18, AppSpace.s8, 18, reserve),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: widget.body,
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                // Measured rather than assumed: the footer is a different
+                // height on the page that carries a footnote under its CTA,
+                // and a constant would leave that page's last card hidden.
+                child: _MeasureHeight(
+                  onChange: (h) {
+                    if ((h - _footerHeight).abs() > 0.5) {
+                      setState(() => _footerHeight = h);
+                    }
+                  },
+                  child: _PinnedFooter(child: widget.footer),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// The footer plate: a fade strip that dissolves the scrolling content, then an
+/// opaque plate carrying the action. Opaque, because a translucent one let the
+/// card behind it read straight through the button.
+class _PinnedFooter extends StatelessWidget {
+  const _PinnedFooter({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(
+          height: 34,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0x00050B14), Color(0xCC050B14), Color(0xFF050B14)],
+                stops: [0.0, 0.62, 1.0],
+              ),
+            ),
+            child: SizedBox.expand(),
           ),
         ),
-      ),
+        ColoredBox(
+          color: AppColors.navy900,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 2, 18, 10),
+            child: child,
+          ),
+        ),
+      ],
     );
+  }
+}
+
+/// Reports its child's laid-out height, once it settles.
+class _MeasureHeight extends SingleChildRenderObjectWidget {
+  const _MeasureHeight({required this.onChange, required Widget child})
+      : super(child: child);
+
+  final ValueChanged<double> onChange;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderMeasureHeight(onChange);
+
+  @override
+  void updateRenderObject(
+      BuildContext context, covariant RenderObject renderObject) {
+    (renderObject as _RenderMeasureHeight).onChange = onChange;
+  }
+}
+
+class _RenderMeasureHeight extends RenderProxyBox {
+  _RenderMeasureHeight(this.onChange);
+
+  ValueChanged<double> onChange;
+  double? _last;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    if (_last != size.height) {
+      _last = size.height;
+      // Deferred: reporting during layout would rebuild mid-pass.
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => onChange(_last ?? 0));
+    }
   }
 }
 
