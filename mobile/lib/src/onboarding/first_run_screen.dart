@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/design_tokens.dart';
+import '../theme/paw_components.dart';
 import '../theme/ui_assets.dart';
 import 'onboarding_ui.dart';
 

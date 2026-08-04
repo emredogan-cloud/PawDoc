@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../pets/pet.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_components.dart';
 import '../theme/ui_assets.dart';
 import 'onboarding_ui.dart';
 

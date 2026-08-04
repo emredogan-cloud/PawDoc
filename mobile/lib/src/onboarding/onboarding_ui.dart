@@ -324,47 +324,6 @@ class OnbSubtitle extends StatelessWidget {
 // Content blocks
 // ---------------------------------------------------------------------------
 
-/// Applies a [BlendMode] against everything already painted beneath it.
-///
-/// Flutter's `ColorFiltered`/`Opacity` cannot do this: a blend has to be
-/// composited against the backdrop, which needs its own saveLayer. Used to drop
-/// the solid-black background out of the supplied neon artwork — under `screen`
-/// black is the identity value, so the plate merges into the canvas with no
-/// matte line and no alpha channel to author.
-class BlendMask extends SingleChildRenderObjectWidget {
-  const BlendMask({required this.blendMode, super.child, super.key});
-
-  final BlendMode blendMode;
-
-  @override
-  RenderObject createRenderObject(BuildContext context) =>
-      _RenderBlendMask(blendMode);
-
-  @override
-  void updateRenderObject(BuildContext context, covariant RenderObject renderObject) {
-    (renderObject as _RenderBlendMask).blendMode = blendMode;
-  }
-}
-
-class _RenderBlendMask extends RenderProxyBox {
-  _RenderBlendMask(this._blendMode);
-
-  BlendMode _blendMode;
-  set blendMode(BlendMode v) {
-    if (v == _blendMode) return;
-    _blendMode = v;
-    markNeedsPaint();
-  }
-
-  @override
-  void paint(PaintingContext context, Offset offset) {
-    if (child == null) return;
-    context.canvas.saveLayer(offset & size, Paint()..blendMode = _blendMode);
-    super.paint(context, offset);
-    context.canvas.restore();
-  }
-}
-
 /// The segmented step rail on its own, for screens that show it without the
 /// Skip affordance (the app-open screen).
 class OnbProgressRail extends StatelessWidget {

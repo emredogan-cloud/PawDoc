@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -8,10 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../account/account_screen.dart';
 import '../account/user_profile.dart';
-import '../analysis/analysis_runner.dart';
 import '../analysis/analysis_service.dart';
 import '../assistant/assistant_screen.dart';
-import '../capture/camera_screen.dart';
 import '../community/community_card.dart';
 import '../core/action_labels.dart';
 import '../core/app_motion_asset.dart';
@@ -23,7 +19,6 @@ import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
 import '../emergency/emergency_help_screen.dart';
-import '../emergency/emergency_keywords.dart';
 import '../encyclopedia/encyclopedia_screen.dart';
 import '../feedback/followup_banner.dart';
 import '../health/breed_insight_card.dart';
@@ -34,11 +29,11 @@ import '../pets/active_pet.dart';
 import '../pets/add_pet_flow.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
+import '../health_check/health_check_start_screen.dart';
 import 'home_sections.dart';
 import '../prep/vet_visit_prep_screen.dart';
 import '../reminders/reminders_repository.dart';
 import '../reminders/reminders_screen.dart';
-import '../text_input/symptom_text_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_components.dart';
@@ -51,55 +46,16 @@ const _addPetSentinel = '__add_pet__';
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  Future<void> _check(BuildContext context, WidgetRef ref, Pet pet, bool isPremium) async {
-    final mode = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _CaptureSheet(),
-    );
-    if (mode == null || !context.mounted) return;
-
-    if (mode == 'photo') {
-      final key = await Navigator.of(context).push<String>(
-        MaterialPageRoute(builder: (_) => const CameraScreen()),
-      );
-      if (key != null && context.mounted) {
-        await Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => AnalysisRunnerScreen(
-            petId: pet.id!, petName: pet.name, petSpecies: pet.species, inputType: 'photo',
-            imageStorageKey: key, isPremium: isPremium,
-          ),
-        ));
-        ref.invalidate(userProfileProvider);
-      }
-    } else {
-      final text = await Navigator.of(context).push<String>(
-        MaterialPageRoute(builder: (_) => SymptomTextScreen(petName: pet.name)),
-      );
-      if (text != null && context.mounted) {
-        // OFFLINE EMERGENCY ROUTER (evolution Phase 3): the same keyword lists
-        // the server runs, executed CLIENT-side first — a match lands on the
-        // red help screen instantly, before any network call, so a dead zone
-        // can never turn "my dog is choking" into a spinner. The server list
-        // stays authoritative for anything submitted online.
-        final locale = Localizations.maybeLocaleOf(context)?.languageCode;
-        final matched = matchEmergencyKeyword(text,
-            species: pet.species, locale: locale);
-        if (matched != null) {
-          await Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => EmergencyHelpScreen(matchedKeyword: matched),
-          ));
-          return;
-        }
-        await Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => AnalysisRunnerScreen(
-            petId: pet.id!, petName: pet.name, petSpecies: pet.species, inputType: 'text',
-            textDescription: text, isPremium: isPremium,
-          ),
-        ));
-        ref.invalidate(userProfileProvider);
-      }
-    }
+  /// The hero CTA now opens the guided AI Health Check (mockups
+  /// `ai_health_check_start` → `photo_analysis_upload` → `symptom_selection`
+  /// → `ai_analysis_loading`) rather than the two-way capture sheet.
+  Future<void> _healthCheck(
+      BuildContext context, WidgetRef ref, Pet pet, bool isPremium) async {
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => HealthCheckStartScreen(pet: pet, isPremium: isPremium),
+    ));
+    ref.invalidate(userProfileProvider);
+    ref.invalidate(latestTriageProvider(pet.id!));
   }
 
   Future<void> _logEvent(BuildContext context, WidgetRef ref, Pet pet) async {
@@ -241,7 +197,8 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpace.s12),
                   _HeroPanel(
                       pet: pet,
-                      onCheck: () => _check(context, ref, pet, isPremium)),
+                      onCheck: () =>
+                          _healthCheck(context, ref, pet, isPremium)),
                   const SizedBox(height: AppSpace.s12),
                   HomeQuickActions(items: [
                     (
@@ -879,158 +836,6 @@ class _QuotaStrip extends StatelessWidget {
   }
 }
 
-/// Frosted capture sheet (roadmap §3.4.1): three guided mode tiles + a
-/// "what makes a good photo?" tip. Returns 'photo' / 'video' / 'text' — the
-/// capture/analysis flow is unchanged.
-class _CaptureSheet extends StatelessWidget {
-  const _CaptureSheet();
-
-  void _tips(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('What makes a good photo?'),
-        content: const Text(
-          '• Good, even lighting — avoid harsh shadows\n'
-          '• Fill the frame with the area of concern\n'
-          '• Hold steady so it stays in focus\n'
-          '• Unsure? Take it from a couple of angles',
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context), child: const Text('Got it')),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final tiles = <Widget>[
-      _CaptureModeTile(
-        icon: Icons.camera_alt_rounded,
-        title: 'Take a photo',
-        hint: 'Best for skin, eyes, wounds',
-        onTap: () => Navigator.pop(context, 'photo'),
-      ),
-      _CaptureModeTile(
-        icon: Icons.edit_note_rounded,
-        title: 'Describe symptoms',
-        hint: 'No camera? Tell us what you see',
-        onTap: () => Navigator.pop(context, 'text'),
-      ),
-    ];
-    final animate = !reduceMotion(context);
-    return ClipRRect(
-      borderRadius:
-          const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-            sigmaX: AppGlass.sheetBlur, sigmaY: AppGlass.sheetBlur),
-        child: Container(
-          color: scheme.surface.withValues(alpha: AppGlass.sheetOpacity),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  AppSpace.s16, AppSpace.s8, AppSpace.s16, AppSpace.s16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: AppSpace.s12),
-                    decoration: BoxDecoration(
-                      color: scheme.outline,
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                    ),
-                  ),
-                  for (var i = 0; i < tiles.length; i++)
-                    animate
-                        ? tiles[i].animate().fadeIn(
-                            duration: AppMotion.standard,
-                            delay: Duration(milliseconds: 50 * i))
-                        : tiles[i],
-                  TextButton.icon(
-                    onPressed: () => _tips(context),
-                    icon: const Icon(Icons.help_outline_rounded, size: 18),
-                    label: const Text('What makes a good photo?'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CaptureModeTile extends StatelessWidget {
-  const _CaptureModeTile({
-    required this.icon,
-    required this.title,
-    required this.hint,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String hint;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpace.s8),
-      child: Material(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: AppRadius.brMd,
-        child: InkWell(
-          borderRadius: AppRadius.brMd,
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpace.s16),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: PawPalette.teal.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Icon(icon, color: PawPalette.mint),
-                ),
-                const SizedBox(width: AppSpace.s16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: Theme.of(context).textTheme.titleMedium),
-                      Text(hint,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: scheme.onSurfaceVariant)),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The mockup's secondary-navigation pill grid: full-width rows, or two
-/// side-by-side where both labels are short enough to survive 320dp.
 class _PillGrid extends StatelessWidget {
   const _PillGrid({required this.rows});
 

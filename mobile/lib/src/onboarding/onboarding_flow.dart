@@ -15,6 +15,7 @@ import '../pets/pet_photo_service.dart';
 import '../pets/pets_repository.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_components.dart';
 import '../theme/ui_assets.dart';
 import 'onboarding_stages.dart';
 import 'pending_pet.dart';

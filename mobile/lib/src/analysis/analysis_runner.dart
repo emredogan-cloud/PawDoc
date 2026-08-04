@@ -12,7 +12,10 @@ import '../models/analysis_result.dart';
 import '../monetization/maybe_show_paywall.dart';
 import '../monetization/paywall_prefs.dart';
 import '../monetization/paywall_screen.dart';
+import '../health_check/health_check_chrome.dart';
+import '../health_check/health_check_loading_view.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_ui.dart';
 import 'analysis_service.dart';
 import 'loading_screen.dart';
 import 'result_screen.dart';
@@ -180,8 +183,21 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
   @override
   Widget build(BuildContext context) {
     switch (_phase) {
+      // Mockup `ai_analysis_loading`: the wait is a screen of its own — node
+      // rail, scan ring, stage list, reassurance. `AnalysisLoadingView` still
+      // owns the resolve beat, which is timing-sensitive and stays untouched.
       case _Phase.loading:
-        return const Scaffold(body: AnalysisLoadingView());
+        return PawBackground(
+          variant: PawSurface.dark,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: const HealthCheckAppBar(),
+            body: HealthCheckLoadingView(
+              petSpecies: widget.petSpecies ?? 'dog',
+              hasPhoto: widget.imageStorageKey != null,
+            ),
+          ),
+        );
       case _Phase.resolving:
         return Scaffold(
           body: AnalysisLoadingView(

@@ -8,6 +8,7 @@ import '../router/app_router.dart';
 import '../auth/google_sign_in_diagnosis.dart';
 
 import '../theme/design_tokens.dart';
+import '../theme/paw_components.dart';
 import '../theme/ui_assets.dart';
 import 'onboarding_ui.dart';
 
