@@ -36,32 +36,49 @@ class CommunityCard extends ConsumerWidget {
                     builder: (_) => const CommunityHomeScreen()));
               }
             },
-            child: Row(
-              children: [
-                Icon(Icons.groups_2_outlined,
-                    color: PawTone.of(context).accent, size: 32),
-                const SizedBox(width: AppSpace.s12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Paw Community',
-                          style: theme.textTheme.titleSmall
-                              ?.copyWith(color: AppColors.ink50)),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Meet pet owners nearby, chat, and plan walks. '
-                        'Opt-in only — you choose what to share.',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: AppColors.ink300),
-                      ),
-                    ],
+            // Home now lays this out in a ~170dp column (mockup 010): beside a
+            // 32dp glyph and a chevron the copy has nowhere to go, so below a
+            // comfortable width the glyph moves above the text.
+            child: LayoutBuilder(builder: (context, c) {
+              final glyph = Icon(Icons.groups_2_outlined,
+                  color: PawTone.of(context).accent, size: 32);
+              final title = Text('Paw Community',
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(color: AppColors.ink50));
+              final body = Text(
+                'Meet pet owners nearby, chat, and plan walks. '
+                'Opt-in only — you choose what to share.',
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: AppColors.ink300),
+              );
+              const chevron = Icon(Icons.chevron_right_rounded,
+                  color: AppColors.ink300);
+              if (c.maxWidth < 260) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [glyph, const Spacer(), chevron]),
+                    const SizedBox(height: AppSpace.s8),
+                    title,
+                    const SizedBox(height: 2),
+                    body,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  glyph,
+                  const SizedBox(width: AppSpace.s12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [title, const SizedBox(height: 2), body],
+                    ),
                   ),
-                ),
-                const Icon(Icons.chevron_right_rounded,
-                    color: AppColors.ink300),
-              ],
-            ),
+                  chevron,
+                ],
+              );
+            }),
           );
         }
         return PawCard(

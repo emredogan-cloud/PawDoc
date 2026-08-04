@@ -534,20 +534,27 @@ class PawPillButton extends StatelessWidget {
       onTap: onTap,
       radius: AppRadius.pill,
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.s16, vertical: AppSpace.s16),
+          horizontal: AppSpace.s12, vertical: AppSpace.s16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 20, color: t.accent),
-          const SizedBox(width: AppSpace.s8),
+          Icon(icon, size: 18, color: t.accent),
+          const SizedBox(width: 6),
+          // The mockup's grid runs three pills across, which leaves about
+          // seventy points for the label. Shrink-to-fit rather than ellipsis:
+          // half of these labels were rendering as "Breed Encyclope…", and a
+          // truncated destination is worse than a slightly smaller one.
           Flexible(
-            child: Text(label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleSmall
-                    ?.copyWith(color: t.text)),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(label,
+                  maxLines: 1,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(color: t.text, fontSize: 13.5)),
+            ),
           ),
         ],
       ),

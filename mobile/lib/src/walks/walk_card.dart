@@ -28,43 +28,65 @@ class WalkCard extends ConsumerWidget {
     return switch (state) {
       WalksInitial() => PawCard(
           key: const Key('walk_card_initial'),
-          child: Row(
-            children: [
-              Icon(Icons.directions_walk_rounded,
-                  color: PawTone.of(context).accent, size: 32),
-              const SizedBox(width: AppSpace.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Smart walks',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleSmall
-                            ?.copyWith(color: AppColors.ink50)),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Weather-aware walk times${pet == null ? '' : ' for ${pet.name}'}. '
-                      'Uses your location on this device only — never stored '
-                      'on PawDoc servers.',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: AppColors.ink300),
-                    ),
-                  ],
+          // Home lays this out in a ~170dp column now (mockup 010). Beside a
+          // 32dp glyph and an intrinsic-width button that leaves the copy
+          // about forty pixels, which renders one character per line — so
+          // below a comfortable width the button drops to its own row.
+          child: LayoutBuilder(builder: (context, c) {
+            final tight = c.maxWidth < 260;
+            final title = Text('Smart walks',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(color: AppColors.ink50));
+            final body = Text(
+              'Weather-aware walk times${pet == null ? '' : ' for ${pet.name}'}. '
+              'Uses your location on this device only — never stored '
+              'on PawDoc servers.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: AppColors.ink300),
+            );
+            final button = FilledButton(
+              key: const Key('walk_card_enable'),
+              onPressed: () => ref
+                  .read(walksControllerProvider.notifier)
+                  .enable(species: species),
+              child: const Text('Show'),
+            );
+            final glyph = Icon(Icons.directions_walk_rounded,
+                color: PawTone.of(context).accent, size: 32);
+
+            if (tight) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  glyph,
+                  const SizedBox(height: AppSpace.s8),
+                  title,
+                  const SizedBox(height: 2),
+                  body,
+                  const SizedBox(height: AppSpace.s8),
+                  Align(alignment: Alignment.centerRight, child: button),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                glyph,
+                const SizedBox(width: AppSpace.s12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [title, const SizedBox(height: 2), body],
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppSpace.s8),
-              FilledButton(
-                key: const Key('walk_card_enable'),
-                onPressed: () => ref
-                    .read(walksControllerProvider.notifier)
-                    .enable(species: species),
-                child: const Text('Show'),
-              ),
-            ],
-          ),
+                const SizedBox(width: AppSpace.s8),
+                button,
+              ],
+            );
+          }),
         ),
       WalksLoading() => const SkeletonCard(height: 84),
       WalksPermissionNeeded(:final deniedForever, :final serviceOff) => PawCard(

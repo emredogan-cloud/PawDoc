@@ -10,6 +10,7 @@ import '../account/account_screen.dart';
 import '../account/user_profile.dart';
 import '../analysis/analysis_runner.dart';
 import '../analysis/analysis_service.dart';
+import '../assistant/assistant_screen.dart';
 import '../capture/camera_screen.dart';
 import '../community/community_card.dart';
 import '../core/action_labels.dart';
@@ -33,7 +34,10 @@ import '../pets/active_pet.dart';
 import '../pets/add_pet_flow.dart';
 import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
+import 'home_sections.dart';
 import '../prep/vet_visit_prep_screen.dart';
+import '../reminders/reminders_repository.dart';
+import '../reminders/reminders_screen.dart';
 import '../text_input/symptom_text_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
@@ -129,30 +133,12 @@ class HomeScreen extends ConsumerWidget {
       variant: PawSurface.dark,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-        title: petsAsync.maybeWhen(
-          data: (list) =>
-              list.isEmpty ? const Text('PawDoc') : _PetSwitcher(pets: list, active: activePet),
-          orElse: () => const Text('PawDoc'),
-        ),
-        actions: [
-          // Account consolidates family / sign-out / delete (roadmap §3.10.2);
-          // sign-out now lives there behind a confirm, so it can't be a one-tap
-          // AppBar mis-hit. The pet switcher stays in the AppBar title.
-          IconButton(
-            key: const Key('home_account_button'),
-            tooltip: 'Account',
-            icon: const Icon(Icons.account_circle_outlined),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AccountScreen()),
-            ),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
+        // No AppBar: mockup `010` opens with a brand bar that scrolls with the
+        // page, so the pet rail can sit flush beneath it. Account keeps its
+        // key and moves onto the avatar at the bar's right.
+        body: SafeArea(
+          bottom: false,
+          child: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(petsListProvider);
           ref.invalidate(userProfileProvider);
@@ -164,8 +150,25 @@ class HomeScreen extends ConsumerWidget {
           }
         },
         child: ListView(
-          padding: const EdgeInsets.all(AppSpace.s16),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpace.s16, AppSpace.s4, AppSpace.s16, AppSpace.s16),
           children: [
+            HomeBrandBar(
+              switcher: petsAsync.maybeWhen(
+                data: (list) => list.isEmpty
+                    ? const SizedBox.shrink()
+                    : _PetSwitcher(pets: list, active: activePet),
+                orElse: () => const SizedBox.shrink(),
+              ),
+              hasNotifications: true,
+              onNotifications: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const RemindersScreen()),
+              ),
+              onAccount: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AccountScreen()),
+              ),
+            ),
+            const SizedBox(height: AppSpace.s12),
             const OfflineBanner(),
             // 72h "was this helpful?" follow-up (self-hides when nothing pending).
             const FollowUpBanner(),
@@ -207,25 +210,117 @@ class HomeScreen extends ConsumerWidget {
                 final isPremium =
                     profile.maybeWhen(data: (p) => p.isPremium, orElse: () => false);
                 final pet = activePet ?? list.first;
-                // Care-first hierarchy: pet hero → quick actions → insight →
-                // secondary → quota (the billing meter is demoted to the bottom).
+                // The order mockup `010` lays out: pet rail → greeting → hero →
+                // quick actions → the two insight columns → the pill grid →
+                // the stat strip → the quota line.
                 final content = <Widget>[
-                  _PetHeroCard(pet: pet, onCheck: () => _check(context, ref, pet, isPremium)),
-                  const SizedBox(height: AppSpace.s8),
+                  PetRail(
+                    pets: list,
+                    activeId: pet.id,
+                    onSelect: (p) => ref
+                        .read(activePetIdProvider.notifier)
+                        .select(p.id!),
+                    onAdd: () => context.push('/onboarding'),
+                    avatarBuilder: (p, size) => PetPortrait(
+                      pet: p,
+                      size: size,
+                      livingAvatar: LivingPetAvatar(
+                        species: p.species,
+                        size: size,
+                        seed: p.id,
+                        photoKey: p.photoKey,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s16),
+                  HomeGreeting(
+                    name: profile.maybeWhen(
+                        data: (_) => null, orElse: () => null),
+                    petName: petDisplayName(pet.name),
+                  ),
+                  const SizedBox(height: AppSpace.s12),
+                  _HeroPanel(
+                      pet: pet,
+                      onCheck: () => _check(context, ref, pet, isPremium)),
+                  const SizedBox(height: AppSpace.s12),
+                  HomeQuickActions(items: [
+                    (
+                      const Key('home_assistant'),
+                      LucideIcons.messageCircle,
+                      'AI Assistant',
+                      'Ask PawDoc AI',
+                      () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const AssistantScreen())),
+                      null,
+                    ),
+                    (
+                      const Key('home_quick_emergency'),
+                      LucideIcons.circlePlus,
+                      'Emergency',
+                      'Get help now',
+                      () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const EmergencyHelpScreen())),
+                      AppColors.emergencyDark,
+                    ),
+                    (
+                      const Key('home_add_record'),
+                      LucideIcons.camera,
+                      'Add Record',
+                      'Photo / Note',
+                      () => _logEvent(context, ref, pet),
+                      null,
+                    ),
+                    (
+                      const Key('home_reminders'),
+                      LucideIcons.calendarClock,
+                      'Reminders',
+                      'Manage all',
+                      () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const RemindersScreen())),
+                      null,
+                    ),
+                  ]),
+                  const SizedBox(height: AppSpace.s12),
+                  // Emergency keeps its full-width button as well as the tile
+                  // above: owner decision D-1 makes the red path unmissable,
+                  // and a quarter-width tile is not that.
                   const EmergencyHelpButton(),
                   const SizedBox(height: AppSpace.s12),
-                  BreedInsightCard(
-                    key: ValueKey('breed_${pet.id}'),
-                    species: pet.species,
-                    breed: pet.breed,
+                  // The mockup runs two columns here — insight cards on the
+                  // left, the live lists on the right.
+                  // Deliberately NOT wrapped in IntrinsicHeight: the walk card
+                  // now measures itself with a LayoutBuilder, which has no
+                  // intrinsic dimension, and the whole two-column block
+                  // rendered blank because of it.
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                        Expanded(
+                          flex: 45,
+                          child: Column(children: [
+                            BreedInsightCard(
+                              key: ValueKey('breed_${pet.id}'),
+                              species: pet.species,
+                              breed: pet.breed,
+                            ),
+                            const SizedBox(height: AppSpace.s8),
+                            const WalkCard(),
+                            const SizedBox(height: AppSpace.s8),
+                            const CommunityCard(),
+                          ]),
+                        ),
+                        const SizedBox(width: AppSpace.s8),
+                        Expanded(
+                          flex: 55,
+                          child: Column(children: [
+                            _RemindersCard(pet: pet),
+                            const SizedBox(height: AppSpace.s8),
+                            _TimelineCard(pet: pet),
+                          ]),
+                        ),
+                    ],
                   ),
-                  const SizedBox(height: AppSpace.s8),
-                  // Next Evolution Phase 5: weather-aware walks (on-device).
-                  const WalkCard(),
-                  const SizedBox(height: AppSpace.s8),
-                  // Next Evolution Phase 6: opt-in social layer.
-                  const CommunityCard(),
-                  const SizedBox(height: AppSpace.s8),
+                  const SizedBox(height: AppSpace.s12),
                   // Secondary navigation, laid out as the mockup's pill grid.
                   // Keys are preserved verbatim — the home tests address these
                   // by key, and the redesign must not silently move them.
@@ -244,12 +339,10 @@ class HomeScreen extends ConsumerWidget {
                           'Log event',
                           () => _logEvent(context, ref, pet),
                         ),
-                      ],
-                      [
                         (
                           const Key('home_memories'),
                           LucideIcons.images,
-                          'Memories with ${pet.name}',
+                          'Memories',
                           () => Navigator.of(context).push(
                                 MaterialPageRoute(
                                     builder: (_) => MemoriesScreen(pet: pet)),
@@ -266,8 +359,6 @@ class HomeScreen extends ConsumerWidget {
                                     builder: (_) => VetVisitPrepScreen(pet: pet)),
                               ),
                         ),
-                      ],
-                      [
                         (
                           const Key('home_encyclopedia'),
                           LucideIcons.bookOpen,
@@ -289,7 +380,9 @@ class HomeScreen extends ConsumerWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: AppSpace.s8),
+                  const SizedBox(height: AppSpace.s12),
+                  _StatStrip(pet: pet),
+                  const SizedBox(height: AppSpace.s12),
                   profile.maybeWhen(
                     data: (p) => _QuotaStrip(
                         isPremium: p.isPremium,
@@ -302,6 +395,7 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
       ),
       ),
     );
@@ -385,83 +479,264 @@ class _PetSwitcher extends ConsumerWidget {
   }
 }
 
-/// The #1 dashboard element (roadmap §3.3): pet identity (avatar + name + breed
-/// + last-check) and the primary "Check" CTA. Pet-first, care-first.
-class _PetHeroCard extends ConsumerWidget {
-  const _PetHeroCard({required this.pet, required this.onCheck});
+/// Mockup `010`'s hero: the pet's status line, three signals, the primary
+/// action, and the pet lit against a bloom.
+///
+/// **Safety.** The mockup's headline is "Buddy is doing great!" over "No health
+/// issues detected" — an all-clear the app cannot substantiate, and the exact
+/// shape a false negative takes. What is actually known is when the pet was
+/// last checked, so that is what the hero says. `home_hero_last_check_test`
+/// pins the line.
+class _HeroPanel extends ConsumerWidget {
+  const _HeroPanel({required this.pet, required this.onCheck});
+
   final Pet pet;
   final VoidCallback onCheck;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
     final lastTriage = ref.watch(latestTriageProvider(pet.id!));
-    final hasBreed = pet.breed != null && pet.breed!.trim().isNotEmpty;
-    final subtitle =
-        hasBreed ? '${speciesName(pet.species)} · ${pet.breed!.trim()}' : speciesName(pet.species);
-
-    return PawCard(
-      padding: const EdgeInsets.all(AppSpace.s16),
-      child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _avatar(context, lastTriage),
-                const SizedBox(width: AppSpace.s16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(petDisplayName(pet.name),
-                          style: Theme.of(context).textTheme.titleLarge),
-                      Text(subtitle,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: scheme.onSurfaceVariant)),
-                      lastTriage.when(
-                        loading: () => const Text('…'),
-                        error: (_, _) => const SizedBox.shrink(),
-                        // F-2: recency, not the raw wire level — "Last check:
-                        // just now" right after a completed analysis.
-                        data: (t) => Text(
-                          t == null
-                              ? 'No checks yet'
-                              : 'Last check: ${t.checkedAt == null ? actionLabel(t.level) : lastCheckLabel(t.checkedAt!)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurfaceVariant),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpace.s16),
-            PawPrimaryButton(
-              key: Key('check_${pet.id}'),
-              icon: Icons.health_and_safety_rounded,
-              onPressed: onCheck,
-              child: Text('Check ${petDisplayName(pet.name)}'),
-            ),
-          ],
-        ),
+    final name = petDisplayName(pet.name);
+    final subtitle = lastTriage.when(
+      loading: () => '…',
+      error: (_, _) => 'Tap below to run a check',
+      // F-2: recency, not the raw wire level.
+      data: (t) => t == null
+          ? 'No checks yet'
+          : 'Last check: ${t.checkedAt == null ? actionLabel(t.level) : lastCheckLabel(t.checkedAt!)}',
     );
-  }
 
-  /// M2 (#9/#11): the pet's living avatar — the rig owns breath/blink now
-  /// (the old code-breath on a generic disc is gone). The last-check
-  /// timestamp is the beat key: when a new check lands (F-2 invalidation),
-  /// the avatar does the attentive→relieved beat on return.
-  Widget _avatar(BuildContext context, AsyncValue<LatestTriage?> lastTriage) {
-    return LivingPetAvatar(
-      species: pet.species,
-      size: 56,
-      seed: pet.id,
-      photoKey: pet.photoKey,
-      beatKey: lastTriage.value?.checkedAt,
+    return PetHeroPanel(
+      title: '$name’s day at a glance',
+      subtitle: subtitle,
+      // The mockup fills these with Energy/Mood/Activity readings. Nothing in
+      // the product records them yet, so they are drawn as the mockup draws
+      // them and marked unavailable rather than invented — a fabricated
+      // "Mood: Happy" is a claim about an animal nobody observed.
+      signals: const [
+        (LucideIcons.zap, 'Energy', 'Soon', false),
+        (LucideIcons.smile, 'Mood', 'Soon', false),
+        (LucideIcons.footprints, 'Activity', 'Soon', false),
+      ],
+      ctaLabel: 'AI Health Check',
+      ctaKey: Key('check_${pet.id}'),
+      onCta: onCheck,
+      art: _HeroArt(pet: pet),
     );
   }
 }
+
+/// The pet, cut into the hero's right edge.
+class _HeroArt extends StatelessWidget {
+  const _HeroArt({required this.pet});
+
+  final Pet pet;
+
+  @override
+  Widget build(BuildContext context) {
+    // The mockup fills this with a photograph, so the portrait resolves to the
+    // pet's own photo when there is one and the photoreal species art when
+    // there is not — the illustrated Paw Pal rig is right for a 56dp chip and
+    // wrong here.
+    return SizedBox(
+      width: 164,
+      child: ShaderMask(
+        shaderCallback: (r) => const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Colors.transparent, Colors.white, Colors.white],
+          stops: [0.0, 0.34, 1.0],
+        ).createShader(r),
+        blendMode: BlendMode.dstIn,
+        child: pet.photoKey != null
+            ? LivingPetAvatar(
+                species: pet.species,
+                size: 164,
+                seed: pet.id,
+                photoKey: pet.photoKey,
+              )
+            : Image.asset(
+                AppAssets.species(pet.species),
+                fit: BoxFit.cover,
+                excludeFromSemantics: true,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+      ),
+    );
+  }
+}
+
+/// "Today's Reminders" — the next few due for this pet.
+class _RemindersCard extends ConsumerWidget {
+  const _RemindersCard({required this.pet});
+
+  final Pet pet;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(remindersForPetProvider(pet.id!));
+    final rows = async.maybeWhen(
+      data: (list) {
+        final upcoming = [...list]..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+        return [
+          for (final r in upcoming.take(2))
+            (
+              LucideIcons.syringe,
+              reminderTypeLabel(r.reminderType),
+              dueDescription(r.dueDate),
+              dueStamp(r.dueDate),
+              null as Color?,
+              (() => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const RemindersScreen()))) as VoidCallback?,
+            ),
+        ];
+      },
+      orElse: () => const <(IconData, String, String, String, Color?, VoidCallback?)>[],
+    );
+
+    return HomeListCard(
+      icon: LucideIcons.calendarDays,
+      title: 'Today’s Reminders',
+      actionLabel: 'See All',
+      onAction: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const RemindersScreen())),
+      emptyLabel: 'Nothing due. Add a reminder to be nudged about vaccines, '
+          'medication or a check-up.',
+      rows: rows,
+    );
+  }
+}
+
+/// "Health Timeline" — the three most recent entries, spine and all.
+class _TimelineCard extends ConsumerWidget {
+  const _TimelineCard({required this.pet});
+
+  final Pet pet;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(healthTimelineProvider(pet.id!));
+    final rows = async.maybeWhen(
+      data: (list) => [
+        for (final e in list.take(3))
+          (
+            timelineGlyph(e.kind),
+            e.title,
+            e.subtitle ?? '',
+            lastCheckLabel(e.date),
+            null as Color?,
+            (() => context.push('/history')) as VoidCallback?,
+          ),
+      ],
+      orElse: () => const <(IconData, String, String, String, Color?, VoidCallback?)>[],
+    );
+
+    return HomeListCard(
+      icon: LucideIcons.activity,
+      title: 'Health Timeline',
+      actionLabel: 'View All',
+      onAction: () => context.push('/history'),
+      emptyLabel: 'Nothing recorded yet. Checks, notes and vet visits land '
+          'here as you add them.',
+      spine: true,
+      rows: rows,
+    );
+  }
+}
+
+/// The closing three-cell strip.
+class _StatStrip extends ConsumerWidget {
+  const _StatStrip({required this.pet});
+
+  final Pet pet;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lastTriage = ref.watch(latestTriageProvider(pet.id!));
+    final reminders = ref.watch(remindersForPetProvider(pet.id!));
+    final next = reminders.maybeWhen(
+      data: (list) {
+        if (list.isEmpty) return null;
+        final sorted = [...list]..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+        return sorted.first;
+      },
+      orElse: () => null,
+    );
+    final checkedAt = lastTriage.value?.checkedAt;
+
+    return HomeStatStrip(
+      score: careScore(pet, hasCheck: checkedAt != null, hasReminder: next != null),
+      scoreCaption: 'Record\nfilled in',
+      lastCheckup: checkedAt == null ? 'Not yet' : formatDay(checkedAt),
+      lastCheckupCaption:
+          checkedAt == null ? 'Run your first check' : lastCheckLabel(checkedAt),
+      nextReminder: next == null ? 'None set' : dueStamp(next.dueDate),
+      nextReminderCaption:
+          next == null ? 'Add one to be nudged' : reminderTypeLabel(next.reminderType),
+    );
+  }
+}
+
+/// A wellness metric, never a clinical one (owner decision D-2): the share of
+/// the pet's *record* that is filled in. It says nothing about the animal's
+/// health and is captioned so it cannot be read as if it did.
+int careScore(Pet pet, {required bool hasCheck, required bool hasReminder}) {
+  var filled = 1; // a named pet is the first point
+  if (pet.breed != null && pet.breed!.trim().isNotEmpty) filled++;
+  if (pet.birthDate != null) filled++;
+  if (pet.sex != null && pet.sex!.isNotEmpty) filled++;
+  if (pet.photoKey != null) filled++;
+  if (hasCheck) filled++;
+  if (hasReminder) filled++;
+  return (filled * 100 / 7).round();
+}
+
+String formatDay(DateTime d) {
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  return '${months[d.month - 1]} ${d.day}, ${d.year}';
+}
+
+/// `08:30`, or the date when it is not today.
+String dueStamp(DateTime due) {
+  final now = DateTime.now();
+  final sameDay =
+      due.year == now.year && due.month == now.month && due.day == now.day;
+  if (sameDay) {
+    return '${due.hour.toString().padLeft(2, '0')}:'
+        '${due.minute.toString().padLeft(2, '0')}';
+  }
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  return '${months[due.month - 1]} ${due.day}';
+}
+
+String dueDescription(DateTime due) {
+  final days = due.difference(DateTime.now()).inDays;
+  if (days < 0) return 'Overdue';
+  if (days == 0) return 'Due today';
+  if (days == 1) return 'Due tomorrow';
+  return 'Due in $days days';
+}
+
+String reminderTypeLabel(String type) => switch (type) {
+      'vaccine' => 'Vaccine',
+      'medication' => 'Medication',
+      'checkup' => 'Check-up',
+      'weight' => 'Weight check',
+      _ => type.isEmpty
+          ? 'Reminder'
+          : type[0].toUpperCase() + type.substring(1),
+    };
+
+IconData timelineGlyph(TimelineKind kind) => switch (kind) {
+      TimelineKind.analysis => LucideIcons.scanHeart,
+      TimelineKind.healthEvent => LucideIcons.notebookPen,
+    };
 
 /// Warm, illustrated welcome for the first run (replaces the two stranded cards).
 /// Quota v3 framing: text checks are FREE and unmetered; only photo logs
