@@ -5,6 +5,21 @@ Chronological record of the UI migration (Phase 0 + A–Q). Detail lives in
 `PAWDOC_UI_IMPLEMENTATION_FINAL_REPORT.md`; resume state in
 `memory/UI_PROGRESS.md`.
 
+## 2026-08-04 (later) — the analysis wait, and the result screen
+
+- **Result** `4ff08ef` — rebuilt against `ai_analysis_result_low_risk` and
+  `_monitor`. The two most contract-hostile mockups in the set: confidence
+  percentages, a risk level, a named cause, a ranked differential and an
+  all-clear checklist, all in one screen. Every card, glyph and position is
+  reproduced; every claim is replaced. The action card takes the ladder's
+  safety-locked hue — the mockup paints it lime at the floor, and the floor is
+  calm slate. Caught a reassuring green I had introduced mid-implementation.
+- **Loading** `9820028` — the run now finishes before the result appears.
+  ~33.5s over a `TweenSequence`, six stages ticking against the percentage,
+  parked at 99 with a waiting state if the network runs long. An EMERGENCY and
+  reduce-motion cut straight through. `health_check_ceremony_test.dart` pins
+  all four cases.
+
 ## 2026-08-04 — home and the AI Health Check flow
 
 - **AI Health Check** `6eb63e5` — the four-screen guided flow
