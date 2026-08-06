@@ -299,6 +299,8 @@ class ResultListCard extends StatelessWidget {
     required this.title,
     required this.items,
     required this.tint,
+    this.lead,
+    this.chip,
     this.emptyLabel,
     this.footerLabel,
     this.onFooter,
@@ -309,6 +311,13 @@ class ResultListCard extends StatelessWidget {
   final String title;
   final List<String> items;
   final Color tint;
+
+  /// The mockup's big line under the heading — where it prints a named cause.
+  final String? lead;
+
+  /// The mockup's pill beside that line, where it prints a confidence figure.
+  /// Here it says where the content came from.
+  final String? chip;
   final String? emptyLabel;
   final String? footerLabel;
   final VoidCallback? onFooter;
@@ -333,6 +342,35 @@ class ResultListCard extends StatelessWidget {
                       fontWeight: FontWeight.w700)),
             ),
           ]),
+          if (lead != null) ...[
+            const SizedBox(height: 8),
+            Text(lead!,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700)),
+          ],
+          if (chip != null) ...[
+            const SizedBox(height: 7),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  color: tint.withValues(alpha: 0.12),
+                  border: Border.all(color: tint.withValues(alpha: 0.30)),
+                ),
+                child: Text(chip!,
+                    style: TextStyle(
+                        color: tint,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600)),
+              ),
+            ),
+          ],
           const SizedBox(height: 10),
           if (items.isEmpty && emptyLabel != null)
             Text(emptyLabel!,
@@ -888,6 +926,150 @@ class ResultStatusCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The mockup's "When to see a vet?" strip — a glyph, two lines and a link.
+class ResultGuideStrip extends StatelessWidget {
+  const ResultGuideStrip({
+    required this.title,
+    required this.detail,
+    required this.onOpen,
+    required this.tint,
+    super.key,
+  });
+
+  final String title;
+  final String detail;
+  final VoidCallback onOpen;
+  final Color tint;
+
+  @override
+  Widget build(BuildContext context) {
+    return HomeCard(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: tint.withValues(alpha: 0.10),
+              border: Border.all(color: tint.withValues(alpha: 0.35)),
+            ),
+            child: Icon(LucideIcons.userRound, size: 19, color: tint),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(detail,
+                    style: const TextStyle(
+                        color: Color(0xFF8A948D), fontSize: 11.5, height: 1.3)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            key: const Key('result_view_guide'),
+            onPressed: onOpen,
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: tint.withValues(alpha: 0.45)),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              minimumSize: const Size(0, 44),
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text('View Guide',
+                  style: TextStyle(
+                      color: tint,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600)),
+              Icon(LucideIcons.chevronRight, size: 15, color: tint),
+            ]),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The mockup's "Reminder set · We'll remind you to check Buddy again in 2
+/// days · View Reminder" confirmation, shown once the re-check is scheduled.
+class ResultReminderRow extends StatelessWidget {
+  const ResultReminderRow({
+    required this.detail,
+    required this.onView,
+    required this.tint,
+    super.key,
+  });
+
+  final String detail;
+  final VoidCallback onView;
+  final Color tint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: tint.withValues(alpha: 0.07),
+        border: Border.all(color: tint.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        children: [
+          Icon(LucideIcons.calendarCheck, size: 22, color: tint),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Reminder set',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(detail,
+                    style: const TextStyle(
+                        color: Color(0xFF8A948D), fontSize: 11.5, height: 1.3)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton(
+            key: const Key('result_view_reminder'),
+            onPressed: onView,
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: tint.withValues(alpha: 0.45)),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              minimumSize: const Size(0, 42),
+              shape:
+                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(LucideIcons.bell, size: 14, color: tint),
+              const SizedBox(width: 5),
+              Text('View',
+                  style: TextStyle(
+                      color: tint,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600)),
+            ]),
           ),
         ],
       ),

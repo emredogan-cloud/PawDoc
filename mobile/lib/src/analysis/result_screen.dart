@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../analytics/analytics.dart';
+import '../home/home_screen.dart' show careScore;
+import '../health/timeline.dart';
+import '../reminders/reminders_screen.dart';
+import '../pets/active_pet.dart';
 import '../health/health_event_form_screen.dart';
 import '../theme/app_assets.dart';
 import '../theme/paw_components.dart';
@@ -252,6 +257,32 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
     }
   }
 
+  /// Checks per week over the last six, normalised for the sparkline.
+  List<double> _checksPerWeek() {
+    final id = widget.petId;
+    if (id == null) return const [];
+    final items = ref.read(healthTimelineProvider(id)).value;
+    if (items == null || items.length < 2) return const [];
+    final now = DateTime.now();
+    final buckets = List<double>.filled(6, 0);
+    for (final e in items) {
+      final weeks = now.difference(e.date).inDays ~/ 7;
+      if (weeks >= 0 && weeks < 6) buckets[5 - weeks] += 1;
+    }
+    final peak = buckets.reduce((a, b) => a > b ? a : b);
+    if (peak == 0) return const [];
+    return [for (final b in buckets) (b / peak) * 0.9 + 0.05];
+  }
+
+  /// "in 2 days" / "in 12 hours" — the phrasing the mockup's reminder row uses.
+  String _recheckIn(int hours) {
+    if (hours % 24 == 0) {
+      final days = hours ~/ 24;
+      return days == 1 ? 'again tomorrow' : 'again in $days days';
+    }
+    return 'again in $hours hours';
+  }
+
   String _recheckLabel(int hours) {
     if (hours % 24 == 0) {
       final days = hours ~/ 24;
@@ -282,6 +313,11 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
     final tint = PawTone.of(context).accent;
     final actionTint = _actionColor(r.action);
     final name = petDisplayName(widget.petName ?? 'your pet');
+    final pet = ref.watch(activePetProvider);
+    final score = pet == null
+        ? 45
+        : careScore(pet,
+            hasCheck: true, hasReminder: _recheckScheduled);
 
     return PawBackground(
       variant: PawSurface.dark,
@@ -355,24 +391,32 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
                 children: [
                   Expanded(
                     child: ResultListCard(
-                      icon: LucideIcons.stethoscope,
-                      // The mockup names a cause here and ranks a differential
-                      // under it. This is the educational equivalent: what a
-                      // vet looks at with this KIND of presentation, never a
-                      // finding about this animal.
-                      title: 'What vets look for',
-                      items: r.vetsLookFor,
-                      emptyLabel: 'Your vet will examine this in person.',
+                      icon: LucideIcons.search,
+                      // The mockup's heavier left cell — a named cause, a
+                      // confidence pill and a ranked differential. It carries
+                      // what the OWNER reported instead, with the pill saying
+                      // where that came from rather than how sure anything is.
+                      title: 'What we noticed',
+                      lead: r.visibleSymptoms.isEmpty
+                          ? 'Nothing specific stood out'
+                          : r.visibleSymptoms.first,
+                      chip: 'From what you described',
+                      items: r.visibleSymptoms.skip(1).toList(),
+                      emptyLabel: r.visibleSymptoms.isEmpty
+                          ? 'Add a photo or more detail for a closer look.'
+                          : null,
                       tint: tint,
                     ),
                   ),
                   const SizedBox(width: AppSpace.s8),
                   Expanded(
                     child: ResultListCard(
-                      icon: LucideIcons.search,
-                      title: 'What we noticed',
-                      items: r.visibleSymptoms,
-                      emptyLabel: 'Nothing specific stood out.',
+                      icon: LucideIcons.stethoscope,
+                      // Educational: what a vet looks at with this KIND of
+                      // presentation, never a finding about this animal.
+                      title: 'What vets look for',
+                      items: r.vetsLookFor,
+                      emptyLabel: 'Your vet will examine this in person.',
                       tint: tint,
                     ),
                   ),
@@ -440,24 +484,37 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
             if (r.action == ActionLevel.watchAndRecheck &&
                 widget.petId != null) ...[
               // The mockup's "Reminder set · We'll remind you to check Buddy
-              // again in 2 days" row — live, not decorative.
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonalIcon(
-                  key: const Key('result_recheck'),
-                  onPressed: _recheckScheduled || _schedulingRecheck
-                      ? null
-                      : _scheduleRecheck,
-                  icon: Icon(_recheckScheduled
-                      ? Icons.check_rounded
-                      : Icons.update_rounded),
-                  label: Text(_recheckScheduled
-                      ? 'Re-check scheduled'
-                      : _recheckLabel(r.recheckHours ?? 24)),
+              // again in 2 days · View Reminder" row — live, not decorative.
+              // It appears once the re-check is actually scheduled.
+              if (_recheckScheduled)
+                ResultReminderRow(
+                  detail: 'We’ll remind you to check $name '
+                      '${_recheckIn(r.recheckHours ?? 24)}.',
+                  onView: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => const RemindersScreen())),
+                  tint: tint,
+                )
+              else
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.tonalIcon(
+                    key: const Key('result_recheck'),
+                    onPressed: _schedulingRecheck ? null : _scheduleRecheck,
+                    icon: const Icon(Icons.update_rounded),
+                    label: Text(_recheckLabel(r.recheckHours ?? 24)),
+                  ),
                 ),
-              ),
               const SizedBox(height: AppSpace.s8),
             ],
+            ResultGuideStrip(
+              title: 'When to see a vet?',
+              detail: watchFor.isEmpty
+                  ? 'Know the signs that mean it should not wait.'
+                  : watchFor.first,
+              onOpen: () => LegalUrls.open(LegalUrls.vetDisclaimer),
+              tint: tint,
+            ),
+            const SizedBox(height: AppSpace.s12),
             ResultActionBar(
               shareKey: const Key('result_share'),
               // The PDF export exists for the vet-prep pack, not yet from a
@@ -485,68 +542,29 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
                   Expanded(
                     child: ResultTrendCard(
                       petName: name,
-                      points: const [],
-                      onTap: () => Navigator.of(context).maybePop(),
+                      // Checks logged over the last six weeks — activity, not
+                      // severity. A line that trended "better" or "worse"
+                      // would be a graded verdict drawn from nothing.
+                      points: _checksPerWeek(),
+                      onTap: () => context.push('/history'),
                       tint: tint,
                     ),
                   ),
                   const SizedBox(width: AppSpace.s8),
                   Expanded(
-                    child: HomeCard(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // The mockup's "Health Score 92 · Excellent". D-2:
-                          // wellness only, never a verdict — so it counts how
-                          // complete the record is and says so.
-                          const Text('Care Score',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700)),
-                          const SizedBox(height: 3),
-                          const Text('How complete the record is.',
-                              style: TextStyle(
-                                  color: Color(0xFF8A948D),
-                                  fontSize: 11.5,
-                                  height: 1.3)),
-                          const SizedBox(height: 12),
-                          Row(children: [
-                            SizedBox(
-                              width: 46,
-                              height: 46,
-                              child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    CircularProgressIndicator(
-                                      value: widget.analysisId == null ? 0.4 : 0.6,
-                                      strokeWidth: 4,
-                                      strokeCap: StrokeCap.round,
-                                      backgroundColor:
-                                          Colors.white.withValues(alpha: 0.08),
-                                      valueColor:
-                                          AlwaysStoppedAnimation(tint),
-                                    ),
-                                    Text(widget.analysisId == null ? '40' : '60',
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w700)),
-                                  ]),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text('This check is now\npart of it',
-                                  style: TextStyle(
-                                      color: tint,
-                                      fontSize: 11,
-                                      height: 1.25,
-                                      fontWeight: FontWeight.w600)),
-                            ),
-                          ]),
-                        ],
-                      ),
+                    // The mockup's "Health Score 92 · Excellent". D-2: wellness
+                    // only, never a verdict — so it counts how complete the
+                    // record is, off the real pet, and says exactly that.
+                    child: ResultStatusCard(
+                      label: 'Care Score',
+                      value: 'Record $score% complete',
+                      caption: score >= 85
+                          ? 'This check is part of it.'
+                          : 'Add more detail to $name’s profile.',
+                      tint: tint,
+                      ring: score / 100,
+                      ringLabel: '$score',
+                      onTap: () => context.push('/pets'),
                     ),
                   ),
                 ],
