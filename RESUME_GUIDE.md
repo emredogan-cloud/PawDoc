@@ -3,8 +3,8 @@
 **Read this first.** It is written so a fresh agent can continue in minutes
 without asking questions.
 
-**Last updated:** 2026-08-04 · **Branch:** `ui-impl-phase-p-onboarding`
-**Head:** `4ff08ef` · **Gates:** `flutter analyze` clean · 453 tests green ·
+**Last updated:** 2026-08-06 · **Branch:** `ui-impl-phase-p-onboarding`
+**Head:** `0715b3c` · **Gates:** `flutter analyze` clean · 453 tests green ·
 `verify-disclaimers` PASS
 
 ---
@@ -12,9 +12,9 @@ without asking questions.
 ## 1 · Current phase
 
 Rebuilding the app's screens against the reference mockups in `new-interface/`
-(57 PNGs, untracked, ~93 MB). Onboarding is finished; home and the AI Health
-Check flow are finished; the result screen is finished. **Three screens
-remain in the current batch.**
+(57 PNGs, untracked, ~93 MB). Onboarding, home, the AI Health Check flow and
+**all three result screens** are finished. **Three screens remain in the
+current batch — the assistant trio.**
 
 Working method, unchanged from onboarding and expected to continue:
 
@@ -36,7 +36,8 @@ Working method, unchanged from onboarding and expected to continue:
 | `photo_analysis_upload` | `health_check/health_check_photo_screen.dart` | `6eb63e5` |
 | `symptom_selection` | `health_check/health_check_symptoms_screen.dart` | `6eb63e5` |
 | `ai_analysis_loading` | `health_check/health_check_loading_view.dart` | `6eb63e5` `9820028` |
-| `ai_analysis_result_low_risk` + `_monitor` | `analysis/result_screen.dart` + `health_check/result_sections.dart` | `4ff08ef` |
+| `ai_analysis_result_low_risk` + `_monitor` | `analysis/result_screen.dart` + `health_check/result_sections.dart` | `4ff08ef` `0715b3c` |
+| `ai_analysis_result_emergency` | `analysis/emergency_result_screen.dart` | `102c6f3` |
 
 All device-walked on the Redmi Note 8 (`AYXSUKIVJVPZ7HPZ`, 1080×2340 @440dpi =
 **393×851 logical** — the same size the mockups are drawn at).
@@ -45,42 +46,19 @@ All device-walked on the Redmi Note 8 (`AYXSUKIVJVPZ7HPZ`, 1080×2340 @440dpi =
 
 ## 3 · Remaining work — start here
 
-### 3.1 · `ai_analysis_result_emergency.png` — NEXT
+### 3.1 · `ai_assistant_home.png` — NEXT
 
-Restyle `analysis/emergency_result_screen.dart` (179 lines) to the mockup.
+Target: `assistant/assistant_screen.dart`. **Open the reference first — it has
+not been read in detail yet.** Per the owner's brief, preserve every visible
+section: hero composition, AI halo, pet avatar, conversation history, suggested
+prompts, quick actions, popular topics, bottom composer, attachment controls,
+premium section, glass cards, glow hierarchy, background artwork.
 
-**Reproduce:** the red node rail, the "This could be serious" hero with the
-photo card, the "What to do now" four-tile help grid (Call a Vet Now · Find
-24/7 Vet · Directions · Set Alert), the "While you're on the way" first-aid
-rows, "View Full First Aid Guide", the acknowledgment CTA ("I Understand, Take
-Me to Help"), and the footer disclaimer.
-
-**Do NOT reproduce** — CLAUDE.md rule 4 and owner decision D-1 forbid anything
-on an emergency surface beyond help contacts, first aid, the disclaimer and the
-acknowledgment gate:
-
-- "Emergency Risk Level · High" — a severity grade
-- "Why it's serious:" list — AI-driven content naming conditions ("possible
-  infection", "Swelling or irritation detected")
-- "Potential Concern: Skin Infection" — `safety_copy_test` bans both
-  `potential concern` and `skin infection` by regex
-- "Health Score 36 · At Risk" — a meter on the red path (D-2 + rule 4)
-- "Share this report … for faster diagnosis" — not one of the four permitted
-  categories, and the copy says "diagnosis"
-
-**This is the largest single deviation in the programme. Surface it to the
-owner rather than burying it in a commit body.**
-
-### 3.2 · `ai_assistant_home.png`
-
-Target: `assistant/assistant_screen.dart`. Not yet read in detail — open the
-reference first.
-
-### 3.3 · `ai_assistant_chat.png`
+### 3.2 · `ai_assistant_chat.png`
 
 Target: `assistant/assistant_screen.dart` (the conversation view).
 
-### 3.4 · `ai_message_actions.png`
+### 3.3 · `ai_message_actions.png`
 
 Target: the assistant's per-message action sheet. Check `assistant/` for an
 existing long-press affordance before adding one.
@@ -98,8 +76,8 @@ vet"). V-12 — suggestion chips must not presuppose a symptom ("why is my dog�
 |---|---|---|
 | `HomeCard`, `HomeCardHeader` | `home/home_sections.dart` | every dark slab and section heading in System B |
 | `HomeListCard`, `HomeQuickActions`, `HomeStatStrip`, `PetRail`, `PetPortrait`, `HomeBrandBar`, `HomeGreeting`, `PetHeroPanel` | `home/home_sections.dart` | home, reusable elsewhere |
-| `HealthCheckAppBar`, `HealthCheckSteps`, `healthCheckSteps4/5`, `HealthCheckDisclaimer`, `HealthCheckScaffold` | `health_check/health_check_chrome.dart` | every screen in the check flow |
-| `ResultHero`, `ResultActionCard`, `ResultSummaryCard`, `ResultListCard`, `ResultActionRow`, `ResultActionBar`, `ResultTrendCard`, `ResultAssistantStrip` | `health_check/result_sections.dart` | result screens |
+| `HealthCheckAppBar`, `HealthCheckSteps`, `healthCheckSteps4/5`, `HealthCheckDisclaimer`, `HealthCheckScaffold` — all take a `tint`, so the emergency screen runs the same chrome in red | `health_check/health_check_chrome.dart` | every screen in the check flow |
+| `ResultHero`, `ResultActionCard`, `ResultSummaryCard`, `ResultListCard` (`lead`/`chip`), `ResultActionRow` (optional badge), `ResultActionBar`, `ResultTrendCard`, `ResultAssistantStrip` (icon/label/key), `ResultStatusCard`, `ResultGuideStrip`, `ResultReminderRow` | `health_check/result_sections.dart` | all three result screens |
 | `BlendMask` | `theme/paw_components.dart` | composite a supplied plate rendered on black (`BlendMode.screen`) |
 | `OnbPage` (pinned footer + adaptive gaps), `OnbSpacing`/`OnbGap`, `OnbNeonCard`, `OnbNeonGlyph`, `OnbHaloIcon`, `OnbCrest`, `OnbPhoneMockup`, `OnbSpeechBubble`, `OnbFloorGlow`, `OnbDashTether` | `onboarding/onboarding_ui.dart` | System A (onboarding) only |
 | `PawCard`, `PawPanel`, `PawPillButton`, `PawPrimaryButton`, `PawBackground`, `PawTone` | `theme/paw_components.dart`, `theme/paw_ui.dart` | app-wide |
@@ -156,8 +134,14 @@ Read `CLAUDE.md` in full. The ones that bite in UI work:
 - **Never name a condition** and never assert a cause.
 - **No output terminates without an action and a timeframe**; never render
   "normal" or any all-clear.
-- **Nothing may be added to the emergency surfaces** beyond help contacts,
-  first aid, the disclaimer and the acknowledgment gate (rule 4 / D-1).
+- **The emergency surfaces** carry help contacts, first aid, the disclaimer and
+  the acknowledgment gate (rule 4 / D-1) — **plus**, since owner decision
+  **D-7**, the four sections `ai_analysis_result_emergency` adds, rewritten in
+  PawDoc language. D-7's scope is `EmergencyResultScreen` only;
+  `EmergencyHelpScreen` (the offline red button) stays model-free.
+- **`EmergencyResultScreen` renders zero motion widgets, permanently** —
+  `no_motion_on_safety_surfaces_test` fails the build otherwise. The pet
+  appears as a still portrait, never the living rig.
 - **The Health Score is a wellness metric only** (D-2) — it ships as "Care
   Score", computed from record completeness.
 - **The action ladder's hues are safety-locked** and never repurposed as
@@ -205,10 +189,26 @@ A second Redmi (`jfzxugsgnnvsrsg6`, 1080×2408) is also attached — pin
 
 ## 10 · Next recommended action
 
-1. Open `new-interface/ai_analysis_result_emergency.png`.
-2. Restyle `analysis/emergency_result_screen.dart` per §3.1, keeping every
-   permitted block and omitting the four forbidden ones.
-3. Validate on the Redmi through a real emergency check (type a keyword the
-   offline router matches — see `emergency_keywords.dart`).
-4. Commit, then take the assistant trio in order.
-5. Update this file and `PROJECT_PROGRESS_SUMMARY.md` at the end of the session.
+1. Open `new-interface/ai_assistant_home.png` and read it in full.
+2. Survey `assistant/assistant_screen.dart` (it exists and streams over SSE)
+   and `assistant/assistant_models.dart` before writing anything.
+3. Build it against the reference, reusing `HomeCard` / `HomeCardHeader` /
+   `HomeQuickActions` / the `ResultAssistantStrip` family. Anything whose
+   backend is not ready keeps its full UI with a *Soon* / *Preview* marker.
+4. Validate on the Redmi, commit, then `ai_assistant_chat`, then
+   `ai_message_actions`.
+5. Update `RESUME_GUIDE.md`, `PROJECT_PROGRESS_SUMMARY.md` **and**
+   `IMPLEMENTATION_CHANGELOG_UI.md` at the end of the session.
+
+### How to reach each result variant on device
+
+The loading run holds a non-emergency result for ~33.5s, so budget ~40s.
+
+| Variant | How |
+|---|---|
+| CALL_TODAY / monitor | pick "Skin irritation" + "Itching" on the details step |
+| WATCH_AND_RECHECK | submit with almost no detail |
+| GET_HELP_NOW | add a note like "belly hugely swollen and hard, retching with nothing coming up, very weak" — and note the **client** keyword router intercepts the hardcoded list first and lands on `EmergencyHelpScreen` instead, so use free text the router does not match |
+
+The emergency gate blocks the back button until acknowledged — tap **Continue**
+to leave, do not fight it with `input keyevent 4`.

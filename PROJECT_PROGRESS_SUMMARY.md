@@ -3,8 +3,8 @@
 Overall project status. Companion to `RESUME_GUIDE.md` (how to continue) and
 `memory/UI_PROGRESS.md` (the UI programme's own record).
 
-**Last updated:** 2026-08-04 · **Branch:** `ui-impl-phase-p-onboarding` ·
-**Head:** `4ff08ef`
+**Last updated:** 2026-08-06 · **Branch:** `ui-impl-phase-p-onboarding` ·
+**Head:** `0715b3c`
 
 ---
 
@@ -28,7 +28,7 @@ QA programme, and — currently — rebuilding the interface against the
 
 ## 2 · Screens rebuilt against the reference set
 
-**14 of 57 mockups implemented.**
+**18 of 57 mockups implemented.**
 
 | # | Mockup | Status | Commit |
 |---|---|---|---|
@@ -47,28 +47,43 @@ QA programme, and — currently — rebuilding the interface against the
 | 13 | `photo_analysis_upload` | ✅ | `6eb63e5` |
 | 14 | `symptom_selection` | ✅ | `6eb63e5` |
 | 15 | `ai_analysis_loading` | ✅ | `6eb63e5` `9820028` |
-| 16 | `ai_analysis_result_low_risk` | ✅ | `4ff08ef` |
-| 17 | `ai_analysis_result_monitor` | ✅ (same implementation, ladder-parameterised) | `4ff08ef` |
+| 16 | `ai_analysis_result_low_risk` | ✅ | `4ff08ef` `0715b3c` |
+| 17 | `ai_analysis_result_monitor` | ✅ (same implementation, ladder-parameterised) | `4ff08ef` `0715b3c` |
+| 18 | `ai_analysis_result_emergency` | ✅ | `102c6f3` |
 
 ### Remaining in the current batch
 
 | Mockup | Target file | Notes |
 |---|---|---|
-| `ai_analysis_result_emergency` | `analysis/emergency_result_screen.dart` | four blocks cannot ship — see RESUME_GUIDE §3.1 |
-| `ai_assistant_home` | `assistant/assistant_screen.dart` | V-23 / V-12 apply |
+| `ai_assistant_home` | `assistant/assistant_screen.dart` | **next.** V-23 / V-12 apply; reference not yet read |
 | `ai_assistant_chat` | `assistant/assistant_screen.dart` | |
 | `ai_message_actions` | assistant message sheet | |
 
 ### Not yet started
 
-40 further mockups: memories, encyclopedia, walks, community, premium,
+39 further mockups: memories, encyclopedia, walks, community, premium,
 account, notifications, vaccination, medication, weight, PDF preview, vet prep,
 first aid, emergency hub, breed detail, pet profile, statistics, and the
 remaining settings surfaces.
 
 ---
 
-## 3 · Fixed this session
+## 3 · Completed this session (2026-08-06)
+
+1. **`ai_analysis_result_emergency` implemented** under owner decision **D-7**,
+   which authorised rebuilding the four sections rule 4 had kept off the screen
+   — rewritten in PawDoc language, never copied. `102c6f3`
+2. **The low-risk / monitor result no longer reads thinner than its mockup.**
+   The two list cards took the reference's weights (lead line + pill + list),
+   the missing "When to see a vet?" strip was added, the reminder confirmation
+   card replaced a greyed-out button, and the Care Score and trend sparkline
+   are computed from real data instead of placeholders. `0715b3c`
+3. Confirmed on device that **an EMERGENCY cuts straight through the 33.5s
+   loading run** — it appeared at 23%, with no wait.
+4. Confirmed on device that **the acknowledgment gate blocks the back button**
+   (it refused `keyevent 4` until the checkbox was ticked).
+
+### Fixed in the previous session
 
 1. **Onboarding CTA below the fold** — every page opened with its Next button
    off-screen. `OnbPage` now pins the footer over a fade strip with the content
@@ -126,7 +141,15 @@ that made it. The running list of mockup claims that cannot ship:
 
 confidence percentages · risk levels · severity grades · differentials with
 probabilities · named conditions · asserted causes · all-clear headlines and
-checklists · clinical health scores · anything added to an emergency surface.
+checklists · clinical health scores.
+
+**Owner decision D-7 (2026-08-04)** changed one line of this: the emergency
+*result* screen may now carry the mockup's risk card, reason list, concern card
+and score dial — **rewritten**, never copied ("Care Priority · Immediate",
+"Why we're flagging this", "Next step · Immediate Veterinary Assessment",
+"Review Status · Needs Immediate Attention"). Scope is `EmergencyResultScreen`
+only; `EmergencyHelpScreen`, the offline red button, is untouched. Recorded in
+`memory/PAST_DECISIONS.md`.
 
 `test/safety_copy_test.dart` (regex sweep over `lib/`) and
 `test/onboarding_system_a_test.dart` are the tripwires. `scripts/verify-
@@ -153,6 +176,9 @@ Docker suite, `node --test` on Edge Functions.
 ## 7 · Latest commits
 
 ```
+0715b3c  Result screens: fill the gaps the safety rewrite left behind
+102c6f3  Emergency result rebuilt against its mockup (owner decision D-7)
+eea3037  docs: RESUME_GUIDE + PROJECT_PROGRESS_SUMMARY
 4ff08ef  Result screen rebuilt against ai_analysis_result_low_risk / _monitor
 9820028  Analysis loading: the run finishes before the result appears
 972f6e8  docs: home + AI Health Check flow, and the pinned onboarding CTA
@@ -169,10 +195,8 @@ e61aab5  Onboarding 006 + 007: the two assistant pages, one per mockup
 
 ## 8 · Next milestones
 
-1. `ai_analysis_result_emergency` — with the rule-4 omissions surfaced to the
-   owner as a decision, not a footnote.
-2. The assistant trio (`ai_assistant_home`, `ai_assistant_chat`,
-   `ai_message_actions`).
+1. The assistant trio (`ai_assistant_home`, `ai_assistant_chat`,
+   `ai_message_actions`) — in that order, one commit each.
 3. Re-walk `000` and re-skin the sign-in screen, which are the two remaining
    pre-auth surfaces still on old design.
 4. Open a PR for this branch so CI runs; `main` is protected (linear history +

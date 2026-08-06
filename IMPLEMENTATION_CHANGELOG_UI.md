@@ -5,6 +5,25 @@ Chronological record of the UI migration (Phase 0 + A–Q). Detail lives in
 `PAWDOC_UI_IMPLEMENTATION_FINAL_REPORT.md`; resume state in
 `memory/UI_PROGRESS.md`.
 
+## 2026-08-06 — the emergency result, and filling the result screens out
+
+- **Emergency result** `102c6f3` — built to `ai_analysis_result_emergency`
+  under owner decision **D-7**, which authorised rebuilding the four sections
+  rule 4 had kept off the screen. Rewritten, never copied: "Care Priority ·
+  Immediate" for the risk grade, "Why we're flagging this" for the AI
+  conclusion list, "Next step · Immediate Veterinary Assessment" for the named
+  concern, "Review Status · Needs Immediate Attention" for the score dial.
+  D-7's scope is the result surface only — the offline red button stays
+  model-free. The gate, the paywall bypass and the zero-motion guardrail are
+  unchanged. The chrome learned a `tint` so the same components run in red.
+- **Low-risk / monitor result** `0715b3c` — the blocks whose content could not
+  ship had been reduced to plain lists, which read thinner than the reference.
+  The left list card took the mockup's weight (lead line, pill, list), the
+  missing "When to see a vet?" strip was added, the reminder confirmation card
+  replaced a greyed-out button, and the Care Score and trend sparkline now come
+  from real data. The sparkline plots checks *logged*, not severity — a line
+  that trended better or worse would be a graded verdict drawn from nothing.
+
 ## 2026-08-04 (later) — the analysis wait, and the result screen
 
 - **Result** `4ff08ef` — rebuilt against `ai_analysis_result_low_risk` and
