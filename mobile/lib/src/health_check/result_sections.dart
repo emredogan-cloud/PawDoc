@@ -395,8 +395,8 @@ class ResultActionRow extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.detail,
-    required this.badge,
     required this.tint,
+    this.badge,
     this.onTap,
     super.key,
   });
@@ -404,7 +404,9 @@ class ResultActionRow extends StatelessWidget {
   final IconData icon;
   final String title;
   final String detail;
-  final String badge;
+
+  /// Null on the emergency screen's first-aid rows, which carry no kind.
+  final String? badge;
   final Color tint;
   final VoidCallback? onTap;
 
@@ -455,22 +457,25 @@ class ResultActionRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    color: tint.withValues(alpha: 0.14),
+                if (badge != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      color: tint.withValues(alpha: 0.14),
+                    ),
+                    child: Text(badge!,
+                        style: TextStyle(
+                            color: tint,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
                   ),
-                  child: Text(badge,
-                      style: TextStyle(
-                          color: tint,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600)),
-                ),
-                Icon(LucideIcons.chevronRight,
-                    size: 16, color: Colors.white.withValues(alpha: 0.4)),
+                ],
+                if (onTap != null)
+                  Icon(LucideIcons.chevronRight,
+                      size: 16, color: Colors.white.withValues(alpha: 0.4)),
               ],
             ),
           ),
@@ -715,6 +720,10 @@ class ResultAssistantStrip extends StatelessWidget {
     required this.detail,
     required this.onAsk,
     required this.tint,
+    this.icon = LucideIcons.sparkles,
+    this.buttonIcon = LucideIcons.messageCircle,
+    this.buttonLabel = 'Ask AI',
+    this.buttonKey = const Key('result_ask_assistant'),
     super.key,
   });
 
@@ -722,6 +731,10 @@ class ResultAssistantStrip extends StatelessWidget {
   final String detail;
   final VoidCallback onAsk;
   final Color tint;
+  final IconData icon;
+  final IconData buttonIcon;
+  final String buttonLabel;
+  final Key buttonKey;
 
   @override
   Widget build(BuildContext context) {
@@ -729,7 +742,7 @@ class ResultAssistantStrip extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          Icon(LucideIcons.sparkles, size: 26, color: tint),
+          Icon(icon, size: 26, color: tint),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -749,7 +762,7 @@ class ResultAssistantStrip extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           FilledButton(
-            key: const Key('result_ask_assistant'),
+            key: buttonKey,
             onPressed: onAsk,
             style: FilledButton.styleFrom(
               backgroundColor: tint,
@@ -759,13 +772,122 @@ class ResultAssistantStrip extends StatelessWidget {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14)),
             ),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(LucideIcons.messageCircle, size: 16),
-              SizedBox(width: 5),
-              Text('Ask AI',
-                  style:
-                      TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(buttonIcon, size: 16),
+              const SizedBox(width: 5),
+              Text(buttonLabel,
+                  style: const TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w700)),
             ]),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A titled status cell, with or without a ring — the pair the mockups close
+/// the result with.
+///
+/// The emergency mockup labels the left cell "Potential Concern · Skin
+/// Infection" and the right "Health Score · 36 · At Risk". Both are
+/// conclusions the product does not draw. Owner decision **D-7** authorises
+/// rewriting them rather than dropping the cards, so the left states what the
+/// owner should *do* and the right becomes a review status — the layout,
+/// weight and ring are unchanged.
+class ResultStatusCard extends StatelessWidget {
+  const ResultStatusCard({
+    required this.label,
+    required this.value,
+    required this.caption,
+    required this.tint,
+    this.icon,
+    this.ring,
+    this.ringLabel,
+    this.onTap,
+    super.key,
+  });
+
+  final String label;
+  final String value;
+  final String caption;
+  final Color tint;
+  final IconData? icon;
+
+  /// 0..1. Non-null draws the mockup's dial to the left of the value.
+  final double? ring;
+  final String? ringLabel;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return HomeCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(
+              child: Text(label,
+                  maxLines: 2,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13.5,
+                      height: 1.2,
+                      fontWeight: FontWeight.w700)),
+            ),
+            if (icon != null) Icon(icon, size: 18, color: tint),
+            if (onTap != null)
+              Icon(LucideIcons.chevronRight,
+                  size: 16, color: Colors.white.withValues(alpha: 0.4)),
+          ]),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (ring != null) ...[
+                SizedBox(
+                  width: 50,
+                  height: 50,
+                  child: Stack(alignment: Alignment.center, children: [
+                    CircularProgressIndicator(
+                      value: ring,
+                      strokeWidth: 4,
+                      strokeCap: StrokeCap.round,
+                      backgroundColor: Colors.white.withValues(alpha: 0.08),
+                      valueColor: AlwaysStoppedAnimation(tint),
+                    ),
+                    if (ringLabel != null)
+                      Text(ringLabel!,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700)),
+                  ]),
+                ),
+                const SizedBox(width: 9),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(value,
+                        style: TextStyle(
+                            color: tint,
+                            fontSize: 13.5,
+                            height: 1.22,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 3),
+                    Text(caption,
+                        style: const TextStyle(
+                            color: Color(0xFF8A948D),
+                            fontSize: 11.5,
+                            height: 1.3)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

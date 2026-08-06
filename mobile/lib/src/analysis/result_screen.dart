@@ -65,7 +65,10 @@ class ResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (result.action == ActionLevel.getHelpNow) {
-      return EmergencyResultScreen(result: result);
+      // `petSpecies` reaches the emergency screen only as a STILL portrait for
+      // the mockup's photo slot — never the rig. `no_motion_on_safety_surfaces_test`
+      // still pins zero motion widgets there.
+      return EmergencyResultScreen(result: result, petSpecies: petSpecies);
     }
     return StandardResultScreen(
         result: result,

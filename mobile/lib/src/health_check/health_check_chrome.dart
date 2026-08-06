@@ -14,17 +14,22 @@ import '../theme/paw_ui.dart';
 
 /// The circled back / title / help header.
 class HealthCheckAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const HealthCheckAppBar({this.title = 'AI Health Check', this.onHelp, super.key});
+  const HealthCheckAppBar(
+      {this.title = 'AI Health Check', this.onHelp, this.tint, super.key});
 
   final String title;
   final VoidCallback? onHelp;
+
+  /// Overrides the page accent. The emergency result runs the same chrome in
+  /// the safety-locked red rather than drawing a second one.
+  final Color? tint;
 
   @override
   Size get preferredSize => const Size.fromHeight(64);
 
   @override
   Widget build(BuildContext context) {
-    final t = PawTone.of(context);
+    final accent = tint ?? PawTone.of(context).accent;
     return SafeArea(
       bottom: false,
       child: SizedBox(
@@ -51,7 +56,7 @@ class HealthCheckAppBar extends StatelessWidget implements PreferredSizeWidget {
                 icon: LucideIcons.circleHelp,
                 tooltip: 'How this works',
                 onTap: onHelp ?? () => _showHelp(context),
-                color: t.accent,
+                color: accent,
               ),
             ],
           ),
@@ -137,6 +142,8 @@ class HealthCheckSteps extends StatelessWidget {
   const HealthCheckSteps({
     required this.current,
     required this.steps,
+    this.tint,
+    this.currentIcon,
     super.key,
   });
 
@@ -146,9 +153,16 @@ class HealthCheckSteps extends StatelessWidget {
   /// (icon, label)
   final List<(IconData, String)> steps;
 
+  /// Overrides the page accent — the emergency result runs the rail in red.
+  final Color? tint;
+
+  /// Replaces the glyph on the current node. The emergency mockup ends the
+  /// rail on an exclamation rather than the step's own icon.
+  final IconData? currentIcon;
+
   @override
   Widget build(BuildContext context) {
-    final t = PawTone.of(context);
+    final accent = tint ?? PawTone.of(context).accent;
     return Semantics(
       label: 'Step ${current + 1} of ${steps.length}: ${steps[current].$2}',
       child: ExcludeSemantics(
@@ -163,15 +177,18 @@ class HealthCheckSteps extends StatelessWidget {
                     child: Container(
                       height: 1.6,
                       color: i <= current
-                          ? t.accent
+                          ? accent
                           : Colors.white.withValues(alpha: 0.14),
                     ),
                   ),
                 ),
               _Node(
-                icon: steps[i].$1,
+                icon: i == current && currentIcon != null
+                    ? currentIcon!
+                    : steps[i].$1,
                 label: steps[i].$2,
                 index: i,
+                tint: accent,
                 state: i < current
                     ? _NodeState.done
                     : i == current
@@ -194,16 +211,18 @@ class _Node extends StatelessWidget {
     required this.label,
     required this.index,
     required this.state,
+    required this.tint,
   });
 
   final IconData icon;
   final String label;
   final int index;
   final _NodeState state;
+  final Color tint;
 
   @override
   Widget build(BuildContext context) {
-    final t = PawTone.of(context);
+    final t = (accent: tint,);
     final active = state == _NodeState.active;
     final done = state == _NodeState.done;
     return SizedBox(
@@ -296,20 +315,42 @@ const healthCheckSteps5 = <(IconData, String)>[
 
 /// The disclaimer strip every screen in the flow closes with.
 class HealthCheckDisclaimer extends StatelessWidget {
-  const HealthCheckDisclaimer({super.key});
+  const HealthCheckDisclaimer({this.tint, this.extraLine, super.key});
+
+  final Color? tint;
+
+  /// The emergency mockup runs a second line under the standard one.
+  final String? extraLine;
 
   @override
   Widget build(BuildContext context) {
-    final t = PawTone.of(context);
+    final accent = tint ?? PawTone.of(context).accent;
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(LucideIcons.shieldCheck, size: 15, color: t.accent),
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(LucideIcons.shieldCheck, size: 15, color: accent),
+        ),
         const SizedBox(width: 6),
-        const Flexible(
-          child: Text('Not a replacement for professional veterinary care.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF8A948D), fontSize: 12.5)),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                  'PawDoc AI is not a replacement for professional veterinary '
+                  'care.',
+                  style: TextStyle(
+                      color: Color(0xFF8A948D), fontSize: 12.5, height: 1.35)),
+              if (extraLine != null)
+                Text(extraLine!,
+                    style: const TextStyle(
+                        color: Color(0xFF8A948D),
+                        fontSize: 12.5,
+                        height: 1.35)),
+            ],
+          ),
         ),
       ],
     );
