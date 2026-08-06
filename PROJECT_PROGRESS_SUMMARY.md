@@ -3,8 +3,8 @@
 Overall project status. Companion to `RESUME_GUIDE.md` (how to continue) and
 `memory/UI_PROGRESS.md` (the UI programme's own record).
 
-**Last updated:** 2026-08-06 · **Branch:** `ui-impl-phase-p-onboarding` ·
-**Head:** `0715b3c`
+**Last updated:** 2026-08-06 (later) · **Branch:** `ui-impl-phase-p-onboarding` ·
+**Head:** `9f47ee1`
 
 ---
 
@@ -17,7 +17,7 @@ QA programme, and — currently — rebuilding the interface against the
 
 | Area | Status |
 |---|---|
-| Flutter app | builds, 453 tests green, analyze clean |
+| Flutter app | builds, 465 tests green, analyze clean |
 | AI service | deployed to Fly; Tier 2 Gemini → Tier 3 Claude |
 | Supabase | 3 migrations + 9 Edge Functions deployed |
 | Play | AAB 1.0.0+5 built and signed; internal testing configured |
@@ -28,7 +28,7 @@ QA programme, and — currently — rebuilding the interface against the
 
 ## 2 · Screens rebuilt against the reference set
 
-**18 of 57 mockups implemented.**
+**21 of 57 mockups implemented.**
 
 | # | Mockup | Status | Commit |
 |---|---|---|---|
@@ -50,25 +50,58 @@ QA programme, and — currently — rebuilding the interface against the
 | 16 | `ai_analysis_result_low_risk` | ✅ | `4ff08ef` `0715b3c` |
 | 17 | `ai_analysis_result_monitor` | ✅ (same implementation, ladder-parameterised) | `4ff08ef` `0715b3c` |
 | 18 | `ai_analysis_result_emergency` | ✅ | `102c6f3` |
+| 19 | `ai_assistant_home` | ✅ device-verified | `aae4ebe` `9f47ee1` |
+| 20 | `ai_assistant_chat` | ✅ device-verified (same implementation, two surfaces of one route) | `aae4ebe` `9f47ee1` |
+| 21 | `ai_message_actions` | ✅ device-verified | `aae4ebe` `9f47ee1` |
 
-### Remaining in the current batch
+### Remaining
 
-| Mockup | Target file | Notes |
-|---|---|---|
-| `ai_assistant_home` | `assistant/assistant_screen.dart` | **next.** V-23 / V-12 apply; reference not yet read |
-| `ai_assistant_chat` | `assistant/assistant_screen.dart` | |
-| `ai_message_actions` | assistant message sheet | |
-
-### Not yet started
-
-39 further mockups: memories, encyclopedia, walks, community, premium,
-account, notifications, vaccination, medication, weight, PDF preview, vet prep,
-first aid, emergency hub, breed detail, pet profile, statistics, and the
+**36 mockups, none started.** The two pre-auth surfaces still on old design
+(`000` re-walk, the sign-in screen) are the highest-visibility gap;
+`conversation_history` is the cheapest next screen, because the assistant's
+"View all" already opens a sheet that has not been rebuilt and
+`assistant_sections.dart` covers most of what that mockup draws. After that:
+memories, encyclopedia, walks, community, premium, account, notifications,
+vaccination, medication, weight, PDF preview, vet prep, first aid, emergency
+hub, breed detail, pet profile, statistics, AI transparency, privacy, and the
 remaining settings surfaces.
 
 ---
 
-## 3 · Completed this session (2026-08-06)
+## 3 · Completed this session (2026-08-06, later)
+
+### The assistant trio — `aae4ebe`, `9f47ee1`
+
+1. **`ai_assistant_home`** — the hub: hero with the orbit-lit pet and the
+   privacy card, four openers, a resumable thread, six topic tiles, the
+   at-a-glance card and the premium strip, over a pinned composer.
+2. **`ai_assistant_chat`** — the conversation: pet bar with Private / History /
+   More, privacy strip, day divider, tailed bubbles with timestamps and
+   delivery ticks, a suggestion rail, the composer and the standing
+   disclaimer. Same route as the hub — the surfaces swap on `chat.isEmpty`.
+3. **`ai_message_actions`** — the per-reply action row (copy · 👍 · 👎 · …), the
+   "Was this helpful?" pill under the newest reply, and the sheet: an eight-tile
+   grid (Copy, Save to Diary, Share, Create Reminder, Helpful, Not Helpful,
+   Regenerate, Report) plus "You might also ask" with a shuffle.
+4. **Everything in the sheet does something real.** Copy → clipboard. Save to
+   Diary → the health-event form, pre-filled (a new `initialNotes`
+   parameter). Share → the system sheet. Create Reminder → the reminder form.
+   Regenerate → a new `ChatController.regenerate()` that re-asks *through*
+   `send()`, so the emergency router, the quota and the server checks all apply
+   again. Report → the contact page. Helpful / Not Helpful are session-local
+   and say so — there is no assistant-message feedback table, and pretending a
+   rating was filed somewhere would be a claim the app cannot keep.
+5. **Four defects found and fixed.** Two by the widget tests, before the device
+   saw them (the View Details pill and the premium CTA both overflowed their
+   rows — in `flutter_test` every glyph is a full em square, which is exactly
+   the large-text case that would break on a real handset). Two on the device
+   (the hero pet was a hard-edged photograph; the pet/More menus were opened
+   transparent for their rounded corners and then never drew a panel).
+6. **`careScore` moved to `home_sections.dart`.** Three surfaces now draw the
+   same D-2 dial and a second implementation is how two of them end up
+   disagreeing.
+
+### Earlier the same day
 
 1. **`ai_analysis_result_emergency` implemented** under owner decision **D-7**,
    which authorised rebuilding the four sections rule 4 had kept off the screen
@@ -126,6 +159,10 @@ remaining settings surfaces.
 | `000` auth gateway not re-walked against its mockup | medium | shield overlaps the dog; social-proof line ellipsises |
 | Sign-in screen still on the legacy light theme | medium | jarring against the dark app; not yet in a batch |
 | `002`'s hero shows faint plate edges | low | |
+| Assistant thumbs-up/down is session-local | low | no assistant-message feedback table; the copy does not claim otherwise |
+| Assistant voice input marked *Soon* | low | the mic keeps its place in the composer; no speech backend |
+| Assistant "at a glance" Energy/Appetite/Mood/Activity marked *Soon* | low | nothing records them |
+| Snackbars are light-on-dark app-wide | low | Material 3 default (`inverseSurface`); visible on the assistant's black surfaces but not introduced by it — a global theme decision, not a screen one |
 | Result "Save Report" marked *Soon* | low | PDF export exists for vet prep, not per-result |
 | Home hero Energy/Mood/Activity marked *Soon* | low | nothing records them yet |
 | `new-interface/` untracked (93 MB) | low | owner's call |
@@ -135,7 +172,30 @@ remaining settings surfaces.
 
 ## 5 · Safety posture
 
-No contract rule has been relaxed. Every departure from a mockup is a copy or
+No contract rule has been relaxed. The assistant trio added four departures,
+all of them copy or behaviour with the layout preserved:
+
+- **V-23.** Both assistant mockups subtitle the screen "AI Vet Assistant".
+  Shipped: "Your everyday pet-care companion" and "Everyday pet care · not a
+  diagnosis". `safety_copy_test` already banned the phrase; the new widget
+  test asserts the replacement is what renders.
+- **V-12.** The first opener is "Why is Buddy itching?" — a symptom asserted
+  before the owner has reported anything. All four openers are care-framed.
+- **The assistant is not a second triage entry point.** The "Health &
+  Symptoms" topic ships as "Health & Records", and the Emergency tile keeps
+  its place, its red and its glyph but opens the offline red screen rather
+  than asking a model about an emergency. A symptom belongs in the Check flow,
+  where the emergency override, the quota rules and the action ladder apply.
+- **Decorative colour may not borrow a ladder hue.** The action sheet is
+  eight-coloured by design; the mockup paints Create Reminder in the MONITOR
+  amber and Report in the EMERGENCY red, and `design_tokens.dart` forbids
+  exactly that reuse. `AssistantTone` holds substitutes and a test pins that
+  none of them equals one of the four safety-locked values.
+
+Plus D-2 again: the mockup's "Health Score · 92 · Excellent" ships as the Care
+Score, computed from record completeness and banded in words about the record.
+
+ Every departure from a mockup is a copy or
 content change with the layout preserved, and each is recorded in the commit
 that made it. The running list of mockup claims that cannot ship:
 
@@ -162,7 +222,7 @@ disclaimers.sh` passes.
 | Gate | Result |
 |---|---|
 | `flutter analyze` | clean |
-| `flutter test` | **453 passed** |
+| `flutter test` | **465 passed** |
 | `scripts/verify-disclaimers.sh` | PASS |
 | `scripts/verify-no-placeholders.sh` | OK on overclaims; founder-fill items remain |
 | Device (Redmi Note 8, 393×851) | every screen in §2 walked |
@@ -176,6 +236,9 @@ Docker suite, `node --test` on Edge Functions.
 ## 7 · Latest commits
 
 ```
+9f47ee1  Assistant: the device pass on the conversation and the action sheet
+aae4ebe  Assistant rebuilt against ai_assistant_home / _chat / _message_actions
+bfa7583  docs: emergency result (D-7) and the result-screen fill-out
 0715b3c  Result screens: fill the gaps the safety rewrite left behind
 102c6f3  Emergency result rebuilt against its mockup (owner decision D-7)
 eea3037  docs: RESUME_GUIDE + PROJECT_PROGRESS_SUMMARY
@@ -195,9 +258,11 @@ e61aab5  Onboarding 006 + 007: the two assistant pages, one per mockup
 
 ## 8 · Next milestones
 
-1. The assistant trio (`ai_assistant_home`, `ai_assistant_chat`,
-   `ai_message_actions`) — in that order, one commit each.
-3. Re-walk `000` and re-skin the sign-in screen, which are the two remaining
-   pre-auth surfaces still on old design.
-4. Open a PR for this branch so CI runs; `main` is protected (linear history +
+1. Owner's call on the next batch. Recommended: `conversation_history` (the
+   assistant's "View all" already opens an un-rebuilt sheet), then the two
+   pre-auth surfaces — `000` re-walked and the sign-in screen re-skinned off
+   the legacy light theme.
+2. Open a PR for this branch so CI runs; `main` is protected (linear history +
    review), so it must be squash-merged.
+3. `new-interface/` is still untracked (93 MB) — owner's call whether it lands
+   in the repo or stays out.

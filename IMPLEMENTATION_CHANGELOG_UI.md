@@ -5,6 +5,49 @@ Chronological record of the UI migration (Phase 0 + A–Q). Detail lives in
 `PAWDOC_UI_IMPLEMENTATION_FINAL_REPORT.md`; resume state in
 `memory/UI_PROGRESS.md`.
 
+## 2026-08-06 (later) — the assistant trio
+
+- **`ai_assistant_home` / `ai_assistant_chat` / `ai_message_actions`**
+  `aae4ebe`, device pass `9f47ee1`. One route, two surfaces: the hub while
+  `chat.isEmpty`, the conversation once a message exists, with the third
+  mockup's sheet hanging off every reply. Nineteen presentation blocks were
+  extracted into `assistant/assistant_sections.dart` — app bar, brand pill,
+  paw badge, halo portrait, hero, opener row, continue card, topic tiles,
+  glance card, premium strip, composer, disclaimer, pet bar, privacy strip,
+  day chip, both bubbles, the helpful pill, the suggestion rail and the action
+  sheet.
+- **Everything the sheet offers is real.** Copy → clipboard; Save to Diary →
+  the health-event form with a new `initialNotes` prefill; Share → the system
+  sheet; Create Reminder → the reminder form; Report → the contact page;
+  Regenerate → a new `ChatController.regenerate()` that re-asks *through*
+  `send()`, so the emergency router, the quota and the server checks all apply
+  again. Helpful / Not Helpful are session-local and the copy does not pretend
+  otherwise — there is no assistant-message feedback table.
+- **Copy departures, layout preserved.** "AI Vet Assistant" → "Your everyday
+  pet-care companion" / "Everyday pet care · not a diagnosis" (V-23). "Why is
+  Buddy itching?" → "Daily routine?" (V-12). "Health & Symptoms" → "Health &
+  Records", because the assistant is not a second triage entry point and a
+  symptom belongs in the Check flow. "Health Score · 92 · Excellent" → the
+  Care Score from record completeness (D-2). Energy / Appetite / Mood /
+  Activity keep their rows, marked *Soon*. And the action grid keeps the
+  mockup's eight colours but not two of its choices: it paints Create Reminder
+  in the MONITOR amber and Report in the EMERGENCY red, and the ladder's hues
+  are safety-locked against decoration — `AssistantTone` holds the substitutes
+  and a test pins the separation.
+- **Four defects.** Two the widget tests caught first: the View Details pill
+  and the premium CTA both overflowed their rows, because in `flutter_test`
+  every glyph is a full em square — which is the large-text case that would
+  have broken on a real handset. Two the device caught: the hero pet was a
+  hard-edged photograph (`BlendMode.screen` was the obvious tool, and useless
+  — the species cast is edge-to-edge fur with no black to drop out, so it is a
+  circular feathered mask instead), and the pet/More menus were opened
+  transparent for their rounded corners and then never drew a panel.
+- Also learned, and now written down in the resume guide: widget tests on a
+  tall scrolling screen must set a handset surface, or everything below the
+  800×600 default fold is never built and the assertions pass vacuously.
+- `careScore` moved from `home_screen.dart` to `home_sections.dart` — three
+  surfaces draw the same D-2 dial now.
+
 ## 2026-08-06 — the emergency result, and filling the result screens out
 
 - **Emergency result** `102c6f3` — built to `ai_analysis_result_emergency`
