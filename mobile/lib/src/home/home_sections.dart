@@ -420,6 +420,25 @@ class _AddPetTile extends StatelessWidget {
   }
 }
 
+/// A wellness metric, never a clinical one (owner decision **D-2**): the share
+/// of the pet's *record* that is filled in. It says nothing about the animal's
+/// health and every surface that renders it captions it so it cannot be read as
+/// if it did.
+///
+/// Lives here rather than on the home screen because three surfaces draw the
+/// same dial — home, the analysis result and the assistant — and a second
+/// implementation of the same number is how two of them end up disagreeing.
+int careScore(Pet pet, {required bool hasCheck, required bool hasReminder}) {
+  var filled = 1; // a named pet is the first point
+  if (pet.breed != null && pet.breed!.trim().isNotEmpty) filled++;
+  if (pet.birthDate != null) filled++;
+  if (pet.sex != null && pet.sex!.isNotEmpty) filled++;
+  if (pet.photoKey != null) filled++;
+  if (hasCheck) filled++;
+  if (hasReminder) filled++;
+  return (filled * 100 / 7).round();
+}
+
 /// `2y 2m`, the age the rail and the record card print. Null when unknown.
 String? petAgeLabel(DateTime? birth) {
   if (birth == null) return null;

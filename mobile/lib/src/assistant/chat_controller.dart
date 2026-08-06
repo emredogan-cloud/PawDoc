@@ -13,11 +13,17 @@ class ChatUiMessage {
     required this.role,
     required this.content,
     this.imageStorageKey,
+    this.at,
   });
 
   final String role; // 'user' | 'assistant'
   final String content;
   final String? imageStorageKey;
+
+  /// When the turn was taken. The conversation surface stamps every bubble
+  /// (mockup `ai_assistant_chat`); null falls back to "now" at render time,
+  /// which is what a bubble that has only just appeared actually means.
+  final DateTime? at;
 
   bool get isUser => role == 'user';
 }
@@ -95,6 +101,7 @@ class ChatController extends Notifier<ChatState> {
             role: m.role,
             content: m.content,
             imageStorageKey: m.imageStorageKey,
+            at: m.createdAt,
           ),
       ],
     );
@@ -134,7 +141,10 @@ class ChatController extends Notifier<ChatState> {
       messages: [
         ...state.messages,
         ChatUiMessage(
-            role: 'user', content: message, imageStorageKey: imageStorageKey),
+            role: 'user',
+            content: message,
+            imageStorageKey: imageStorageKey,
+            at: DateTime.now()),
       ],
       streamingText: '',
       status: ChatStatus.streaming,
@@ -181,7 +191,10 @@ class ChatController extends Notifier<ChatState> {
               ? state.messages
               : [
                   ...state.messages,
-                  ChatUiMessage(role: 'assistant', content: buffer),
+                  ChatUiMessage(
+                      role: 'assistant',
+                      content: buffer,
+                      at: DateTime.now()),
                 ],
           streamingText: '',
           status: ChatStatus.idle,
@@ -211,7 +224,10 @@ class ChatController extends Notifier<ChatState> {
               ? state.messages
               : [
                   ...state.messages,
-                  ChatUiMessage(role: 'assistant', content: buffer),
+                  ChatUiMessage(
+                      role: 'assistant',
+                      content: buffer,
+                      at: DateTime.now()),
                 ],
           streamingText: '',
           status: ChatStatus.idle,
@@ -227,6 +243,34 @@ class ChatController extends Notifier<ChatState> {
     } finally {
       _cancelStream = null;
     }
+  }
+
+  /// Ask the same question again (mockup `ai_message_actions` → "Regenerate").
+  ///
+  /// The last owner turn and everything after it is dropped and re-sent, so the
+  /// replacement reply lands where the old one was rather than beneath it. It
+  /// goes back through [send], which means the emergency router, the quota and
+  /// the server-side checks all apply again — a regenerate is a new question,
+  /// not a re-render of an old answer.
+  Future<void> regenerate({
+    String? petId,
+    String? species,
+    String? locale,
+  }) async {
+    if (state.isStreaming) return;
+    final messages = state.messages;
+    final lastTurn = messages.lastIndexWhere((m) => m.isUser);
+    if (lastTurn < 0) return;
+    final question = messages[lastTurn];
+    state = state.copyWith(
+        messages: messages.sublist(0, lastTurn), streamingText: '');
+    await send(
+      question.content,
+      petId: petId,
+      species: species,
+      locale: locale,
+      imageStorageKey: question.imageStorageKey,
+    );
   }
 
   /// Stop the live stream; any text already received stays as the reply.

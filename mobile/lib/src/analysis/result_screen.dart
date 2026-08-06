@@ -8,7 +8,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../analytics/analytics.dart';
-import '../home/home_screen.dart' show careScore;
 import '../health/timeline.dart';
 import '../reminders/reminders_screen.dart';
 import '../pets/active_pet.dart';

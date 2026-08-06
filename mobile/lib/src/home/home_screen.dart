@@ -634,20 +634,6 @@ class _StatStrip extends ConsumerWidget {
   }
 }
 
-/// A wellness metric, never a clinical one (owner decision D-2): the share of
-/// the pet's *record* that is filled in. It says nothing about the animal's
-/// health and is captioned so it cannot be read as if it did.
-int careScore(Pet pet, {required bool hasCheck, required bool hasReminder}) {
-  var filled = 1; // a named pet is the first point
-  if (pet.breed != null && pet.breed!.trim().isNotEmpty) filled++;
-  if (pet.birthDate != null) filled++;
-  if (pet.sex != null && pet.sex!.isNotEmpty) filled++;
-  if (pet.photoKey != null) filled++;
-  if (hasCheck) filled++;
-  if (hasReminder) filled++;
-  return (filled * 100 / 7).round();
-}
-
 String formatDay(DateTime d) {
   const months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',

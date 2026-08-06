@@ -19,10 +19,21 @@ import 'timeline.dart';
 /// fires `health_event_logged`, then refreshes the timeline so the new entry
 /// appears immediately.
 class HealthEventFormScreen extends ConsumerStatefulWidget {
-  const HealthEventFormScreen({super.key, required this.petId, required this.petName});
+  const HealthEventFormScreen({
+    super.key,
+    required this.petId,
+    required this.petName,
+    this.initialNotes,
+  });
 
   final String petId;
   final String petName;
+
+  /// Pre-fills the note field. Set when the form is opened from somewhere that
+  /// already has the text — the assistant's "Save to Diary" action, which
+  /// carries its own provenance line so a saved reply can never be read as a
+  /// clinical finding.
+  final String? initialNotes;
 
   @override
   ConsumerState<HealthEventFormScreen> createState() => _HealthEventFormScreenState();
@@ -42,6 +53,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialNotes != null) _notes.text = widget.initialNotes!;
     // The save CTA and its hint depend on what's typed, so rebuild as it changes.
     for (final c in [_notes, _weight, _vaccineName]) {
       c.addListener(_onFieldChanged);
