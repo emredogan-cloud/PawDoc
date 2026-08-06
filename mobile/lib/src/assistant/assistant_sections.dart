@@ -448,11 +448,16 @@ class AssistantHaloPortrait extends StatelessWidget {
             bottom: 0,
             height: width * 1.20,
             child: ShaderMask(
+              // Circular, and reaching zero just inside the box: a radius wide
+              // enough to keep the corners opaque leaves a visible straight
+              // edge down each side, which is the seam this mask exists to
+              // remove. (RadialGradient.radius is a fraction of the SHORTER
+              // side, so 0.56 of a 138-wide slot fades out at ~77.)
               shaderCallback: (r) => const RadialGradient(
-                center: Alignment(0, -0.06),
-                radius: 0.74,
+                center: Alignment(0, -0.10),
+                radius: 0.56,
                 colors: [Colors.white, Colors.white, Colors.transparent],
-                stops: [0.0, 0.50, 1.0],
+                stops: [0.0, 0.52, 1.0],
               ).createShader(r),
               blendMode: BlendMode.dstIn,
               child: portrait,
@@ -1883,7 +1888,7 @@ class AssistantReplyBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final showActions = onCopy != null;
     return Padding(
-      padding: const EdgeInsets.only(right: 34, top: 5, bottom: 5),
+      padding: const EdgeInsets.only(right: 52, top: 5, bottom: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

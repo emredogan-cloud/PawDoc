@@ -129,7 +129,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 
   Future<void> _regenerate() async {
     final active = ref.read(activePetProvider);
-    await ref.read(chatControllerProvider.notifier).regenerate(
+    await ref
+        .read(chatControllerProvider.notifier)
+        .regenerate(
           petId: active?.id,
           species: active?.species,
           locale: Localizations.maybeLocaleOf(context)?.languageCode,
@@ -138,8 +140,9 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 
   void _toast(String message, {SnackBarAction? action}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message), action: action));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), action: action));
   }
 
   Future<void> _attach() async {
@@ -152,8 +155,7 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
           children: [
             ListTile(
               key: const Key('assistant_attach_camera'),
-              leading:
-                  const Icon(LucideIcons.camera, color: PawPalette.mint),
+              leading: const Icon(LucideIcons.camera, color: PawPalette.mint),
               title: const Text('Take a photo'),
               onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
             ),
@@ -194,7 +196,8 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       context: context,
       backgroundColor: const Color(0xFF0A0F0B),
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (_) => const SafeArea(
         child: Padding(
           padding: EdgeInsets.all(AppSpace.s24),
@@ -202,11 +205,14 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('What PawDoc AI is for',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700)),
+              Text(
+                'What PawDoc AI is for',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               SizedBox(height: AppSpace.s12),
               Text(
                 'Everyday pet life: routines, behaviour, food, grooming, '
@@ -217,7 +223,10 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                 'Anything that sounds like an emergency goes straight to the '
                 'red help screen, before any model is asked.',
                 style: TextStyle(
-                    color: Color(0xFF9BA5A0), fontSize: 14, height: 1.45),
+                  color: Color(0xFF9BA5A0),
+                  fontSize: 14,
+                  height: 1.45,
+                ),
               ),
             ],
           ),
@@ -238,20 +247,20 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text("That's today's free conversation",
-                  style: Theme.of(sheetContext)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(color: AppColors.ink50)),
+              Text(
+                "That's today's free conversation",
+                style: Theme.of(
+                  sheetContext,
+                ).textTheme.titleLarge?.copyWith(color: AppColors.ink50),
+              ),
               const SizedBox(height: AppSpace.s8),
               Text(
                 'Free includes ${limit ?? 20} assistant messages a day. '
                 'Premium talks as long as you like — and safety checks stay '
                 'free for everyone, always.',
-                style: Theme.of(sheetContext)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: AppColors.ink300),
+                style: Theme.of(
+                  sheetContext,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.ink300),
               ),
               const SizedBox(height: AppSpace.s16),
               PawPrimaryButton(
@@ -261,7 +270,8 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                   Navigator.pop(sheetContext);
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                        builder: (_) => const PaywallScreen()),
+                      builder: (_) => const PaywallScreen(),
+                    ),
                   );
                 },
                 child: const Text('See Premium'),
@@ -283,42 +293,33 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => PawSystemScope(
-        system: PawSystem.b,
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpace.s16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                PawListRow(
-                  key: const Key('assistant_view_profile'),
-                  title: 'View profile',
-                  subtitle: '${petDisplayName(pet.name)}’s record',
-                  leading: const PawIconTile(child: PawIcon(LucideIcons.pawPrint)),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    Navigator.of(context).push(MaterialPageRoute<void>(
-                      builder: (_) => HealthHistoryScreen(),
-                    ));
-                  },
-                ),
-                const SizedBox(height: AppSpace.s8),
-                PawListRow(
-                  title: 'New conversation',
-                  subtitle: 'Start a fresh thread',
-                  leading: const PawIconTile(
-                      child: PawIcon(LucideIcons.messageCirclePlus)),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    ref.read(chatControllerProvider.notifier).startNew();
-                  },
-                ),
-              ],
-            ),
+      builder: (sheetContext) => _MenuSheet(
+        children: [
+          PawListRow(
+            key: const Key('assistant_view_profile'),
+            title: 'View profile',
+            subtitle: '${petDisplayName(pet.name)}’s record',
+            leading: const PawIconTile(child: PawIcon(LucideIcons.pawPrint)),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => HealthHistoryScreen()),
+              );
+            },
           ),
-        ),
+          const SizedBox(height: AppSpace.s8),
+          PawListRow(
+            title: 'New conversation',
+            subtitle: 'Start a fresh thread',
+            leading: const PawIconTile(
+              child: PawIcon(LucideIcons.messageCirclePlus),
+            ),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              ref.read(chatControllerProvider.notifier).startNew();
+            },
+          ),
+        ],
       ),
     );
   }
@@ -327,52 +328,39 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => PawSystemScope(
-        system: PawSystem.b,
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpace.s16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                PawListRow(
-                  key: const Key('assistant_new_button'),
-                  title: 'New conversation',
-                  subtitle: 'Keep this one in history',
-                  leading: const PawIconTile(
-                      child: PawIcon(LucideIcons.messageCirclePlus)),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    ref.read(chatControllerProvider.notifier).startNew();
-                  },
-                ),
-                const SizedBox(height: AppSpace.s8),
-                PawListRow(
-                  title: 'How PawDoc AI works',
-                  subtitle: 'What it is for, and what it is not',
-                  leading:
-                      const PawIconTile(child: PawIcon(LucideIcons.circleHelp)),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _openHelp();
-                  },
-                ),
-                const SizedBox(height: AppSpace.s8),
-                PawListRow(
-                  title: 'AI transparency',
-                  subtitle: 'How answers are produced',
-                  leading:
-                      const PawIconTile(child: PawIcon(LucideIcons.scanEye)),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    LegalUrls.open(LegalUrls.aiTransparency);
-                  },
-                ),
-              ],
+      builder: (sheetContext) => _MenuSheet(
+        children: [
+          PawListRow(
+            key: const Key('assistant_new_button'),
+            title: 'New conversation',
+            subtitle: 'Keep this one in history',
+            leading: const PawIconTile(
+              child: PawIcon(LucideIcons.messageCirclePlus),
             ),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              ref.read(chatControllerProvider.notifier).startNew();
+            },
           ),
-        ),
+          PawListRow(
+            title: 'How PawDoc AI works',
+            subtitle: 'What it is for, and what it is not',
+            leading: const PawIconTile(child: PawIcon(LucideIcons.circleHelp)),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              _openHelp();
+            },
+          ),
+          PawListRow(
+            title: 'AI transparency',
+            subtitle: 'How answers are produced',
+            leading: const PawIconTile(child: PawIcon(LucideIcons.scanEye)),
+            onTap: () {
+              Navigator.pop(sheetContext);
+              LegalUrls.open(LegalUrls.aiTransparency);
+            },
+          ),
+        ],
       ),
     );
   }
@@ -395,17 +383,19 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   ];
 
   List<String> _followUps(int offset) => [
-        for (var i = 0; i < 3; i++)
-          _followUpPool[(offset + i) % _followUpPool.length],
-      ];
+    for (var i = 0; i < 3; i++)
+      _followUpPool[(offset + i) % _followUpPool.length],
+  ];
 
   void _rate(int index, bool helpful) {
     setState(() => _ratings[index] = helpful);
     if (helpful) {
       _toast('Marked as helpful.');
     } else {
-      _toast('Marked as not helpful.',
-          action: SnackBarAction(label: 'Try again', onPressed: _regenerate));
+      _toast(
+        'Marked as not helpful.',
+        action: SnackBarAction(label: 'Try again', onPressed: _regenerate),
+      );
     }
   }
 
@@ -452,13 +442,15 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                   _toast('Add a pet first, then this saves to their diary.');
                   return;
                 }
-                Navigator.of(context).push(MaterialPageRoute<void>(
-                  builder: (_) => HealthEventFormScreen(
-                    petId: pet!.id!,
-                    petName: pet.name,
-                    initialNotes: _diaryNote(text),
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => HealthEventFormScreen(
+                      petId: pet!.id!,
+                      petName: pet.name,
+                      initialNotes: _diaryNote(text),
+                    ),
                   ),
-                ));
+                );
               },
             ),
             AssistantAction(
@@ -486,10 +478,12 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                   _toast('Add a pet first, then you can set reminders.');
                   return;
                 }
-                Navigator.of(context).push(MaterialPageRoute<void>(
-                  builder: (_) => ReminderFormScreen(
-                      petId: pet!.id!, petName: pet.name),
-                ));
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        ReminderFormScreen(petId: pet!.id!, petName: pet.name),
+                  ),
+                );
               },
             ),
             AssistantAction(
@@ -563,10 +557,13 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
       switch (next.status) {
         case ChatStatus.emergency:
           ref.read(chatControllerProvider.notifier).acknowledgeStatus();
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => EmergencyHelpScreen(
-                matchedKeyword: next.emergencyKeyword ?? ''),
-          ));
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => EmergencyHelpScreen(
+                matchedKeyword: next.emergencyKeyword ?? '',
+              ),
+            ),
+          );
         case ChatStatus.limited:
           _showLimitSheet(next.limit);
         case _:
@@ -622,8 +619,10 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
                         },
                         onTopic: (t) => _send(t.prompt),
                         onEmergency: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                                builder: (_) => const EmergencyHelpScreen())),
+                          MaterialPageRoute(
+                            builder: (_) => const EmergencyHelpScreen(),
+                          ),
+                        ),
                         premiumDismissed: _premiumDismissed,
                         onDismissPremium: () =>
                             setState(() => _premiumDismissed = true),
@@ -647,21 +646,22 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
               if (chat.status == ChatStatus.error)
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s16, vertical: AppSpace.s4),
+                    horizontal: AppSpace.s16,
+                    vertical: AppSpace.s4,
+                  ),
                   child: Text(
                     chat.errorMessage ?? 'Something went wrong. Try again.',
                     key: const Key('assistant_error'),
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Theme.of(context).colorScheme.error),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
                 ),
               AssistantComposer(
                 controller: _input,
-                hint: hub
-                    ? 'Ask PawDoc AI anything…'
-                    : 'Ask something about $name…',
+                // One line in the pill: the composer grows if the hint wraps,
+                // which pushes the conversation up every time the screen opens.
+                hint: hub ? 'Ask PawDoc AI anything…' : 'Ask about $name…',
                 streaming: chat.isStreaming,
                 uploading: _uploadingImage,
                 sendIcon: hub ? LucideIcons.send : LucideIcons.arrowUp,
@@ -691,6 +691,59 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   }
 }
 
+/// The surface the assistant's little menus sit on.
+///
+/// `showModalBottomSheet` is opened transparent so the corners can be rounded,
+/// which means the sheet has to draw its own panel — without it the rows float
+/// over the composer and the whole thing reads as a rendering fault.
+class _MenuSheet extends StatelessWidget {
+  const _MenuSheet({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return PawSystemScope(
+      system: PawSystem.b,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF0A0F0B),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.s16,
+              AppSpace.s12,
+              AppSpace.s16,
+              AppSpace.s16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppSpace.s16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.20),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) const SizedBox(height: AppSpace.s8),
+                  children[i],
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Prompt sets
 // ---------------------------------------------------------------------------
@@ -704,34 +757,62 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
 /// Check flow, which is built for it.
 List<AssistantPrompt> _hubPrompts(Pet? pet) {
   final name = petDisplayName(pet?.name);
-  final kind = pet == null ? 'pets' : '${speciesName(pet.species).toLowerCase()}s';
+  final kind = pet == null
+      ? 'pets'
+      : '${speciesName(pet.species).toLowerCase()}s';
   // Two words a chip: the mockup fits about eleven characters to a line and a
   // third line of a broken word reads as a bug, not as design.
   return [
-    AssistantPrompt(LucideIcons.pawPrint, 'Daily routine?',
-        'What does a good daily care routine look like for $name?'),
-    AssistantPrompt(LucideIcons.soup, 'Is this food OK?',
-        'How do I tell whether a food is a sensible choice for $kind?'),
-    AssistantPrompt(LucideIcons.dog, 'Exercise needs?',
-        'How much exercise do $kind like $name usually need?'),
-    AssistantPrompt(LucideIcons.syringe, 'Vaccines due?',
-        'What does a typical vaccination schedule look like for $kind?'),
+    AssistantPrompt(
+      LucideIcons.pawPrint,
+      'Daily routine?',
+      'What does a good daily care routine look like for $name?',
+    ),
+    AssistantPrompt(
+      LucideIcons.soup,
+      'Is this food OK?',
+      'How do I tell whether a food is a sensible choice for $kind?',
+    ),
+    AssistantPrompt(
+      LucideIcons.dog,
+      'Exercise needs?',
+      'How much exercise do $kind like $name usually need?',
+    ),
+    AssistantPrompt(
+      LucideIcons.syringe,
+      'Vaccines due?',
+      'What does a typical vaccination schedule look like for $kind?',
+    ),
   ];
 }
 
 /// The rail above the conversation composer.
 List<AssistantPrompt> _railPrompts(Pet? pet) {
   final name = petDisplayName(pet?.name);
-  final kind = pet == null ? 'pets' : '${speciesName(pet.species).toLowerCase()}s';
+  final kind = pet == null
+      ? 'pets'
+      : '${speciesName(pet.species).toLowerCase()}s';
   return [
-    AssistantPrompt(LucideIcons.shieldCheck, 'Paw care basics',
-        'How should I look after $name’s paws day to day?'),
-    AssistantPrompt(LucideIcons.brush, 'Grooming routine',
-        'What grooming routine suits $name?'),
-    AssistantPrompt(LucideIcons.soup, 'Feeding schedule',
-        'How should I structure $name’s feeding schedule?'),
-    AssistantPrompt(LucideIcons.syringe, 'Vaccine schedule',
-        'What does a typical vaccination schedule look like for $kind?'),
+    AssistantPrompt(
+      LucideIcons.shieldCheck,
+      'Paw care basics',
+      'How should I look after $name’s paws day to day?',
+    ),
+    AssistantPrompt(
+      LucideIcons.brush,
+      'Grooming routine',
+      'What grooming routine suits $name?',
+    ),
+    AssistantPrompt(
+      LucideIcons.soup,
+      'Feeding schedule',
+      'How should I structure $name’s feeding schedule?',
+    ),
+    AssistantPrompt(
+      LucideIcons.syringe,
+      'Vaccine schedule',
+      'What does a typical vaccination schedule look like for $kind?',
+    ),
   ];
 }
 
@@ -744,16 +825,36 @@ List<AssistantPrompt> _railPrompts(Pet? pet) {
 List<AssistantTopic> _topics(Pet? pet, VoidCallback onEmergency) {
   final name = petDisplayName(pet?.name);
   return [
-    AssistantTopic(LucideIcons.heartPulse, 'Health &', 'Records',
-        'What is worth writing down in $name’s health record, and how often?'),
-    AssistantTopic(LucideIcons.leaf, 'Nutrition', '& Diet',
-        'How should I think about $name’s diet?'),
-    AssistantTopic(LucideIcons.brain, 'Behaviour', '& Training',
-        'What training approach works well for $name?'),
-    AssistantTopic(LucideIcons.brush, 'Care &', 'Grooming',
-        'What does a good grooming routine look like for $name?'),
-    AssistantTopic(LucideIcons.pill, 'Meds &', 'Routines',
-        'How do I keep track of $name’s medications and doses?'),
+    AssistantTopic(
+      LucideIcons.heartPulse,
+      'Health &',
+      'Records',
+      'What is worth writing down in $name’s health record, and how often?',
+    ),
+    AssistantTopic(
+      LucideIcons.leaf,
+      'Nutrition',
+      '& Diet',
+      'How should I think about $name’s diet?',
+    ),
+    AssistantTopic(
+      LucideIcons.brain,
+      'Behaviour',
+      '& Training',
+      'What training approach works well for $name?',
+    ),
+    AssistantTopic(
+      LucideIcons.brush,
+      'Care &',
+      'Grooming',
+      'What does a good grooming routine look like for $name?',
+    ),
+    AssistantTopic(
+      LucideIcons.pill,
+      'Meds &',
+      'Routines',
+      'How do I keep track of $name’s medications and doses?',
+    ),
     AssistantTopic(
       LucideIcons.siren,
       'Emergency',
@@ -804,7 +905,11 @@ class _HubView extends ConsumerWidget {
     return ListView(
       key: const Key('assistant_greeting'),
       padding: const EdgeInsets.fromLTRB(
-          AppSpace.s16, AppSpace.s4, AppSpace.s16, AppSpace.s12),
+        AppSpace.s16,
+        AppSpace.s4,
+        AppSpace.s16,
+        AppSpace.s12,
+      ),
       children: [
         AssistantHero(
           greeting: 'Hi there! 👋',
@@ -813,9 +918,9 @@ class _HubView extends ConsumerWidget {
               : 'I’m here to help you and $name',
           invitation: pet == null
               ? 'Ask me about routines, food, behaviour or grooming. For '
-                  'symptoms, I’ll point you to a Check.'
+                    'symptoms, I’ll point you to a Check.'
               : 'Ask me about $name’s routine, food, behaviour or grooming. '
-                  'For symptoms, I’ll point you to a Check.',
+                    'For symptoms, I’ll point you to a Check.',
           privacyTitle: 'Private & Secure',
           privacyBody:
               'Your conversations are private and never stored with your '
@@ -861,7 +966,8 @@ class _HubView extends ConsumerWidget {
             body: 'Unlimited chats and every record kept.',
             ctaLabel: 'Explore Premium',
             onCta: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const PaywallScreen())),
+              MaterialPageRoute<void>(builder: (_) => const PaywallScreen()),
+            ),
             onDismiss: onDismissPremium,
           ),
         ],
@@ -920,14 +1026,20 @@ class _GlanceCard extends ConsumerWidget {
     final hasReminder = id == null
         ? false
         : ref
-            .watch(remindersForPetProvider(id))
-            .maybeWhen(data: (list) => list.isNotEmpty, orElse: () => false);
+              .watch(remindersForPetProvider(id))
+              .maybeWhen(data: (list) => list.isNotEmpty, orElse: () => false);
     final score = pet == null
         ? 0
-        : careScore(pet!, hasCheck: checkedAt != null, hasReminder: hasReminder);
+        : careScore(
+            pet!,
+            hasCheck: checkedAt != null,
+            hasReminder: hasReminder,
+          );
 
     return AssistantGlanceCard(
-      title: pet == null ? 'Your pet at a glance' : '$name’s health at a glance',
+      title: pet == null
+          ? 'Your pet at a glance'
+          : '$name’s health at a glance',
       score: score,
       scoreBand: careBand(score),
       // D-2: the dial counts how complete the RECORD is. "Keep it up! 🎉" is
@@ -940,13 +1052,19 @@ class _GlanceCard extends ConsumerWidget {
         AssistantSignal(LucideIcons.zap, 'Energy', 'Soon', available: false),
         AssistantSignal(LucideIcons.soup, 'Appetite', 'Soon', available: false),
         AssistantSignal(LucideIcons.smile, 'Mood', 'Soon', available: false),
-        AssistantSignal(LucideIcons.footprints, 'Activity', 'Soon',
-            available: false),
+        AssistantSignal(
+          LucideIcons.footprints,
+          'Activity',
+          'Soon',
+          available: false,
+        ),
       ],
-      onOpen: () => Navigator.of(context)
-          .push(MaterialPageRoute<void>(builder: (_) => HealthHistoryScreen())),
-      onDetails: () => Navigator.of(context)
-          .push(MaterialPageRoute<void>(builder: (_) => HealthHistoryScreen())),
+      onOpen: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => HealthHistoryScreen())),
+      onDetails: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => HealthHistoryScreen())),
     );
   }
 }
@@ -1037,7 +1155,8 @@ class _ChatView extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpace.s16),
           child: AssistantPrivacyStrip(
-              onLearnMore: () => LegalUrls.open(LegalUrls.privacy)),
+            onLearnMore: () => LegalUrls.open(LegalUrls.privacy),
+          ),
         ),
         Expanded(
           child: ListView.builder(
@@ -1046,7 +1165,11 @@ class _ChatView extends StatelessWidget {
             // Newest at the bottom and pinned there while a reply streams in.
             reverse: true,
             padding: const EdgeInsets.fromLTRB(
-                AppSpace.s16, AppSpace.s8, AppSpace.s16, AppSpace.s8),
+              AppSpace.s16,
+              AppSpace.s8,
+              AppSpace.s16,
+              AppSpace.s8,
+            ),
             itemCount: items.length + 1,
             itemBuilder: (context, i) {
               if (i == items.length) {
@@ -1077,14 +1200,16 @@ class _ChatView extends StatelessWidget {
                     : GptMarkdown(
                         message.content,
                         style: const TextStyle(
-                            color: Colors.white, fontSize: 14, height: 1.45),
+                          color: Colors.white,
+                          fontSize: 14,
+                          height: 1.45,
+                        ),
                       ),
               );
 
               // The mockup's "Was this helpful?" pill, offered once under the
               // newest reply and retired as soon as it is answered.
-              final askHelpful =
-                  i == 0 && !live && !ratings.containsKey(index);
+              final askHelpful = i == 0 && !live && !ratings.containsKey(index);
               if (!askHelpful) return bubble;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1130,14 +1255,17 @@ class _TypingDots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Text('…',
-            key: const Key('assistant_typing'),
-            style: TextStyle(
-                color: PawTone.of(context).accent,
-                fontSize: 20,
-                height: 1.0)),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Text(
+      '…',
+      key: const Key('assistant_typing'),
+      style: TextStyle(
+        color: PawTone.of(context).accent,
+        fontSize: 20,
+        height: 1.0,
+      ),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1158,29 +1286,30 @@ class _ConversationsSheet extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(AppSpace.s16),
-              child: Text('Conversations',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(color: AppColors.ink50)),
+              child: Text(
+                'Conversations',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(color: AppColors.ink50),
+              ),
             ),
             Expanded(
               child: conversations.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Center(
-                  child: Text('Could not load conversations.',
-                      style: Theme.of(context).textTheme.bodyMedium),
+                  child: Text(
+                    'Could not load conversations.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                 ),
                 data: (list) {
                   if (list.isEmpty) {
                     return Center(
                       child: Text(
                         'No conversations yet.',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: AppColors.ink300),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.ink300,
+                        ),
                       ),
                     );
                   }
@@ -1219,8 +1348,9 @@ class _ConversationTile extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () =>
                 Navigator.pop(dialogContext, controller.text.trim()),
@@ -1230,7 +1360,9 @@ class _ConversationTile extends ConsumerWidget {
       ),
     );
     if (title != null && title.isNotEmpty) {
-      await ref.read(assistantRepositoryProvider).rename(conversation.id, title);
+      await ref
+          .read(assistantRepositoryProvider)
+          .rename(conversation.id, title);
       ref.invalidate(assistantConversationsProvider);
     }
   }
@@ -1240,17 +1372,23 @@ class _ConversationTile extends ConsumerWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete conversation?'),
-        content: const Text('Its messages will be removed. This cannot be undone.'),
+        content: const Text(
+          'Its messages will be removed. This cannot be undone.',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Keep it')),
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep it'),
+          ),
           TextButton(
             key: const Key('conversation_delete_confirm'),
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('Delete',
-                style: TextStyle(
-                    color: Theme.of(dialogContext).colorScheme.error)),
+            child: Text(
+              'Delete',
+              style: TextStyle(
+                color: Theme.of(dialogContext).colorScheme.error,
+              ),
+            ),
           ),
         ],
       ),
@@ -1270,8 +1408,11 @@ class _ConversationTile extends ConsumerWidget {
     return ListTile(
       key: Key('conversation_tile_${conversation.id}'),
       leading: const Icon(LucideIcons.messageCircle, color: PawPalette.mint),
-      title: Text(conversation.title,
-          maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: Text(
+        conversation.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
       subtitle: Text(relativeTime(conversation.updatedAt)),
       onTap: () async {
         await ref
