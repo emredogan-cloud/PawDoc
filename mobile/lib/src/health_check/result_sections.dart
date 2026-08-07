@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../health/health_sections.dart';
 import '../home/home_sections.dart';
 import '../theme/design_tokens.dart';
 
@@ -681,9 +682,7 @@ class ResultTrendCard extends StatelessWidget {
                             color: tint.withValues(alpha: 0.75),
                             fontSize: 11.5)),
                   )
-                : CustomPaint(
-                    painter: _SparkPainter(points, tint),
-                    size: Size.infinite),
+                : HealthSparkline(points: points, tint: tint, height: 42),
           ),
           const SizedBox(height: 8),
           Align(
@@ -710,46 +709,8 @@ class ResultTrendCard extends StatelessWidget {
   }
 }
 
-class _SparkPainter extends CustomPainter {
-  const _SparkPainter(this.points, this.tint);
-
-  final List<double> points;
-  final Color tint;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (points.length < 2) return;
-    final dx = size.width / (points.length - 1);
-    final path = Path();
-    for (var i = 0; i < points.length; i++) {
-      final p = Offset(dx * i, size.height * (1 - points[i].clamp(0, 1)));
-      if (i == 0) {
-        path.moveTo(p.dx, p.dy);
-      } else {
-        path.lineTo(p.dx, p.dy);
-      }
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..strokeCap = StrokeCap.round
-        ..color = tint,
-    );
-    for (var i = 0; i < points.length; i++) {
-      canvas.drawCircle(
-        Offset(dx * i, size.height * (1 - points[i].clamp(0, 1))),
-        3.2,
-        Paint()..color = tint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _SparkPainter old) =>
-      old.points != points || old.tint != tint;
-}
+// `_SparkPainter` moved to `health_sections.dart` as `HealthSparkline`;
+// `pet_statistics` draws four of them.
 
 /// The closing "Still have questions? / Ask AI Assistant" strip.
 class ResultAssistantStrip extends StatelessWidget {

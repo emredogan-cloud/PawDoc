@@ -23,6 +23,7 @@ import 'active_pet.dart';
 import 'pet.dart';
 import 'pet_form_screen.dart';
 import 'pet_profile_screen.dart';
+import 'pet_statistics_screen.dart';
 import 'pets_repository.dart';
 
 /// Every pet on the account, rebuilt against mockup `manage_multiple_pets`.
@@ -352,8 +353,8 @@ class _PetsListScreenState extends ConsumerState<PetsListScreen> {
                 icon: LucideIcons.fileText,
                 value: count(records),
                 label: 'Records on file',
-                caption: note(records, 'None yet', 'View'),
-                onTap: () => _push(const HealthHistoryScreen()),
+                caption: note(records, 'None yet', 'Statistics'),
+                onTap: () => _push(const PetStatisticsScreen()),
               ),
               HealthStat(
                 icon: LucideIcons.bell,

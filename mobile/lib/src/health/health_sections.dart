@@ -2030,6 +2030,96 @@ class HealthSheet extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// 8b · sparkline
+// ---------------------------------------------------------------------------
+
+/// A bare trend line, no axes — the mark `pet_statistics` puts under each
+/// overview tile and the result screen puts on its Track Symptoms cell.
+///
+/// **[points] are counts, never grades.** A line that trended better or worse
+/// would be a graded verdict on an animal drawn from nothing; what these plot
+/// is how much was *logged*, which is a fact about the record.
+class HealthSparkline extends StatelessWidget {
+  const HealthSparkline({
+    required this.points,
+    required this.tint,
+    this.height = 42,
+    this.dots = true,
+    this.fill = false,
+    super.key,
+  });
+
+  /// 0..1, oldest first. Fewer than two points draws nothing.
+  final List<double> points;
+  final Color tint;
+  final double height;
+  final bool dots;
+  final bool fill;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: height,
+        child: points.length < 2
+            ? const SizedBox.shrink()
+            : CustomPaint(
+                painter: _SparkPainter(points, tint, dots: dots, fill: fill),
+                size: Size.infinite,
+              ),
+      );
+}
+
+class _SparkPainter extends CustomPainter {
+  const _SparkPainter(this.points, this.tint,
+      {this.dots = true, this.fill = false});
+
+  final List<double> points;
+  final Color tint;
+  final bool dots;
+  final bool fill;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.length < 2) return;
+    final dx = size.width / (points.length - 1);
+    Offset at(int i) =>
+        Offset(dx * i, size.height * (1 - points[i].clamp(0, 1)));
+
+    final path = Path()..moveTo(at(0).dx, at(0).dy);
+    for (var i = 1; i < points.length; i++) {
+      path.lineTo(at(i).dx, at(i).dy);
+    }
+    if (fill) {
+      final area = Path.from(path)
+        ..lineTo(size.width, size.height)
+        ..lineTo(0, size.height)
+        ..close();
+      canvas.drawPath(area, Paint()..color = tint.withValues(alpha: 0.12));
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = tint,
+    );
+    if (dots) {
+      for (var i = 0; i < points.length; i++) {
+        canvas.drawCircle(at(i), 3.2, Paint()..color = tint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparkPainter old) =>
+      old.points != points ||
+      old.tint != tint ||
+      old.dots != dots ||
+      old.fill != fill;
+}
+
+// ---------------------------------------------------------------------------
 // 9 · the two-column fact grid
 // ---------------------------------------------------------------------------
 

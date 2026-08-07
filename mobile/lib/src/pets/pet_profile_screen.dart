@@ -31,6 +31,7 @@ import '../vet_finder/maps_links.dart';
 import 'active_pet.dart';
 import 'pet.dart';
 import 'pet_form_screen.dart';
+import 'pet_statistics_screen.dart';
 import 'pet_switcher.dart';
 import 'pets_repository.dart';
 
@@ -469,6 +470,14 @@ class _PetProfileScreenState extends ConsumerState<PetProfileScreen> {
         subtitle: checks == 0 ? 'None yet' : '$checks on the timeline',
         tint: HealthTone.teal,
         onTap: () => _push(const HealthHistoryScreen()),
+      ),
+      gap(7),
+      _JumpRow(
+        icon: LucideIcons.chartColumn,
+        title: 'Pet Statistics',
+        subtitle: 'Everything on the record, counted',
+        tint: HealthTone.gold,
+        onTap: () => _push(const PetStatisticsScreen()),
       ),
     ];
   }
