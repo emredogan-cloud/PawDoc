@@ -32,6 +32,7 @@ import 'health_sections.dart';
 import 'medication_tracker_screen.dart';
 import 'pdf_report_service.dart';
 import 'timeline.dart';
+import 'vaccination_manager_screen.dart';
 import 'weight_tracking_screen.dart';
 
 /// The pet's health record, rebuilt against mockup `health_timeline`.
@@ -213,6 +214,20 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
           onTap: () {
             Navigator.pop(sheetContext);
             _exportPdf(pet.id!, pet.name);
+          },
+        ),
+        HealthRecordRow(
+          key: const Key('open_vaccination_manager'),
+          leading: HealthGlyphDisc(
+              icon: LucideIcons.shieldCheck,
+              tint: PawTone.of(context).accent),
+          title: 'Vaccination manager',
+          subtitle: 'What is recorded, and what is coming up',
+          chevron: false,
+          onTap: () {
+            Navigator.pop(sheetContext);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const VaccinationManagerScreen()));
           },
         ),
         HealthRecordRow(
@@ -484,6 +499,7 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
     final module = switch (item.eventType) {
       'weight' => const WeightTrackingScreen(),
       'medication' => const MedicationTrackerScreen(),
+      'vaccination' => const VaccinationManagerScreen(),
       _ => null,
     };
     if (module != null) {

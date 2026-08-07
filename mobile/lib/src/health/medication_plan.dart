@@ -219,7 +219,9 @@ class Medication {
       endsOn: meta['ends_on'] == null
           ? null
           : DateTime.tryParse(meta['ends_on'].toString()),
-      note: item.detail ?? item.subtitle,
+      // `item.detail` only — `subtitle` is the headline the timeline built
+      // from the metadata, and echoing it as the note repeats the name.
+      note: item.detail,
     );
   }
 }
