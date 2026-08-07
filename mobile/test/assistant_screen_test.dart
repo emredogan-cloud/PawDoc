@@ -57,16 +57,32 @@ class _ScriptedTransport implements AssistantTransport {
 class _FakeRepo implements AssistantRepository {
   _FakeRepo([this.list = const []]);
   final List<AssistantConversation> list;
+  bool clearedAll = false;
+  final deleted = <String>[];
 
   @override
-  Future<List<AssistantConversation>> conversations() async => list;
+  Future<List<AssistantConversation>> conversations({int limit = 50}) async =>
+      list;
+  @override
+  Future<List<ConversationSummary>> summaries({int limit = 200}) async => [
+        for (final c in list)
+          ConversationSummary(
+            conversation: c,
+            preview: 'A short reply about ${c.title}.',
+            photoCount: 0,
+            messageCount: 2,
+            topic: conversationTopic(c.title),
+          ),
+      ];
   @override
   Future<List<AssistantMessage>> messages(String conversationId) async =>
       const [];
   @override
   Future<void> rename(String conversationId, String title) async {}
   @override
-  Future<void> delete(String conversationId) async {}
+  Future<void> delete(String conversationId) async => deleted.add(conversationId);
+  @override
+  Future<void> deleteAll() async => clearedAll = true;
 }
 
 const _pet = Pet(

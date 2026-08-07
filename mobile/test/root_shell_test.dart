@@ -7,17 +7,25 @@
 // because "Emergency is still in the nav" is exactly the kind of thing a later
 // redesign sweep silently changes.
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pawdoc/src/core/root_shell.dart';
 import 'package:pawdoc/src/theme/design_tokens.dart';
 
 Widget _host({Size size = const Size(390, 844), double textScale = 1.0}) {
-  return MediaQuery(
-    data: MediaQueryData(size: size, textScaler: TextScaler.linear(textScale)),
-    child: MaterialApp(
-      theme: ThemeData(brightness: Brightness.dark, textTheme: AppType.textTheme()),
-      home: const RootShell(),
+  // The shell reads which tab is selected from `rootTabProvider` — lifted out
+  // of its State so a pushed screen can render the same bar and still select a
+  // tab — so the host needs a scope. Without one the whole subtree fails to
+  // build and every assertion below reports "not found" rather than "wrong".
+  return ProviderScope(
+    child: MediaQuery(
+      data: MediaQueryData(size: size, textScaler: TextScaler.linear(textScale)),
+      child: MaterialApp(
+        theme:
+            ThemeData(brightness: Brightness.dark, textTheme: AppType.textTheme()),
+        home: const RootShell(),
+      ),
     ),
   );
 }

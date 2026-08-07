@@ -30,6 +30,7 @@ import 'assistant_models.dart';
 import 'assistant_repository.dart';
 import 'assistant_sections.dart';
 import 'chat_controller.dart';
+import 'conversation_history_screen.dart';
 
 /// The PawDoc Assistant, rebuilt against mockups `ai_assistant_home`,
 /// `ai_assistant_chat` and `ai_message_actions`.
@@ -182,12 +183,13 @@ class _AssistantScreenState extends ConsumerState<AssistantScreen> {
   // Sheets
   // -------------------------------------------------------------------------
 
-  void _openHistory() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: AppColors.ink900,
-      isScrollControlled: true,
-      builder: (_) => const _ConversationsSheet(),
+  /// The full `conversation_history` surface, not the half-height sheet it used
+  /// to be. It pops `true` when a thread was opened, which is the signal to
+  /// leave the hub and show that conversation.
+  Future<void> _openHistory() async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+          builder: (_) => const ConversationHistoryScreen()),
     );
   }
 
@@ -1272,170 +1274,8 @@ class _TypingDots extends StatelessWidget {
 // History
 // ---------------------------------------------------------------------------
 
-class _ConversationsSheet extends ConsumerWidget {
-  const _ConversationsSheet();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final conversations = ref.watch(assistantConversationsProvider);
-    return SafeArea(
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.6,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpace.s16),
-              child: Text(
-                'Conversations',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(color: AppColors.ink50),
-              ),
-            ),
-            Expanded(
-              child: conversations.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(
-                  child: Text(
-                    'Could not load conversations.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-                data: (list) {
-                  if (list.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'No conversations yet.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.ink300,
-                        ),
-                      ),
-                    );
-                  }
-                  return ListView.builder(
-                    itemCount: list.length,
-                    itemBuilder: (context, i) =>
-                        _ConversationTile(conversation: list[i]),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ConversationTile extends ConsumerWidget {
-  const _ConversationTile({required this.conversation});
-
-  final AssistantConversation conversation;
-
-  Future<void> _rename(BuildContext context, WidgetRef ref) async {
-    final controller = TextEditingController(text: conversation.title);
-    final title = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Rename conversation'),
-        content: TextField(
-          key: const Key('conversation_rename_field'),
-          controller: controller,
-          maxLength: 80,
-          autofocus: true,
-          decoration: const InputDecoration(counterText: ''),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    if (title != null && title.isNotEmpty) {
-      await ref
-          .read(assistantRepositoryProvider)
-          .rename(conversation.id, title);
-      ref.invalidate(assistantConversationsProvider);
-    }
-  }
-
-  Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete conversation?'),
-        content: const Text(
-          'Its messages will be removed. This cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Keep it'),
-          ),
-          TextButton(
-            key: const Key('conversation_delete_confirm'),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(
-              'Delete',
-              style: TextStyle(
-                color: Theme.of(dialogContext).colorScheme.error,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await ref.read(assistantRepositoryProvider).delete(conversation.id);
-      final chat = ref.read(chatControllerProvider);
-      if (chat.conversationId == conversation.id) {
-        ref.read(chatControllerProvider.notifier).startNew();
-      }
-      ref.invalidate(assistantConversationsProvider);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      key: Key('conversation_tile_${conversation.id}'),
-      leading: const Icon(LucideIcons.messageCircle, color: PawPalette.mint),
-      title: Text(
-        conversation.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(relativeTime(conversation.updatedAt)),
-      onTap: () async {
-        await ref
-            .read(chatControllerProvider.notifier)
-            .openConversation(conversation);
-        if (context.mounted) Navigator.pop(context);
-      },
-      trailing: PopupMenuButton<String>(
-        key: Key('conversation_menu_${conversation.id}'),
-        onSelected: (value) {
-          if (value == 'rename') _rename(context, ref);
-          if (value == 'delete') _delete(context, ref);
-        },
-        itemBuilder: (_) => const [
-          PopupMenuItem(value: 'rename', child: Text('Rename')),
-          PopupMenuItem(value: 'delete', child: Text('Delete')),
-        ],
-      ),
-    );
-  }
-}
-
-/// `2 days ago` — the age stamp the conversation rows print.
+/// `Just now` / `3h ago` / `Yesterday` — the age a resumable thread prints on
+/// the hub's "Continue a conversation" card.
 String relativeTime(DateTime time) {
   final diff = DateTime.now().difference(time);
   if (diff.inMinutes < 1) return 'Just now';
