@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../home/home_sections.dart';
@@ -2216,6 +2217,343 @@ class HealthDetailRow extends StatelessWidget {
             child: Text(value,
                 style: const TextStyle(
                     color: Colors.white, fontSize: 12.5, height: 1.35)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 10 · the form kit
+// ---------------------------------------------------------------------------
+//
+// Lifted out of `health_event_form_screen.dart`, where all six were private.
+// `edit_pet` draws the same bordered rows — a labelled shell with a glyph, a
+// text field, a picker, a fixed-choice sheet, a notes box with a counter and
+// the clear affordance — and a second implementation of a form row is how two
+// screens end up with different focus behaviour and different padding.
+
+/// The bordered field row the Record Details card is made of.
+class HealthFieldShell extends StatelessWidget {
+  const HealthFieldShell({
+    required this.icon,
+    required this.label,
+    required this.child,
+    this.trailing,
+    this.onTap,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final Widget child;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final body = Container(
+      padding: const EdgeInsets.fromLTRB(10, 7, 6, 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withValues(alpha: 0.028),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 9),
+            child: Icon(icon, size: 16, color: HealthTone.muted),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: HealthTone.muted, fontSize: 10.5, height: 1.3)),
+                child,
+              ],
+            ),
+          ),
+          ?trailing,
+        ],
+      ),
+    );
+    if (onTap == null) return body;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: body,
+    );
+  }
+}
+
+/// The clear affordance the mockup puts at the end of every filled field.
+class HealthClearButton extends StatelessWidget {
+  const HealthClearButton({required this.onTap,
+    super.key,
+  });
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+        onPressed: onTap,
+        icon: const Icon(LucideIcons.x, size: 15, color: HealthTone.muted),
+        tooltip: 'Clear',
+        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+      );
+}
+
+class HealthTextField extends StatelessWidget {
+  const HealthTextField({
+    required this.fieldKey,
+    required this.controller,
+    required this.icon,
+    required this.label,
+    this.hint = '',
+    this.keyboardType,
+    super.key,
+  });
+
+  final Key fieldKey;
+  final TextEditingController controller;
+  final IconData icon;
+  final String label;
+
+  /// An example of what belongs here. The mockup draws every field filled, so
+  /// it never had to answer what an empty one says.
+  final String hint;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    return HealthFieldShell(
+      icon: icon,
+      label: label,
+      trailing:
+          controller.text.isEmpty ? null : HealthClearButton(onTap: controller.clear),
+      child: TextField(
+        key: fieldKey,
+        controller: controller,
+        keyboardType: keyboardType,
+        style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.25),
+        // Every border, not just `border`: the app's InputDecorationTheme
+        // supplies enabled/focused ones, which drew a stray underline through
+        // each row on the device.
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+          filled: false,
+          hintText: hint,
+          hintStyle: const TextStyle(color: HealthTone.faint, fontSize: 14),
+        ),
+      ),
+    );
+  }
+}
+
+class HealthPickerField extends StatelessWidget {
+  const HealthPickerField({
+    required this.fieldKey,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+    this.muted = false,
+    this.onClear,
+    super.key,
+  });
+
+  final Key fieldKey;
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+  final bool muted;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return HealthFieldShell(
+      icon: icon,
+      label: label,
+      onTap: onTap,
+      trailing: onClear == null
+          ? const Padding(
+              padding: EdgeInsets.only(top: 8, right: 6),
+              child: Icon(LucideIcons.chevronDown,
+                  size: 15, color: HealthTone.muted),
+            )
+          : HealthClearButton(onTap: onClear!),
+      child: Text(value,
+          key: fieldKey,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+              color: muted ? HealthTone.faint : Colors.white,
+              fontSize: 14,
+              height: 1.25)),
+    );
+  }
+}
+
+/// A field whose value comes from a short fixed list — vaccine class, medicine
+/// form. Opens the same sheet the rest of the module uses.
+class HealthChoiceField extends StatelessWidget {
+  const HealthChoiceField({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onSelect,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? value;
+  final List<String> options;
+  final ValueChanged<String?> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return HealthFieldShell(
+      icon: icon,
+      label: label,
+      onTap: () async {
+        final picked = await showModalBottomSheet<String>(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (sheetContext) => HealthSheet(
+            title: label,
+            children: [
+              for (final option in options)
+                HealthRecordRow(
+                  key: Key('choice_$option'),
+                  leading: HealthGlyphDisc(
+                      icon: icon, tint: PawTone.of(context).accent, size: 34),
+                  title: option,
+                  chevron: false,
+                  onTap: () => Navigator.pop(sheetContext, option),
+                ),
+            ],
+          ),
+        );
+        if (picked != null) onSelect(picked);
+      },
+      trailing: value == null
+          ? const Padding(
+              padding: EdgeInsets.only(top: 8, right: 6),
+              child: Icon(LucideIcons.chevronDown,
+                  size: 15, color: HealthTone.muted),
+            )
+          : HealthClearButton(onTap: () => onSelect(null)),
+      child: Text(value ?? 'Not set',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+              color: value == null ? HealthTone.faint : Colors.white,
+              fontSize: 14,
+              height: 1.25)),
+    );
+  }
+}
+
+/// Notes, with the mockup's `98/500` counter.
+class HealthNotesField extends StatefulWidget {
+  const HealthNotesField({
+    required this.controller,
+    required this.label,
+    this.hint = 'Anything worth remembering about this…',
+    this.maxLength = 500,
+    super.key,
+  });
+
+  final TextEditingController controller;
+  final String label;
+
+  /// What an empty box invites. The record form asks about an event; the pet
+  /// form asks about the animal, and the same sentence does not fit both.
+  final String hint;
+  final int maxLength;
+
+  @override
+  State<HealthNotesField> createState() => _HealthNotesFieldState();
+}
+
+class _HealthNotesFieldState extends State<HealthNotesField> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onChanged);
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return HealthFieldShell(
+      icon: LucideIcons.notebookPen,
+      label: widget.label,
+      trailing: widget.controller.text.isEmpty
+          ? null
+          : HealthClearButton(onTap: widget.controller.clear),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            key: const Key('event_notes_field'),
+            controller: widget.controller,
+            maxLines: 4,
+            minLines: 2,
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(widget.maxLength)
+            ],
+            style:
+                const TextStyle(color: Colors.white, fontSize: 14, height: 1.35),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
+              filled: false,
+              hintText: widget.hint,
+              hintStyle:
+                  const TextStyle(color: HealthTone.faint, fontSize: 13.5),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+                '${widget.controller.text.length}/${widget.maxLength}',
+                style:
+                    const TextStyle(color: HealthTone.faint, fontSize: 10.5)),
           ),
         ],
       ),
