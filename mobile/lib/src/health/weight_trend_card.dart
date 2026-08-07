@@ -9,30 +9,64 @@ import '../theme/paw_ui.dart';
 /// A logged weight point (read back from `health_events` metadata — E4: the
 /// single most useful longitudinal signal used to be write-only).
 class WeightPoint {
-  const WeightPoint({required this.date, required this.kg});
+  const WeightPoint({
+    required this.date,
+    required this.kg,
+    this.id,
+    this.note,
+    this.time,
+  });
+
   final DateTime date;
   final double kg;
+
+  /// The `health_events` row, so a record row can open or delete itself.
+  final String? id;
+
+  /// What the owner wrote alongside the number.
+  final String? note;
+
+  /// `10:24` — the time they entered, when they entered one. `event_date` is a
+  /// DATE, so there is no clock time to fall back on.
+  final String? time;
 }
 
 /// Weight points for a pet, oldest→newest (RLS-scoped).
+///
+/// **`ascending: true` explicitly.** `postgrest`'s `order()` defaults to
+/// *descending*, so a bare `.order('event_date')` returned newest-first while
+/// every consumer here reads the list as oldest-first. The trend sparkline in
+/// the vet-prep pack has been drawing the line backwards, and the chart on
+/// `weight_tracking` showed the oldest entry as the current weight — which is
+/// how it was found. The Dart sort below is the belt to that braces: the order
+/// this list arrives in is load-bearing, so it does not depend on a client
+/// library's default.
 final weightPointsProvider = FutureProvider.autoDispose
     .family<List<WeightPoint>, String>((ref, petId) async {
   final client = ref.watch(supabaseClientProvider);
   final rows = await client
       .from('health_events')
-      .select('event_date, metadata')
+      .select('id, event_date, notes, metadata')
       .eq('pet_id', petId)
       .eq('event_type', 'weight')
-      .order('event_date');
+      .order('event_date', ascending: true);
   final out = <WeightPoint>[];
   for (final r in rows as List) {
     final m = r as Map;
     final date = DateTime.tryParse((m['event_date'] as String?) ?? '');
-    final kg = ((m['metadata'] as Map?)?['weight_kg'] as num?)?.toDouble();
+    final meta = m['metadata'] as Map?;
+    final kg = (meta?['weight_kg'] as num?)?.toDouble();
     if (date != null && kg != null && kg > 0) {
-      out.add(WeightPoint(date: date, kg: kg));
+      out.add(WeightPoint(
+        date: date,
+        kg: kg,
+        id: m['id'] as String?,
+        note: (m['notes'] as String?)?.trim(),
+        time: (meta?['time'] as String?)?.trim(),
+      ));
     }
   }
+  out.sort((a, b) => a.date.compareTo(b.date));
   return out;
 });
 

@@ -31,6 +31,7 @@ import 'health_record_detail.dart';
 import 'health_sections.dart';
 import 'pdf_report_service.dart';
 import 'timeline.dart';
+import 'weight_tracking_screen.dart';
 
 /// The pet's health record, rebuilt against mockup `health_timeline`.
 ///
@@ -211,6 +212,19 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
           onTap: () {
             Navigator.pop(sheetContext);
             _exportPdf(pet.id!, pet.name);
+          },
+        ),
+        HealthRecordRow(
+          key: const Key('open_weight_tracking'),
+          leading: const HealthGlyphDisc(
+              icon: LucideIcons.scale, tint: HealthTone.gold),
+          title: 'Weight tracking',
+          subtitle: 'The chart, the target and every entry',
+          chevron: false,
+          onTap: () {
+            Navigator.pop(sheetContext);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const WeightTrackingScreen()));
           },
         ),
         HealthRecordRow(
@@ -448,6 +462,16 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
         item: item,
         stamp: _stamp(item),
         onOpen: () => _openResult(item, pet),
+      );
+    }
+    // A weight row opens the module that owns weight, not a one-record sheet:
+    // the point of a weight entry is the line it sits on.
+    if (item.eventType == 'weight') {
+      return _EventCard(
+        item: item,
+        stamp: _stamp(item),
+        onOpen: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => const WeightTrackingScreen())),
       );
     }
     return _EventCard(
