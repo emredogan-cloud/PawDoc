@@ -53,7 +53,9 @@ class _RootShellState extends ConsumerState<RootShell> {
 
   static const _pages = <Widget>[
     HomeScreen(),
-    PetsListScreen(),
+    // `embedded` on both: each screen draws the mockup's bottom bar itself,
+    // and rendering that inside the shell stacks a second one.
+    PetsListScreen(embedded: true),
     HealthHistoryScreen(embedded: true),
   ];
 

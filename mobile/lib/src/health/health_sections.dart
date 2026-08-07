@@ -729,6 +729,70 @@ class HealthAsidePill extends StatelessWidget {
 // 3 · the filter rail
 // ---------------------------------------------------------------------------
 
+/// The rounded search box. `conversation_history` and `manage_multiple_pets`
+/// both draw one; the hint differs, the shape does not.
+class HealthSearchField extends StatelessWidget {
+  const HealthSearchField({
+    required this.controller,
+    required this.onChanged,
+    required this.hint,
+    this.autofocus = true,
+    this.fieldKey,
+    super.key,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final String hint;
+  final bool autofocus;
+  final Key? fieldKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: HealthTone.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(children: [
+        const Icon(LucideIcons.search, size: 16, color: HealthTone.muted),
+        const SizedBox(width: 9),
+        Expanded(
+          child: TextField(
+            key: fieldKey,
+            controller: controller,
+            onChanged: onChanged,
+            autofocus: autofocus,
+            style: const TextStyle(color: Colors.white, fontSize: 13.5),
+            decoration: InputDecoration(
+              isDense: true,
+              border: InputBorder.none,
+              hintText: hint,
+              hintStyle:
+                  const TextStyle(color: HealthTone.faint, fontSize: 13.5),
+            ),
+          ),
+        ),
+        if (controller.text.isNotEmpty)
+          InkWell(
+            onTap: () {
+              controller.clear();
+              onChanged('');
+            },
+            customBorder: const CircleBorder(),
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(LucideIcons.x, size: 15, color: HealthTone.muted),
+            ),
+          ),
+      ]),
+    );
+  }
+}
+
 /// One entry in [HealthFilterChips].
 class HealthFilter {
   const HealthFilter(this.id, this.label, this.icon);
@@ -845,6 +909,7 @@ class HealthStat {
     this.caption,
     this.captionColor,
     this.tint,
+    this.onTap,
   });
 
   final IconData icon;
@@ -855,6 +920,10 @@ class HealthStat {
   final String? caption;
   final Color? captionColor;
   final Color? tint;
+
+  /// `manage_multiple_pets` turns its caption into a link ("View all ›"), so a
+  /// tile can be the affordance rather than just a readout.
+  final VoidCallback? onTap;
 }
 
 /// The statistics strip. [grouped] draws the single card with hairline
@@ -935,6 +1004,7 @@ class HealthStatTiles extends StatelessWidget {
               child: HomeCard(
                 radius: 14,
                 padding: const EdgeInsets.fromLTRB(9, 10, 6, 10),
+                onTap: stats[i].onTap,
                 child: _StatCell(
                   stat: stats[i],
                   boxed: true,
