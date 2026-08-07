@@ -8,12 +8,12 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../account/user_profile.dart';
 import '../capture/upload_service.dart' show UploadException;
 import '../core/dates.dart';
-import '../core/living_pet_avatar.dart';
 import '../core/pet_display.dart';
 import '../health/health_sections.dart';
 import '../home/home_sections.dart';
 import '../pets/pet.dart';
 import '../pets/pet_form_screen.dart';
+import '../pets/pet_pick_rail.dart';
 import '../pets/pets_repository.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_components.dart';
@@ -596,11 +596,12 @@ class _AddMemoryScreenState extends ConsumerState<AddMemoryScreen> {
                 subtitle: 'Who is this memory about?',
               ),
               const SizedBox(height: 11),
-              _PetPicker(
+              PetPickRail(
+                keyPrefix: 'add_memory_pet',
                 pets: _pets,
                 selectedId: _petId,
                 onSelect: (id) => setState(() => _petId = id),
-                onNew: _newPet,
+                onNewPet: _newPet,
               ),
             ],
           ),
@@ -1139,197 +1140,6 @@ class _PhotoTile extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// The pet picker
-// ---------------------------------------------------------------------------
-
-class _PetPicker extends StatelessWidget {
-  const _PetPicker({
-    required this.pets,
-    required this.selectedId,
-    required this.onSelect,
-    required this.onNew,
-  });
-
-  final List<Pet> pets;
-  final String? selectedId;
-  final ValueChanged<String?> onSelect;
-  final VoidCallback onNew;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = PawTone.of(context);
-    return SizedBox(
-      height: 118,
-      child: ListView(
-        key: const Key('add_memory_pet_picker'),
-        scrollDirection: Axis.horizontal,
-        children: [
-          for (final pet in pets) ...[
-            _PetTile(
-              tileKey: Key('add_memory_pet_${pet.id}'),
-              selected: pet.id == selectedId,
-              name: petDisplayName(pet.name),
-              detail: (pet.breed?.trim().isNotEmpty ?? false)
-                  ? pet.breed!.trim()
-                  : speciesName(pet.species),
-              onTap: () => onSelect(pet.id),
-              portrait: ClipOval(
-                child: SizedBox(
-                  width: 52,
-                  height: 52,
-                  child: PetPortrait(
-                    pet: pet,
-                    size: 52,
-                    livingAvatar: pet.photoKey == null
-                        ? null
-                        : LivingPetAvatar(
-                            species: pet.species,
-                            size: 52,
-                            seed: pet.id,
-                            photoKey: pet.photoKey,
-                          ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 9),
-          ],
-          SizedBox(
-            width: 92,
-            child: HealthDashedTile(
-              key: const Key('add_memory_new_pet'),
-              radius: 15,
-              color: Colors.white.withValues(alpha: 0.18),
-              onTap: onNew,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border:
-                          Border.all(color: t.accent.withValues(alpha: 0.55)),
-                    ),
-                    child: Icon(LucideIcons.plus, size: 19, color: t.accent),
-                  ),
-                  const SizedBox(height: 9),
-                  const Text('New Pet',
-                      style: TextStyle(
-                          color: HealthTone.muted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PetTile extends StatelessWidget {
-  const _PetTile({
-    required this.tileKey,
-    required this.selected,
-    required this.name,
-    required this.detail,
-    required this.portrait,
-    required this.onTap,
-  });
-
-  final Key tileKey;
-  final bool selected;
-  final String name;
-  final String detail;
-  final Widget portrait;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = PawTone.of(context);
-    return SizedBox(
-      width: 92,
-      child: Material(
-        color: selected ? t.accent.withValues(alpha: 0.08) : HealthTone.card,
-        borderRadius: BorderRadius.circular(15),
-        child: InkWell(
-          key: tileKey,
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(15),
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(6, 10, 6, 9),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(
-                color: selected
-                    ? t.accent
-                    : Colors.white.withValues(alpha: 0.08),
-                width: selected ? 1.5 : 1,
-              ),
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    portrait,
-                    const SizedBox(height: 8),
-                    Text(name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12.5,
-                            height: 1.15,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 2),
-                    Text(detail,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: HealthTone.muted,
-                            fontSize: 10.5,
-                            height: 1.2)),
-                  ],
-                ),
-                Positioned(
-                  right: -1,
-                  top: -3,
-                  child: selected
-                      ? Container(
-                          width: 18,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: t.accent,
-                          ),
-                          child: const Icon(LucideIcons.check,
-                              size: 11, color: Color(0xFF06110A)),
-                        )
-                      : Container(
-                          width: 18,
-                          height: 18,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.22)),
-                          ),
-                        ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

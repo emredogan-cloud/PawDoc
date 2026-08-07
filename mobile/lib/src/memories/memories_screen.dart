@@ -21,6 +21,7 @@ import 'memories_repository.dart';
 import 'memory.dart';
 import 'memory_photo.dart';
 import 'memory_viewer_screen.dart';
+import 'search_memories_screen.dart';
 
 /// The pet journal, rebuilt against mockup `memories_gallery`.
 ///
@@ -233,6 +234,18 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen> {
     );
   }
 
+  Future<void> _openSearch() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => SearchMemoriesScreen(
+          pet: _petFor(_petId) ?? widget.pet,
+          petId: _petId,
+        ),
+      ),
+    );
+    if (mounted) _refresh();
+  }
+
   Future<void> _open(Memory memory) async {
     final pet = _petFor(memory.petId) ?? widget.pet;
     final changed = await Navigator.of(context).push<bool>(
@@ -375,6 +388,7 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen> {
             typeLabel: _type.label,
             orderLabel: _order.label,
             onFilters: _openFilters,
+            onSearchAll: _openSearch,
             timeline: _timeline,
             onToggle: () => setState(() => _timeline = !_timeline),
           ),
@@ -596,6 +610,7 @@ class _Toolbar extends StatelessWidget {
     required this.typeLabel,
     required this.orderLabel,
     required this.onFilters,
+    required this.onSearchAll,
     required this.timeline,
     required this.onToggle,
   });
@@ -605,6 +620,14 @@ class _Toolbar extends StatelessWidget {
   final String typeLabel;
   final String orderLabel;
   final VoidCallback onFilters;
+
+  /// The field beside this one filters *this* book. This opens the surface
+  /// that searches every pet's, with the quick searches and the recent
+  /// queries — `search_memories`.
+  ///
+  /// It sits on the toolbar rather than in the header because a third circled
+  /// action there ellipsised "Memories Gallery" on the device.
+  final VoidCallback onSearchAll;
   final bool timeline;
   final VoidCallback onToggle;
 
@@ -623,7 +646,7 @@ class _Toolbar extends StatelessWidget {
         const SizedBox(height: 8),
         Row(children: [
           Expanded(
-            child: _DropButton(
+            child: HealthDropPill(
               fieldKey: const Key('memories_type_button'),
               label: typeLabel,
               onTap: onFilters,
@@ -631,10 +654,35 @@ class _Toolbar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: _DropButton(
+            child: HealthDropPill(
               fieldKey: const Key('memories_order_button'),
               label: orderLabel,
               onTap: onFilters,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message: 'Search every book',
+            child: Semantics(
+              button: true,
+              label: 'Search every book',
+              child: InkWell(
+                key: const Key('memories_search_all'),
+                onTap: onSearchAll,
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  width: 44,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: HealthTone.card,
+                    border:
+                        Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  ),
+                  child: const Icon(LucideIcons.searchCode,
+                      size: 18, color: HealthTone.muted),
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -665,52 +713,6 @@ class _Toolbar extends StatelessWidget {
           ),
         ]),
       ],
-    );
-  }
-}
-
-class _DropButton extends StatelessWidget {
-  const _DropButton({
-    required this.fieldKey,
-    required this.label,
-    required this.onTap,
-  });
-
-  final Key fieldKey;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: HealthTone.card,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        key: fieldKey,
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          height: 42,
-          padding: const EdgeInsets.symmetric(horizontal: 11),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Row(children: [
-            Expanded(
-              child: Text(label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600)),
-            ),
-            const Icon(LucideIcons.chevronDown,
-                size: 15, color: Colors.white54),
-          ]),
-        ),
-      ),
     );
   }
 }

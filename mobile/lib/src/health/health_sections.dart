@@ -738,6 +738,7 @@ class HealthSearchField extends StatelessWidget {
     required this.hint,
     this.autofocus = true,
     this.fieldKey,
+    this.onSubmitted,
     super.key,
   });
 
@@ -746,6 +747,11 @@ class HealthSearchField extends StatelessWidget {
   final String hint;
   final bool autofocus;
   final Key? fieldKey;
+
+  /// Fired on the keyboard's search key. `search_memories` uses it to decide
+  /// what to *remember* — storing every keystroke would fill the recent list
+  /// with the prefixes of one word.
+  final ValueChanged<String>? onSubmitted;
 
   @override
   Widget build(BuildContext context) {
@@ -765,6 +771,9 @@ class HealthSearchField extends StatelessWidget {
             key: fieldKey,
             controller: controller,
             onChanged: onChanged,
+            onSubmitted: onSubmitted,
+            textInputAction:
+                onSubmitted == null ? null : TextInputAction.search,
             autofocus: autofocus,
             style: const TextStyle(color: Colors.white, fontSize: 13.5),
             decoration: InputDecoration(
@@ -2333,6 +2342,76 @@ class HealthSettingRow extends StatelessWidget {
                     size: 15, color: Colors.white54),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The bordered "All Types ⌄" lozenge the journal and the search surface put
+/// their filters in — an optional glyph, a label, and a chevron.
+///
+/// `memories_gallery` had a private one of these; `search_memories` draws four
+/// in a row, and a second implementation is how the two rows end up a point
+/// apart in height.
+class HealthDropPill extends StatelessWidget {
+  const HealthDropPill({
+    required this.fieldKey,
+    required this.label,
+    required this.onTap,
+    this.icon,
+    this.active = false,
+    super.key,
+  });
+
+  final Key fieldKey;
+  final String label;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  /// Lights the border when the filter is doing something — the reference
+  /// draws every pill in its resting state, which never shows what "set"
+  /// looks like.
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    return Material(
+      color: active ? t.accent.withValues(alpha: 0.08) : HealthTone.card,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        key: fieldKey,
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+                color: active
+                    ? t.accent.withValues(alpha: 0.65)
+                    : Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Row(children: [
+            if (icon != null) ...[
+              Icon(icon, size: 15, color: t.accent),
+              const SizedBox(width: 7),
+            ],
+            Expanded(
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: active ? t.accent : Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(width: 4),
+            const Icon(LucideIcons.chevronDown,
+                size: 15, color: HealthTone.muted),
+          ]),
         ),
       ),
     );

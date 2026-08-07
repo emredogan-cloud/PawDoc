@@ -136,7 +136,7 @@ void main() {
 
       expect(find.byKey(const Key('add_memory_pet_p1')), findsOneWidget);
       expect(find.byKey(const Key('add_memory_pet_p2')), findsOneWidget);
-      expect(find.byKey(const Key('add_memory_new_pet')), findsOneWidget);
+      expect(find.byKey(const Key('add_memory_pet_new')), findsOneWidget);
       // The pet the journal was showing starts selected.
       expect(find.text('Buddy'), findsOneWidget);
       expect(find.text('Golden Retriever'), findsOneWidget);
