@@ -54,7 +54,7 @@ class _RootShellState extends ConsumerState<RootShell> {
   static const _pages = <Widget>[
     HomeScreen(),
     PetsListScreen(),
-    HealthHistoryScreen(),
+    HealthHistoryScreen(embedded: true),
   ];
 
   @override

@@ -24,10 +24,16 @@ class HealthEventFormScreen extends ConsumerStatefulWidget {
     required this.petId,
     required this.petName,
     this.initialNotes,
+    this.initialType,
   });
 
   final String petId;
   final String petName;
+
+  /// Preselects a record type. Set when the form is opened from a surface that
+  /// already knows what is being filed — the medication tracker's "Add
+  /// Medication", the vaccination manager's "Add Vaccine Record".
+  final String? initialType;
 
   /// Pre-fills the note field. Set when the form is opened from somewhere that
   /// already has the text — the assistant's "Save to Diary" action, which
@@ -40,7 +46,7 @@ class HealthEventFormScreen extends ConsumerStatefulWidget {
 }
 
 class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
-  String _type = kHealthEventTypes.first;
+  late String _type = widget.initialType ?? kHealthEventTypes.first;
   DateTime _date = DateTime.now();
   final _notes = TextEditingController();
   final _weight = TextEditingController();
@@ -424,6 +430,7 @@ class _TypeGrid extends StatelessWidget {
       children: [
         for (final t in kHealthEventTypes)
           _TypeTile(
+            key: Key('event_type_$t'),
             type: t,
             isSelected: selected == t,
             onTap: () => onSelected(t),
@@ -439,6 +446,7 @@ class _TypeTile extends StatelessWidget {
     required this.type,
     required this.isSelected,
     required this.onTap,
+    super.key,
   });
 
   final String type;

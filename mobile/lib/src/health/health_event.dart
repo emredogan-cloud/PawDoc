@@ -2,10 +2,24 @@
 /// (Phase 1.1 schema). Ownership is derived from the parent pet via RLS — the
 /// table has no `user_id` column (owner-approved CR #2 design), so inserts carry
 /// only `pet_id` and the user's JWT scopes them.
+/// Order matters: `add_health_record` draws these six as a grid and leads with
+/// **Vet Visit**, which is the record an owner most often comes in to file.
+///
+/// `lab_result` is new with that mockup. The column is plain `text` with no
+/// CHECK constraint, so it needs no migration — and a lab result is the
+/// owner's own transcription of what their vet handed them, not something the
+/// app concludes.
+///
+/// The mockup's sixth tile is "AI Analysis". That is deliberately **not** here:
+/// an AI check is produced by the Check flow, where the emergency override, the
+/// quota rules and the action ladder apply, and offering it as a thing to type
+/// in by hand would be a false affordance. The tile ships as **Weight**, which
+/// the app has always recorded and the mockup's grid otherwise drops.
 const List<String> kHealthEventTypes = [
-  'vaccination',
   'vet_visit',
   'medication',
+  'lab_result',
+  'vaccination',
   'weight',
   'custom',
 ];
@@ -13,8 +27,9 @@ const List<String> kHealthEventTypes = [
 /// Human label for an event_type (also used by the timeline).
 String healthEventLabel(String type) => switch (type) {
       'vaccination' => 'Vaccination',
-      'vet_visit' => 'Vet visit',
+      'vet_visit' => 'Vet Visit',
       'medication' => 'Medication',
+      'lab_result' => 'Lab Result',
       'weight' => 'Weight',
       _ => 'Note',
     };

@@ -55,7 +55,15 @@ void main() {
     _stubAnalytics(tester);
     await tester.pumpWidget(_host(repo));
 
+    // The form opens on Vet Visit, as `add_health_record` draws it.
     expect(find.byKey(const Key('event_save_hint')), findsOneWidget);
+    expect(find.textContaining('short note'), findsWidgets);
+
+    // And every other type refuses an empty form on its own terms.
+    await tester.ensureVisible(find.byKey(const Key('event_type_vaccination')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('event_type_vaccination')));
+    await tester.pump();
     expect(find.textContaining('vaccine name'), findsWidgets);
 
     await tester.tap(find.byKey(const Key('event_save_button')));
@@ -71,6 +79,10 @@ void main() {
     _stubAnalytics(tester);
     await tester.pumpWidget(_host(repo));
 
+    await tester.ensureVisible(find.byKey(const Key('event_type_vaccination')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('event_type_vaccination')));
+    await tester.pump();
     await _fill(tester, 'event_vaccine_name_field', 'Rabies');
     expect(find.byKey(const Key('event_save_hint')), findsNothing);
 
@@ -85,7 +97,9 @@ void main() {
     _stubAnalytics(tester);
     await tester.pumpWidget(_host(repo));
 
-    await tester.tap(find.text('Weight'));
+    await tester.ensureVisible(find.byKey(const Key('event_type_weight')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('event_type_weight')));
     await tester.pump();
     expect(find.byKey(const Key('event_save_hint')), findsOneWidget);
 

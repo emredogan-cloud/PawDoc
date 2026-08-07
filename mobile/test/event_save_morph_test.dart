@@ -47,6 +47,10 @@ void main() {
     _stubAnalytics(tester);
     await tester.pumpWidget(_host(repo));
     // A vaccination is identified by its name — the form won't save without it.
+    await tester.ensureVisible(find.byKey(const Key('event_type_vaccination')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('event_type_vaccination')));
+    await tester.pump();
     await tester.scrollUntilVisible(
         find.byKey(const Key('event_vaccine_name_field')), 120,
         scrollable: find.byType(Scrollable).first);
@@ -66,6 +70,10 @@ void main() {
       (tester) async {
     _stubAnalytics(tester);
     await tester.pumpWidget(_host(_FakeRepo(fail: true)));
+    await tester.ensureVisible(find.byKey(const Key('event_type_vaccination')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('event_type_vaccination')));
+    await tester.pump();
     await tester.scrollUntilVisible(
         find.byKey(const Key('event_vaccine_name_field')), 120,
         scrollable: find.byType(Scrollable).first);

@@ -36,6 +36,12 @@ class HealthEventsRepository {
     return created;
   }
 
+  /// Removes a record. RLS scopes it: the policy derives ownership from the
+  /// parent pet, so a delete can only ever reach a row the caller owns.
+  Future<void> delete(String eventId) async {
+    await _client.from('health_events').delete().eq('id', eventId);
+  }
+
   Future<List<HealthEvent>> listForPet(String petId) async {
     final rows = await _client
         .from('health_events')

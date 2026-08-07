@@ -19,6 +19,7 @@ import '../health_check/result_sections.dart';
 import '../health_check/health_check_chrome.dart';
 import '../assistant/assistant_screen.dart';
 import '../config/legal_urls.dart';
+import '../core/dates.dart';
 import '../core/living_pet_avatar.dart';
 import '../core/motion.dart';
 import '../core/pet_display.dart';
@@ -46,7 +47,9 @@ class ResultScreen extends StatelessWidget {
       this.petName,
       this.petSpecies,
       this.petPhotoKey,
+      this.generatedAt,
       this.firstCheckToast = false});
+
   final AnalysisResult result;
   final String? analysisId;
   final VoidCallback? onDone;
@@ -61,6 +64,11 @@ class ResultScreen extends StatelessWidget {
 
   /// The owner's pet photo, shown instead of the species rig when set.
   final String? petPhotoKey;
+
+  /// When the answer was produced. Null means "now" — a check that has just
+  /// come back. The timeline passes the stored timestamp when it reopens a
+  /// past one, because "Generated just now" is a lie on a month-old record.
+  final DateTime? generatedAt;
 
   /// M3 (#17): the one-time-ever "story has begun" toast. The runner only
   /// sets this for non-emergency results; the emergency route ignores it.
@@ -82,6 +90,7 @@ class ResultScreen extends StatelessWidget {
         petName: petName,
         petSpecies: petSpecies,
         petPhotoKey: petPhotoKey,
+        generatedAt: generatedAt,
         firstCheckToast: firstCheckToast);
   }
 }
@@ -128,6 +137,7 @@ class StandardResultScreen extends ConsumerStatefulWidget {
       this.petName,
       this.petSpecies,
       this.petPhotoKey,
+      this.generatedAt,
       this.firstCheckToast = false});
   final AnalysisResult result;
   final String? analysisId;
@@ -136,6 +146,7 @@ class StandardResultScreen extends ConsumerStatefulWidget {
   final String? petName;
   final String? petSpecies;
   final String? petPhotoKey;
+  final DateTime? generatedAt;
   final bool firstCheckToast;
 
   @override
@@ -382,7 +393,14 @@ class _StandardResultScreenState extends ConsumerState<StandardResultScreen> {
             ],
             const SizedBox(height: AppSpace.s12),
             ResultSummaryCard(
-                body: r.observation, stamp: 'Generated just now', tint: tint),
+                body: r.observation,
+                // "Generated just now" is true for a fresh check and false the
+                // moment the timeline can reopen a stored one, which it now
+                // can. The screen prints when the answer was actually made.
+                stamp: widget.generatedAt == null
+                    ? 'Generated just now'
+                    : 'Generated ${shortDate(widget.generatedAt!)}',
+                tint: tint),
             const SizedBox(height: AppSpace.s12),
             IntrinsicHeight(
               child: Row(

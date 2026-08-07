@@ -499,14 +499,21 @@ class _ViewProfilePill extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.05),
           border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
         ),
+        // Flexible, not fixed: the header card shares its width with whatever
+        // the screen hangs on the right (a Care Score dial, an adherence bar),
+        // and at a large text scale this pill was the thing that overflowed.
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           const Icon(LucideIcons.user, size: 11, color: Colors.white70),
           const SizedBox(width: 4),
-          Text('View Profile',
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.88),
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600)),
+          Flexible(
+            child: Text('View Profile',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.88),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600)),
+          ),
         ]),
       ),
     );
@@ -933,7 +940,7 @@ class _StatCell extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             glyph(),
-            SizedBox(width: ringed ? 7 : 7),
+            SizedBox(width: ringed ? 7 : 6),
             Expanded(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -946,7 +953,7 @@ class _StatCell extends StatelessWidget {
     };
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: boxed ? 0 : 6),
+      padding: EdgeInsets.symmetric(horizontal: boxed ? 0 : 5),
       child: body,
     );
   }
@@ -1771,3 +1778,118 @@ class HealthRecordScaffold extends StatelessWidget {
 /// Vertical rhythm helper — `gap(12)` reads better than a bare SizedBox in a
 /// 30-child column.
 Widget gap(double height) => SizedBox(height: height);
+
+/// The surface every record menu and detail sheet sits on.
+///
+/// `showModalBottomSheet` is opened transparent so the corners can be rounded,
+/// which means the sheet has to draw its own panel — without it the rows float
+/// over the page and the whole thing reads as a rendering fault. (Learned the
+/// hard way on the assistant's pet and More menus.)
+class HealthSheet extends StatelessWidget {
+  const HealthSheet({
+    required this.children,
+    this.title,
+    this.scrollable = false,
+    super.key,
+  });
+
+  final List<Widget> children;
+  final String? title;
+  final bool scrollable;
+
+  @override
+  Widget build(BuildContext context) {
+    final column = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: AppSpace.s16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.20),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        if (title != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(title!,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700)),
+          ),
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) const SizedBox(height: 8),
+          children[i],
+        ],
+      ],
+    );
+    return PawSystemScope(
+      system: PawSystem.b,
+      child: Container(
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85),
+        decoration: const BoxDecoration(
+          color: HealthTone.card,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpace.s16, AppSpace.s12, AppSpace.s16, AppSpace.s16),
+            child: scrollable
+                ? SingleChildScrollView(child: column)
+                : column,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A label/value pair, as the detail sheets list a record's contents.
+class HealthDetailRow extends StatelessWidget {
+  const HealthDetailRow({
+    required this.label,
+    required this.value,
+    this.icon,
+    super.key,
+  });
+
+  final String label;
+  final String value;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 15, color: HealthTone.muted),
+            const SizedBox(width: 9),
+          ],
+          SizedBox(
+            width: 104,
+            child: Text(label,
+                style: const TextStyle(
+                    color: HealthTone.muted, fontSize: 11.5, height: 1.35)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 12.5, height: 1.35)),
+          ),
+        ],
+      ),
+    );
+  }
+}
