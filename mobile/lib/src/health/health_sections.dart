@@ -176,8 +176,10 @@ class PetModuleAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.title,
     required this.subtitle,
     this.subtitleLead,
+    this.subtitleTrail,
     this.icon,
     this.actions = const [],
+    this.actionsWidth,
     this.onBack,
     super.key,
   });
@@ -191,9 +193,19 @@ class PetModuleAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// name (or the product's) and greys the rest.
   final String? subtitleLead;
 
+  /// Rendered in the accent *after* [subtitle]. `reminder_detail` and
+  /// `pet_profile` put the lit name at the end of the sentence ("Never miss
+  /// what matters for **Buddy**", "All about **Buddy**") rather than the start.
+  final String? subtitleTrail;
+
   final IconData? icon;
   final List<Widget> actions;
   final VoidCallback? onBack;
+
+  /// How much room to keep clear on the right. Defaults to 48dp per action,
+  /// which is right for circled buttons; a screen whose action is a wider
+  /// lozenge ("Edit") passes its own so a long title can never sit under it.
+  final double? actionsWidth;
 
   @override
   Size get preferredSize => const Size.fromHeight(74);
@@ -228,7 +240,8 @@ class PetModuleAppBar extends StatelessWidget implements PreferredSizeWidget {
                     Padding(
                       padding: EdgeInsets.only(
                         left: 48,
-                        right: actions.isEmpty ? 48 : actions.length * 48.0,
+                        right: actionsWidth ??
+                            (actions.isEmpty ? 48 : actions.length * 48.0),
                       ),
                       child: Center(
                         child: Row(
@@ -273,6 +286,12 @@ class PetModuleAppBar extends StatelessWidget implements PreferredSizeWidget {
                             color: t.accent, fontWeight: FontWeight.w600),
                       ),
                     TextSpan(text: subtitle),
+                    if (subtitleTrail != null)
+                      TextSpan(
+                        text: subtitleTrail,
+                        style: TextStyle(
+                            color: t.accent, fontWeight: FontWeight.w600),
+                      ),
                   ]),
                   maxLines: 1,
                   style: const TextStyle(
@@ -280,6 +299,82 @@ class PetModuleAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A bordered icon+label lozenge — the small secondary button the mockups use
+/// wherever a tap is offered beside a heading or in the app bar: "Edit",
+/// "View Calendar", "View All", "View Clinic".
+///
+/// Extracted from [HealthSectionHead]'s boxed action, which had the glyph
+/// hardcoded; `reminder_detail` draws three of these with three different
+/// glyphs and `pet_profile` puts one in the header.
+class HealthActionPill extends StatelessWidget {
+  const HealthActionPill({
+    required this.label,
+    required this.onTap,
+    this.icon,
+    this.color,
+    this.dense = false,
+    super.key,
+  });
+
+  final String label;
+
+  /// Nullable so a heading can present the pill as a static caption — which is
+  /// what `medication_tracker` does with "Next 12 months".
+  final VoidCallback? onTap;
+  final IconData? icon;
+  final Color? color;
+
+  /// Tighter padding, for the app-bar slot where height is fixed at 48.
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? PawTone.of(context).accent;
+    return Semantics(
+      button: onTap != null,
+      label: label,
+      child: ExcludeSemantics(
+        child: Material(
+          color: c.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                  horizontal: dense ? 11 : 9, vertical: dense ? 7 : 5),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                border: Border.all(color: c.withValues(alpha: 0.35)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 12, color: c),
+                  const SizedBox(width: 5),
+                ],
+                // Flexible, not bare: `mainAxisSize.min` still lets a long
+                // label ("Open the vaccination manager") take its natural
+                // width and blow the row out. The widget test found this at
+                // the em-square font, which is the large-text case a real
+                // handset would have hit.
+                Flexible(
+                  child: Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: c,
+                          fontSize: dense ? 12 : 11.5,
+                          fontWeight: FontWeight.w600)),
+                ),
+              ]),
+            ),
           ),
         ),
       ),
@@ -297,6 +392,7 @@ class HealthSectionHead extends StatelessWidget {
     this.chevron = true,
     this.actionColor,
     this.actionBoxed = false,
+    this.actionIcon,
     super.key,
   });
 
@@ -311,6 +407,10 @@ class HealthSectionHead extends StatelessWidget {
   /// bordered lozenge ("View Treatment Plan", "View Calendar") rather than a
   /// bare link.
   final bool actionBoxed;
+
+  /// The glyph inside that lozenge. Defaults to the list mark the medication
+  /// screens use; `reminder_detail` wants a calendar on its schedule card.
+  final IconData? actionIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -330,33 +430,32 @@ class HealthSectionHead extends StatelessWidget {
                   fontWeight: FontWeight.w700)),
         ),
         if (actionLabel != null)
-          InkWell(
-            onTap: onAction,
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            child: Container(
-              margin: const EdgeInsets.only(left: 6),
-              padding: actionBoxed
-                  ? const EdgeInsets.symmetric(horizontal: 9, vertical: 5)
-                  : const EdgeInsets.symmetric(horizontal: 3, vertical: 7),
-              decoration: actionBoxed
-                  ? BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      color: c.withValues(alpha: 0.10),
-                      border: Border.all(color: c.withValues(alpha: 0.35)),
-                    )
-                  : null,
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                if (actionBoxed) ...[
-                  Icon(LucideIcons.list, size: 12, color: c),
-                  const SizedBox(width: 5),
-                ],
-                Text(actionLabel!,
-                    style: TextStyle(
-                        color: c, fontSize: 11.5, fontWeight: FontWeight.w600)),
-                if (chevron && !actionBoxed)
-                  Icon(LucideIcons.chevronRight, size: 13, color: c),
-              ]),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 6),
+            child: actionBoxed
+                ? HealthActionPill(
+                    label: actionLabel!,
+                    icon: actionIcon ?? LucideIcons.list,
+                    color: c,
+                    onTap: onAction,
+                  )
+                : InkWell(
+                    onTap: onAction,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 3, vertical: 7),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(actionLabel!,
+                            style: TextStyle(
+                                color: c,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600)),
+                        if (chevron)
+                          Icon(LucideIcons.chevronRight, size: 13, color: c),
+                      ]),
+                    ),
+                  ),
           ),
       ],
     );
@@ -1853,6 +1952,230 @@ class HealthSheet extends StatelessWidget {
                 ? SingleChildScrollView(child: column)
                 : column,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 9 · the two-column fact grid
+// ---------------------------------------------------------------------------
+
+/// One cell of [HealthInfoGrid].
+class HealthInfoCell {
+  const HealthInfoCell({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.caption,
+    this.captionColor,
+    this.tint,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  /// The accent third line — `reminder_detail`'s "In 12 days" under its next
+  /// date.
+  final String? caption;
+  final Color? captionColor;
+  final Color? tint;
+  final VoidCallback? onTap;
+}
+
+/// The paired fact grid `reminder_detail` and `pet_profile` both draw: two
+/// columns of glyph + label + value, hairline-ruled between rows and down the
+/// middle.
+///
+/// Every text is single-line on purpose. Inside an [IntrinsicHeight] a `Text`
+/// reports its *unwrapped* height, so a value that wanted to wrap would be
+/// clipped to one line and the rest silently lost — the same trap the statistic
+/// tiles hit. Values shrink to fit instead.
+class HealthInfoGrid extends StatelessWidget {
+  const HealthInfoGrid({required this.cells, super.key});
+
+  final List<HealthInfoCell> cells;
+
+  @override
+  Widget build(BuildContext context) {
+    final hairline = Colors.white.withValues(alpha: 0.06);
+    final rows = <(HealthInfoCell, HealthInfoCell?)>[
+      for (var i = 0; i < cells.length; i += 2)
+        (cells[i], i + 1 < cells.length ? cells[i + 1] : null),
+    ];
+    return HomeCard(
+      radius: 16,
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (var r = 0; r < rows.length; r++) ...[
+            if (r > 0)
+              Divider(
+                  height: 1,
+                  thickness: 1,
+                  indent: 11,
+                  endIndent: 11,
+                  color: hairline),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: _InfoCell(cell: rows[r].$1)),
+                  VerticalDivider(
+                      width: 1,
+                      thickness: 1,
+                      indent: 9,
+                      endIndent: 9,
+                      color: hairline),
+                  Expanded(
+                    child: rows[r].$2 == null
+                        ? const SizedBox.shrink()
+                        : _InfoCell(cell: rows[r].$2!),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoCell extends StatelessWidget {
+  const _InfoCell({required this.cell});
+
+  final HealthInfoCell cell;
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = cell.tint ?? PawTone.of(context).accent;
+    final body = Padding(
+      padding: const EdgeInsets.fromLTRB(11, 11, 9, 11),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(cell.icon, size: 17, color: tint),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(cell.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: HealthTone.muted, fontSize: 10.5, height: 1.2)),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(cell.value,
+                      maxLines: 1,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13.5,
+                          height: 1.2,
+                          fontWeight: FontWeight.w600)),
+                ),
+                if (cell.caption != null) ...[
+                  const SizedBox(height: 1),
+                  Text(cell.caption!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: cell.captionColor ?? tint,
+                          fontSize: 10.5,
+                          height: 1.25,
+                          fontWeight: FontWeight.w600)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (cell.onTap == null) return body;
+    return InkWell(
+        onTap: cell.onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: body);
+  }
+}
+
+/// `glyph  Label ........ value ›` — the settings rows `reminder_detail` lists
+/// under Notification Settings, and the same shape `pet_profile` uses.
+///
+/// [soon] greys the value and drops the chevron: the control is drawn, in
+/// place, but nothing is behind it yet. A row that looks tappable and is not is
+/// worse than one that says so.
+class HealthSettingRow extends StatelessWidget {
+  const HealthSettingRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.onTap,
+    this.valueColor,
+    this.soon = false,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback? onTap;
+  final Color? valueColor;
+  final bool soon;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 11),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: soon ? HealthTone.faint : t.accent),
+            const SizedBox(width: 10),
+            // Weighted shares, never two bare Flexibles: an even split squeezes
+            // a label that had room, and a fixed neighbour overflows the row
+            // under the em-square test font.
+            Flexible(
+              flex: 4,
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: soon ? HealthTone.muted : Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              flex: 6,
+              child: Text(value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: soon
+                          ? HealthTone.faint
+                          : (valueColor ?? t.accent),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500)),
+            ),
+            if (!soon && onTap != null)
+              const Padding(
+                padding: EdgeInsets.only(left: 4),
+                child: Icon(LucideIcons.chevronRight,
+                    size: 15, color: Colors.white54),
+              ),
+          ],
         ),
       ),
     );
