@@ -81,6 +81,10 @@ void main() {
     FilledButton cont() =>
         tester.widget<FilledButton>(find.byKey(const Key('emergency_continue')));
     expect(cont().onPressed, isNull);
+    // The screen is now the full mockup composition, so the gate sits below
+    // the fold — scroll to it before tapping. The guarantee is unchanged.
+    await tester.ensureVisible(find.byKey(const Key('emergency_ack_checkbox')));
+    await tester.pump();
     await tester.tap(find.byKey(const Key('emergency_ack_checkbox')));
     await tester.pump();
     expect(cont().onPressed, isNotNull);

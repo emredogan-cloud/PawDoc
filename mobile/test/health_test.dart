@@ -112,7 +112,8 @@ void main() {
 
     test('healthEventLabel maps types', () {
       expect(healthEventLabel('vaccination'), 'Vaccination');
-      expect(healthEventLabel('vet_visit'), 'Vet visit');
+      expect(healthEventLabel('vet_visit'), 'Vet Visit');
+      expect(healthEventLabel('lab_result'), 'Lab Result');
       expect(healthEventLabel('custom'), 'Note');
     });
   });

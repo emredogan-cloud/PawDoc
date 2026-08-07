@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../core/motion.dart';
 import 'design_tokens.dart';
+import 'paw_components.dart';
 
 /// NEW UI translation design-system layer (OLD→NEW migration, 2026-06-12).
 ///
@@ -35,12 +36,19 @@ class PawPalette {
   static const Color forestInk = Color(0xFF1E4A40); // cream-screen headings
   static const Color forestBody = Color(0xFF4B6F66); // cream-screen body
 
-  // Mint→teal CTA gradient.
-  static const Color mint = Color(0xFF7FE6D6);
-  static const Color teal = Color(0xFF34C7AE);
+  // Accent pair, used across ~120 call sites as "the brand accent" rather than
+  // as literal mint and teal. Repointed to System B instead of rewriting every
+  // call site: the alternative was ~120 mechanical edits, many inside `const`
+  // constructors that would have had to lose their constness.
+  //
+  // System A screens (onboarding, sign-in) must NOT rely on these — Phase P
+  // gives that subtree PawSystem.a and its own emerald/cyan values. Anything
+  // needing a context-resolved accent should use PawTone.of(context).accent.
+  static const Color mint = AppColors.lime400;
+  static const Color teal = AppColors.lime600;
 
   // Glow + accents.
-  static const Color glow = Color(0xFF2BD8BE);
+  static const Color glow = AppColors.lime500;
   static const Color leaf = Color(0xFF1B4E40);
   static const Color heart = Color(0xFFFF8A80);
 }
@@ -62,9 +70,26 @@ class PawBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = variant == PawSurface.dark;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
+    // A subtree inside a migrated shell declares its system, and the canvas has
+    // to follow: device validation of Phase D showed the new black cards and
+    // black nav bar sitting on the old teal gradient, which read as two
+    // different apps stacked on top of each other.
+    final system = PawSystemScope.of(context);
+
+    final gradient = switch (system) {
+      PawSystem.b when dark => const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.carbon900, Color(0xFF060806), AppColors.carbon900],
+          stops: [0.0, 0.5, 1.0],
+        ),
+      PawSystem.a when dark => const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.navy900, AppColors.navy850, AppColors.navy900],
+          stops: [0.0, 0.5, 1.0],
+        ),
+      _ => LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: dark
@@ -72,10 +97,17 @@ class PawBackground extends StatelessWidget {
               : const [PawPalette.creamTop, PawPalette.creamBottom],
           stops: dark ? const [0.0, 0.5, 1.0] : const [0.0, 1.0],
         ),
-      ),
+    };
+
+    // The hand-painted botanicals belong to the teal system; on the redesign's
+    // near-black canvas they read as smudges.
+    final decor = showDecor && system == PawSystem.legacy;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(gradient: gradient),
       child: Stack(
         children: [
-          if (showDecor)
+          if (decor)
             Positioned.fill(
               child: ExcludeSemantics(
                 child: CustomPaint(painter: _PawDecorPainter(dark: dark)),
@@ -169,10 +201,18 @@ class _PawPrimaryButtonState extends State<PawPrimaryButton> {
   Widget build(BuildContext context) {
     final enabled = widget.onPressed != null;
     final cream = widget.variant == PawSurface.cream;
-    final fg = cream ? Colors.white : PawPalette.bgBottom;
+    final fg = cream ? Colors.white : const Color(0xFF0A0F06);
+    // Follows the active system: this button is the primary CTA on most
+    // screens, so leaving it mint kept the teal palette visible everywhere the
+    // scheme flip had already landed.
+    final system = PawSystemScope.of(context);
     final gradientColors = cream
         ? const [Color(0xFF2FA28E), Color(0xFF1B7565)]
-        : const [PawPalette.mint, PawPalette.teal];
+        : switch (system) {
+            PawSystem.b => const [AppColors.lime400, AppColors.lime600],
+            PawSystem.a => const [AppColors.emerald400, AppColors.emerald500],
+            PawSystem.legacy => const [PawPalette.mint, PawPalette.teal],
+          };
     final label = DefaultTextStyle.merge(
       style: Theme.of(context).textTheme.labelLarge?.copyWith(
             color: fg,
@@ -301,12 +341,29 @@ class PawCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cream = variant == PawSurface.cream;
-    final bg = cream
-        ? Colors.white.withValues(alpha: 0.85)
-        : Colors.white.withValues(alpha: 0.045);
-    final border = cream
-        ? PawPalette.forestInk.withValues(alpha: 0.10)
-        : Colors.white.withValues(alpha: 0.07);
+    // Inside a migrated system the card takes that system's fill and its
+    // accent-tinted hairline border. Doing it here rather than per screen
+    // migrates every existing PawCard consumer — breed insight, walks,
+    // community, capture — in one place, which is the whole reason the
+    // shipping screens compose from this primitive.
+    final system = PawSystemScope.of(context);
+    final migrated = system != PawSystem.legacy && !cream;
+
+    final Color bg;
+    final Color border;
+    if (migrated) {
+      final t = PawTone.of(context);
+      bg = t.card;
+      border = t.border;
+    } else {
+      bg = cream
+          ? Colors.white.withValues(alpha: 0.85)
+          : Colors.white.withValues(alpha: 0.045);
+      border = cream
+          ? PawPalette.forestInk.withValues(alpha: 0.10)
+          : Colors.white.withValues(alpha: 0.07);
+    }
+
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(radius),
       side: BorderSide(color: border),
@@ -361,10 +418,10 @@ class PawFeatureRow extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: PawPalette.teal.withValues(alpha: cream ? 0.14 : 0.18),
+              color: _tileWash(context, cream),
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
-            child: Icon(icon, size: 20, color: PawPalette.mint),
+            child: Icon(icon, size: 20, color: _glyph(context)),
           ),
           const SizedBox(width: AppSpace.s12),
           Expanded(
@@ -462,3 +519,14 @@ class _PawDecorPainter extends CustomPainter {
   bool shouldRepaint(covariant _PawDecorPainter oldDelegate) =>
       oldDelegate.dark != dark;
 }
+
+
+/// Icon-tile wash for [PawFeatureRow] / [_AccountRow]-style rows, following the
+/// active system rather than the teal palette.
+Color _tileWash(BuildContext context, bool cream) {
+  final t = PawTone.of(context);
+  return t.accent.withValues(alpha: cream ? 0.14 : 0.16);
+}
+
+/// Glyph colour for the same rows.
+Color _glyph(BuildContext context) => PawTone.of(context).accent;

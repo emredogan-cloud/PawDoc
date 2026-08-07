@@ -12,6 +12,8 @@ import '../core/app_image.dart';
 import '../core/app_motion_asset.dart';
 import '../theme/app_assets.dart';
 import '../theme/app_theme.dart';
+import '../theme/design_tokens.dart';
+import '../theme/paw_components.dart';
 import '../theme/paw_ui.dart';
 import 'auth_controller.dart';
 import 'google_sign_in_diagnosis.dart';
@@ -179,7 +181,13 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     // everywhere else).
     return Theme(
       data: AppTheme.light(),
-      child: PawScaffold(
+      // Sign-in belongs to System A, like the onboarding it precedes. It runs
+      // on the cream surface, whose colours come from PawSurface.cream rather
+      // than the accent — but declaring the system keeps any shared primitive
+      // used here (PawFeatureRow, PawPrimaryButton) off the System B lime.
+      child: PawSystemScope(
+        system: PawSystem.a,
+        child: PawScaffold(
         variant: PawSurface.cream,
         body: SingleChildScrollView(
           child: Center(
@@ -201,7 +209,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
             ),
           ),
         ),
-      ),
+      )),
     );
   }
 

@@ -11,6 +11,7 @@ import '../auth/auth_controller.dart';
 import '../auth/supabase_providers.dart';
 import '../monetization/paywall_screen.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_components.dart';
 import '../theme/paw_ui.dart';
 import 'delete_account_screen.dart';
 import 'manage_subscription.dart';
@@ -75,9 +76,9 @@ class AccountScreen extends ConsumerWidget {
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundColor: PawPalette.teal.withValues(alpha: 0.18),
+                    backgroundColor: PawTone.of(context).accent.withValues(alpha: 0.16),
                     child:
-                        const Icon(Icons.person_rounded, color: PawPalette.mint),
+                        Icon(Icons.person_rounded, color: PawTone.of(context).accent),
                   ),
                   const SizedBox(width: AppSpace.s16),
                   Expanded(
@@ -290,7 +291,7 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tColor = titleColor ?? AppColors.ink50;
-    final iColor = iconColor ?? PawPalette.mint;
+    final iColor = iconColor ?? PawTone.of(context).accent;
     return Padding(
       padding: const EdgeInsets.symmetric(
           horizontal: AppSpace.s16, vertical: AppSpace.s4),

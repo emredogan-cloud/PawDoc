@@ -45,7 +45,13 @@ void main() {
 
   test('gracefully handles no analysis and no events', () {
     final report = buildHealthReport(pet: pet, latestAnalysis: null, events: const []);
-    expect(report, contains('No AI analyses recorded yet.'));
+    expect(report, contains('No AI checks recorded yet.'));
+    // V-22 / review §4.2: a vet must be able to tell, line by line, what the
+    // model produced from what the owner recorded. Both markers are required
+    // even in the empty case, because that is when the sections look most alike.
+    expect(report, contains('Source: PawDoc AI'));
+    expect(report, contains('Not examined by a veterinarian'));
+    expect(report, contains('Source: entered by the owner'));
     expect(report, contains('No logged events.'));
   });
 }

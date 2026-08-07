@@ -1,3 +1,5 @@
+import 'ui_assets.dart';
+
 /// Single source of truth for asset paths (PAWDOC_UI_UX_MASTER_ROADMAP.md §7.2).
 ///
 /// No raw asset strings in widgets — always reference `AppAssets.*`. Every
@@ -9,7 +11,6 @@ class AppAssets {
 
   static const _brand = 'assets/brand';
   static const _ill = 'assets/illustrations';
-  static const _ic = 'assets/icons';
 
   // ---- Brand ----
   static const String logoMark = '$_brand/logo_mark_v1.png';
@@ -60,10 +61,21 @@ class AppAssets {
       'assets/ai-assistans/ai_assistant_avatar.png';
 
   // ---- Species + avatars (keyed by the Species enum value) ----
-  // 'other' ships as the paw mascot file (species_other_paw.png) — without
-  // this mapping the Other chip silently fell back to the emoji (M2 find).
-  static String species(String key) =>
-      '$_ic/species/species_${key == 'other' ? 'other_paw' : key}.png';
+  // Points at the photoreal cast that landed in Phase 0. `assets/icons/species/`
+  // was declared in pubspec but never populated, so every chip and reduce-motion
+  // avatar had been silently falling back to its emoji since M2.
+  //
+  // Unknown keys resolve to the 'other' portrait rather than an absent path, so
+  // a new species added to the enum degrades to real art instead of a grey box.
+  static String species(String key) => switch (key) {
+        'dog' => UiAssets.petSpeciesDog,
+        'cat' => UiAssets.petSpeciesCat,
+        'rabbit' => UiAssets.petSpeciesRabbit,
+        'bird' => UiAssets.petSpeciesBird,
+        'guinea_pig' => UiAssets.petSpeciesGuineaPig,
+        'reptile' => UiAssets.petSpeciesReptile,
+        _ => UiAssets.petSpeciesOther,
+      };
 }
 
 /// Lottie motion assets (M1 "First breath", PAWDOC_MOTION_ROADMAP.md §4).

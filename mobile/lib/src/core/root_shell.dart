@@ -1,98 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../account/account_screen.dart';
-import '../assistant/assistant_screen.dart';
 import '../health/history_timeline_screen.dart';
 import '../home/home_screen.dart';
+import '../onboarding/pending_pet.dart';
 import '../pets/pets_list_screen.dart';
 import '../theme/design_tokens.dart';
-import '../theme/paw_ui.dart';
+import '../theme/paw_components.dart';
+import 'paw_nav_bar.dart';
 
-/// Root tab shell (launch-hardening obj 12): a persistent bottom navigation over
-/// the four primary destinations, reusing the EXISTING screens and routes.
+/// Root tab shell.
 ///
-/// Design choices that keep flows intact:
-/// - Mounted only at `/` (signed-in home). `/sign-in`, `/onboarding`, and all
-///   pushed detail screens (capture, result, family, etc.) render WITHOUT tabs,
-///   exactly as before — they push over this shell.
-/// - Tabs are a local [IndexedStack] (state preserved per tab); the go_router
-///   route table, auth redirect, and deep links (`/pets`, `/history`, `/family`,
-///   `/invite/:token`, `/r/:code`) are UNCHANGED, so nothing that used
-///   `context.go/push` breaks.
-/// - Each tab screen keeps its own Scaffold/AppBar; with no route to pop, those
-///   AppBars correctly show no back button while in a tab.
-class RootShell extends StatefulWidget {
+/// Four destinations plus a centre action button. Mounted only at `/`;
+/// `/sign-in`, `/onboarding` and every pushed detail screen render without
+/// tabs, exactly as before. Tabs are a local [IndexedStack] (state preserved
+/// per tab) and the go_router table, auth redirect and deep links are
+/// UNCHANGED, so nothing using `context.go/push` breaks.
+///
+/// The bar itself lives in `paw_nav_bar.dart` — the record mockups draw it on
+/// pushed screens too, and it selects the tab through [rootTabProvider] so
+/// there is only ever one shell.
+///
+/// **Emergency is a permanent destination.** The mockups' Variant B puts
+/// Premium in this slot on nine screens (conflict C-7 / review V-24), which
+/// would displace the fastest route to GET_HELP_NOW behind a paywall surface.
+/// `CLAUDE.md` forbids that, so Premium is reached from Account and contextual
+/// upsells instead, and Emergency is reachable in one tap from every tab —
+/// stronger than the previous shell, where it lived only on Home.
+///
+/// Assistant moved from a tab into the centre sheet: it is an *action* ("ask
+/// about something") alongside photo and text capture, and four destinations
+/// keeps every target comfortably above 48dp at 320dp width. Account keeps its
+/// existing Home app-bar entry point, so nothing became unreachable.
+class RootShell extends ConsumerStatefulWidget {
   const RootShell({super.key});
 
   @override
-  State<RootShell> createState() => _RootShellState();
+  ConsumerState<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> {
-  int _index = 0;
+class _RootShellState extends ConsumerState<RootShell> {
+  @override
+  void initState() {
+    super.initState();
+    // The pet collected during the pre-auth onboarding journey has no owner
+    // until now. This is the first authenticated surface every sign-in path
+    // lands on — Google, email, guest and a returning user alike — so it is
+    // the one place the draft can be flushed once.
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => PendingPet.flush(ref));
+  }
 
-  // Next Evolution Phase 4: the Assistant is a permanent center destination.
   static const _pages = <Widget>[
     HomeScreen(),
     PetsListScreen(),
-    AssistantScreen(),
-    HealthHistoryScreen(),
-    AccountScreen(),
+    HealthHistoryScreen(embedded: true),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: IndexedStack(index: _index, children: _pages),
-      bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarThemeData(
-          backgroundColor: AppColors.ink900,
-          surfaceTintColor: Colors.transparent,
-          indicatorColor: PawPalette.teal.withValues(alpha: 0.28),
-          labelTextStyle: const WidgetStatePropertyAll(
-            TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          ),
-          iconTheme: WidgetStateProperty.resolveWith(
-            (states) => IconThemeData(
-              color: states.contains(WidgetState.selected)
-                  ? PawPalette.mint
-                  : AppColors.ink300,
-            ),
-          ),
+    return PawSystemScope(
+      system: PawSystem.b,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: IndexedStack(
+          index: ref.watch(rootTabProvider),
+          children: _pages,
         ),
-        child: NavigationBar(
-          key: const Key('root_bottom_nav'),
-          selectedIndex: _index,
-          onDestinationSelected: (i) => setState(() => _index = i),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home_rounded),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.pets_outlined),
-              selectedIcon: Icon(Icons.pets_rounded),
-              label: 'Pets',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.auto_awesome_outlined),
-              selectedIcon: Icon(Icons.auto_awesome_rounded),
-              label: 'Assistant',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.favorite_outline_rounded),
-              selectedIcon: Icon(Icons.favorite_rounded),
-              label: 'Health',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.settings_outlined),
-              selectedIcon: Icon(Icons.settings_rounded),
-              label: 'Settings',
-            ),
-          ],
-        ),
+        bottomNavigationBar: const PawNavBar(),
       ),
     );
   }

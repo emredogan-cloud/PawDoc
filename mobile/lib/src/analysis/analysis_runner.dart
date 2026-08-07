@@ -12,7 +12,10 @@ import '../models/analysis_result.dart';
 import '../monetization/maybe_show_paywall.dart';
 import '../monetization/paywall_prefs.dart';
 import '../monetization/paywall_screen.dart';
+import '../health_check/health_check_chrome.dart';
+import '../health_check/health_check_loading_view.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_ui.dart';
 import 'analysis_service.dart';
 import 'loading_screen.dart';
 import 'result_screen.dart';
@@ -51,6 +54,19 @@ class AnalysisRunnerScreen extends ConsumerStatefulWidget {
 class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
   _Phase _phase = _Phase.loading;
   AnalysisOutcome? _outcome;
+
+  /// The answer, held until the loading run reaches 100.
+  ///
+  /// The wait is part of the product: the reference sets the expectation on
+  /// screen ("30-45 seconds") and the screen is the app showing its work. A
+  /// request that returns in two seconds used to snap past all of it.
+  ///
+  /// **Two things are never held.** An EMERGENCY cuts through immediately —
+  /// delaying the red path for a progress bar is exactly the trade this
+  /// codebase does not make — and so does reduce-motion, which is a request
+  /// not to be shown ceremony at all.
+  AnalysisOutcome? _held;
+  bool _ceremonyDone = false;
   bool _firstCheckEver = false;
   // E8c: a specific upload failure reason, shown above (not instead of) the
   // safety nudge on the error screen.
@@ -76,25 +92,8 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
             imageStorageKey: widget.imageStorageKey,
           );
       if (!mounted) return;
-      // M4 (#23, safety-review gated): non-emergency verdicts get one 450ms
-      // pulse→verdict-hue resolve beat before the reveal. EMERGENCY keeps
-      // the INSTANT cut (hard guardrail: never delay an emergency), and
-      // reduce-motion users go straight to the result.
-      final resolve =
-          outcome.result.action != ActionLevel.getHelpNow &&
-              !reduceMotion(context);
-      setState(() {
-        _outcome = outcome;
-        _phase = resolve ? _Phase.resolving : _Phase.result;
-      });
-      if (resolve) {
-        unawaited(Future<void>.delayed(const Duration(milliseconds: 540))
-            .then((_) {
-          if (mounted && _phase == _Phase.resolving) {
-            setState(() => _phase = _Phase.result);
-          }
-        }));
-      }
+      setState(() => _held = outcome);
+      _maybeReveal();
       // F-2: the home hero + pets-list chip read this; refresh it the moment
       // the analysis completes so "No checks yet" can never outlive a check.
       ref.invalidate(latestTriageProvider(widget.petId));
@@ -110,6 +109,9 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
         }
       }));
     } on UploadException catch (e) {
+      // Failures are never held behind the run — the owner needs the retry,
+      // and a bar filling toward a result that will not arrive is worse than
+      // no bar at all.
       // E8c: surface the specific upload reason; the safety nudge still shows.
       if (mounted) {
         setState(() {
@@ -132,6 +134,33 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
           _phase = _Phase.error;
         });
       }
+    }
+  }
+
+  /// Reveals the result once the answer is in **and** the loading run has
+  /// finished — or immediately, for the two cases that must never wait.
+  void _maybeReveal() {
+    final outcome = _held;
+    if (outcome == null || _phase != _Phase.loading) return;
+
+    final emergency = outcome.result.action == ActionLevel.getHelpNow;
+    if (!emergency && !_ceremonyDone) return;
+
+    // M4 (#23): non-emergency verdicts get one 540ms pulse→verdict-hue resolve
+    // beat before the reveal. EMERGENCY keeps the instant cut; reduce-motion
+    // goes straight through.
+    final resolve = !emergency && !reduceMotion(context);
+    setState(() {
+      _outcome = outcome;
+      _phase = resolve ? _Phase.resolving : _Phase.result;
+    });
+    if (resolve) {
+      unawaited(
+          Future<void>.delayed(const Duration(milliseconds: 540)).then((_) {
+        if (mounted && _phase == _Phase.resolving) {
+          setState(() => _phase = _Phase.result);
+        }
+      }));
     }
   }
 
@@ -180,8 +209,26 @@ class _AnalysisRunnerScreenState extends ConsumerState<AnalysisRunnerScreen> {
   @override
   Widget build(BuildContext context) {
     switch (_phase) {
+      // Mockup `ai_analysis_loading`: the wait is a screen of its own — node
+      // rail, scan ring, stage list, reassurance. `AnalysisLoadingView` still
+      // owns the resolve beat, which is timing-sensitive and stays untouched.
       case _Phase.loading:
-        return const Scaffold(body: AnalysisLoadingView());
+        return PawBackground(
+          variant: PawSurface.dark,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: const HealthCheckAppBar(),
+            body: HealthCheckLoadingView(
+              petSpecies: widget.petSpecies ?? 'dog',
+              hasPhoto: widget.imageStorageKey != null,
+              resultReady: _held != null,
+              onCeremonyComplete: () {
+                _ceremonyDone = true;
+                _maybeReveal();
+              },
+            ),
+          ),
+        );
       case _Phase.resolving:
         return Scaffold(
           body: AnalysisLoadingView(
