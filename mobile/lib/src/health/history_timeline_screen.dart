@@ -27,6 +27,7 @@ import '../reminders/reminders_screen.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_components.dart';
 import '../theme/paw_ui.dart';
+import 'baseline_screen.dart';
 import 'health_event_form_screen.dart';
 import 'health_record_detail.dart';
 import 'health_sections.dart';
@@ -179,7 +180,9 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => HealthSheet(children: [
+      // Scrollable: the menu is seven rows now and overflowed the sheet by
+      // 132px on the device when "Know your baseline" was added.
+      builder: (sheetContext) => HealthSheet(scrollable: true, children: [
         HealthRecordRow(
           key: const Key('open_vet_prep'),
           leading: const HealthGlyphDisc(
@@ -255,6 +258,19 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
             Navigator.pop(sheetContext);
             Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => const WeightTrackingScreen()));
+          },
+        ),
+        HealthRecordRow(
+          key: const Key('open_baseline'),
+          leading: const HealthGlyphDisc(
+              icon: LucideIcons.activity, tint: HealthTone.info),
+          title: 'Know your baseline',
+          subtitle: 'What you have measured, and over how long',
+          chevron: false,
+          onTap: () {
+            Navigator.pop(sheetContext);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => BaselineScreen(pet: pet)));
           },
         ),
         HealthRecordRow(
