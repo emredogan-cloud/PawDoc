@@ -1103,8 +1103,14 @@ class HealthRecordRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Weighted shares, not one Flexible against fixed chips.
+                    // Two equal Flexibles split the row evenly and squeeze a
+                    // name that had room; fixed chips overflow it at a large
+                    // text scale. 3:2 lets the title take what it needs and
+                    // both give proportionally when the row is genuinely short.
                     Row(children: [
                       Flexible(
+                        flex: 3,
                         child: Text(title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -1116,7 +1122,7 @@ class HealthRecordRow extends StatelessWidget {
                       ),
                       for (final chip in titleChips) ...[
                         const SizedBox(width: 5),
-                        chip,
+                        Flexible(flex: 2, child: chip),
                       ],
                     ]),
                     if (subtitle != null) ...[

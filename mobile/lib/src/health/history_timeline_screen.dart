@@ -29,6 +29,7 @@ import '../theme/paw_ui.dart';
 import 'health_event_form_screen.dart';
 import 'health_record_detail.dart';
 import 'health_sections.dart';
+import 'medication_tracker_screen.dart';
 import 'pdf_report_service.dart';
 import 'timeline.dart';
 import 'weight_tracking_screen.dart';
@@ -212,6 +213,19 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
           onTap: () {
             Navigator.pop(sheetContext);
             _exportPdf(pet.id!, pet.name);
+          },
+        ),
+        HealthRecordRow(
+          key: const Key('open_medication_tracker'),
+          leading: const HealthGlyphDisc(
+              icon: LucideIcons.pill, tint: HealthTone.violet),
+          title: 'Medication tracker',
+          subtitle: 'The plan, today’s doses and finished courses',
+          chevron: false,
+          onTap: () {
+            Navigator.pop(sheetContext);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const MedicationTrackerScreen()));
           },
         ),
         HealthRecordRow(
@@ -464,14 +478,20 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
         onOpen: () => _openResult(item, pet),
       );
     }
-    // A weight row opens the module that owns weight, not a one-record sheet:
-    // the point of a weight entry is the line it sits on.
-    if (item.eventType == 'weight') {
+    // A weight or medication row opens the module that owns it, not a
+    // one-record sheet: the point of a weight entry is the line it sits on,
+    // and the point of a medicine is the schedule around it.
+    final module = switch (item.eventType) {
+      'weight' => const WeightTrackingScreen(),
+      'medication' => const MedicationTrackerScreen(),
+      _ => null,
+    };
+    if (module != null) {
       return _EventCard(
         item: item,
         stamp: _stamp(item),
-        onOpen: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => const WeightTrackingScreen())),
+        onOpen: () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => module)),
       );
     }
     return _EventCard(
