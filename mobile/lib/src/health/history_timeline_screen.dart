@@ -413,12 +413,29 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
   /// The year is dropped inside the current one because the card has to fit a
   /// title, a ladder chip, the stamp and a chevron beside a 62dp photo in
   /// 221 points, and "Aug 6, 2026" is what pushed the title into an ellipsis.
-  static String _stamp(DateTime d) {
-    if (_dayLabel(d) == 'Today') {
+  ///
+  /// A health event's `event_date` is a DATE, so its time is midnight — and
+  /// stamping a visit filed this afternoon "12:00 AM" is a fabricated detail.
+  /// Manual records print the time the owner entered, or nothing when the
+  /// group label above already says which day it was.
+  static String _stamp(TimelineItem item) {
+    final d = item.date;
+    final today = _dayLabel(d) == 'Today';
+    if (item.kind == TimelineKind.healthEvent) {
+      final entered = (item.payload?['time'] as String?)?.trim();
+      if (entered != null && entered.isNotEmpty) return entered;
+      if (today || _dayLabel(d) == 'Yesterday') return '';
+      return _dateStamp(d);
+    }
+    if (today) {
       final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
       return '$h:${d.minute.toString().padLeft(2, '0')} '
           '${d.hour < 12 ? 'AM' : 'PM'}';
     }
+    return _dateStamp(d);
+  }
+
+  static String _dateStamp(DateTime d) {
     final full = shortDate(d);
     return d.year == DateTime.now().year
         ? full.substring(0, full.lastIndexOf(','))
@@ -429,13 +446,13 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
     if (item.kind == TimelineKind.analysis) {
       return _AnalysisCard(
         item: item,
-        stamp: _stamp(item.date),
+        stamp: _stamp(item),
         onOpen: () => _openResult(item, pet),
       );
     }
     return _EventCard(
       item: item,
-      stamp: _stamp(item.date),
+      stamp: _stamp(item),
       onOpen: () => showHealthRecordDetail(
         context,
         ref,
@@ -793,10 +810,12 @@ class _EventCard extends StatelessWidget {
                       height: 1.2,
                       fontWeight: FontWeight.w700)),
             ),
-            const SizedBox(width: 6),
-            Text(stamp,
-                style: const TextStyle(
-                    color: HealthTone.faint, fontSize: 10.5)),
+            if (stamp.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              Text(stamp,
+                  style: const TextStyle(
+                      color: HealthTone.faint, fontSize: 10.5)),
+            ],
             const Icon(LucideIcons.chevronRight,
                 size: 15, color: Colors.white54),
           ]),

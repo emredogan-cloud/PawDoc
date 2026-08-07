@@ -84,8 +84,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.textContaining('Could not save the event'), findsOneWidget);
-    expect(find.text('Save event'), findsOneWidget); // button restored
+    expect(find.textContaining('Could not save the record'), findsOneWidget);
+    expect(find.text('Save Record'), findsOneWidget); // button restored
     await tester.pump(const Duration(seconds: 4)); // drain snackbar
   });
 }
