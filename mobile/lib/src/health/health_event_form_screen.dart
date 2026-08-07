@@ -1017,8 +1017,9 @@ class _AttachmentsCard extends StatelessWidget {
                     width: 68,
                     height: 68,
                     child: CustomPaint(
-                      painter: _DashedTilePainter(
-                          t.accent.withValues(alpha: 0.55)),
+                      painter: HealthDashedPainter(
+                          t.accent.withValues(alpha: 0.55),
+                          radius: 11),
                       child: uploading
                           ? const Center(
                               child: SizedBox(
@@ -1057,36 +1058,6 @@ class _AttachmentsCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DashedTilePainter extends CustomPainter {
-  const _DashedTilePainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-          Offset.zero & size, const Radius.circular(11)));
-    const dash = 5.0;
-    const gap = 4.0;
-    for (final metric in path.computeMetrics()) {
-      var d = 0.0;
-      while (d < metric.length) {
-        final end = (d + dash).clamp(0.0, metric.length);
-        canvas.drawPath(metric.extractPath(d, end), paint);
-        d = end + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedTilePainter old) => old.color != color;
 }
 
 /// The reminder switch, and the date it fires on.

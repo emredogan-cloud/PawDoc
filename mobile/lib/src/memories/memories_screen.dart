@@ -16,9 +16,9 @@ import '../pets/pet.dart';
 import '../pets/pets_repository.dart';
 import '../theme/paw_components.dart';
 import '../theme/paw_ui.dart';
+import 'add_memory_screen.dart';
 import 'memories_repository.dart';
 import 'memory.dart';
-import 'memory_editor_sheet.dart';
 import 'memory_photo.dart';
 import 'memory_viewer_screen.dart';
 
@@ -181,7 +181,9 @@ class _MemoriesScreenState extends ConsumerState<MemoriesScreen> {
       return;
     }
     final target = _petFor(_petId) ?? widget.pet;
-    final saved = await showMemoryEditorSheet(context, pet: target);
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => AddMemoryScreen(pet: target)),
+    );
     if (saved == true) _refresh();
   }
 

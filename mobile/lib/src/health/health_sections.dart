@@ -1510,7 +1510,8 @@ class HealthAddCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: CustomPaint(
-          painter: _DashedBorderPainter(t.accent.withValues(alpha: 0.45)),
+          painter: HealthDashedPainter(t.accent.withValues(alpha: 0.45),
+              radius: 14),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(11, 11, 11, 11),
             child: Row(
@@ -1558,36 +1559,6 @@ class HealthAddCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DashedBorderPainter extends CustomPainter {
-  const _DashedBorderPainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final rrect = RRect.fromRectAndRadius(
-        Offset.zero & size, const Radius.circular(14));
-    final path = Path()..addRRect(rrect);
-    const dash = 6.0;
-    const gap = 4.0;
-    for (final metric in path.computeMetrics()) {
-      var d = 0.0;
-      while (d < metric.length) {
-        final end = (d + dash).clamp(0.0, metric.length);
-        canvas.drawPath(metric.extractPath(d, end), paint);
-        d = end + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBorderPainter old) => old.color != color;
 }
 
 /// The educational footer three mockups close with: a glyph, a heading, two
@@ -1806,52 +1777,77 @@ class HealthPrimaryCta extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.icon = LucideIcons.plus,
+    this.trailingIcon,
+    this.enabled = true,
     super.key,
   });
 
   final String label;
   final VoidCallback onTap;
-  final IconData icon;
+
+  /// The ringed glyph before the label. `null` drops the ring entirely, which
+  /// is how `add_memory` draws its wizard button.
+  ///
+  /// **This was accepted and ignored until this batch** — the body drew a
+  /// hardcoded `plus`, so the journal's "See Premium" button rendered a crown
+  /// argument as a **+**. It is honoured now.
+  final IconData? icon;
+
+  /// A bare glyph *after* the label — `add_memory`'s "Next: Add Tags ›".
+  final IconData? trailingIcon;
+
+  /// A disabled CTA still occupies its slot; the wizard greys it rather than
+  /// removing it, so the footer does not jump between steps.
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final t = PawTone.of(context);
+    const ink = Color(0xFF06110A);
+    final fill = enabled ? t.accent : t.accent.withValues(alpha: 0.22);
+    final fg = enabled ? ink : Colors.white.withValues(alpha: 0.45);
     return Semantics(
       button: true,
+      enabled: enabled,
       label: label,
       child: ExcludeSemantics(
         child: Material(
-          color: t.accent,
+          color: fill,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           child: InkWell(
-            onTap: onTap,
+            onTap: enabled ? onTap : null,
             borderRadius: BorderRadius.circular(AppRadius.pill),
             child: SizedBox(
               height: 48,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: const Color(0xFF06110A).withValues(alpha: 0.55)),
+                  if (icon != null) ...[
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border:
+                            Border.all(color: fg.withValues(alpha: 0.55)),
+                      ),
+                      child: Icon(icon, size: 13, color: fg),
                     ),
-                    child: const Icon(LucideIcons.plus,
-                        size: 13, color: Color(0xFF06110A)),
-                  ),
-                  const SizedBox(width: 9),
+                    const SizedBox(width: 9),
+                  ],
                   Flexible(
                     child: Text(label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: Color(0xFF06110A),
+                        style: TextStyle(
+                            color: fg,
                             fontSize: 15,
                             fontWeight: FontWeight.w800)),
                   ),
+                  if (trailingIcon != null) ...[
+                    const SizedBox(width: 8),
+                    Icon(trailingIcon, size: 17, color: fg),
+                  ],
                 ],
               ),
             ),
@@ -2717,6 +2713,435 @@ class _HealthNotesFieldState extends State<HealthNotesField> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 11 · the step wizard
+// ---------------------------------------------------------------------------
+
+/// The numbered progress rail `add_memory` opens with: circled numerals joined
+/// by dashed rules, the current one lit, each captioned underneath.
+///
+/// The reference draws its circles at ~14dp around a ~7dp numeral, which is a
+/// smudge on a handset. They are 26dp here; the *centres* are the reference's,
+/// which is what the eye reads — four equal columns inside a 23dp side inset
+/// puts them at 66 / 153 / 240 / 327 on a 393-wide screen, matching the plate
+/// to within half a point.
+class HealthStepRail extends StatelessWidget {
+  const HealthStepRail({
+    required this.steps,
+    required this.current,
+    this.onSelect,
+    super.key,
+  });
+
+  final List<String> steps;
+
+  /// Zero-based.
+  final int current;
+
+  /// Tapping a stop jumps to it. The reference draws no back affordance at
+  /// all, and a four-step form whose only navigation is forward is a trap —
+  /// the *whole column* is the target, not the 26dp dot, because a label with
+  /// no hit box is the kind of thing that only fails on a real thumb.
+  final ValueChanged<int>? onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < steps.length; i++)
+            Expanded(
+              child: Semantics(
+                button: onSelect != null,
+                selected: i == current,
+                label: 'Step ${i + 1} of ${steps.length}: ${steps[i]}',
+                child: ExcludeSemantics(
+                  child: InkWell(
+                    onTap: onSelect == null || i == current
+                        ? null
+                        : () => onSelect!(i),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 26,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: i == 0
+                                    ? const SizedBox.shrink()
+                                    : _StepDash(passed: i <= current, tone: t),
+                              ),
+                              _StepDot(index: i, current: current, tone: t),
+                              Expanded(
+                                child: i == steps.length - 1
+                                    ? const SizedBox.shrink()
+                                    : _StepDash(passed: i < current, tone: t),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          steps[i],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: i == current
+                                ? Colors.white
+                                : (i < current
+                                    ? HealthTone.muted
+                                    : HealthTone.faint),
+                            fontSize: 11.5,
+                            height: 1.15,
+                            fontWeight: i == current
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepDot extends StatelessWidget {
+  const _StepDot({
+    required this.index,
+    required this.current,
+    required this.tone,
+  });
+
+  final int index;
+  final int current;
+  final PawTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = index == current;
+    final passed = index < current;
+    return Container(
+      width: 26,
+      height: 26,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: active ? tone.accent : const Color(0xFF151B15),
+        border: active
+            ? null
+            : Border.all(
+                color: passed
+                    ? tone.accent.withValues(alpha: 0.45)
+                    : Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: passed
+          ? Icon(LucideIcons.check, size: 13, color: tone.accent)
+          : Text('${index + 1}',
+              style: TextStyle(
+                  color: active ? const Color(0xFF06110A) : HealthTone.muted,
+                  fontSize: 12.5,
+                  height: 1,
+                  fontWeight: FontWeight.w800)),
+    );
+  }
+}
+
+class _StepDash extends StatelessWidget {
+  const _StepDash({required this.passed, required this.tone});
+
+  final bool passed;
+  final PawTone tone;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+        size: const Size(double.infinity, 26),
+        painter: _StepDashPainter(passed
+            ? tone.accent.withValues(alpha: 0.55)
+            : Colors.white.withValues(alpha: 0.16)),
+      );
+}
+
+class _StepDashPainter extends CustomPainter {
+  const _StepDashPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+    const dash = 5.0;
+    const gap = 4.0;
+    final y = size.height / 2;
+    var x = 0.0;
+    while (x < size.width) {
+      canvas.drawLine(
+          Offset(x, y), Offset((x + dash).clamp(0.0, size.width), y), paint);
+      x += dash + gap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _StepDashPainter old) => old.color != color;
+}
+
+/// "**1.** Add Photos or Video" over "Share a special moment with your pet" —
+/// the head every numbered card on `add_memory` opens with.
+class HealthNumberedHead extends StatelessWidget {
+  const HealthNumberedHead({
+    required this.number,
+    required this.title,
+    this.subtitle,
+    this.suffix,
+    this.trailing,
+    super.key,
+  });
+
+  final int number;
+  final String title;
+  final String? subtitle;
+
+  /// The greyed qualifier the reference sets after a heading — "(Optional)".
+  final String? suffix;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text('$number.',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.5,
+                    height: 1.15,
+                    fontWeight: FontWeight.w800)),
+            const SizedBox(width: 7),
+            Flexible(
+              child: Text(title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.5,
+                      height: 1.15,
+                      fontWeight: FontWeight.w700)),
+            ),
+            if (suffix != null) ...[
+              const SizedBox(width: 5),
+              Text(suffix!,
+                  style: const TextStyle(
+                      color: HealthTone.faint, fontSize: 12, height: 1.15)),
+            ],
+            if (trailing != null) ...[const Spacer(), trailing!],
+          ],
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 4),
+          Text(subtitle!,
+              style: const TextStyle(
+                  color: HealthTone.dim, fontSize: 11.5, height: 1.3)),
+        ],
+      ],
+    );
+  }
+}
+
+/// A dashed-outline tile — the "Add" well, the "New Pet" slot.
+///
+/// The dashed rectangle was drawn by two private painters (one in
+/// `health_event_form_screen`, one in [HealthAddCard]) before this batch put a
+/// third mockup in front of it.
+class HealthDashedTile extends StatelessWidget {
+  const HealthDashedTile({
+    required this.child,
+    this.onTap,
+    this.radius = 12,
+    this.color,
+    this.fill,
+    super.key,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final double radius;
+  final Color? color;
+  final Color? fill;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    final stroke = color ?? t.accent.withValues(alpha: 0.55);
+    final painted = CustomPaint(
+      painter: HealthDashedPainter(stroke, radius: radius),
+      child: child,
+    );
+    if (onTap == null) {
+      return fill == null
+          ? painted
+          : DecoratedBox(
+              decoration: BoxDecoration(
+                  color: fill, borderRadius: BorderRadius.circular(radius)),
+              child: painted);
+    }
+    return Material(
+      color: fill ?? Colors.transparent,
+      borderRadius: BorderRadius.circular(radius),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(radius),
+        child: painted,
+      ),
+    );
+  }
+}
+
+/// The dashed rounded rectangle [HealthDashedTile] and [HealthAddCard] share.
+class HealthDashedPainter extends CustomPainter {
+  const HealthDashedPainter(this.color, {this.radius = 12});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+          Offset.zero & size, Radius.circular(radius)));
+    const dash = 5.0;
+    const gap = 4.0;
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        final end = (d + dash).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(d, end), paint);
+        d = end + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant HealthDashedPainter old) =>
+      old.color != color || old.radius != radius;
+}
+
+/// A bordered box with a live `0/60` counter in it — the title and note fields
+/// `add_memory` draws. Unlike [HealthNotesField] it carries no glyph and no
+/// label, because the numbered head above it is the label.
+class HealthCountedField extends StatefulWidget {
+  const HealthCountedField({
+    required this.fieldKey,
+    required this.controller,
+    required this.maxLength,
+    this.hint = '',
+    this.minLines = 1,
+    this.maxLines = 1,
+    this.enabled = true,
+    super.key,
+  });
+
+  final Key fieldKey;
+  final TextEditingController controller;
+  final int maxLength;
+  final String hint;
+  final int minLines;
+  final int maxLines;
+  final bool enabled;
+
+  @override
+  State<HealthCountedField> createState() => _HealthCountedFieldState();
+}
+
+class _HealthCountedFieldState extends State<HealthCountedField> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onChanged);
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final multiline = widget.maxLines > 1;
+    final counter = Text(
+        '${widget.controller.text.length}/${widget.maxLength}',
+        style: const TextStyle(color: HealthTone.faint, fontSize: 11));
+    final field = TextField(
+      key: widget.fieldKey,
+      controller: widget.controller,
+      enabled: widget.enabled,
+      minLines: widget.minLines,
+      maxLines: widget.maxLines,
+      textCapitalization: TextCapitalization.sentences,
+      inputFormatters: [LengthLimitingTextInputFormatter(widget.maxLength)],
+      style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.35),
+      decoration: InputDecoration(
+        isDense: true,
+        contentPadding: EdgeInsets.zero,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+        filled: false,
+        hintText: widget.hint,
+        hintStyle: const TextStyle(color: HealthTone.faint, fontSize: 14),
+      ),
+    );
+    return Container(
+      padding: EdgeInsets.fromLTRB(11, multiline ? 10 : 12, 11, 11),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withValues(alpha: 0.022),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
+      ),
+      child: multiline
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                field,
+                const SizedBox(height: 6),
+                Align(alignment: Alignment.centerRight, child: counter),
+              ],
+            )
+          : Row(children: [
+              Expanded(child: field),
+              const SizedBox(width: 8),
+              counter,
+            ]),
     );
   }
 }
