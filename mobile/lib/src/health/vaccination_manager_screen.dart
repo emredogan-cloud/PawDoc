@@ -11,6 +11,7 @@ import '../home/home_sections.dart';
 import '../pets/active_pet.dart';
 import '../pets/pet.dart';
 import '../pets/pet_form_screen.dart';
+import '../pets/pet_profile_screen.dart';
 import '../pets/pet_switcher.dart';
 import '../reminders/reminders_screen.dart';
 import '../theme/paw_components.dart';
@@ -248,7 +249,7 @@ class _VaccinationManagerScreenState
             meta: petMetaLine(pet),
             onSwitch: () => showPetSwitcher(context, ref),
             onViewProfile: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => PetFormScreen(pet: pet)),
+              MaterialPageRoute(builder: (_) => PetProfileScreen(pet: pet)),
             ),
             trailing: GestureDetector(
               onTap: _openRecordNote,

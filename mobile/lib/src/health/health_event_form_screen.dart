@@ -14,7 +14,7 @@ import '../memories/memory_media_service.dart';
 import '../memories/memory_photo.dart';
 import '../notifications/local_notifications.dart';
 import '../pets/active_pet.dart';
-import '../pets/pet_form_screen.dart';
+import '../pets/pet_profile_screen.dart';
 import '../pets/pet_switcher.dart';
 import '../reminders/reminder.dart';
 import '../reminders/reminders_repository.dart';
@@ -484,7 +484,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
               meta: petMetaLine(pet),
               onSwitch: () => showPetSwitcher(context, ref),
               onViewProfile: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => PetFormScreen(pet: pet)),
+                MaterialPageRoute(builder: (_) => PetProfileScreen(pet: pet)),
               ),
             ),
           gap(14),
@@ -928,14 +928,7 @@ class _TypeTile extends StatelessWidget {
 }
 
 /// The glyph a record type is drawn with, everywhere.
-IconData healthEventIcon(String type) => switch (type) {
-      'vaccination' => LucideIcons.syringe,
-      'vet_visit' => LucideIcons.stethoscope,
-      'medication' => LucideIcons.pill,
-      'lab_result' => LucideIcons.flaskConical,
-      'weight' => LucideIcons.scale,
-      _ => LucideIcons.notebookPen,
-    };
+// `healthEventIcon` moved to `health_event.dart`, beside `healthEventLabel`.
 
 /// The bordered field row the Record Details card is made of.
 class _FieldShell extends StatelessWidget {
