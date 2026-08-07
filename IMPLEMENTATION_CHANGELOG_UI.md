@@ -5,6 +5,119 @@ Chronological record of the UI migration (Phase 0 + A–Q). Detail lives in
 `PAWDOC_UI_IMPLEMENTATION_FINAL_REPORT.md`; resume state in
 `memory/UI_PROGRESS.md`.
 
+## 2026-08-07 — the health module: six screens
+
+- **`conversation_history`** `f6715b6`. Replaces the half-height sheet the
+  assistant's History button opened. Pet header, search, topic rail, privacy
+  card, threads grouped by day, statistics, clear-history — over the app's
+  bottom navigation. Everything on it is real: the preview is the thread's own
+  opening reply, the photo count is how many messages carry an image, the topic
+  is derived from the thread's words (a filing label on the owner's question,
+  never a claim about the animal), and the statistics are counted. The
+  repository gained `summaries()` — one extra round trip for the page, not one
+  per row — and `deleteAll()`, whose scope is the RLS policy, not the statement.
+- **`health_timeline`** `1cba0e6`. Rebuilt in place, so the Health tab, the
+  `/history` route and every deep link keep working. Hero with the Care Score,
+  the eight-type rail, counted statistics, the dashed rail with one card per
+  record, the pinned Add Event footer. The cards now go somewhere: "View
+  Result" reopens the stored analysis from `full_response` (the frozen contract
+  payload — same screen, no second inference), and "View Details" opens a
+  record-detail sheet marked *"Entered by the owner. PawDoc did not review
+  it."* (V-22), with a delete. `TimelineItem` grew the fields those need and
+  leads each row with its metadata, so a medication reads "NexGard Spectra ·
+  11–22 kg" with the note beneath.
+- **`add_health_record`** `a8c6846`. `HealthEventFormScreen` rebuilt in place —
+  every caller keeps working. The six-tile type rail with the mockup's check
+  badge, the Record Details card (date + time two-up, clinic, veterinarian,
+  reason, notes with its counter), the attachment gallery, the reminder switch,
+  the privacy card, the Save CTA over the encryption line. One row component
+  throughout; which rows appear follows the type. Attachments are real: the
+  journal's media service, so EXIF/GPS is stripped in an isolate before a
+  presigned PUT. The reminder switch generalises E7 to every record type.
+- **`weight_tracking`** `c488dea`. New screen. Summary hero, four counted
+  statistics, a chart drawn from the points (CustomPainter — kg axis, dated
+  ticks, a labelled dot per entry, a 1M–all-time range selector), the record
+  list, the add card, the educational footer.
+- **`medication_tracker`** `9af3a54`. New screen over records that already
+  existed. `medication_plan.dart` parses the sentence an owner typed ("Every 12
+  hours", "Twice daily", "Every 30 days") into dose slots and **fails to
+  nothing** — an unreadable schedule produces no doses rather than a guess, and
+  the medicine is still listed with its text as written. Ticks are kept on the
+  device, and the screen says so twice: a dose table is a migration plus an RLS
+  policy plus a deploy, and a "Mark as taken" whose answer is silently
+  forgotten would be worse than none.
+- **`vaccination_manager`** `24205ea`. New screen. Record summary, counted
+  statistics, the class filter rail, what is coming up, the history, the
+  educational footer. Core / Non-core / Lifestyle is owner-selected and never
+  inferred — which vaccines are core is a regional veterinary judgement.
+
+### The shared skeleton
+
+`health/health_sections.dart` is what all six are built from: `PetModuleAppBar`,
+`PetModuleHeaderCard`, `HealthRingPortrait`, `HealthFilterChips`,
+`HealthStatTiles`, `HealthRecordRow`, `HealthGlyphDisc`, `HealthPill`,
+`HealthMetaBlock`, `HealthStatusBadge`, `HealthAddCard`, `HealthEduCard`,
+`HealthPrivacyCard`, `HealthDangerCard`, `HealthPrimaryCta`, `HealthSheet`,
+`HealthDetailRow`, `HealthSectionHead`, `HealthGroupLabel`,
+`HealthRecordScaffold` + `HealthBleed`. Plus `pets/pet_switcher.dart` — one
+switcher behind all six header chevrons — and `core/paw_nav_bar.dart`, which
+came out of `root_shell.dart` because five of the six mockups draw the bar on a
+*pushed* screen. The shell's tab index moved to `rootTabProvider`; a detached
+bar selects a tab and unwinds to the shell rather than stacking a second copy.
+Emergency keeps its slot (C-7 / V-24); the mockups spend it on Settings.
+
+### Safety departures, all of them layout-preserving
+
+The mockups grade the animal on four of these six screens. Every claim was
+replaced and every card kept its position, its glyph and its density:
+
+| Mockup | Shipped |
+|---|---|
+| "Health Score · 92 · Excellent" | the Care Score, record completeness (D-2) |
+| "AI Skin Analysis" + "Low Risk" chip | "AI Health Check" + the action-ladder value, in the ladder's own hue |
+| "Mild redness… Likely caused by licking." | the stored observation, and nothing else |
+| "✓ All parameters normal" | the owner's own note |
+| "Ideal Range (26.0 – 30.0 kg)" + "Ideal" badges | the owner's **own** target range, or no band at all; the badge states the change since the entry before |
+| "Great job! Buddy is within the ideal weight range." | what the record shows, and that a healthy weight is the vet's call |
+| "Medication Adherence · 96% · Excellent" | counted from doses actually ticked; **null, not zero**, when nothing was scheduled |
+| "Give medications with food if recommended" | what the label and the vet said, unchanged by this list |
+| "Protection Status · Excellent · Fully protected" | what the record holds, and how much of it carries a next date |
+| "100% · On Schedule · Great job!" | how many are past their due date, with "Ask your vet" |
+| "2h 14m · Total time saved" | messages, counted |
+| type tile "AI Analysis" | **Weight** — an AI check belongs to the Check flow, where the emergency override, the quota rules and the action ladder apply |
+
+### Three pre-existing bugs this batch surfaced
+
+1. **Every date picker in the app crashed, on every device, at the default font
+   size.** `app.dart`'s UX-03 clamp used `TextScaler.clamp(min: 1.0, max: 1.6)`,
+   which returns a scaler *carrying* those bounds; Material's
+   `_DatePickerHeader` re-clamps to `min(currentScale, 1.6)`, which at a system
+   scale of 1.0 is a scaler whose min and max are both 1.0 — and
+   `_ClampedTextScaler` asserts `maxScale > minScale`. `pawTextScaler` now
+   returns the system scaler untouched when it is in range and a plain linear
+   one when it is not. **The test needed a `SystemTextScaler` stand-in**:
+   `TextScaler.linear` overrides `clamp` to collapse into another linear scaler,
+   so it can never reproduce the bug — the first version of the test passed
+   against the broken code.
+2. **The weight trend drew backwards.** `postgrest`'s `order()` defaults to
+   *descending*, so a bare `.order('event_date')` returned newest-first while
+   every consumer read oldest-first. The vet-prep sparkline ran right to left
+   and this screen showed the oldest entry as the current weight.
+3. **`ResultScreen` stamped every summary "Generated just now"** — a lie the
+   moment the timeline could reopen a month-old record. It takes a `generatedAt`
+   now.
+
+### Layout lessons, all found by the widget tests before the device
+
+Two `Flexible` children in one `Row` split the free space evenly, which
+squeezes a name that had room; making the neighbour fixed overflows the row
+under the em-square test font. Weighted shares (3:2, 5:4) are the fix, and it
+came up three times — the timeline card's action row, the record row's title
+and chips, the conversation row's footer. Separately: inside an
+`IntrinsicHeight` a `Text` reports its *unwrapped* single-line height, so a
+statistic label wanting two lines is silently clipped to one; the slot has to
+be an explicit `SizedBox`.
+
 ## 2026-08-06 (later) — the assistant trio
 
 - **`ai_assistant_home` / `ai_assistant_chat` / `ai_message_actions`**
