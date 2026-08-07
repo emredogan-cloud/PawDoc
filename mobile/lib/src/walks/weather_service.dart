@@ -48,7 +48,7 @@ class HourlyWeather {
 /// fixture-tested. Entries without a next-hour block (the far tail) still
 /// parse with precip 0 so "today" is never empty.
 List<HourlyWeather> parseMetCompact(Map<String, dynamic> body,
-    {int maxHours = 48}) {
+    {int maxHours = 120}) {
   final series = (((body['properties'] as Map?)?['timeseries']) as List?) ??
       const [];
   final out = <HourlyWeather>[];

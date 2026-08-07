@@ -91,61 +91,52 @@ class WalkCard extends ConsumerWidget {
       WalksLoading() => const SkeletonCard(height: 84),
       WalksPermissionNeeded(:final deniedForever, :final serviceOff) => PawCard(
           key: const Key('walk_card_permission'),
-          child: Row(
-            children: [
-              const Icon(Icons.location_off_rounded,
-                  color: AppColors.ink300, size: 28),
-              const SizedBox(width: AppSpace.s12),
-              Expanded(
-                child: Text(
-                  serviceOff
-                      ? 'Turn on location services to see walk weather.'
-                      : 'Walk weather needs location while you use the app.',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(color: AppColors.ink300),
-                ),
-              ),
-              TextButton(
-                key: const Key('walk_card_permission_action'),
-                onPressed: () async {
-                  if (deniedForever) {
-                    await Geolocator.openAppSettings();
-                  } else if (serviceOff) {
-                    await Geolocator.openLocationSettings();
-                  } else {
-                    await ref
-                        .read(walksControllerProvider.notifier)
-                        .enable(species: species);
-                  }
-                },
-                child: Text(deniedForever || serviceOff ? 'Settings' : 'Allow'),
-              ),
-            ],
+          child: _GlyphBodyAction(
+            glyph: const Icon(Icons.location_off_rounded,
+                color: AppColors.ink300, size: 28),
+            body: Text(
+              serviceOff
+                  ? 'Turn on location services to see walk weather.'
+                  : 'Walk weather needs location while you use the app.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: AppColors.ink300),
+            ),
+            action: TextButton(
+              key: const Key('walk_card_permission_action'),
+              onPressed: () async {
+                if (deniedForever) {
+                  await Geolocator.openAppSettings();
+                } else if (serviceOff) {
+                  await Geolocator.openLocationSettings();
+                } else {
+                  await ref
+                      .read(walksControllerProvider.notifier)
+                      .enable(species: species);
+                }
+              },
+              child: Text(deniedForever || serviceOff ? 'Settings' : 'Allow'),
+            ),
           ),
         ),
       WalksError() => PawCard(
           key: const Key('walk_card_error'),
-          child: Row(
-            children: [
-              const Icon(Icons.cloud_off_rounded,
-                  color: AppColors.ink300, size: 28),
-              const SizedBox(width: AppSpace.s12),
-              Expanded(
-                child: Text('Walk weather is unavailable right now.',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: AppColors.ink300)),
-              ),
-              TextButton(
-                onPressed: () => ref
-                    .read(walksControllerProvider.notifier)
-                    .refresh(species: species),
-                child: const Text('Retry'),
-              ),
-            ],
+          child: _GlyphBodyAction(
+            glyph: const Icon(Icons.cloud_off_rounded,
+                color: AppColors.ink300, size: 28),
+            body: Text('Walk weather is unavailable right now.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: AppColors.ink300)),
+            action: TextButton(
+              key: const Key('walk_card_error_action'),
+              onPressed: () => ref
+                  .read(walksControllerProvider.notifier)
+                  .refresh(species: species),
+              child: const Text('Retry'),
+            ),
           ),
         ),
       WalksReady(:final now, :final todayWindows, :final hours) => PawCard(
@@ -153,48 +144,70 @@ class WalkCard extends ConsumerWidget {
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const WalksScreen()),
           ),
-          child: Row(
-            children: [
-              WalkScoreRing(score: now.score, size: 56),
-              const SizedBox(width: AppSpace.s16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(now.headline,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleSmall
-                            ?.copyWith(color: AppColors.ink50)),
-                    const SizedBox(height: 2),
-                    Text(
-                      walkSuggestionCopy(
-                        now: now,
-                        windows: todayWindows,
-                        petName: pet?.name,
-                        species: species,
-                      ),
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: AppColors.ink300),
-                    ),
-                    const SizedBox(height: AppSpace.s4),
-                    Text(
-                      '${hours.first.tempC.round()}°C · '
-                      '${hours.first.precipMm > 0 ? 'rain possible' : 'dry'} · '
-                      'wind ${hours.first.windMs.round()} m/s',
-                      style: Theme.of(context)
-                          .textTheme
-                          .labelSmall
-                          ?.copyWith(color: PawTone.of(context).accent),
-                    ),
-                  ],
+          child: LayoutBuilder(builder: (context, c) {
+            final tight = c.maxWidth < 260;
+            final copy = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(now.headline,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(color: AppColors.ink50)),
+                const SizedBox(height: 2),
+                Text(
+                  walkSuggestionCopy(
+                    now: now,
+                    windows: todayWindows,
+                    petName: pet?.name,
+                    species: species,
+                  ),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: AppColors.ink300),
                 ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.ink300),
-            ],
-          ),
+                const SizedBox(height: AppSpace.s4),
+                Text(
+                  '${hours.first.tempC.round()}°C · '
+                  '${hours.first.precipMm > 0 ? 'rain possible' : 'dry'} · '
+                  'wind ${hours.first.windMs.round()} m/s',
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelSmall
+                      ?.copyWith(color: PawTone.of(context).accent),
+                ),
+              ],
+            );
+            // A 56dp ring, a chevron and three lines of copy do not share a
+            // ~170dp column: on the device this rendered five characters per
+            // line. Below a comfortable width the ring goes above the copy.
+            if (tight) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    WalkScoreRing(score: now.score, size: 48),
+                    const Spacer(),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: AppColors.ink300),
+                  ]),
+                  const SizedBox(height: AppSpace.s8),
+                  copy,
+                ],
+              );
+            }
+            return Row(
+              children: [
+                WalkScoreRing(score: now.score, size: 56),
+                const SizedBox(width: AppSpace.s16),
+                Expanded(child: copy),
+                const Icon(Icons.chevron_right_rounded,
+                    color: AppColors.ink300),
+              ],
+            );
+          }),
         ),
     };
   }
@@ -202,6 +215,53 @@ class WalkCard extends ConsumerWidget {
 
 /// The 0–100 walk-comfort ring (safety-neutral colors: mint for good, ink
 /// for poor — never the triage reds/ambers, which stay reserved for health).
+/// Glyph, a line of copy, and a button — dropped to two rows below a
+/// comfortable width.
+///
+/// The `WalksInitial` branch above grew this treatment when home became a
+/// two-column layout; the permission and error branches did not, and on the
+/// device the permission card rendered **one character per line** because an
+/// intrinsic-width `TextButton` had taken nearly the whole ~170dp column. One
+/// implementation, so a fourth state cannot repeat it.
+class _GlyphBodyAction extends StatelessWidget {
+  const _GlyphBodyAction({
+    required this.glyph,
+    required this.body,
+    required this.action,
+  });
+
+  final Widget glyph;
+  final Widget body;
+  final Widget action;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, c) {
+      if (c.maxWidth < 260) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            glyph,
+            const SizedBox(height: AppSpace.s8),
+            body,
+            const SizedBox(height: AppSpace.s8),
+            Align(alignment: Alignment.centerRight, child: action),
+          ],
+        );
+      }
+      return Row(
+        children: [
+          glyph,
+          const SizedBox(width: AppSpace.s12),
+          Expanded(child: body),
+          const SizedBox(width: AppSpace.s8),
+          action,
+        ],
+      );
+    });
+  }
+}
+
 class WalkScoreRing extends StatelessWidget {
   const WalkScoreRing({super.key, required this.score, this.size = 56});
 
