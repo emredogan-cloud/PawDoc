@@ -194,11 +194,13 @@ class PremiumHeroCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
+            // 176dp, not 210: on the device the deck ran under the dog's
+            // muzzle and the footnote finished on top of it.
             Positioned(
-              right: -34,
+              right: -28,
               top: -10,
               bottom: -10,
-              width: 210,
+              width: 176,
               child: IgnorePointer(
                 // The plate is neon art rendered on solid black, and the card
                 // is near-black — `screen` drops the ground out with no matte
@@ -221,10 +223,10 @@ class PremiumHeroCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 62% of the card: the plate occupies the right third, and
+                  // 60% of the card: the plate occupies the right third, and
                   // copy running under it is unreadable on the device.
                   FractionallySizedBox(
-                    widthFactor: 0.66,
+                    widthFactor: 0.60,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -254,7 +256,7 @@ class PremiumHeroCard extends StatelessWidget {
                   if (chips.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     FractionallySizedBox(
-                      widthFactor: 0.66,
+                      widthFactor: 0.60,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
@@ -272,7 +274,7 @@ class PremiumHeroCard extends StatelessWidget {
                   if (ctaLabel != null) ...[
                     const SizedBox(height: 13),
                     FractionallySizedBox(
-                      widthFactor: 0.70,
+                      widthFactor: 0.62,
                       child: HealthPrimaryCta(
                         key: const Key('premium_hero_cta'),
                         label: ctaLabel!,
@@ -285,7 +287,7 @@ class PremiumHeroCard extends StatelessWidget {
                   if (footnote != null) ...[
                     const SizedBox(height: 9),
                     FractionallySizedBox(
-                      widthFactor: 0.72,
+                      widthFactor: 0.62,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -441,11 +443,13 @@ class _StripCell extends StatelessWidget {
                   const SizedBox(height: 7),
                   // Two lines, fixed: inside a fixed-height rail a Text
                   // reports its unwrapped height and a wrapping label is
-                  // silently clipped.
+                  // silently clipped. The *short* title, because 82dp is not
+                  // enough for "Symptom checks by text" and the device showed
+                  // it as "Symptom checks by t…".
                   SizedBox(
                     height: 28,
                     child: Text(
-                      entitlement.title,
+                      entitlement.short,
                       maxLines: 2,
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,

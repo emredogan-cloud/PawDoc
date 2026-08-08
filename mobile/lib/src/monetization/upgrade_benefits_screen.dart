@@ -268,7 +268,9 @@ class _UnaffectedCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           HealthSectionHead(
-            title: 'What Premium does not change',
+            // Shorter than "What Premium does not change": that ellipsised
+            // beside the boxed action on the device.
+            title: 'What does not change',
             actionLabel: 'Your usage',
             actionIcon: LucideIcons.gauge,
             actionBoxed: true,

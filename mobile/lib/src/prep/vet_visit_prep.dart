@@ -250,13 +250,17 @@ const List<String> kQuestionExamples = [
 // ---------------------------------------------------------------------------
 
 /// The six stops of the reference's progress rail.
+/// Labels are deliberately short. Six stops across a 393dp screen is 65dp a
+/// column, and the reference's own wording ("Reason for Visit", "Symptoms",
+/// "Documents", "Questions", "Summary") ellipsises to "Sympto…", "Questi…",
+/// "Summa…" on the device — a rail whose labels are cut in half names nothing.
 enum PrepStep {
   reason('Reason'),
-  symptoms('Symptoms'),
+  symptoms('Notes'),
   record('Record'),
   bring('Bring'),
-  questions('Questions'),
-  summary('Summary');
+  questions('Ask'),
+  summary('Review');
 
   const PrepStep(this.label);
 

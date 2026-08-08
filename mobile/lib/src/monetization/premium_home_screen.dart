@@ -454,7 +454,10 @@ class _FreeForEveryoneCard extends StatelessWidget {
             HealthSettingRow(
               key: Key('free_row_${rows[i].id}'),
               icon: rows[i].icon,
-              label: rows[i].title,
+              // The short title: `HealthSettingRow` gives its label 4 shares
+              // against the value's 6, which truncated "Photo & file storage"
+              // beside a two-word value.
+              label: rows[i].short,
               value: rows[i].freeValue,
               onTap: () => onTap(rows[i]),
             ),

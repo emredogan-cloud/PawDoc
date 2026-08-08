@@ -544,7 +544,7 @@ class _UpcomingVisit extends StatelessWidget {
     }
     if (visit == null) {
       return SizedBox(
-        width: 112,
+        width: 128,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
@@ -558,7 +558,7 @@ class _UpcomingVisit extends StatelessWidget {
             const SizedBox(height: 5),
             HealthActionPill(
                 key: const Key('prep_add_visit'),
-                label: 'Add a reminder',
+                label: 'Add reminder',
                 icon: LucideIcons.calendarPlus,
                 onTap: onOpen),
           ],
@@ -825,9 +825,12 @@ class _SymptomCard extends StatelessWidget {
         children: [
           HealthNumberedHead(
             number: 2,
-            title: 'What you have noticed',
-            suffix: '(Optional)',
-            subtitle: 'When it started, and which way it is heading.',
+            title: 'What you noticed',
+            // "(Optional)" sat in the head's suffix slot and cost the title
+            // the width it needed beside the Tips pill. It reads better in
+            // the subtitle anyway.
+            subtitle: 'Optional. When it started, and which way it is '
+                'heading.',
             trailing: HealthActionPill(
                 label: 'Tips', icon: LucideIcons.lightbulb, onTap: onTips),
           ),
@@ -912,8 +915,11 @@ class _PickerRow extends StatelessWidget {
                 size: 16,
                 color: set ? PawTone.of(context).accent : HealthTone.muted),
             const SizedBox(width: 10),
+            // 5:4 — the label is the longer string here ("How it is
+            // changing" against "Not set"), which is the opposite of the
+            // settings rows this shape came from.
             Flexible(
-              flex: 4,
+              flex: 5,
               child: Text(label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -924,7 +930,7 @@ class _PickerRow extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Flexible(
-              flex: 6,
+              flex: 4,
               child: Text(value,
                   maxLines: 1,
                   textAlign: TextAlign.right,
@@ -1185,7 +1191,7 @@ class _QuestionsCard extends StatelessWidget {
         children: [
           HealthNumberedHead(
             number: 5,
-            title: 'Questions for your vet',
+            title: 'Questions to ask',
             subtitle: 'Written down now, so they are not forgotten in the '
                 'room.',
             trailing: HealthActionPill(

@@ -3043,30 +3043,52 @@ class HealthNumberedHead extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text('$number.',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.5,
-                    height: 1.15,
-                    fontWeight: FontWeight.w800)),
-            const SizedBox(width: 7),
-            Flexible(
-              child: Text(title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14.5,
-                      height: 1.15,
-                      fontWeight: FontWeight.w700)),
+            // The number/title/suffix group takes all the free width and the
+            // trailing control sits against the right edge.
+            //
+            // It used to be one flat Row ending in `Spacer()`, and a `Spacer`
+            // is an `Expanded` — so it competed with the title's `Flexible`
+            // and the two split the free space evenly. The title ellipsised
+            // to "What you n…" on the device with 90dp of slack sitting idle
+            // beside it. Same trap as §5.9: never two flexible children in
+            // one Row without weighted shares.
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('$number.',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.5,
+                          height: 1.15,
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(width: 7),
+                  Flexible(
+                    child: Text(title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.5,
+                            height: 1.15,
+                            fontWeight: FontWeight.w700)),
+                  ),
+                  if (suffix != null) ...[
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(suffix!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: HealthTone.faint,
+                              fontSize: 12,
+                              height: 1.15)),
+                    ),
+                  ],
+                ],
+              ),
             ),
-            if (suffix != null) ...[
-              const SizedBox(width: 5),
-              Text(suffix!,
-                  style: const TextStyle(
-                      color: HealthTone.faint, fontSize: 12, height: 1.15)),
-            ],
-            if (trailing != null) ...[const Spacer(), trailing!],
+            if (trailing != null) ...[const SizedBox(width: 8), trailing!],
           ],
         ),
         if (subtitle != null) ...[

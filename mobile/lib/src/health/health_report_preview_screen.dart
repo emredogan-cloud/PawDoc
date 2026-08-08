@@ -385,8 +385,21 @@ class _SelectorRow extends StatelessWidget {
               onTap: onPickPet,
               child: Row(
                 children: [
-                  LivingPetAvatar(
-                      photoKey: pet.photoKey, species: pet.species, size: 32),
+                  // The same call shape every other record surface uses —
+                  // a bare LivingPetAvatar showed the species rig instead of
+                  // Buddy's own photo on the device.
+                  PetPortrait(
+                    pet: pet,
+                    size: 32,
+                    livingAvatar: pet.photoKey == null
+                        ? null
+                        : LivingPetAvatar(
+                            species: pet.species,
+                            size: 32,
+                            seed: pet.id,
+                            photoKey: pet.photoKey,
+                          ),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -902,10 +915,13 @@ class _ExportBar extends StatelessWidget {
         Row(
           children: [
             if (pdf) ...[
+              // 3:5 rather than 1:2 — "Share as text" ellipsised to
+              // "Share as t…" beside the primary CTA.
               Expanded(
+                flex: 3,
                 child: HealthActionPill(
                   key: const Key('report_share_text'),
-                  label: 'Share as text',
+                  label: 'Share text',
                   icon: LucideIcons.share2,
                   color: HealthTone.muted,
                   dense: true,
@@ -915,7 +931,7 @@ class _ExportBar extends StatelessWidget {
               const SizedBox(width: 9),
             ],
             Expanded(
-              flex: 2,
+              flex: 5,
               child: HealthPrimaryCta(
                 key: const Key('report_export'),
                 label: busy

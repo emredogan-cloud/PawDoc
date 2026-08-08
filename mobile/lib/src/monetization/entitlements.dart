@@ -97,6 +97,7 @@ class Entitlement {
     required this.id,
     required this.icon,
     required this.title,
+    required this.short,
     required this.blurb,
     required this.freeValue,
     required this.premiumValue,
@@ -106,6 +107,11 @@ class Entitlement {
   final String id;
   final IconData icon;
   final String title;
+
+  /// The title for a column 90dp wide or less — the icon strip and the
+  /// value rows, where the full title ellipsised on the device
+  /// ("Symptom chec…", "Photo & file sto…"). Never longer than 13 characters.
+  final String short;
 
   /// One line, in the product's own voice. Never a benefit claim that outruns
   /// the implementation.
@@ -130,6 +136,7 @@ const List<Entitlement> kEntitlements = [
     id: 'emergency',
     icon: LucideIcons.circleAlert,
     title: 'Emergency help',
+    short: 'Emergency',
     blurb: 'The red button, first aid and the vet hand-off. Never counted, '
         'never behind a plan, works offline.',
     freeValue: 'Always',
@@ -140,6 +147,7 @@ const List<Entitlement> kEntitlements = [
     id: 'text_checks',
     icon: LucideIcons.messageSquareText,
     title: 'Symptom checks by text',
+    short: 'Text checks',
     blurb: 'Describe what you are seeing and get a next step. Text checks are '
         'not metered on any plan.',
     freeValue: 'Unlimited',
@@ -150,6 +158,7 @@ const List<Entitlement> kEntitlements = [
     id: 'photo_checks',
     icon: LucideIcons.camera,
     title: 'Photo health checks',
+    short: 'Photo checks',
     blurb: 'Add a photo or a video to a check. The free allowance resets at '
         'the start of each month.',
     freeValue: '$kFreePhotoChecksPerMonth / month',
@@ -160,6 +169,7 @@ const List<Entitlement> kEntitlements = [
     id: 'assistant',
     icon: LucideIcons.sparkles,
     title: 'Assistant messages',
+    short: 'Assistant',
     blurb: 'Everyday pet-life questions. The free allowance resets each day.',
     freeValue: '$kFreeAssistantMessagesPerDay / day',
     premiumValue: 'Unlimited',
@@ -169,6 +179,7 @@ const List<Entitlement> kEntitlements = [
     id: 'journal',
     icon: LucideIcons.images,
     title: 'Journal entries',
+    short: 'Journal',
     blurb: 'Photos and notes kept against a pet, with the date they were '
         'taken.',
     freeValue: '$kFreeJournalEntries entries',
@@ -179,6 +190,7 @@ const List<Entitlement> kEntitlements = [
     id: 'pdf_report',
     icon: LucideIcons.fileText,
     title: 'PDF health report',
+    short: 'PDF report',
     blurb: 'The record as a printable PDF, built on the server and handed '
         'straight to your share sheet.',
     freeValue: '—',
@@ -189,6 +201,7 @@ const List<Entitlement> kEntitlements = [
     id: 'pets',
     icon: LucideIcons.pawPrint,
     title: 'Pets',
+    short: 'Pets',
     blurb: 'Add every animal you keep. PawDoc has never limited this on any '
         'plan.',
     freeValue: 'Unlimited',
@@ -199,6 +212,7 @@ const List<Entitlement> kEntitlements = [
     id: 'records',
     icon: LucideIcons.clipboardList,
     title: 'Health records & timeline',
+    short: 'Records',
     blurb: 'Visits, medications, vaccinations, weights and notes, kept for as '
         'long as the account exists.',
     freeValue: 'Unlimited',
@@ -209,6 +223,7 @@ const List<Entitlement> kEntitlements = [
     id: 'reminders',
     icon: LucideIcons.bellRing,
     title: 'Reminders',
+    short: 'Reminders',
     blurb: 'Vaccines, medication and re-checks, with a push when they come '
         'due.',
     freeValue: 'Unlimited',
@@ -219,6 +234,7 @@ const List<Entitlement> kEntitlements = [
     id: 'vet_prep',
     icon: LucideIcons.stethoscope,
     title: 'Vet visit prep',
+    short: 'Vet prep',
     blurb: 'Your reasons, your questions and the record, assembled into one '
         'thing to take with you.',
     freeValue: 'Included',
@@ -229,6 +245,7 @@ const List<Entitlement> kEntitlements = [
     id: 'text_export',
     icon: LucideIcons.share2,
     title: 'Share the record as text',
+    short: 'Text export',
     blurb: 'The same summary as plain text, through your device share sheet.',
     freeValue: 'Included',
     premiumValue: 'Included',
@@ -238,6 +255,7 @@ const List<Entitlement> kEntitlements = [
     id: 'community',
     icon: LucideIcons.users,
     title: 'Community & nearby owners',
+    short: 'Community',
     blurb: 'Opt-in, and the same for everyone. No plan buys reach or ranking.',
     freeValue: 'Opt-in',
     premiumValue: 'Opt-in',
@@ -247,6 +265,7 @@ const List<Entitlement> kEntitlements = [
     id: 'storage',
     icon: LucideIcons.cloudUpload,
     title: 'Photo & file storage',
+    short: 'Storage',
     blurb: 'PawDoc applies no storage quota today, so there is no figure here '
         'to sell you.',
     freeValue: 'Not metered',
@@ -257,6 +276,7 @@ const List<Entitlement> kEntitlements = [
     id: 'family',
     icon: LucideIcons.userPlus,
     title: 'Family sharing',
+    short: 'Family',
     blurb: 'Letting a second person into one pet’s record. Not built yet — no '
         'plan includes it.',
     freeValue: '—',
