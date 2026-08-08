@@ -13,6 +13,7 @@ import 'support/fake_community.dart';
 void main() {
   testWidgets('onboarding states the consent terms and validates the name',
       (tester) async {
+    communitySurface(tester);
     final repo = FakeCommunityRepo();
     await tester.pumpWidget(communityApp(const CommunityOnboardingScreen(), repo));
     await tester.pumpAndSettle();
@@ -36,6 +37,7 @@ void main() {
 
   testWidgets('joining saves the profile (location denied → no geohash)',
       (tester) async {
+    communitySurface(tester);
     final repo = FakeCommunityRepo();
     await tester.pumpWidget(communityApp(const CommunityOnboardingScreen(), repo));
     await tester.pumpAndSettle();
@@ -58,6 +60,7 @@ void main() {
 
   testWidgets('home card invites non-members and shortcuts members',
       (tester) async {
+    communitySurface(tester);
     await tester.pumpWidget(
         communityApp(const Scaffold(body: CommunityCard()), FakeCommunityRepo()));
     await tester.pumpAndSettle();
@@ -75,6 +78,7 @@ void main() {
 
   testWidgets('community home partitions requests / connections / nearby',
       (tester) async {
+    communitySurface(tester);
     final repo = FakeCommunityRepo(
       profile: const CommunityProfile(
           userId: 'me', displayName: 'Me', geohash: 'u33dc'),
@@ -123,6 +127,7 @@ void main() {
 
   testWidgets('chat renders the merged timeline and sends via the repo',
       (tester) async {
+    communitySurface(tester);
     final repo = FakeCommunityRepo(
       messageList: [
         CommunityMessage(
@@ -174,6 +179,7 @@ void main() {
 
   testWidgets('report & block surface exists in chat (Play UGC)',
       (tester) async {
+    communitySurface(tester);
     final repo = FakeCommunityRepo();
     const connection = CommunityConnection(
         id: 'c1',

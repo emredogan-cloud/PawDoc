@@ -5,6 +5,7 @@
 // Not named `*_test.dart`, so `flutter test` does not try to run it.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:pawdoc/src/auth/supabase_providers.dart';
 import 'package:pawdoc/src/community/community_models.dart';
 import 'package:pawdoc/src/community/community_repository.dart';
@@ -98,6 +99,18 @@ class FakeCommunityRepo implements CommunityRepository {
     String? connectionId,
   }) async =>
       reports.add(reason);
+}
+
+/// A handset surface, 393dp wide like the mockups and tall enough that a
+/// screen's whole body is laid out.
+///
+/// Without this the window is 800×600: `HealthRecordScaffold` builds a Column
+/// in a scroll view, so everything is *built* and `find` succeeds, but a
+/// `tap` below the fold lands outside the view and silently does nothing.
+void communitySurface(WidgetTester tester, {double height = 3000}) {
+  tester.view.devicePixelRatio = 3.0;
+  tester.view.physicalSize = Size(393 * 3, height * 3);
+  addTearDown(tester.view.reset);
 }
 
 /// Wraps [home] in the scope every community screen expects.
