@@ -49,15 +49,24 @@ Memory _mem(
       takenOn: on,
     );
 
-final _now = DateTime(2026, 8, 7);
+// The widget tests below run the real screen, which buckets against the real
+// clock — so the book has to be anchored to the real today, not to a pinned
+// date. A pinned one is green on the day it is written and red the morning
+// after. `DateTime(y, m, d - k)` normalises across month ends and is immune to
+// the DST hazard in `subtract(Duration(days: 1))`.
+final _now = _daysAgo(0);
+
+DateTime _daysAgo(int days) {
+  final n = DateTime.now();
+  return DateTime(n.year, n.month, n.day - days);
+}
 
 List<Memory> _book() => [
       _mem('a', 'Evening walk', on: _now, note: 'round the park'),
-      _mem('b', 'Lazy Sunday', on: _now.subtract(const Duration(days: 1))),
-      _mem('c', 'Beach trip', on: _now.subtract(const Duration(days: 3)),
-          note: 'a long walk on the sand'),
-      _mem('d', 'Vet check', on: _now.subtract(const Duration(days: 20))),
-      _mem('e', 'Puppy days', on: DateTime(2023, 4, 2)),
+      _mem('b', 'Lazy Sunday', on: _daysAgo(1)),
+      _mem('c', 'Beach trip', on: _daysAgo(3), note: 'a long walk on the sand'),
+      _mem('d', 'Vet check', on: _daysAgo(20)),
+      _mem('e', 'Puppy days', on: _daysAgo(800)),
     ];
 
 void _surface(WidgetTester tester, {double height = 3200}) {
