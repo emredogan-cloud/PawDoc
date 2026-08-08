@@ -269,9 +269,14 @@ class _ConversationHistoryScreenState
           ),
           gap(11),
           HealthPrivacyCard(
-            title: 'Your conversations are private',
-            body: 'Only you can see your conversation history.\n'
-                'Your pet’s data is never shared.',
+            title: 'Your conversations are yours',
+            // "Your pet's data is never shared" was the second line, and it
+            // is an app-wide absolute standing in front of a feature that
+            // sends every message to a model provider. Row-level security is
+            // the claim that is actually true and actually enforced.
+            body: 'Only you can see your conversation history — it is stored '
+                'under your account.\n'
+                'PawDoc does not sell it.',
             actionLabel: 'Learn more',
             onTap: () => LegalUrls.open(LegalUrls.privacy),
           ),

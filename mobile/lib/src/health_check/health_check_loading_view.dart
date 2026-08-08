@@ -245,13 +245,21 @@ class _HealthCheckLoadingViewState extends State<HealthCheckLoadingView>
                       Expanded(
                         child: Text.rich(
                           TextSpan(children: [
-                            const TextSpan(text: 'Your data is '),
+                            // Scoped, because this screen is on-camera at the
+                            // exact moment a photo of somebody's animal is
+                            // being uploaded. "Your data is private, secure
+                            // and never shared" was the previous line, and it
+                            // is not true of a check: the image goes to object
+                            // storage and to a model provider. What IS true is
+                            // the transport, the ownership and the absence of
+                            // a sale, so that is what it says.
+                            const TextSpan(text: 'Encrypted in transit, kept '),
                             TextSpan(
-                                text: 'private, secure',
+                                text: 'under your account',
                                 style: TextStyle(
                                     color: t.accent,
                                     fontWeight: FontWeight.w700)),
-                            const TextSpan(text: ' and never shared.'),
+                            const TextSpan(text: ', and not sold.'),
                           ]),
                           style: const TextStyle(
                               color: Color(0xFFB8C2BB),

@@ -1,0 +1,1064 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PawDoc — Play Store ASO prompt library</title>
+<style>
+  :root{
+    --bg:#0E1413; --card:#1A2220; --raised:#212B28; --line:#33403C;
+    --ink:#EAF3F0; --dim:#A7B6B1; --faint:#7C8D88;
+    --teal:#1FB6A6; --mint:#7FE6D6; --amber:#FFC233; --danger:#FF5A52;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 96px}
+  header{border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:28px}
+  h1{font-size:29px;line-height:1.15;margin:0 0 8px;letter-spacing:-.3px}
+  h1 span{color:var(--teal)}
+  h2{font-size:21px;margin:44px 0 12px;padding-top:20px;border-top:1px solid var(--line);letter-spacing:-.2px}
+  h3{font-size:16px;margin:26px 0 8px;color:var(--mint)}
+  h4{font-size:13.5px;margin:18px 0 6px;color:var(--dim);text-transform:uppercase;letter-spacing:.7px}
+  p,li{color:var(--dim)}
+  strong{color:var(--ink)}
+  code{font-family:var(--mono);font-size:.9em;background:var(--raised);
+       padding:1px 5px;border-radius:4px;color:var(--mint)}
+  a{color:var(--teal)}
+  .lede{color:var(--dim);font-size:16px;max-width:78ch}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+        padding:18px 20px;margin:16px 0}
+  .card.warn{border-color:#5a2a26;background:#1d1513}
+  .card.ok{border-color:#20493f;background:#111c19}
+  .pill{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.6px;
+        padding:3px 9px;border-radius:999px;text-transform:uppercase;vertical-align:middle}
+  .pill.slot{background:rgba(31,182,166,.16);color:var(--mint);border:1px solid rgba(31,182,166,.4)}
+  .pill.hard{background:rgba(255,90,82,.14);color:var(--danger);border:1px solid rgba(255,90,82,.4)}
+  .pill.rec{background:rgba(255,194,51,.13);color:var(--amber);border:1px solid rgba(255,194,51,.4)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px;display:block;overflow-x:auto}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--raised);color:var(--ink);font-weight:700;white-space:nowrap}
+  td{color:var(--dim)}
+  .promptbox{position:relative;margin:12px 0 6px}
+  .promptbox pre{background:#0a0f0e;border:1px solid var(--line);border-radius:12px;
+       padding:44px 16px 16px;overflow-x:auto;margin:0;
+       font-family:var(--mono);font-size:12.2px;line-height:1.55;color:#cfe3de;white-space:pre-wrap;word-break:break-word}
+  .copy{position:absolute;top:9px;right:10px;background:var(--teal);color:#04211d;border:0;
+        border-radius:8px;padding:6px 13px;font-size:12px;font-weight:800;cursor:pointer;
+        font-family:inherit;letter-spacing:.2px}
+  .copy:hover{background:var(--mint)}
+  .copy.done{background:var(--amber);color:#231a00}
+  .meta{font-size:12.5px;color:var(--faint);margin:4px 0 0}
+  .cols{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  ul.tight li{margin:3px 0}
+  .toc{columns:2;column-gap:28px}
+  .toc a{display:block;padding:3px 0;font-size:14px;text-decoration:none;break-inside:avoid}
+  @media(max-width:620px){.toc{columns:1}}
+  .kicker{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint);font-weight:800}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Google Play · app.pawdoc · 8 August 2026</div>
+  <h1>PawDoc — Play Store <span>ASO prompt library</span></h1>
+  <p class="lede">Copy-paste prompts for GPT Image, plus the store metadata that goes with them.
+  Every feature, number, label and screen named below was read out of
+  <code>mobile/lib/</code> before it was written here. Nothing in this file describes a PawDoc
+  that does not exist.</p>
+</header>
+
+<div class="card warn">
+  <h3 style="margin-top:0;color:var(--danger)">Read this before you generate anything</h3>
+  <p>The four screenshots and the feature graphic currently sitting in
+  <code>ASO-image/PlayStore-ASO/</code> <strong>cannot be uploaded</strong>. They were
+  generated from the app's <em>category</em> rather than from the app, and they carry at least
+  eleven distinct claim defects — a "Health Score 92 · Excellent" the product deliberately
+  refuses to compute, a named skin condition, an "AI Confidence 96%" the contract forbids
+  showing at all, a fabricated ★★★★★ rating with "10K+ Happy Pets" and four invented human
+  faces, an iPhone in an Android listing, and a nav bar with tabs PawDoc does not have.
+  The full finding list is in <code>docs/PAWDOC_ASO_PRODUCTION_WORKFLOW.md</code>.</p>
+  <p style="margin-bottom:0"><strong>The whole set is regenerated from the prompts below.</strong>
+  Not corrected — regenerated. Every one of the defects is compositional or a claim, which
+  is the class the FormAI post-mortem says to regenerate rather than patch.</p>
+</div>
+
+<h2 id="toc">Contents</h2>
+<nav class="toc">
+  <a href="#rules">1 · The non-negotiable rules</a>
+  <a href="#truth">2 · The product-truth sheet</a>
+  <a href="#state">3 · The canonical depicted state</a>
+  <a href="#metadata">4 · Store metadata</a>
+  <a href="#keywords">5 · Keyword strategy</a>
+  <a href="#sequence">6 · Screenshot sequence</a>
+  <a href="#s1">7 · Prompt — slot 1</a>
+  <a href="#s2">8 · Prompt — slot 2</a>
+  <a href="#s3">9 · Prompt — slot 3</a>
+  <a href="#s4">10 · Prompt — slot 4</a>
+  <a href="#s5">11 · Prompt — slot 5</a>
+  <a href="#s6">12 · Prompt — slot 6</a>
+  <a href="#s7">13 · Prompt — slot 7</a>
+  <a href="#s8">14 · Prompt — slot 8</a>
+  <a href="#feature">15 · Prompt — feature graphic</a>
+  <a href="#icon">16 · Prompt — app icon</a>
+  <a href="#fix">17 · Prompt — correcting an asset</a>
+  <a href="#l10n">18 · Localization notes</a>
+  <a href="#policy">19 · Policy checklist</a>
+</nav>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="rules">1 · The non-negotiable rules</h2>
+
+<p>These are in every prompt below, per asset, as instructions — not as a preamble.
+The FormAI post-mortem's central finding was that a rules section at the top of a
+document does not constrain a generator: <em>"The rules were right and the assets
+violated them anyway."</em></p>
+
+<div class="cols">
+  <div class="card">
+    <h4>Device</h4>
+    <ul class="tight">
+      <li>A modern bezel-less <strong>Android</strong> handset, small <strong>centred punch-hole</strong> camera.</li>
+      <li><span class="pill hard">Hard</span> No notch, no Dynamic Island, no iOS status bar, no Apple device, no smartwatch.</li>
+      <li>Status bar reads a neutral time, never <code>9:41</code> (Apple's marketing time).</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Health claims</h4>
+    <ul class="tight">
+      <li><span class="pill hard">Hard</span> No diagnosis, no named condition, no cause.</li>
+      <li><span class="pill hard">Hard</span> No score, grade, percentage or meter <em>about the animal</em>.</li>
+      <li><span class="pill hard">Hard</span> No "fine", "healthy", "all good", "excellent", "normal".</li>
+      <li>No X-ray, skeleton, anatomical overlay, or wireframe animal.</li>
+      <li>No red cross emblem — it is a protected mark, and it implies a clinic.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>AI</h4>
+    <ul class="tight">
+      <li>AI is labelled AI, and looks synthetic. Never a human face, never a person's name.</li>
+      <li><span class="pill hard">Hard</span> No confidence figure, ever. The app never shows one.</li>
+      <li>No "accurate", "reliable", "you can trust", "clinically", "science-backed".</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Veterinary</h4>
+    <ul class="tight">
+      <li><span class="pill hard">Hard</span> No vet is employed, contracted, verified or reachable. Never imply one.</li>
+      <li>No stethoscope, white coat, clinic room or scrubs as a PawDoc signifier.</li>
+      <li>"Made by vets", "vet-approved", "vet chat" — never.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Social proof</h4>
+    <ul class="tight">
+      <li><span class="pill hard">Hard</span> No star rating, review count, download count, user count, award or "#1".</li>
+      <li>No human face presented as a user. Avatars are abstract monograms.</li>
+      <li>PawDoc is pre-launch. Every one of these would be fabricated.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Money</h4>
+    <ul class="tight">
+      <li><span class="pill hard">Hard</span> No price, no trial length, no discount, no "free trial" — none is configured in Play.</li>
+      <li>No money-back guarantee. PawDoc runs no refund programme.</li>
+      <li>"Free" may only describe what is genuinely free forever (see §2).</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Privacy</h4>
+    <ul class="tight">
+      <li><span class="pill hard">Hard</span> No absolute: "100% private", "never shared", "stays on your device".</li>
+      <li>Every privacy line names its scope. Photos <em>are</em> uploaded, to Cloudflare R2, with EXIF/GPS stripped first.</li>
+      <li>Nothing may contradict the Data safety declaration.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4>Format</h4>
+    <ul class="tight">
+      <li>1080 × 1920, 9:16, PNG, <strong>no transparency</strong> <span class="pill hard">Hard</span></li>
+      <li>No border, no rounded canvas corners, no drop shadow on the canvas.</li>
+      <li>≤ 8 MB per screenshot. Same dimensions across the whole set.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="truth">2 · The product-truth sheet</h2>
+<p>Paste the relevant rows into a prompt when the asset touches them. Everything here is
+traceable to a file.</p>
+
+<table>
+<tr><th>Fact</th><th>Truth</th><th>Source</th></tr>
+<tr><td>Bottom navigation</td><td><strong>Home · Pets · Health · Emergency</strong>, plus a centre action ring labelled <strong>New check</strong>. Four tabs, not five.</td><td><code>core/paw_nav_bar.dart</code></td></tr>
+<tr><td>The verdict wording</td><td>Exactly four: <strong>GET HELP NOW · CALL YOUR VET TODAY · BOOK A ROUTINE VISIT · WATCH AND RE-CHECK</strong></td><td><code>analysis/result_screen.dart:115</code></td></tr>
+<tr><td>Risk levels</td><td>None exist. There is no "LOW RISK" / "HIGH RISK", no severity meter, no score.</td><td><code>models/analysis_result.dart</code></td></tr>
+<tr><td>Confidence</td><td>Computed, never displayed. Below 0.60 the result says "insufficient information".</td><td><code>CLAUDE.md</code>, contract v2</td></tr>
+<tr><td>"Health Score"</td><td>Does not exist and was explicitly rejected (decision <strong>D-2</strong>). The app draws a <em>Care Score</em> = record completeness, in words.</td><td><code>pets/pet_profile_screen.dart:54</code></td></tr>
+<tr><td>Conditions / causes</td><td>Never named. The result gives an action, a timeframe and what to watch for.</td><td>contract v2</td></tr>
+<tr><td>Emergency</td><td>Free on every plan, unmetered, <strong>works offline</strong>, model-free. First aid, find-a-vet (opens maps), tap-to-dial poison control.</td><td><code>emergency/emergency_help_screen.dart</code></td></tr>
+<tr><td>First-aid cards</td><td>Exactly five: <strong>Choking · Heavy bleeding · Seizure · Swollen, hard belly · Overheating</strong></td><td><code>emergency/first_aid.dart</code></td></tr>
+<tr><td>Text symptom checks</td><td>Unlimited on every plan. Never metered.</td><td><code>_shared/quota_gate.mjs</code></td></tr>
+<tr><td>Photo checks</td><td><strong>5 / month</strong> free, unlimited on Premium.</td><td><code>_shared/free_tier.mjs</code></td></tr>
+<tr><td>Assistant</td><td><strong>20 / day</strong> free, unlimited on Premium. Labelled AI.</td><td><code>_shared/assistant_chat.mjs</code></td></tr>
+<tr><td>Journal / memories</td><td><strong>20 entries</strong> free, unlimited on Premium.</td><td><code>memories/memory.dart</code></td></tr>
+<tr><td>PDF health report</td><td>Premium only. Server-rendered.</td><td><code>generate-pdf-report/index.ts</code></td></tr>
+<tr><td>Pets, records, reminders, vet prep, text export, community</td><td>Unlimited / included on <em>both</em> plans.</td><td><code>monetization/entitlements.dart</code></td></tr>
+<tr><td>Reminders</td><td>Two on-device local notifications, fired at <strong>09:00 local</strong>. There is <strong>no push vendor</strong>.</td><td><code>notifications/</code></td></tr>
+<tr><td>Storage</td><td>Not metered. PawDoc applies no storage quota, so no figure may be shown for either plan.</td><td><code>entitlements.dart</code></td></tr>
+<tr><td>Family sharing</td><td><strong>Not built.</strong> No plan includes it.</td><td><code>entitlements.dart</code></td></tr>
+<tr><td>Photos</td><td>Uploaded to Cloudflare R2 over TLS, EXIF/GPS stripped client-side first, moderated. They do <em>not</em> stay on the device.</td><td><code>capture/</code></td></tr>
+<tr><td>Account deletion</td><td>In-app, full cascade.</td><td><code>delete-account/index.ts</code></td></tr>
+<tr><td>Community</td><td>Opt-in connections, 1:1 threads, walk proposals, nearby owners. <strong>There is no public post feed and no comment box.</strong></td><td><code>community/</code></td></tr>
+</table>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="state">3 · The canonical depicted state</h2>
+<p>One user, one moment, across all ten assets. Paste this block verbatim into every prompt.
+This is the control for the "locally plausible, globally incoherent" defect class — a
+10-day streak drawn above 7 check marks, a percentage that does not match its own figures,
+a calendar from last year.</p>
+
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>CONSISTENCY RULE — this asset depicts ONE account at ONE moment.
+Use these values everywhere they appear, and nowhere invent another:
+
+  Owner        : not named, not pictured, no avatar photograph anywhere
+  Pet 1        : "Biscuit" — Labrador Retriever, 3 years old, 28.4 kg
+  Pet 2        : "Poppy"   — Domestic Shorthair cat, 5 years old, 4.2 kg
+  Pets on account : 2
+  This check   : Biscuit, "not finishing meals for two days, a little quiet"
+  This result  : WATCH AND RE-CHECK  (calm slate, never green, never "all clear")
+  Re-check due : in 24 hours
+  Photo checks : 2 of 5 used this month
+  Journal      : 7 entries
+  Timeline     : 6 events
+  Year in any date : 2026.  Never 2025. Prefer no year at all.
+
+Counted things must match their labels exactly: if a row says 6 events, draw 6.
+Percentages must be arithmetically correct against their own figures.
+Never draw a number that is not in this list.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="metadata">4 · Store metadata</h2>
+
+<h3>App name <span class="pill rec">30 char limit</span></h3>
+<div class="promptbox"><button class="copy">Copy</button><pre>PawDoc: Pet Health Checker</pre></div>
+<p class="meta">26 / 30. Carries three ranking terms — <em>pet</em>, <em>health</em>,
+<em>checker</em> — and describes the action without claiming diagnosis. The current
+metadata file says <code>PawDoc: AI Pet Health</code> (21), which spends four characters
+on "AI" and none on what the app does.</p>
+<p class="meta"><strong>Alternatives, if a different term tests better:</strong>
+<code>PawDoc: Dog &amp; Cat Health</code> (24) — species keywords, weaker verb ·
+<code>PawDoc: Pet Symptom Checker</code> (27) — strongest search match, but "symptom
+checker" is a medical-adjacent category term; keep it only if you are comfortable
+defending it under Health Content &amp; Services.</p>
+
+<h3>Short description <span class="pill hard">80 char limit</span></h3>
+<div class="promptbox"><button class="copy">Copy</button><pre>Describe a symptom, get a clear next step. Emergency help works offline.</pre></div>
+<p class="meta">72 / 80.
+<strong>⚠ The short description currently in <code>docs/store_metadata/google_play.md</code>
+is 144 characters and cannot be saved in the Console</strong> — the file's own table claims
+"72 ✓", which was never recomputed after the copy was rewritten. Count characters, do not
+estimate them.</p>
+
+<h3>Full description <span class="pill rec">4000 char limit</span></h3>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>The pet health record your vet actually wants to see.
+
+When your dog goes off their food or your cat starts acting strange, the hard
+part isn't knowing that something is off. It's knowing how soon it matters,
+and remembering the details three days later in an exam room.
+
+PawDoc helps with both.
+
+DESCRIBE IT, AND GET A NEXT STEP
+Type what you're seeing, or add a photo. You get one of four clear answers —
+get help now, call your vet today, book a routine visit, or watch and re-check
+— with a timeframe, and a specific list of signs that mean it's time to
+escalate.
+
+PawDoc will never tell you your pet is fine. It tells you what to watch for
+and when to act. When there isn't enough information to say, it says that
+instead of guessing.
+
+EMERGENCY HELP, FREE AND OFFLINE
+A red button on every screen. It works with no signal and no account: five
+step-by-step first-aid guides (choking, heavy bleeding, seizure, a swollen
+hard belly, overheating), one tap to find a nearby emergency vet in your maps
+app, and tap-to-dial poison control.
+
+Emergency help is free on every plan, is never counted against any allowance,
+and is never behind a payment screen. That is enforced on our servers, not
+just in the app.
+
+THE RECORD DOES THE REMEMBERING
+• Every check saved to your pet's timeline automatically
+• Weight, medications, vaccinations and vet visits in one history
+• Re-check and medication reminders, delivered by your own phone
+• Vet Visit Prep: your reasons, your questions and the record, in one place
+• Unlimited pets, unlimited records, on every plan
+
+ASK THE ASSISTANT
+Everyday pet-life questions — food, behaviour, travel, what to expect at a
+first vaccination. Answers come from an AI model, are labelled as such, and
+are general information rather than veterinary advice.
+
+WHAT'S FREE, FOREVER
+Emergency help. Symptom checks by text, with no limit. Every pet, every health
+record, every reminder, the vet-prep pack and the timeline. An optional
+Premium subscription lifts three counted allowances (photo checks, journal
+entries, assistant messages) and adds a printable PDF health report. Price and
+terms are shown by Google Play before you buy anything, and you can cancel in
+Google Play at any time.
+
+ABOUT YOUR DATA
+Your account, your pets and your records are stored on our servers, tied to
+your account and sent over an encrypted connection. Photos you attach to a
+check are uploaded so they can be looked at — location and camera metadata are
+stripped from them on your phone first. You can delete your account and
+everything in it from inside the app, in two taps. We do not sell your data
+and there are no ads.
+
+WHAT PAWDOC IS NOT
+PawDoc is an information and record-keeping tool. It is not a medical device.
+It does not diagnose, treat, cure or prevent any condition, it does not name
+what your pet has, and it is not a substitute for examination by a licensed
+veterinarian. No veterinarian reviews what it tells you. If you think this is
+an emergency, contact a veterinarian or an emergency animal hospital right
+now — do not wait on an app.</pre>
+</div>
+<p class="meta">≈ 2,750 characters. Structure is verb-first feature blocks, each traceable
+to one shipped area, closing on the two honesty sections. That structure is what makes the
+claim audit cheap: one heading, one feature, one file.</p>
+<p class="meta"><strong>The final paragraph is deliberate.</strong> Play's Health Content &amp;
+Services policy asks non-medical-device health apps for a clear in-description disclaimer
+that the app <em>"is not a medical device and does not diagnose, treat, cure, or prevent any
+medical condition."</em> The wording above says exactly that.</p>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="keywords">5 · Keyword strategy</h2>
+<p><strong>Google Play has no keyword field.</strong> Ranking comes from the title, the short
+description, and term frequency in the long description — all user-visible. So terms are
+placed inside sentences a human will read, and the list below was <em>derived from</em> the
+copy above rather than injected into it. That ordering is the anti-stuffing control.</p>
+<table>
+<tr><th>Tier</th><th>Terms</th><th>Where they land</th></tr>
+<tr><td>Primary</td><td>pet health, pet symptom, health checker, dog, cat</td><td>Title + short description + first 200 characters</td></tr>
+<tr><td>Secondary</td><td>pet emergency, pet first aid, vet visit, pet health record, pet reminders, vaccination tracker, medication tracker, weight tracker</td><td>Feature-block headings, 2–3 mentions each</td></tr>
+<tr><td>Long tail</td><td>dog not eating, cat acting strange, when to call the vet, poison control, pet health timeline, puppy vaccination reminder</td><td>Once each, inside a sentence that genuinely describes the behaviour</td></tr>
+<tr><td>Never</td><td>diagnose, diagnosis, treat, cure, prevent, vet-approved, veterinarian-reviewed, clinically</td><td>Banned in visible copy. <code>scripts/verify-phase-2.3.sh</code> greps for them.</td></tr>
+</table>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="sequence">6 · Screenshot sequence</h2>
+<p>Play shows 2–8 phone screenshots. <strong>Slots 1–3 are what appear in search results</strong>,
+so the two things no competitor can honestly copy go first: the refusal to say "fine", and an
+emergency path that works with the radio off.</p>
+<table>
+<tr><th>#</th><th>Subject</th><th>Job it does</th><th>Headline</th></tr>
+<tr><td>1</td><td>The result screen</td><td>The product's whole thesis in one frame</td><td>It never says "fine".<br>It says what to watch for.</td></tr>
+<tr><td>2</td><td>Emergency hub</td><td>The differentiator, and the trust anchor</td><td>Emergency help.<br>Free, and offline.</td></tr>
+<tr><td>3</td><td>New check sheet</td><td>How you start — three real entry points</td><td>Describe it. Or show it.</td></tr>
+<tr><td>4</td><td>Pet timeline + weight</td><td>The record, i.e. why you keep the app</td><td>Every check, kept.</td></tr>
+<tr><td>5</td><td>Vet visit prep</td><td>The moment the record pays off</td><td>Walk in with the whole story.</td></tr>
+<tr><td>6</td><td>Reminders</td><td>Retention feature, honestly framed</td><td>Your phone remembers the re-check.</td></tr>
+<tr><td>7</td><td>Assistant</td><td>AI, disclosed and bounded</td><td>Ask the everyday questions.</td></tr>
+<tr><td>8</td><td>What's free forever</td><td>Trust close, not a paywall</td><td>Safety is not the paid part.</td></tr>
+</table>
+<p class="meta">Text budget: <strong>≤ 9 discrete text elements per asset</strong>. In the Play
+carousel a screenshot renders roughly 25 mm wide. FormAI's first slot carried 24 elements and
+none of them was legible.</p>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="s1">7 · <span class="pill slot">Slot 1</span> The result screen</h2>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>PLATFORM
+  Google Play (Android). This asset will be uploaded to a production Play
+  listing and reviewed by Google.
+
+DEVICE
+  A modern bezel-less ANDROID smartphone, symmetric thin bezels, small
+  CENTRED PUNCH-HOLE front camera, held upright, straight on, slight
+  perspective.
+  FORBIDDEN: notch, Dynamic Island, iOS status bar, Apple device of any kind,
+  rounded-iPhone silhouette, side action button, smartwatch on any wrist, any
+  wearable, any second device. Status-bar time must NOT be 9:41.
+
+CANVAS
+  1080 x 1920 px, 9:16 portrait, vertical. PNG, no transparency, no border,
+  no rounded canvas corners, no drop shadow on the canvas itself.
+
+EXACT APP SCREEN — the PawDoc result screen
+  Top to bottom, inside the phone:
+  1. A wide status band in CALM SLATE (#455A64), NOT green and NOT red,
+     containing the words "WATCH AND RE-CHECK" in white caps, and under them
+     "Re-check in 24 hours".
+  2. A card headed "What to do" with three short lines of plain text.
+  3. A card headed "Watch for" with four bullet lines.
+  4. A full-width outlined button reading "Remind me to re-check".
+  5. A small grey disclaimer strip at the bottom of the scroll.
+  6. Bottom navigation with exactly FOUR labels — Home, Pets, Health,
+     Emergency — and a raised circular centre button.
+  Nothing may be added to this screen that is not listed here.
+
+VERBATIM STRINGS  (reproduce character for character)
+  Poster headline : "It never says “fine”."
+  Poster subhead  : "It says what to watch for, and when to act."
+  Status band     : "WATCH AND RE-CHECK"
+  Under band      : "Re-check in 24 hours"
+  Card 1 title    : "What to do"
+  Card 2 title    : "Watch for"
+  Button          : "Remind me to re-check"
+  Nav labels      : "Home"  "Pets"  "Health"  "Emergency"
+
+REAL FEATURES ONLY
+  Permitted: the four-step action ladder, the watch-for list, the re-check
+  reminder, the disclaimer strip, the four-tab nav.
+  FORBIDDEN FEATURES — these do not exist in PawDoc and must not appear:
+    - any score, grade, percentage, meter, gauge, ring or dial about the pet
+    - the words "Health Score", "risk", "LOW RISK", "HIGH RISK", "severity"
+    - any confidence figure or "AI Confidence"
+    - any named condition, diagnosis, cause or medication suggestion
+    - the words "fine", "healthy", "normal", "all good", "excellent", "mild"
+    - a green "all clear" treatment of any kind
+    - tabs named History, Diary, Reminders or Profile
+
+CONSISTENCY RULE
+  <paste the canonical state block>
+
+PROHIBITED CONTENT
+  - No outcome promise, no "results", no "peace of mind" guarantee.
+  - No privacy absolute ("100%", "never", "stays on your device").
+  - No vet, veterinarian, stethoscope, white coat, clinic or scrubs.
+  - No star rating, review count, download count, user count, award, "#1".
+  - No human face, no named person, no testimonial.
+  - No price, trial, discount or refund claim.
+  - No Google Play badge, Google logo, or drawn Install button.
+  - No red cross emblem, X-ray, skeleton or anatomical overlay.
+
+VISUAL STYLE  (keep this section short)
+  Dark editorial. Canvas #0E1413 with a soft teal bloom top-left. Cards
+  #1A2220 with a 1px #33403C hairline. Accent #1FB6A6, text #EAF3F0,
+  secondary #A7B6B1. The status band is the only large colour field and it is
+  slate, deliberately calm. Poster type: heavy geometric sans, tight leading.
+  Generous negative space. No neon glow, no holograms, no particle effects.
+
+OUTPUT
+  1080x1920, vertical, ultra sharp, PNG, no transparency.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="s2">8 · <span class="pill slot">Slot 2</span> Emergency, free and offline</h2>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>PLATFORM / DEVICE / CANVAS
+  <same as slot 1 — Android punch-hole handset, 1080x1920, PNG, no alpha>
+
+EXACT APP SCREEN — the PawDoc Emergency Hub
+  Top to bottom, inside the phone:
+  1. A large red (#C62828) full-width panel headed "In an emergency?" with
+     the line "Act now — don’t wait on an app."
+  2. A row of three square quick actions, each an outline icon over a label:
+       "Pet First Aid" / "Step-by-step guides"
+       "Find a vet"    / "Opens your maps app"
+       "Poison control"/ "Tap to dial"
+  3. A section headed "First aid while you get help" listing FIVE rows, in
+     this order, each with a short subtitle:
+       Choking
+       Heavy bleeding
+       Seizure
+       Swollen, hard belly
+       Overheating
+  4. Bottom navigation: Home, Pets, Health, Emergency — with EMERGENCY the
+     selected tab.
+  In the phone's status bar, the signal indicator shows NO SERVICE and the
+  Wi-Fi icon is absent. This is the point of the asset: the screen is fully
+  rendered with no connection.
+
+VERBATIM STRINGS
+  Poster headline : "Emergency help. Free, and offline."
+  Poster subhead  : "Five first-aid guides, a vet finder and poison control —
+                     with no signal, and on every plan."
+  Panel           : "In an emergency?"  /  "Act now — don’t wait on an app."
+  Quick actions   : "Pet First Aid" · "Find a vet" · "Poison control"
+  Section head    : "First aid while you get help"
+  Five rows       : "Choking" · "Heavy bleeding" · "Seizure" ·
+                    "Swollen, hard belly" · "Overheating"
+  Foot strip      : "Never counted. Never behind a payment screen."
+
+REAL FEATURES ONLY
+  These five first-aid guides and only these five. The vet finder opens the
+  device's maps app; it does NOT show an in-app map, a list of clinics, clinic
+  names, distances, opening hours or ratings.
+  FORBIDDEN FEATURES:
+    - an in-app map, pins, clinic cards, distances, "open now", ratings
+    - a live chat, a call-a-vet button, a hotline PawDoc operates
+    - any AI element on this screen — the emergency path is model-free
+    - any triage result, score, or urgency meter
+    - any upgrade, premium, price or subscription element of any kind
+
+CONSISTENCY RULE
+  <paste the canonical state block>
+
+PROHIBITED CONTENT
+  <same block as slot 1>
+  Additionally: no red cross emblem (a protected mark), no ambulance, no
+  hospital building, no distressed or injured animal, no blood, no wound
+  photography.
+
+VISUAL STYLE
+  Dark canvas #0E1413. The red panel #C62828 is the single dominant field and
+  everything else recedes. Cards #1A2220, hairline #33403C, text #EAF3F0.
+  Serious, uncluttered, no glow, no drama, no neon. This asset should feel
+  like a fire exit sign, not like marketing.
+
+OUTPUT
+  1080x1920, vertical, ultra sharp, PNG, no transparency.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="s3">9 · <span class="pill slot">Slot 3</span> Starting a check</h2>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>PLATFORM / DEVICE / CANVAS
+  <same as slot 1>
+
+EXACT APP SCREEN — the "New check" sheet over the PawDoc home screen
+  A bottom sheet rises over a dimmed home screen. The sheet contains exactly
+  three rows, each an outline icon, a title and a subtitle:
+      "Photo check"        / "Take or upload a photo"
+      "Describe symptoms"  / "Type what you are seeing"
+      "Ask PawDoc AI"      / "General pet-care questions"
+  Behind the sheet, faintly visible: a greeting row, one pet card reading
+  "Biscuit · Labrador Retriever · 3 years", and the four-tab bottom nav with
+  its raised centre button.
+
+VERBATIM STRINGS
+  Poster headline : "Describe it. Or show it."
+  Poster subhead  : "Symptom checks by text are unlimited on every plan."
+  Sheet rows      : as listed above, character for character
+  Pet card        : "Biscuit" · "Labrador Retriever" · "3 years"
+
+REAL FEATURES ONLY
+  Three entry points, exactly as named. A photo attached to a check is
+  uploaded for analysis.
+  FORBIDDEN FEATURES:
+    - live camera scanning, an AR overlay, a targeting reticle, tracking dots
+      or a mesh over the animal — PawDoc analyses a still photo, it does not
+      scan
+    - "auto-detect", "detecting…", any detected label
+    - video call, voice call, barcode scanning, wearable pairing
+    - a named condition anywhere
+    - any count of checks "analysed" or "performed"
+
+CONSISTENCY RULE
+  <paste the canonical state block>
+
+PROHIBITED CONTENT
+  <same block as slot 1>
+
+VISUAL STYLE
+  <same palette block as slot 1>. The sheet is #212B28 on a dimmed canvas.
+  One warm accent only: the centre action ring in #1FB6A6.
+
+OUTPUT
+  1080x1920, vertical, ultra sharp, PNG, no transparency.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="s4">10 · <span class="pill slot">Slot 4</span> The record</h2>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>PLATFORM / DEVICE / CANVAS
+  <same as slot 1>
+
+EXACT APP SCREEN — a pet's health timeline
+  Top to bottom, inside the phone:
+  1. A pet header: "Biscuit", "Labrador Retriever · 3 years", "28.4 kg".
+  2. A weight card headed "Weight" with a simple line chart of SIX points
+     rising gently, and the readout "28.4 kg".
+  3. A section headed "Timeline" with SIX rows, newest first, each an icon,
+     a title and a relative date:
+       "Check · Watch and re-check"   "Today"
+       "Weight · 28.4 kg"             "3 days ago"
+       "Medication · started"         "2 weeks ago"
+       "Vaccination · recorded"       "1 month ago"
+       "Vet visit · recorded"         "2 months ago"
+       "Check · Book a routine visit" "3 months ago"
+  4. Bottom navigation: Home, Pets, Health, Emergency — HEALTH selected.
+
+VERBATIM STRINGS
+  Poster headline : "Every check, kept."
+  Poster subhead  : "Weight, medications, vaccinations and visits — one
+                     timeline, unlimited on every plan."
+  All in-phone strings exactly as listed above.
+
+REAL FEATURES ONLY
+  FORBIDDEN FEATURES:
+    - a health score, a completeness percentage, a grade or a ring
+    - "All up to date", "All good", "Excellent", "Great job", any praise
+    - a calendar grid with dots (this screen is a list, not a calendar)
+    - trend language that predicts ("improving", "on track", "recovering")
+    - any absolute year that is not 2026; prefer relative dates as listed
+
+CONSISTENCY RULE
+  <paste the canonical state block>
+  The chart has SIX points because the timeline has SIX rows. Count them.
+
+PROHIBITED CONTENT
+  <same block as slot 1>
+
+VISUAL STYLE
+  <same palette block as slot 1>. The chart line is #1FB6A6, 3px, no fill
+  gradient, no glow, plotted on a plain card.
+
+OUTPUT
+  1080x1920, vertical, ultra sharp, PNG, no transparency.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="s5">11 · <span class="pill slot">Slot 5</span> Vet visit prep</h2>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>PLATFORM / DEVICE / CANVAS
+  <same as slot 1>
+
+EXACT APP SCREEN — the Vet Visit Prep screen
+  Top to bottom, inside the phone:
+  1. A header card "Prepare for the visit" with the line "Biscuit · Labrador
+     Retriever · 3 years".
+  2. A card "Why you are going" with two short lines of typed text.
+  3. A card "Questions to ask" with three checkbox rows, two ticked.
+  4. A card "What the record shows" with three compact rows: a recent check,
+     a weight, a medication.
+  5. A full-width outlined button "Share as text".
+  6. Bottom navigation, HEALTH selected.
+
+VERBATIM STRINGS
+  Poster headline : "Walk in with the whole story."
+  Poster subhead  : "Your reasons, your questions and the record — in one
+                     place, on every plan."
+  Cards           : "Prepare for the visit" · "Why you are going" ·
+                    "Questions to ask" · "What the record shows"
+  Button          : "Share as text"
+
+REAL FEATURES ONLY
+  The prep pack is included on BOTH plans. Sharing is plain text through the
+  device share sheet. A printable PDF report also exists but is Premium-only
+  and must NOT be depicted in this asset.
+  FORBIDDEN FEATURES:
+    - a PDF preview, a document thumbnail, a print icon, an email compose view
+    - sending anything to a clinic, booking an appointment, a vet's reply
+    - a vet's name, photograph, signature, letterhead or clinic branding
+    - a summary that names a condition or suggests a treatment
+
+CONSISTENCY RULE
+  <paste the canonical state block>
+
+PROHIBITED CONTENT
+  <same block as slot 1>
+
+VISUAL STYLE
+  <same palette block as slot 1>. Paper-calm: this asset is the quietest in
+  the set, mostly cards and type.
+
+OUTPUT
+  1080x1920, vertical, ultra sharp, PNG, no transparency.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="s6">12 · <span class="pill slot">Slot 6</span> Reminders</h2>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>PLATFORM / DEVICE / CANVAS
+  <same as slot 1>
+
+EXACT APP SCREEN — the reminders list
+  Top to bottom, inside the phone:
+  1. A section headed "Reminders" with THREE rows, each a title, a pet name
+     and a due label:
+       "Re-check Biscuit"        "Tomorrow, 09:00"
+       "Medication · Biscuit"    "Daily, 09:00"
+       "Vaccination due · Poppy" "Next month"
+  2. An outlined button "Add a reminder".
+  3. Bottom navigation, HEALTH selected.
+  Above the phone, a single Android notification card floats: the PawDoc mark,
+  the title "Time to re-check Biscuit", and the body "You set this 24 hours
+  ago. How is he doing?"
+
+VERBATIM STRINGS
+  Poster headline : "Your phone remembers the re-check."
+  Poster subhead  : "Reminders are delivered by your own device — PawDoc uses
+                     no push service."
+  All in-phone and notification strings exactly as listed above.
+
+REAL FEATURES ONLY
+  Reminders are LOCAL notifications scheduled on the device and delivered at
+  09:00 local time. There is no push vendor and no server-sent notification.
+  FORBIDDEN FEATURES:
+    - a badge count, a notification centre full of alerts, an alert stream
+    - SMS, email or a phone call from PawDoc
+    - a vet or clinic sending anything
+    - any time other than 09:00 for the scheduled rows
+    - smart/AI/adaptive scheduling language
+
+CONSISTENCY RULE
+  <paste the canonical state block>
+
+PROHIBITED CONTENT
+  <same block as slot 1>
+
+VISUAL STYLE
+  <same palette block as slot 1>. The floating notification is a neutral
+  Android system card, not a PawDoc-branded panel.
+
+OUTPUT
+  1080x1920, vertical, ultra sharp, PNG, no transparency.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="s7">13 · <span class="pill slot">Slot 7</span> The assistant</h2>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>PLATFORM / DEVICE / CANVAS
+  <same as slot 1>
+
+EXACT APP SCREEN — the PawDoc assistant conversation
+  Top to bottom, inside the phone:
+  1. A title row: an ABSTRACT circular mark (a soft teal gradient orb with a
+     simple paw glyph — NOT a face, NOT an animal photograph, NOT a person)
+     beside the label "PawDoc AI".
+  2. A persistent grey strip directly under it reading:
+     "Answers come from an AI model. General information, not veterinary
+      advice."
+  3. Three chat bubbles: one from the user, one reply, one short follow-up
+     from the user. The reply is plain, practical, everyday guidance about
+     feeding routine. It must NOT mention a condition, a symptom, a
+     medication, a dose, or a diagnosis.
+  4. A text input row at the bottom with a small "20 left today" counter.
+  5. Bottom navigation, HOME selected.
+
+VERBATIM STRINGS
+  Poster headline : "Ask the everyday questions."
+  Poster subhead  : "Food, behaviour, travel, what to expect at a first
+                     vaccination. Answers are from an AI model."
+  Label           : "PawDoc AI"
+  Disclosure strip: "Answers come from an AI model. General information, not
+                     veterinary advice."
+  Counter         : "20 left today"
+
+REAL FEATURES ONLY
+  FORBIDDEN FEATURES:
+    - a human portrait, a human name, a photographic avatar of any kind
+    - the words "vet", "veterinarian", "doctor", "expert", "specialist",
+      "verified", "reviewed by", "trained on veterinary journals"
+    - "accurate", "reliable", "you can trust", "clinically", "evidence-based",
+      "backed by science", "learns from you", "gets to know your pet"
+    - a confidence figure, a source citation, a footnote badge
+    - voice calls, video calls, a typing human
+    - any medical instruction, dose, drug name or condition in the reply
+
+CONSISTENCY RULE
+  <paste the canonical state block>
+  The counter reads "20 left today" because the free daily allowance is 20 and
+  this account has used none today.
+
+PROHIBITED CONTENT
+  <same block as slot 1>
+
+VISUAL STYLE
+  <same palette block as slot 1>. The AI mark is unmistakably synthetic —
+  a gradient orb, flat, no eyes, no face, no character.
+
+OUTPUT
+  1080x1920, vertical, ultra sharp, PNG, no transparency.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="s8">14 · <span class="pill slot">Slot 8</span> What's free forever</h2>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>PLATFORM / DEVICE / CANVAS
+  <same as slot 1>
+
+COMPOSITION — a typographic plate, no phone mockup
+  This asset is a two-column list on the dark canvas, with the PawDoc mark at
+  the top and no device at all.
+
+  Left column, headed "Free, forever":
+    Emergency help and first aid
+    Symptom checks by text
+    Every pet, every health record
+    Reminders and vet-visit prep
+
+  Right column, headed "What Premium adds":
+    Photo checks beyond 5 a month
+    Assistant messages beyond 20 a day
+    Journal entries beyond 20
+    A printable PDF health report
+
+VERBATIM STRINGS
+  Poster headline : "Safety is not the paid part."
+  Poster subhead  : "Emergency help and text symptom checks are free on every
+                     plan, and always will be."
+  Column heads    : "Free, forever"  ·  "What Premium adds"
+  All eight rows exactly as listed above.
+  Foot line       : "Four things change on Premium. Everything else is the
+                     same on both plans."
+
+REAL FEATURES ONLY
+  These four rows are the complete list of what Premium changes. Nothing may
+  be added to the right column.
+  FORBIDDEN FEATURES — every one of these was invented by a previous
+  generation and none exists:
+    - vet chat, priority vet access, verified veterinarians
+    - advanced analytics, priority support, dedicated support, early access
+    - multi-user or family sharing, a pet limit of any number
+    - a storage figure of any kind, for either plan
+    - ad-free as a Premium benefit (there are no ads on either plan)
+
+MONEY — ABSOLUTELY FORBIDDEN
+  No price. No currency symbol. No "per month". No trial length. No discount
+  or percentage. No "was/now". No money-back guarantee. No free-trial badge.
+  Nothing is configured in Google Play yet, so any figure here would be a
+  price PawDoc cannot charge.
+
+CONSISTENCY RULE
+  <paste the canonical state block>
+  The numbers 5, 20 and 20 are the real free allowances and must be exact.
+
+PROHIBITED CONTENT
+  <same block as slot 1>
+
+VISUAL STYLE
+  <same palette block as slot 1>. Purely typographic. Left column ticks in
+  #1FB6A6; right column marks in a neutral #A7B6B1 — Premium must not read as
+  "the good column".
+
+OUTPUT
+  1080x1920, vertical, ultra sharp, PNG, no transparency.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="feature">15 · Feature graphic <span class="pill hard">1024 × 500</span></h2>
+<div class="card warn">
+<p style="margin:0"><strong>The current feature graphic is the highest-risk asset in the
+project.</strong> It carries "Trusted by pet parents" over four photorealistic human faces,
+★★★★★ with "10K+ Happy Pets", a "Health Score 98 · Excellent", a "Today's Overview · All
+Good!" panel, and an iPhone. That is fabricated social proof, a fabricated rating, a
+fabricated user count, a rejected product element and a wrong-platform device — in the one
+asset that appears at the top of the listing.</p>
+</div>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>PLATFORM
+  Google Play feature graphic for a production listing.
+
+CANVAS
+  Exactly 1024 x 500 px, landscape, PNG, no transparency, no border, no
+  rounded corners.
+
+SAFE AREAS
+  Keep the central 250 x 250 px region visually quiet — Play overlays a play
+  button there if a promo video is added.
+  Keep 64 px clear of any text or mark at every edge.
+
+COMPOSITION — typographic, no device
+  Left two-thirds: the PawDoc wordmark, then a two-line headline, then one
+  supporting line.
+  Right third: a single large flat paw glyph in #1FB6A6 at low opacity,
+  bleeding softly off the right edge. Nothing else.
+  NO phone mockup. NO feature cards. NO animal photograph. NO trust bar.
+
+VERBATIM STRINGS  (these five and nothing else)
+  Wordmark   : "PawDoc"
+  Headline   : "It never says “fine”."
+  Line 2     : "It says what to watch for."
+  Support    : "Emergency help is free, and works offline."
+
+ABSOLUTELY FORBIDDEN IN THE OUTPUT
+  - any star rating, review count, "10K", "Trusted by", any user count
+  - any human face, any named person, any testimonial
+  - "Health Score", any number about an animal, "All Good", "Excellent"
+  - any device of any kind, and in particular any Apple device
+  - any price, trial or discount
+  - "AI Powered", "24/7 Support", "advice", "instant advice"
+  - a red cross, a stethoscope, a white coat, a clinic
+  - a Google Play badge or Google logo
+
+VISUAL STYLE
+  Canvas #0E1413 with a soft #00897B bloom from the left. Wordmark and
+  headline in #EAF3F0, the word "fine" in #1FB6A6. Support line in #A7B6B1.
+  Heavy geometric sans, tight leading, large negative space. No glow, no
+  particles, no gradients behind text.
+
+OUTPUT
+  1024x500, ultra sharp, PNG, no transparency.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="icon">16 · App icon <span class="pill hard">512 × 512</span></h2>
+<div class="card warn">
+<p style="margin:0"><strong>The current icon repeats a known failure exactly.</strong> It has
+<em>pre-rounded corners with a visible border and dark square corners behind them</em> — Play
+applies its own rounded mask, so the border is clipped into four disconnected arcs and the
+square corners show through. It is also a photograph of a puppy and a kitten wrapped in a
+stethoscope: unreadable at 48 px, and a stethoscope implies a clinic PawDoc does not run.</p>
+</div>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>PLATFORM
+  Google Play app icon (512 x 512). Play applies its OWN rounded mask and its
+  OWN drop shadow at render time.
+
+CANVAS
+  Exactly 512 x 512 px. FULL-BLEED SQUARE. PNG, no transparency.
+  ABSOLUTELY NO pre-rounded corners. NO border, stroke or outline. NO
+  self-applied drop shadow. The background colour must reach all four corners
+  and all four edges — no padding band of any colour, especially not white.
+
+SUBJECT
+  One flat, geometric PAW MARK, centred, occupying roughly the central
+  380 x 380 px. Four toe beads above one large heel pad. Thick strokes,
+  generous spacing between beads, high contrast against the background.
+  The heel pad carries a single soft notch at its top edge, reading quietly
+  as a heart — no more literal than that.
+
+COLOUR
+  Background: a full-bleed near-black #0E1413 with a very subtle radial lift
+  to #16201E behind the mark.
+  Mark: solid #1FB6A6, no gradient inside the mark, no glow, no bevel.
+
+ABSOLUTELY FORBIDDEN
+  - any text, any letter, any word, and above all the app name
+  - any photograph, any animal, any human, any anatomical form
+  - a stethoscope, a red cross, a medical bag, a syringe, a shield, a clinic
+  - a pill shape or capsule
+  - pre-rounded corners, a border, an outer glow, a baked shadow
+  - fine detail, texture, noise, or anything that disappears at 48 px
+  - resemblance to another app's mark or to any Google product icon
+
+LEGIBILITY TEST THE OUTPUT MUST PASS
+  Downscaled to 48 x 48 px the mark must still read instantly as a paw.
+
+OUTPUT
+  512x512, flat vector look, ultra sharp, PNG, no transparency.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="fix">17 · Correcting an asset that is nearly right</h2>
+<p>Use this only when the composition is good and specific elements are wrong. Regenerate
+from scratch instead when the defect is a device frame, a layout, or a claim baked into the
+concept — those are the ones a correction pass tends to reintroduce.</p>
+<div class="promptbox">
+<button class="copy">Copy</button>
+<pre>TASK
+  Regenerate this asset. PRESERVE the existing composition, branding, layout,
+  device mockup, card structure and visual style. Change ONLY the elements
+  listed under CHANGES. Do not redesign. Do not add elements.
+
+PRESERVE EXACTLY
+  <enumerate: canvas colour, headline position, card count and positions,
+   phone position and angle, bottom strip>
+
+CHANGES  (each with the exact replacement)
+  1. <ELEMENT>: replace "<old string>" with "<new string>".
+  2. REMOVE ENTIRELY: <element>, because <reason from the product-truth sheet>.
+  3. METRIC: replace "<old>" with "<real value>" — PawDoc does not compute
+     <old>.
+
+ABSOLUTELY FORBIDDEN IN THE OUTPUT
+  <paste the exact strings and elements from the audit finding — this block
+   doubles as the QA checklist for the result>
+
+CONSISTENCY RULE
+  <paste the canonical state block>
+
+TEXT FIDELITY
+  Reproduce every string character for character as written above.
+
+OUTPUT
+  <dimensions>, PNG, no transparency.</pre>
+</div>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="l10n">18 · Localization notes</h2>
+<p><strong>Ship en-US only for the first release.</strong> The app itself falls back to English
+for every non-English, non-German locale, so a Turkish listing would send Turkish users to an
+English app — the divergence a locale audit is meant to catch.</p>
+<p>When a second locale is added:</p>
+<ul class="tight">
+  <li><strong>Localization changes language, not product truth.</strong> Same features, same
+  numbers, same slots, same disclaimers, same allowances. One global icon — icons are not
+  localizable.</li>
+  <li><strong>Generate the artwork with no non-ASCII text and typeset the locale afterwards.</strong>
+  No prompt reliably prevents diacritic decay: a previous project shipped
+  <code>CANLI ANALIZ</code> for <code>CANLI ANALİZ</code>, <code>güveiinş</code> for
+  <code>güven</code>, and <code>AI TEKNOLO.iSi</code> where the <code>J</code> became a full
+  stop. In Turkish, <code>ı/i</code> and <code>I/İ</code> are different letters.</li>
+  <li><strong>Number formats invert.</strong> <code>28.4 kg</code> in en-US is
+  <code>28,4 kg</code> in tr-TR; <code>87%</code> is <code>%87</code>. Both directions leak.</li>
+  <li>Never let a generator draw the wordmark in any locale. Composite it.</li>
+  <li>Diff every asset against its twin for contaminated rows — content migrates between
+  frames when a set is regenerated in one session, and neither a policy check nor a design
+  check catches it.</li>
+</ul>
+
+<!-- ─────────────────────────────────────────────────────────── -->
+<h2 id="policy">19 · Policy checklist for the finished set</h2>
+<p>Run per asset, at full resolution, before anything is uploaded. Any <strong>No</strong>
+blocks upload.</p>
+<table>
+<tr><th>#</th><th>Check</th><th>Class</th></tr>
+<tr><td>1</td><td>Does every depicted screen exist, at this layout, in the build being shipped?</td><td>Misrepresentation</td></tr>
+<tr><td>2</td><td>Are the four nav labels Home / Pets / Health / Emergency, and only those?</td><td>Misrepresentation</td></tr>
+<tr><td>3</td><td>Is every verdict one of the four real action labels — no risk level, no score?</td><td>Health Content</td></tr>
+<tr><td>4</td><td>Is there any number describing the animal's health? (There must not be.)</td><td>Health Content</td></tr>
+<tr><td>5</td><td>Is any condition, cause or treatment named anywhere?</td><td>Health Content</td></tr>
+<tr><td>6</td><td>Does any asset say the pet is fine, healthy, normal, or "all good"?</td><td>Safety + Health Content</td></tr>
+<tr><td>7</td><td>Is a confidence or accuracy figure shown anywhere?</td><td>Misrepresentation</td></tr>
+<tr><td>8</td><td>Is a veterinarian implied — by word, coat, stethoscope, clinic or badge?</td><td>Misrepresentation</td></tr>
+<tr><td>9</td><td>Is AI disclosed, and does the AI look synthetic rather than human?</td><td>AI-Generated Content</td></tr>
+<tr><td>10</td><td>Is there any rating, review count, user count, award or "#1"?</td><td>Deceptive Behavior</td></tr>
+<tr><td>11</td><td>Is any human face presented as a user?</td><td>Deceptive Behavior</td></tr>
+<tr><td>12</td><td>Is any price, trial, discount or refund shown? (Nothing is configured.)</td><td>Subscriptions</td></tr>
+<tr><td>13</td><td>Is every privacy statement scoped, and does it match the Data safety form?</td><td>Data Safety accuracy</td></tr>
+<tr><td>14</td><td>Is every device an Android handset with a punch-hole camera?</td><td>Store Listing</td></tr>
+<tr><td>15</td><td>Is the status-bar time anything other than 9:41?</td><td>Store Listing</td></tr>
+<tr><td>16</td><td>Do all counted primitives match their labels, and all dates read 2026?</td><td>Integrity</td></tr>
+<tr><td>17</td><td>Does every element belong to the screen it appears on?</td><td>Integrity</td></tr>
+<tr><td>18</td><td>Is every asset RGB with no alpha, 1080×1920, ≤ 8 MB, and unique by hash?</td><td>Format</td></tr>
+<tr><td>19</td><td>Is the icon full-bleed, unrounded, borderless, textless and readable at 48 px?</td><td>Format</td></tr>
+<tr><td>20</td><td>Was the AI-generated-content box ticked for every generated asset at upload?</td><td>AI disclosure</td></tr>
+</table>
+
+<p class="meta" style="margin-top:34px;border-top:1px solid var(--line);padding-top:18px">
+Every product fact in this document was verified against <code>mobile/lib/</code>,
+<code>supabase/functions/</code> and <code>docs/</code> on 8 August 2026. The prompt structure,
+the per-asset <em>ABSOLUTELY FORBIDDEN</em> block and the <em>CONSISTENCY RULE</em> block are
+adapted from <code>FormAI/docs/PLAY_STORE_ASO_LESSONS_LEARNED.md</code>. No claim in this file
+is aspirational: if PawDoc does not do it today, it is not in a prompt.</p>
+
+</div>
+<script>
+document.querySelectorAll('.copy').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var text = btn.parentElement.querySelector('pre').innerText;
+    navigator.clipboard.writeText(text).then(function(){
+      var old = btn.textContent;
+      btn.textContent = 'Copied';
+      btn.classList.add('done');
+      setTimeout(function(){ btn.textContent = old; btn.classList.remove('done'); }, 1400);
+    });
+  });
+});
+</script>
+</body>
+</html>

@@ -33,9 +33,14 @@ PawDoc: AI Pet Health
 ## Short description (visible, 80 max)
 
 <!-- VISIBLE-COPY:START -->
-Your pet's health record, organized — symptom guidance in seconds, an emergency button that works offline, and a vet-visit summary in your hand.
+Describe a symptom, get a clear next step. Emergency help works offline.
 <!-- VISIBLE-COPY:END -->
-(72 / 80 characters.)
+(72 / 80 characters — **computed**, not estimated.)
+
+> **This field previously held a 144-character string** under a table entry claiming
+> "72 ✓". The count was never recomputed after the copy was rewritten, and the Play
+> Console would have refused it at paste time. Count characters; never estimate them.
+> See `PAWDOC_PLAY_STORE_REVIEW_AUDIT.md` R-3.
 
 ## Full description (visible, 4000 max)
 
@@ -63,8 +68,8 @@ HONEST BY DESIGN
 • Emergency help is free forever and never behind a paywall
 • Private by design — delete your account and data anytime, right in the app
 
-IMPORTANT
-PawDoc provides general information and record-keeping to help you decide whether, and how urgently, to seek veterinary care. It does not diagnose, does not provide veterinary medical advice, and is not a substitute for an in-person examination by a licensed veterinarian. In an emergency, contact your veterinarian or a local emergency animal hospital immediately.
+WHAT PAWDOC IS NOT
+PawDoc is an information and record-keeping tool. It is not a medical device. It does not diagnose, treat, cure or prevent any condition, it does not name what your pet has, and it is not a substitute for examination by a licensed veterinarian. No veterinarian reviews what it tells you. In an emergency, contact your veterinarian or a local emergency animal hospital immediately — do not wait on an app.
 
 Subscription: symptom checks by text are free with no limit. An optional subscription keeps the full record — unlimited photo logs, full history, reminders, and the Vet Visit Prep Pack; price and terms are shown before you purchase.
 <!-- VISIBLE-COPY:END -->

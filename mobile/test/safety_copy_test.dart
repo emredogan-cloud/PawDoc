@@ -318,4 +318,80 @@ void main() {
       }
     });
   });
+
+  // ---------------------------------------------------------------------
+  group('rule: no privacy claim broader than the data flow', () {
+    // Play's Data safety form is a *binding* declaration, and an in-app
+    // sentence that outruns it puts two incompatible statements on record with
+    // Google. PawDoc's actual flow: the account, pets and records live on
+    // Supabase; photos are uploaded to Cloudflare R2 (EXIF/GPS stripped
+    // client-side first) and sent to a model provider; crashes go to Sentry
+    // and events to PostHog. Some of that is genuinely private. None of it is
+    // "100% private", and nothing "stays on your device".
+    //
+    // This is the *scope-inflation* class: a true narrow claim widened until
+    // it is unverifiable, because the broad version markets better. It has
+    // already happened twice in this repository — onboarding shipped "We never
+    // sell your data. Ever.", and two location comments described the Smart
+    // Walks path as if it were the whole app while community stores a geohash
+    // cell. Both are fixed; this is the tripwire.
+    // The scan is on the BROAD SUBJECT, not on the absolute word.
+    //
+    // A blunt ban on "never shared" is wrong twice over, and both wrong
+    // answers showed up the first time this test ran. It flags
+    // `community_sections.dart`'s "Never share someone else's address, or
+    // your own." — which is safety *advice to the user*, not a claim by
+    // PawDoc — and it flags `ai_transparency_screen.dart`'s "Your name, your
+    // email address, your location and your account never leave with it",
+    // which is exemplary scoped writing: it enumerates the data and names
+    // what it does not leave with.
+    //
+    // So what is banned is an absolute whose subject is *everything*: "your
+    // data", "your information", "your pet's data". Name the category and the
+    // sentence passes, because a named category can be checked.
+    test('no absolute is claimed about "your data" as a whole', () {
+      _expectAbsent(
+        [
+          RegExp(
+              r'(your|the|all)\s+(pet.s\s+)?(data|information|records?)\s+'
+              r'(is|are|stays?|never)[^.\n]{0,60}'
+              r'(never\s+(shared|sold|sent|leaves)|100%|completely|'
+              r'stays?\s+on\s+your)',
+              caseSensitive: false),
+          RegExp(r'100%\s*(private|secure|safe|confidential|anonymous)',
+              caseSensitive: false),
+          RegExp(r'completely\s+(private|anonymous|secure)',
+              caseSensitive: false),
+          RegExp(r'\bfully\s+(private|anonymous)\b', caseSensitive: false),
+          // "We never sell your data. Ever." — the intensifier is the tell.
+          RegExp(r'\.\s*Ever\.'),
+          RegExp(r'(your|the)\s+data\s+(never\s+leaves|stays)\s+'
+              r'(your\s+)?(device|phone)', caseSensitive: false),
+          RegExp(r'military[- ]grade', caseSensitive: false),
+          RegExp(r'\bbank[- ]level\b', caseSensitive: false),
+          RegExp(r'\bzero[- ]knowledge\b', caseSensitive: false),
+        ],
+        'A privacy claim must name the data it covers. An absolute about '
+        '"your data" as a whole cannot be verified, cannot be kept, and '
+        'contradicts the Data safety declaration — photos genuinely do leave '
+        'the device. Write the scoped version: say which data, and where it '
+        'goes. `ai_transparency_screen.dart` is the model to copy.',
+      );
+    });
+
+    test('no absolute is claimed about the emergency path either', () {
+      // The emergency path IS genuinely offline and model-free, which makes it
+      // the most tempting place to over-claim. "Works offline" is true and
+      // allowed; "works anywhere, always" is not.
+      _expectAbsent(
+        [
+          RegExp(r'always\s+works\b', caseSensitive: false),
+          RegExp(r'works\s+(anywhere|everywhere)\b', caseSensitive: false),
+          RegExp(r'guaranteed\b', caseSensitive: false),
+        ],
+        'The emergency path is offline-capable, not infallible. Say what it '
+        'does (offline, unmetered, never paywalled), not what it guarantees.',
+      );
+    });
+  });
 }

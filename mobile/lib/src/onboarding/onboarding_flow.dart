@@ -1111,14 +1111,27 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Your pet’s data is safe and private.',
+                  // Two claims, both scoped to what is actually true and both
+                  // matching the Data safety declaration.
+                  //
+                  // This line used to read "Your pet's data is safe and
+                  // private." over "We never sell your data. Ever." — an
+                  // absolute in the most-read screen in the app. *Not selling*
+                  // is a fact PawDoc can stand behind; *never, ever* is a
+                  // promise about all future conduct, and "private" full stop
+                  // is broader than a product that uploads photos to object
+                  // storage and sends them to a model provider. Play's Data
+                  // safety form is binding, and a listing or an onboarding
+                  // screen that outruns it puts two incompatible statements on
+                  // record.
+                  Text('Your record is yours.',
                       maxLines: 1,
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700)),
                   SizedBox(height: 2),
-                  Text('We never sell your data. Ever.',
+                  Text('No ads, and we do not sell your data.',
                       style:
                           TextStyle(color: Color(0xFF9AA6B6), fontSize: 12)),
                 ],

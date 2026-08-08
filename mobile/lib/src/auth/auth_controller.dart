@@ -8,6 +8,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/env.dart';
+import '../monetization/offer_prefs.dart';
 import 'google_sign_in_diagnosis.dart';
 import 'supabase_providers.dart';
 
@@ -132,7 +133,18 @@ class AuthController {
   /// email or Google identity) keeps the same uid, so nothing has to migrate.
   Future<void> continueAsGuest() => _client.auth.signInAnonymously();
 
-  Future<void> signOut() => _client.auth.signOut();
+  /// Signs out, and drops the offer-prompt history with the session.
+  ///
+  /// The "shown three times, last on the 4th" record belongs to the *account*,
+  /// not to the handset. Leaving it behind would charge one person's
+  /// dismissals to whoever signs in next — the same class of defect as the
+  /// cross-account pet bleed-through found on a Redmi. It is cleared here
+  /// rather than on sign-*in* so the wipe happens while we still know a session
+  /// is ending, and it never runs against a live account.
+  Future<void> signOut() async {
+    await OfferPrefs.clearAll();
+    await _client.auth.signOut();
+  }
 
   static String _generateNonce([int length = 32]) {
     const charset =

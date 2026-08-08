@@ -60,7 +60,13 @@ class PaywallScreen extends ConsumerStatefulWidget {
 }
 
 /// Which column of the toggle is selected.
-enum BillingPeriod { annual, monthly }
+///
+/// `weekly` was added for the three-tier ladder (weekly / monthly / yearly).
+/// Nothing here asserts that all three exist: the toggle renders only the
+/// periods the store actually returned, so an offering configured with two
+/// packages looks exactly as it did before, and one configured with a single
+/// package shows no toggle at all.
+enum BillingPeriod { annual, monthly, weekly }
 
 class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   Offering? _offering;
@@ -107,9 +113,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     } finally {
       if (mounted) {
         // Land on whichever period actually resolved, so the toggle never
-        // opens on an empty column.
-        if (_offering?.annual == null && _offering?.monthly != null) {
-          _period = BillingPeriod.monthly;
+        // opens on an empty column. Annual first — it is the plan the ladder is
+        // built to recommend, and the only one whose saving is computable.
+        if (_offering?.annual == null) {
+          if (_offering?.monthly != null) {
+            _period = BillingPeriod.monthly;
+          } else if (_offering?.weekly != null) {
+            _period = BillingPeriod.weekly;
+          }
         }
         setState(() => _loading = false);
       }
@@ -190,9 +201,20 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
 
   // -------------------------------------------------------------------------
 
-  Package? get _selected => _period == BillingPeriod.annual
-      ? _offering?.annual
-      : _offering?.monthly;
+  Package? get _selected => switch (_period) {
+        BillingPeriod.annual => _offering?.annual,
+        BillingPeriod.monthly => _offering?.monthly,
+        BillingPeriod.weekly => _offering?.weekly,
+      };
+
+  /// The periods this offering actually contains, in ladder order. The toggle
+  /// is built from this, so it can never present a column with no product
+  /// behind it.
+  List<BillingPeriod> get _available => [
+        if (_offering?.weekly != null) BillingPeriod.weekly,
+        if (_offering?.monthly != null) BillingPeriod.monthly,
+        if (_offering?.annual != null) BillingPeriod.annual,
+      ];
 
   /// True only when the *store* reports an introductory offer on the selected
   /// product. Nothing else in this file may use the word "trial".
@@ -203,11 +225,12 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   Widget build(BuildContext context) {
     final annual = _offering?.annual;
     final monthly = _offering?.monthly;
+    final weekly = _offering?.weekly;
     // An offering can exist while the packages inside it don't (product not yet
     // active in the Play Console, or not attached to the offering). That is the
     // same user-facing situation as no offering at all, so it gets the same
     // production-safe state instead of a CTA-less void.
-    final hasPlans = annual != null || monthly != null;
+    final hasPlans = annual != null || monthly != null || weekly != null;
     final isPremium = ref.watch(userProfileProvider).maybeWhen(
         data: (p) => p.isPremium, orElse: () => false);
     final savings = annual == null
@@ -241,8 +264,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           gap(4),
           const _PlanTrustBand(),
           gap(13),
-          if (hasPlans && annual != null && monthly != null) ...[
+          if (_available.length > 1) ...[
             _PeriodToggle(
+              periods: _available,
               period: _period,
               savings: savings,
               onChanged: (p) => setState(() => _period = p),
@@ -444,19 +468,36 @@ class _PlanTrustBand extends StatelessWidget {
 // The period toggle
 // ---------------------------------------------------------------------------
 
+/// The ladder, rendered from whatever the store returned.
+///
+/// The columns are ordered shortest-commitment first, so the annual plan sits
+/// at the end where the eye lands last and where the only computable saving
+/// badge can appear beside it. That ordering is the whole of the "decoy"
+/// arrangement PawDoc ships: three real prices in ascending commitment, each
+/// labelled with what it actually costs. No column is inflated, no column is
+/// struck through, and the badge on the yearly column is arithmetic
+/// ([PaywallPricing.savingsBadge]) rather than positioning.
 class _PeriodToggle extends StatelessWidget {
   const _PeriodToggle({
+    required this.periods,
     required this.period,
     required this.onChanged,
     this.savings,
   });
 
+  final List<BillingPeriod> periods;
   final BillingPeriod period;
   final ValueChanged<BillingPeriod> onChanged;
 
   /// "Save 41%", computed from the two store prices. Null hides the badge —
   /// which is the case whenever the claim cannot be made truthfully.
   final String? savings;
+
+  static const _labels = <BillingPeriod, (String, String, String)>{
+    BillingPeriod.weekly: ('paywall_period_weekly', 'Weekly', 'Pay weekly'),
+    BillingPeriod.monthly: ('paywall_period_monthly', 'Monthly', 'Pay monthly'),
+    BillingPeriod.annual: ('paywall_period_annual', 'Yearly', 'Pay yearly'),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -465,25 +506,17 @@ class _PeriodToggle extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       child: Row(
         children: [
-          Expanded(
-            child: _PeriodCell(
-              fieldKey: const Key('paywall_period_monthly'),
-              title: 'Monthly',
-              subtitle: 'Pay monthly',
-              selected: period == BillingPeriod.monthly,
-              onTap: () => onChanged(BillingPeriod.monthly),
+          for (final p in periods)
+            Expanded(
+              child: _PeriodCell(
+                fieldKey: Key(_labels[p]!.$1),
+                title: _labels[p]!.$2,
+                subtitle: _labels[p]!.$3,
+                badge: p == BillingPeriod.annual ? savings : null,
+                selected: period == p,
+                onTap: () => onChanged(p),
+              ),
             ),
-          ),
-          Expanded(
-            child: _PeriodCell(
-              fieldKey: const Key('paywall_period_annual'),
-              title: 'Yearly',
-              subtitle: 'Pay yearly',
-              badge: savings,
-              selected: period == BillingPeriod.annual,
-              onTap: () => onChanged(BillingPeriod.annual),
-            ),
-          ),
         ],
       ),
     );
@@ -649,10 +682,22 @@ class _PlanCarousel extends StatelessWidget {
   }
 
   String _priceNote() {
-    if (premium == null) return 'Not available in your store yet';
-    if (period == BillingPeriod.monthly) return 'Billed monthly';
-    return PaywallPricing.annualSubtitle(
-        premium!.storeProduct.pricePerMonthString);
+    final product = premium?.storeProduct;
+    if (product == null) return 'Not available in your store yet';
+    switch (period) {
+      case BillingPeriod.monthly:
+        return 'Billed monthly';
+      case BillingPeriod.weekly:
+        // The most expensive way to buy a year, so it says so — with the
+        // multiplier named, computed from the store's own weekly price.
+        final note = PaywallPricing.weeklyAnnualisedNote(
+          weeklyPrice: product.price,
+          currencySymbolSource: product.priceString,
+        );
+        return note == null ? 'Billed weekly' : 'Billed weekly · $note';
+      case BillingPeriod.annual:
+        return PaywallPricing.annualSubtitle(product.pricePerMonthString);
+    }
   }
 }
 
