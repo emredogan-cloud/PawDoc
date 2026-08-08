@@ -3,23 +3,25 @@
 Overall project status. Companion to `RESUME_GUIDE.md` (how to continue) and
 `IMPLEMENTATION_CHANGELOG_UI.md` (what changed, screen by screen).
 
-**Last updated:** 2026-08-07 (evening) · **Branch:** `ui-batch-r-pets-memories` ·
-**Head:** `82d2cf6`
+**Last updated:** 2026-08-08 · **Branch:** `ui-batch-s-community-emergency` ·
+**Head:** `8e418e8`
 
 ---
 
 ## 0 · One thing needs a human
 
-**This branch has never been PR'd.** PR #97 merged (squash, `2a1cc11`), this
-branch was rebased onto it and force-pushed, and it now sits directly on `main`
-with thirteen commits. Open the PR:
+PR #98 merged (squash, `35a6ff5`); this branch was cut from that `main` and
+carries the community + emergency batch. GitHub refuses PR-author
+self-approval, so its merge needs a human approval or
+`gh pr merge --squash --admin`.
 
-```bash
-gh pr create --base main
-```
-
-GitHub refuses PR-author self-approval, so the merge itself will again need a
-human approval or `gh pr merge --squash --admin`.
+**One decision was taken this session and should be reviewed.** PawDoc's
+community has no posts table, so the three post mockups (`community_feed`,
+`community_post_detail`, `create_post`) were mapped onto the real graph —
+connections, the 1:1 thread, walk proposals, the profile — rather than shipped
+as inert shells. Post-only controls keep their place and say *Soon*. If the
+intent was a faithful posting shell awaiting a migration, say so and it can be
+rebuilt that way.
 
 ---
 
@@ -32,7 +34,7 @@ QA programme, and — currently — rebuilding the interface against the
 
 | Area | Status |
 |---|---|
-| Flutter app | builds, **784 tests** green, analyze clean |
+| Flutter app | builds, **852 tests** green, analyze clean |
 | AI service | deployed to Fly; Tier 2 Gemini → Tier 3 Claude |
 | Supabase | 3 migrations + 9 Edge Functions deployed |
 | Play | AAB 1.0.0+5 built and signed; internal testing configured |
@@ -43,7 +45,7 @@ QA programme, and — currently — rebuilding the interface against the
 
 ## 2 · Screens rebuilt against the reference set
 
-**41 of 57 mockups implemented.** (34 before this session, +7.)
+**47 of 57 mockups implemented.** (41 before this session, +6.)
 
 | # | Mockup | Status | Commit |
 |---|---|---|---|
@@ -199,7 +201,7 @@ tripwires, now joined by a per-screen safety group in five more test files.
 | Gate | Result |
 |---|---|
 | `flutter analyze` | clean |
-| `flutter test` | **784 passed** (691 → 784, +93 this session) |
+| `flutter test` | **852 passed** (784 → 852, +68 this session) |
 | `scripts/verify-disclaimers.sh` | PASS |
 | CI | not yet run on this branch — no PR exists |
 | Device (Redmi Note 8, 393×851) | all seven screens walked, with **data written through the app**: a two-photo memory batch created end to end (picker → EXIF strip → presigned PUT → two rows), a search submitted and recalled from history, live MET forecasts fetched on device for both walk screens, and the baseline read against Buddy's real 18-record history |

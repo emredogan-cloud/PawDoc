@@ -5,6 +5,51 @@ Chronological record of the UI migration (Phase 0 + A–Q). Detail lives in
 `PAWDOC_UI_IMPLEMENTATION_FINAL_REPORT.md`; resume state in
 `memory/UI_PROGRESS.md`.
 
+## 2026-08-08 — community and emergency: six screens
+
+Branch `ui-batch-s-community-emergency`, cut from `main` after PR #98 merged
+(`35a6ff5`). **47 of 57 mockups implemented. 852 tests** (was 784).
+
+| Mockup | Implementation | Commit |
+|---|---|---|
+| `first_aid_guide` | `emergency/first_aid_guide_screen.dart` (new) | `5331ad9` |
+| `emergency_hub` | `emergency/emergency_help_screen.dart` (rebuilt) | `5287501` |
+| `nearby_pet_owners` | `community/nearby_screen.dart` (new) | `895c000` |
+| `community_feed` | `community/community_home_screen.dart` (rebuilt) | `197ba70` |
+| `community_post_detail` | `community/community_chat_screen.dart` (rebuilt) | `197ba70` |
+| `create_post` | `community/create_post_screen.dart` (new) | `197ba70` |
+
+New shared modules: `emergency/emergency_sections.dart`,
+`community/community_sections.dart`, `test/support/fake_community.dart`.
+
+**The community has no posts table.** It is `community_profiles`,
+`community_connections`, `community_messages`, `walk_proposals` and
+`community_reports` — no posts, reactions, follows, groups, media or presence,
+and location only as a five-character geohash *cell*. Owner decision this
+session: **map the three post mockups onto the real graph** rather than ship
+inert shells. Feed → the community home; post detail → the member and the real
+1:1 thread, with the reference's details strip carrying a real `walk_proposal`;
+create post → the profile composer. Post-only controls keep their place and say
+*Soon*.
+
+**Sixteen blocks across the six references were not built.** The emergency pair
+lost AI Triage, the "At Risk Pets / Needs Attention" row, Emergency Transport,
+Share Records, the fabricated 24/7 clinic directory, the Heat Alert strip, the
+"High Priority" badges, the relevance sort, the invented read times and
+"Available 24/7". The community trio lost reaction/comment/share/save counts,
+follows, hashtags, polls, stories, groups, presence, the live map with people
+pinned at tenths of a mile, and — the one that mattered most — the **verified
+veterinarian** answering a health question in-feed.
+
+Defects found and fixed: a `FutureBuilder` reading `snapshot.data ?? []` that
+rendered a failed lookup as an empty community; controllers disposed while
+their sheet was still animating out; `community_screens_test` never setting a
+handset surface, so every tap below the 600px fold silently missed; a 35px
+proposal-row overflow that exposed; and on the device, a white halo on the
+first-aid glyph assets, a run-together category rail, full-width species chips
+(a `Container` with an `alignment` expands into a `Wrap`'s loose constraints),
+and Quick Action subtitles clipping at a 1.3× text scale.
+
 ## 2026-08-07 (evening) — memories, walks, baseline, breeds: seven screens
 
 Branch `ui-batch-r-pets-memories`, **rebased onto the squashed `main`**
