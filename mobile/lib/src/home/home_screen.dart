@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../account/account_screen.dart';
+import '../account/profile_screen.dart';
 import '../account/user_profile.dart';
 import '../analysis/analysis_service.dart';
 import '../assistant/assistant_screen.dart';
@@ -121,7 +121,7 @@ class HomeScreen extends ConsumerWidget {
                 MaterialPageRoute(builder: (_) => const RemindersScreen()),
               ),
               onAccount: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AccountScreen()),
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
               ),
             ),
             const SizedBox(height: AppSpace.s12),
