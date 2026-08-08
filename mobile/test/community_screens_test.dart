@@ -1,118 +1,20 @@
 // Next Evolution Phase 6 — community UI over a fake repository (no network,
 // no Supabase, no geolocator).
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pawdoc/src/auth/supabase_providers.dart';
 import 'package:pawdoc/src/community/community_card.dart';
 import 'package:pawdoc/src/community/community_chat_screen.dart';
 import 'package:pawdoc/src/community/community_home_screen.dart';
 import 'package:pawdoc/src/community/community_models.dart';
 import 'package:pawdoc/src/community/community_onboarding_screen.dart';
-import 'package:pawdoc/src/community/community_repository.dart';
-import 'package:pawdoc/src/pets/pet.dart';
-import 'package:pawdoc/src/pets/pets_repository.dart';
-import 'package:pawdoc/src/walks/location_service.dart';
 
-class _FakeLocation extends LocationService {
-  const _FakeLocation();
-  @override
-  Future<LocationResult> current() async => const LocationDenied();
-}
-
-class _FakeRepo implements CommunityRepository {
-  _FakeRepo({
-    this.profile,
-    this.nearby = const [],
-    this.connectionList = const [],
-    this.messageList = const [],
-    this.proposalList = const [],
-    this.others = const {},
-  });
-
-  CommunityProfile? profile;
-  List<CommunityProfile> nearby;
-  List<CommunityConnection> connectionList;
-  List<CommunityMessage> messageList;
-  List<WalkProposal> proposalList;
-  Map<String, CommunityProfile> others;
-
-  CommunityProfile? saved;
-  final sentMessages = <String>[];
-  final responded = <(String, ConnectionStatus)>[];
-  final requested = <String>[];
-  final reports = <String>[];
-  final proposalResponses = <(String, ProposalStatus)>[];
-  bool left = false;
-
-  @override
-  Future<CommunityProfile?> myProfile() async => profile;
-  @override
-  Future<void> saveProfile(CommunityProfile p) async => saved = p;
-  @override
-  Future<void> leaveCommunity() async => left = true;
-  @override
-  Future<List<CommunityProfile>> discover(List<String> cells) async => nearby;
-  @override
-  Future<Map<String, CommunityProfile>> profilesById(List<String> ids) async =>
-      {for (final id in ids) if (others[id] != null) id: others[id]!};
-  @override
-  Future<List<CommunityConnection>> connections() async => connectionList;
-  @override
-  Future<void> sendRequest(String addresseeId) async =>
-      requested.add(addresseeId);
-  @override
-  Future<void> respond(String connectionId, ConnectionStatus status) async =>
-      responded.add((connectionId, status));
-  @override
-  Future<void> removeConnection(String connectionId) async {}
-  @override
-  Future<List<CommunityMessage>> messages(String connectionId) async =>
-      messageList;
-  @override
-  Stream<List<CommunityMessage>> messagesStream(String connectionId) =>
-      Stream.value(messageList);
-  @override
-  Future<void> sendMessage(String connectionId, String content) async =>
-      sentMessages.add(content);
-  @override
-  Future<List<WalkProposal>> proposals(String connectionId) async =>
-      proposalList;
-  @override
-  Future<void> propose(WalkProposal proposal) async {}
-  @override
-  Future<void> respondProposal(String proposalId, ProposalStatus status) async =>
-      proposalResponses.add((proposalId, status));
-  @override
-  Future<void> report({
-    required String reportedUserId,
-    required String reason,
-    String? details,
-    String? connectionId,
-  }) async =>
-      reports.add(reason);
-}
-
-Widget _app(Widget home, _FakeRepo repo) {
-  return ProviderScope(
-    overrides: [
-      communityRepositoryProvider.overrideWithValue(repo),
-      currentUserIdProvider.overrideWithValue('me'),
-      locationServiceProvider.overrideWithValue(const _FakeLocation()),
-      petsListProvider.overrideWith((ref) async =>
-          const [Pet(id: 'p1', userId: 'me', name: 'Rex', species: 'dog')]),
-    ],
-    child: MaterialApp(home: home),
-  );
-}
+import 'support/fake_community.dart';
 
 void main() {
   testWidgets('onboarding states the consent terms and validates the name',
       (tester) async {
-    final repo = _FakeRepo();
-    await tester.pumpWidget(_app(const CommunityOnboardingScreen(), repo));
+    final repo = FakeCommunityRepo();
+    await tester.pumpWidget(communityApp(const CommunityOnboardingScreen(), repo));
     await tester.pumpAndSettle();
 
     // The consent card is explicit about the coarse-area contract.
@@ -134,8 +36,8 @@ void main() {
 
   testWidgets('joining saves the profile (location denied → no geohash)',
       (tester) async {
-    final repo = _FakeRepo();
-    await tester.pumpWidget(_app(const CommunityOnboardingScreen(), repo));
+    final repo = FakeCommunityRepo();
+    await tester.pumpWidget(communityApp(const CommunityOnboardingScreen(), repo));
     await tester.pumpAndSettle();
 
     await tester.enterText(
@@ -157,14 +59,14 @@ void main() {
   testWidgets('home card invites non-members and shortcuts members',
       (tester) async {
     await tester.pumpWidget(
-        _app(const Scaffold(body: CommunityCard()), _FakeRepo()));
+        communityApp(const Scaffold(body: CommunityCard()), FakeCommunityRepo()));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('community_card_invite')), findsOneWidget);
     expect(find.textContaining('Opt-in only'), findsOneWidget);
 
-    await tester.pumpWidget(_app(
+    await tester.pumpWidget(communityApp(
         const Scaffold(body: CommunityCard()),
-        _FakeRepo(
+        FakeCommunityRepo(
             profile: const CommunityProfile(
                 userId: 'me', displayName: 'Me'))));
     await tester.pumpAndSettle();
@@ -173,7 +75,7 @@ void main() {
 
   testWidgets('community home partitions requests / connections / nearby',
       (tester) async {
-    final repo = _FakeRepo(
+    final repo = FakeCommunityRepo(
       profile: const CommunityProfile(
           userId: 'me', displayName: 'Me', geohash: 'u33dc'),
       connectionList: const [
@@ -200,7 +102,7 @@ void main() {
             speciesTags: ['cat']),
       ],
     );
-    await tester.pumpWidget(_app(const CommunityHomeScreen(), repo));
+    await tester.pumpWidget(communityApp(const CommunityHomeScreen(), repo));
     await tester.pumpAndSettle();
 
     expect(find.text('Requests for you'), findsOneWidget);
@@ -221,7 +123,7 @@ void main() {
 
   testWidgets('chat renders the merged timeline and sends via the repo',
       (tester) async {
-    final repo = _FakeRepo(
+    final repo = FakeCommunityRepo(
       messageList: [
         CommunityMessage(
             id: 'm1',
@@ -245,7 +147,7 @@ void main() {
         requesterId: 'me',
         addresseeId: 'them',
         status: ConnectionStatus.accepted);
-    await tester.pumpWidget(_app(
+    await tester.pumpWidget(communityApp(
         const CommunityChatScreen(
             connection: connection,
             otherProfile:
@@ -272,14 +174,14 @@ void main() {
 
   testWidgets('report & block surface exists in chat (Play UGC)',
       (tester) async {
-    final repo = _FakeRepo();
+    final repo = FakeCommunityRepo();
     const connection = CommunityConnection(
         id: 'c1',
         requesterId: 'me',
         addresseeId: 'them',
         status: ConnectionStatus.accepted);
     await tester.pumpWidget(
-        _app(const CommunityChatScreen(connection: connection), repo));
+        communityApp(const CommunityChatScreen(connection: connection), repo));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('community_chat_menu')));
