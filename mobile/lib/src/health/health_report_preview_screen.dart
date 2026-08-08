@@ -83,7 +83,11 @@ enum ReportKind {
 
 /// Recent checks for the report (RLS-scoped), matching the Edge Function's
 /// own select.
-final _reportChecksProvider = FutureProvider.autoDispose
+///
+/// Public so a test can hand it rows: the preview's whole purpose is to render
+/// the record, and a preview test that cannot supply one would only ever
+/// exercise the error state.
+final reportChecksProvider = FutureProvider.autoDispose
     .family<List<Map<String, dynamic>>, String>((ref, petId) async {
   final client = ref.watch(supabaseClientProvider);
   final rows = await client
@@ -222,7 +226,7 @@ class _HealthReportPreviewScreenState
 
     final isPremium = ref.watch(userProfileProvider).maybeWhen(
         data: (p) => p.isPremium, orElse: () => false);
-    final checks = ref.watch(_reportChecksProvider(pet.id!));
+    final checks = ref.watch(reportChecksProvider(pet.id!));
     final events = ref.watch(_reportEventsProvider(pet.id!));
     final loading = checks.isLoading || events.isLoading;
     final failed = checks.hasError || events.hasError;
@@ -292,7 +296,7 @@ class _HealthReportPreviewScreenState
                 message: 'The record could not be read, so there is nothing '
                     'to preview yet.',
                 onRetry: () {
-                  ref.invalidate(_reportChecksProvider(pet.id!));
+                  ref.invalidate(reportChecksProvider(pet.id!));
                   ref.invalidate(_reportEventsProvider(pet.id!));
                 },
               )

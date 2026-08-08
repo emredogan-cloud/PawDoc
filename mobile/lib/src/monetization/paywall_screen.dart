@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,6 +16,7 @@ import '../theme/paw_ui.dart';
 import '../theme/ui_assets.dart';
 import '../config/legal_urls.dart';
 import '../account/user_profile.dart';
+import '../config/env.dart';
 import 'entitlements.dart';
 import 'paywall_pricing.dart';
 import 'premium_sections.dart';
@@ -71,15 +74,34 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     _init();
   }
 
-  Future<void> _init() async {
-    await Analytics.paywallShown();
-    await _load();
+  /// Analytics is fire-and-forget and the price read is not.
+  ///
+  /// These used to be sequential, so a PostHog call that never answered held
+  /// the whole screen on its placeholder — a non-critical telemetry event
+  /// gating the only thing the screen exists to show. `Analytics.capture`
+  /// already swallows its own failures; it does not get to swallow the plans
+  /// too.
+  void _init() {
+    unawaited(Analytics.paywallShown());
+    unawaited(_load());
   }
 
+  /// Ask the store what it will sell.
+  ///
+  /// **Bounded, and skipped entirely when the SDK was never configured.**
+  /// `Purchases.getOfferings()` on an unconfigured SDK does not reject — it
+  /// never answers, so `_loading` stayed true and the screen sat on its
+  /// placeholder forever instead of reaching the honest "not on sale yet"
+  /// state. The identical defect was found on a Redmi for
+  /// `getCustomerInfo()` in the internal-test batch and fixed in
+  /// `userProfileProvider`; this call had the same shape and was missed.
   Future<void> _load() async {
     try {
-      final offerings = await Purchases.getOfferings();
-      _offering = offerings.current;
+      if (Env.hasRevenueCat) {
+        final offerings =
+            await Purchases.getOfferings().timeout(kEntitlementProbeTimeout);
+        _offering = offerings.current;
+      }
     } catch (_) {
       // Offerings not configured yet (founder sets them in RevenueCat).
     } finally {
@@ -1002,23 +1024,27 @@ class _SubscriptionLegal extends StatelessWidget {
   }
 }
 
+/// The placeholder while the store is being asked.
+///
+/// Static, not a spinner: PawDoc's motion foundation gives every animation a
+/// reduce-motion equivalent, and a bare `CircularProgressIndicator` has none.
+/// It also never settles, which means no widget test can pump past it — the
+/// screen would be untestable in exactly the state a founder-gated build
+/// spends most of its time in.
 class _PlansLoading extends StatelessWidget {
   const _PlansLoading();
 
   @override
   Widget build(BuildContext context) => HomeCard(
+        key: const Key('paywall_loading'),
         radius: 18,
-        padding: const EdgeInsets.symmetric(vertical: 34),
+        padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 16),
         child: Column(
           children: [
-            SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2.2, color: PawTone.of(context).accent),
-            ),
-            const SizedBox(height: 12),
-            const Text('Reading plans from the store…',
+            Icon(LucideIcons.tag, size: 22, color: PawTone.of(context).accent),
+            const SizedBox(height: 11),
+            const Text('Asking your store for prices…',
+                textAlign: TextAlign.center,
                 style: TextStyle(color: HealthTone.dim, fontSize: 12)),
           ],
         ),

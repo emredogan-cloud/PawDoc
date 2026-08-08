@@ -5,6 +5,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../account/manage_subscription.dart';
 import '../account/user_profile.dart';
+import '../config/env.dart';
 import '../core/dates.dart';
 import '../core/paw_nav_bar.dart';
 import '../health/health_sections.dart';
@@ -71,10 +72,17 @@ class _PremiumHomeScreenState extends ConsumerState<PremiumHomeScreen> {
   /// Read once, for the savings band only. The purchase itself always goes
   /// through [PaywallScreen], which reads its own offerings — this screen
   /// never holds a package it could accidentally charge.
+  ///
+  /// Guarded and bounded for the same reason `_load()` there is: an
+  /// unconfigured SDK never answers, and a band that waits forever is a band
+  /// that never renders.
   Future<void> _loadOffering() async {
     try {
-      final offerings = await Purchases.getOfferings();
-      _offering = offerings.current;
+      if (Env.hasRevenueCat) {
+        final offerings =
+            await Purchases.getOfferings().timeout(kEntitlementProbeTimeout);
+        _offering = offerings.current;
+      }
     } catch (_) {
       // Not configured, or offline. The band simply does not render.
     } finally {

@@ -147,33 +147,41 @@ class _UsageLimitsScreenState extends ConsumerState<UsageLimitsScreen> {
           ] else ...[
             _CycleStrip(isPremium: isPremium),
             gap(9),
-            profile.when(
-              data: (p) => usage.when(
-                data: (u) => _MeterCard(
-                  meters: buildUsageMeters(
-                    isPremium: p.isPremium,
-                    photoChecksUsed: p.photoLogsUsedThisMonth,
-                    photoChecksResetAt: p.photoLogsResetAt,
-                    journalEntries: u.journalEntries,
-                    assistantMessagesToday: u.assistantMessagesToday,
-                    petCount: u.petCount,
-                  ),
-                  onUpgrade: _openPlans,
-                ),
-                loading: () => const _MeterPlaceholder(
-                    message: 'Counting what you have used…'),
-                error: (_, _) => _MeterPlaceholder(
-                  message: 'Your usage could not be read just now.',
-                  onRetry: () => ref.invalidate(accountUsageProvider),
-                ),
-              ),
-              loading: () => const _MeterPlaceholder(
-                  message: 'Reading your plan…'),
-              error: (_, _) => _MeterPlaceholder(
+            // `hasError` is checked BEFORE `isLoading`: Riverpod 3 retries a
+            // failed provider, which flips it straight back to `loading` and
+            // leaves `when(error:)` unreachable — the offline Home skeleton
+            // hang, found on a Redmi in the internal-test batch. A retry in
+            // flight keeps the message and the button rather than dropping
+            // back to a spinner.
+            if (profile.hasError && !profile.hasValue)
+              _MeterPlaceholder(
                 message: 'Your plan could not be read just now.',
                 onRetry: () => ref.invalidate(userProfileProvider),
+              )
+            else if (usage.hasError && !usage.hasValue)
+              _MeterPlaceholder(
+                message: 'Your usage could not be read just now.',
+                onRetry: () => ref.invalidate(accountUsageProvider),
+              )
+            else if (!profile.hasValue)
+              const _MeterPlaceholder(message: 'Reading your plan…')
+            else if (!usage.hasValue)
+              const _MeterPlaceholder(
+                  message: 'Counting what you have used…')
+            else
+              _MeterCard(
+                meters: buildUsageMeters(
+                  isPremium: profile.requireValue.isPremium,
+                  photoChecksUsed:
+                      profile.requireValue.photoLogsUsedThisMonth,
+                  photoChecksResetAt: profile.requireValue.photoLogsResetAt,
+                  journalEntries: usage.requireValue.journalEntries,
+                  assistantMessagesToday:
+                      usage.requireValue.assistantMessagesToday,
+                  petCount: usage.requireValue.petCount,
+                ),
+                onUpgrade: _openPlans,
               ),
-            ),
             gap(13),
           ],
           if (!isPremium) ...[

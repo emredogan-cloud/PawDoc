@@ -669,17 +669,24 @@ class EntitlementCompareTable extends StatelessWidget {
               ),
               SizedBox(
                 width: _premiumWidth,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(LucideIcons.crown, size: 13, color: t.accent),
-                    const SizedBox(width: 4),
-                    Text('Premium',
-                        style: TextStyle(
-                            color: t.accent,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800)),
-                  ],
+                // Shrink-to-fit: the crown plus "Premium" is 15dp wider than
+                // the column at the em-square test font, and a header that
+                // clips is a header that stops naming its column. The widget
+                // test found this before the device did.
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(LucideIcons.crown, size: 13, color: t.accent),
+                      const SizedBox(width: 4),
+                      Text('Premium',
+                          style: TextStyle(
+                              color: t.accent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800)),
+                    ],
+                  ),
                 ),
               ),
             ],
