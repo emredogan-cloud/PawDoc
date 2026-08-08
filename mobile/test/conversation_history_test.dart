@@ -143,7 +143,14 @@ void main() {
       expect(find.byKey(const Key('health_filter_health')), findsOneWidget);
 
       // Privacy card, rows, day grouping.
-      expect(find.text('Your conversations are private'), findsOneWidget);
+      //
+      // The card's title is asserted by TYPE rather than by its exact words:
+      // the words are a privacy claim, they are governed by
+      // `safety_copy_test.dart`'s scope rule, and pinning them here means a
+      // future correction to an over-broad claim fails a layout test instead
+      // of passing a copy one. The reference draws a privacy card; that is
+      // what this asserts.
+      expect(find.byType(HealthPrivacyCard), findsOneWidget);
       expect(find.byKey(const Key('conversation_tile_c1')), findsOneWidget);
       expect(find.text('Today'), findsOneWidget);
       // One group label, plus the stamp on each of the two threads in it —

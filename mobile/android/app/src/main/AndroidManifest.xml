@@ -8,10 +8,18 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <!-- Next Evolution Phase 5 (Smart Walks): COARSE location ONLY, foreground
-         only — the approximate-location dialog is the deliberate trust choice;
-         weather + nearby parks are fetched by the DEVICE (MET Norway / OSM)
-         and coordinates never reach PawDoc servers. FINE location is
-         intentionally NOT declared. "Nearby vet" remains an OS maps deep link. -->
+         only — the approximate-location dialog is the deliberate trust choice.
+         FINE location is intentionally NOT declared, and "Nearby vet" remains
+         an OS maps deep link rather than an in-app map.
+
+         Two consumers, and they differ — state both, because the Data safety
+         declaration turns on the second:
+           * Smart Walks: weather + nearby parks are fetched by the DEVICE
+             (MET Norway / OSM). Coordinates never reach a PawDoc server.
+           * Community (opt-in only): the fix is coarsened on-device to a
+             5-character geohash cell (~4.9 km) and THAT CELL is stored in
+             community_profiles.geohash. That is approximate location, it is
+             collected, and Play's Data safety form declares it. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <!-- GAP-B3 permission diet: triage capture is camera-only (enableAudio:
          false); Memories/Assistant gallery picking uses the system photo

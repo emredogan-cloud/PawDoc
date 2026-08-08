@@ -26,9 +26,22 @@ class LocationServiceOff extends LocationResult {
 
 /// Foreground-only, while-in-use location (Next Evolution F3).
 ///
-/// Privacy contract: coordinates are used ON-DEVICE (weather + places calls
-/// straight from the phone) and are never sent to or stored on PawDoc
-/// servers. No background location, ever.
+/// Privacy contract, stated with its scope — because the unscoped version of
+/// this sentence is the one that ends up on a Data safety form and in a store
+/// listing, and it is not true of the whole app:
+///
+/// * **This service** returns coordinates that are used **on-device only**.
+///   Smart Walks calls MET Norway for weather and OSM for parks straight from
+///   the phone; neither latitude nor longitude is sent to or stored on a
+///   PawDoc server by this path.
+/// * **Community is a different path.** If — and only if — the owner opts into
+///   community discovery, `community_onboarding_screen.dart` takes a fix from
+///   here, coarsens it to a **five-character geohash cell** (about 4.9 km
+///   across) and stores *that cell* in `community_profiles.geohash`. A cell is
+///   still approximate location, and Play's Data safety form must declare it.
+///
+/// No background location, ever. `ACCESS_FINE_LOCATION` is deliberately not
+/// declared in the manifest.
 class LocationService {
   const LocationService();
 
