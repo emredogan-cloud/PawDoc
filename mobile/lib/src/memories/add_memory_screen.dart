@@ -1019,6 +1019,11 @@ class _MediaStrip extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     buildDefaultDragHandles: false,
                     itemCount: photos.length,
+                    // `onReorderItem` supersedes this, but it does not exist
+                    // in the SDK this repo builds against (3.41.9) — only in
+                    // the newer stable CI resolves. The ignore is what
+                    // compiles on both; drop it when the floor moves.
+                    // ignore: deprecated_member_use
                     onReorder: onReorder,
                     proxyDecorator: (child, _, _) => Opacity(
                         opacity: 0.9,
