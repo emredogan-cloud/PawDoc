@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../account/user_profile.dart';
 import '../analysis/result_screen.dart';
-import '../analytics/analytics.dart';
 import '../core/action_labels.dart';
 import '../core/dates.dart';
 import '../core/friendly_error.dart';
@@ -15,7 +13,6 @@ import '../export/health_report_service.dart';
 import '../home/home_sections.dart';
 import '../memories/memory_photo.dart';
 import '../models/analysis_result.dart';
-import '../monetization/paywall_screen.dart';
 import '../pets/active_pet.dart';
 import '../pets/pet.dart';
 import '../pets/pet_form_screen.dart';
@@ -30,9 +27,9 @@ import '../theme/paw_ui.dart';
 import 'baseline_screen.dart';
 import 'health_event_form_screen.dart';
 import 'health_record_detail.dart';
+import 'health_report_preview_screen.dart';
 import 'health_sections.dart';
 import 'medication_tracker_screen.dart';
-import 'pdf_report_service.dart';
 import 'timeline.dart';
 import 'vaccination_manager_screen.dart';
 import 'weight_tracking_screen.dart';
@@ -91,34 +88,6 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
     } catch (_) {
       messenger.showSnackBar(const SnackBar(
           content: Text('Could not prepare the report. Please try again.')));
-    }
-  }
-
-  Future<void> _exportPdf(String petId, String petName) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    final profile = ref.read(userProfileProvider).asData?.value;
-    await Analytics.pdfReportRequested(
-        profile?.isPremium == true ? 'premium' : 'free');
-    try {
-      await ref
-          .read(pdfReportServiceProvider)
-          .generateAndShare(petId: petId, petName: petName);
-      await Analytics.pdfReportGenerated();
-    } on PdfReportPaywallException {
-      // GAP-E10: make the 402 actionable — surface the paywall, not a dead end.
-      messenger.showSnackBar(SnackBar(
-        content: const Text('PDF Health Reports are part of PawDoc Premium.'),
-        duration: const Duration(seconds: 8),
-        action: SnackBarAction(
-          label: 'Upgrade',
-          onPressed: () => navigator
-              .push(MaterialPageRoute(builder: (_) => const PaywallScreen())),
-        ),
-      ));
-    } catch (_) {
-      messenger.showSnackBar(const SnackBar(
-          content: Text('Could not generate the PDF. Please try again.')));
     }
   }
 
@@ -212,12 +181,16 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
           key: const Key('generate_pdf_report'),
           leading: const HealthGlyphDisc(
               icon: LucideIcons.fileText, tint: HealthTone.violet),
-          title: 'Export PDF',
-          subtitle: 'A printable health report',
+          title: 'Health report',
+          // The row used to fire the export straight off a one-line label, so
+          // the first time an owner saw what was in the file was after it had
+          // been shared. It opens the preview now; the export lives there.
+          subtitle: 'Preview it, then export the PDF',
           chevron: false,
           onTap: () {
             Navigator.pop(sheetContext);
-            _exportPdf(pet.id!, pet.name);
+            Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => HealthReportPreviewScreen(pet: pet)));
           },
         ),
         HealthRecordRow(
