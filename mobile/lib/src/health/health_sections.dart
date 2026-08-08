@@ -739,6 +739,7 @@ class HealthSearchField extends StatelessWidget {
     this.autofocus = true,
     this.fieldKey,
     this.onSubmitted,
+    this.focusNode,
     super.key,
   });
 
@@ -747,6 +748,11 @@ class HealthSearchField extends StatelessWidget {
   final String hint;
   final bool autofocus;
   final Key? fieldKey;
+
+  /// So a screen can hand focus to the field from somewhere else on the page.
+  /// The first-aid guide's hero button is a "start here" affordance, and what
+  /// it does is put the cursor in the search box.
+  final FocusNode? focusNode;
 
   /// Fired on the keyboard's search key. `search_memories` uses it to decide
   /// what to *remember* — storing every keystroke would fill the recent list
@@ -770,6 +776,7 @@ class HealthSearchField extends StatelessWidget {
           child: TextField(
             key: fieldKey,
             controller: controller,
+            focusNode: focusNode,
             onChanged: onChanged,
             onSubmitted: onSubmitted,
             textInputAction:
