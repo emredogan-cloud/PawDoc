@@ -27,19 +27,41 @@ import 'offer_state.dart';
 /// cooldown and lifetime cap — so this function only decides *where*, never
 /// *whether*.
 Future<void> maybeShowOffer(BuildContext context, WidgetRef ref) async {
-  // `.future` rather than a watch: this runs once from a post-frame callback,
-  // and a rebuild-driven read here would re-enter the navigator.
-  final candidate = await ref.read(offerCandidateProvider.future);
+  // `listenManual`, not a bare `ref.read(...future)`.
+  //
+  // `offerCandidateProvider` is `autoDispose`, and it awaits two bounded store
+  // calls. A `read` opens no subscription, so nothing keeps the provider alive
+  // across those awaits and it can be torn down mid-flight — leaving a future
+  // that never completes and an offer that silently never appears. That is a
+  // hard defect to notice, because "no offer" is also the correct answer
+  // almost all of the time.
+  //
+  // The subscription pins it for the duration and is closed in the `finally`.
+  // It does not have to be closed in `dispose` — Riverpod drops it with the
+  // widget — but closing it here means the provider is not held for the life
+  // of the shell either.
+  final sub = ref.listenManual(offerCandidateProvider, (_, _) {});
+  final OfferCandidate? candidate;
+  try {
+    candidate = await ref.read(offerCandidateProvider.future);
+  } catch (_) {
+    return;
+  } finally {
+    sub.close();
+  }
   if (candidate == null || !context.mounted) return;
+  // A local declared `final` without an initialiser is not promoted, and the
+  // builder closure below needs the non-nullable type.
+  final offer = candidate;
 
   // The cap is spent here — at the moment it actually reaches a screen — and
   // never during eligibility. An offer that was computed but never displayed
   // (because the widget was disposed, or the app was closing) must not count
   // against a budget of three.
-  await OfferPrefs.markShown(candidate.surface, DateTime.now());
+  await OfferPrefs.markShown(offer.surface, DateTime.now());
   if (!context.mounted) return;
 
   await Navigator.of(context).push(
-    MaterialPageRoute<bool>(builder: (_) => OfferScreen(candidate: candidate)),
+    MaterialPageRoute<bool>(builder: (_) => OfferScreen(candidate: offer)),
   );
 }
