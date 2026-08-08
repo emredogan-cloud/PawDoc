@@ -242,12 +242,17 @@ class _HowItWorks extends StatelessWidget {
 
 /// The reference's "What Data We Use", corrected.
 ///
-/// It lists "Your Data", a "Vet Knowledge Base — vet-reviewed medical content"
-/// and "Usage Data", and closes on a band reading "Your data stays yours · We
-/// never sell your data. Ever." with End-to-end Encryption / No AI Model
-/// Training / No Data Selling badges. There is no vet-reviewed knowledge base;
+/// It lists "Your Data", a "Vet Knowledge Base" of medical content it says a
+/// professional has checked, and "Usage Data", then closes on a band of
+/// encryption / no-training / no-selling badges. No such curated corpus exists:
 /// the model's veterinary knowledge is whatever it was trained on, which is
-/// exactly the thing a user should know.
+/// exactly the thing a user should be told.
+///
+/// (This comment deliberately paraphrases rather than quotes the reference's
+/// wording. `scripts/verify-no-placeholders.sh` greps raw source, comments
+/// included, and it is a ship-blocker — correctly so. The phrase does not
+/// belong in this repository in any form, not even inside an explanation of
+/// why it was rejected.)
 class _WhatItSees extends StatelessWidget {
   const _WhatItSees();
 
@@ -406,8 +411,8 @@ class _Limits extends StatelessWidget {
 /// The claims this screen deliberately refuses to make.
 ///
 /// Stating them as absences is stronger than omitting them: a user who has seen
-/// "vet-reviewed AI" advertised elsewhere gets a direct answer here rather than
-/// having to infer one from silence.
+/// some other app advertise professional oversight of its AI gets a direct
+/// answer here rather than having to infer one from silence.
 class _NeverClaims extends StatelessWidget {
   const _NeverClaims();
 
