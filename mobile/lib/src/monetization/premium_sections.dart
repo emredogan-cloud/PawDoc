@@ -37,7 +37,7 @@ import 'entitlements.dart';
 /// the EMERGENCY red — a quota chip in the same red as GET_HELP_NOW teaches
 /// exactly the wrong reflex. Running low on photo checks is not an urgency
 /// signal, so it gets a neutral warm tone that appears nowhere in triage.
-/// `premium_tone_test.dart` pins the separation, as `HealthTone`,
+/// `premium_screens_test.dart` pins the separation, as `HealthTone`,
 /// `AssistantTone` and `WalkBand` are pinned.
 class PremiumTone {
   const PremiumTone._();

@@ -28,7 +28,8 @@
 /// ## What the references claim and this product does not have
 ///
 /// Deliberately absent, and absent by name so a later screen cannot quietly
-/// reintroduce them (`premium_claims_test.dart` scans for each):
+/// reintroduce them (`premium_screens_test.dart`'s `product truth` group scans
+/// every rendered string on all four surfaces for each):
 ///
 /// * **Verified veterinarians / vet chat.** No veterinarian is employed,
 ///   contracted, verified or reachable. This is the single most dangerous
@@ -57,7 +58,7 @@ import '../memories/memory.dart' show kFreeMemoryLimit;
 /// Mirrors `FREE_PHOTO_MONTHLY_LIMIT` in
 /// `supabase/functions/_shared/free_tier.mjs`, which is the *enforcing* copy —
 /// the meter runs pre-AI on the server, so this constant is presentation only
-/// and must never be treated as the gate. `entitlements_parity_test.dart`
+/// and must never be treated as the gate. `entitlements_test.dart`
 /// reads the `.mjs` and fails if the two drift.
 const int kFreePhotoChecksPerMonth = 5;
 
