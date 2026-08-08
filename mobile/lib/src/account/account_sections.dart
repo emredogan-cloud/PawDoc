@@ -173,7 +173,14 @@ class AccountIdentityCard extends StatelessWidget {
                 ],
               );
               if (trailing == null) return identityBlock;
-              if (c.maxWidth < 330) {
+              // 360, not 330. At 330 a 393dp handset — the width the whole
+              // reference set is drawn at — stayed side-by-side with 333dp of
+              // card, which left the identity column ~106dp after the avatar
+              // and truncated every fact to "uiqa.aug04…", "Email & pas…",
+              // "Member sin…". Device-found; the reference's side-by-side
+              // composition simply does not fit an email address at readable
+              // type, so the plan card goes full-width underneath instead.
+              if (c.maxWidth < 360) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -658,8 +665,11 @@ class AccountFactRow extends StatelessWidget {
       tint: c,
       trailing: value == null
           ? null
+          // 128: an email address is the longest value any of these rows
+          // carries, and at 108 it broke mid-word ("uiqa.aug04@exam / ple.com")
+          // on the device. The subtitle beside it is `Expanded` and reflows.
           : ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 108),
+              constraints: const BoxConstraints(maxWidth: 128),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

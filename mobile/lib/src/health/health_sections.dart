@@ -1087,8 +1087,12 @@ class _StatCell extends StatelessWidget {
     // single-line height, so the row sizes to one line and the second one is
     // clipped away. Giving the box a height also makes every cell align without
     // the intrinsic pass having to guess.
+    // …and the box has to SCALE. A constant 25 fits two 10dp lines at 1.0x and
+    // clips the second at anything larger — device-found on the profile's
+    // five-cell strip at 1.3x, where "Vaccines" and "Reminders" lost their
+    // bottom halves. Every consumer of these tiles had the same latent bug.
     final label = SizedBox(
-      height: 25,
+      height: MediaQuery.textScalerOf(context).scale(25),
       child: Align(
         alignment: Alignment.topLeft,
         child: Text(stat.label,
