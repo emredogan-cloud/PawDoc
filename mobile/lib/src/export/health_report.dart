@@ -99,6 +99,8 @@ String buildVetVisitPrepPack({
   required List<Map<String, dynamic>> recentAnalyses,
   required List<HealthEvent> events,
   List<String> ownerQuestions = const [],
+  List<String> ownerAnswers = const [],
+  DateTime? visitOn,
   DateTime? now,
 }) {
   final today = now ?? DateTime.now();
@@ -107,6 +109,7 @@ String buildVetVisitPrepPack({
   b.writeln('# Vet Visit Prep — ${pet.name}');
   b.writeln();
   b.writeln('Prepared ${shortDate(today)} with PawDoc · for your veterinarian.');
+  if (visitOn != null) b.writeln('Appointment: ${shortDate(visitOn)}.');
   b.writeln();
 
   b.writeln('## Pet');
@@ -122,6 +125,18 @@ String buildVetVisitPrepPack({
     b.writeln('- Medical notes: ${pet.medicalNotes}');
   }
   b.writeln();
+
+  // What the owner filled in for THIS visit, before anything a model produced
+  // — a vet reads top-down, and the person's own account should come first.
+  if (ownerAnswers.isNotEmpty) {
+    b.writeln('## About this visit');
+    b.writeln('_Source: entered by the owner._');
+    for (final line in ownerAnswers) {
+      final t = line.trim();
+      if (t.isNotEmpty) b.writeln('- $t');
+    }
+    b.writeln();
+  }
 
   b.writeln('## Recent AI checks');
   b.writeln('_Source: PawDoc AI — generated from owner-submitted photos or '

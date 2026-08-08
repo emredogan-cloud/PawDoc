@@ -3,25 +3,36 @@
 Overall project status. Companion to `RESUME_GUIDE.md` (how to continue) and
 `IMPLEMENTATION_CHANGELOG_UI.md` (what changed, screen by screen).
 
-**Last updated:** 2026-08-08 · **Branch:** `ui-batch-s-community-emergency` ·
-**Head:** `8e418e8`
+**Last updated:** 2026-08-08 · **Branch:** `ui-batch-t-prep-report-premium` ·
+**Head:** `04fa5aa`
 
 ---
 
-## 0 · One thing needs a human
+## 0 · Things that need a human
 
-PR #98 merged (squash, `35a6ff5`); this branch was cut from that `main` and
-carries the community + emergency batch. GitHub refuses PR-author
-self-approval, so its merge needs a human approval or
-`gh pr merge --squash --admin`.
+PR #99 merged (squash, `b7559b9`); this branch was cut from that `main` and
+carries vet-visit prep, the health-report preview and the four premium
+surfaces. GitHub refuses PR-author self-approval, so its merge needs a human
+approval or `gh pr merge --squash --admin`.
 
-**One decision was taken this session and should be reviewed.** PawDoc's
-community has no posts table, so the three post mockups (`community_feed`,
-`community_post_detail`, `create_post`) were mapped onto the real graph —
-connections, the 1:1 thread, walk proposals, the profile — rather than shipped
-as inert shells. Post-only controls keep their place and say *Soon*. If the
-intent was a faithful posting shell awaiting a migration, say so and it can be
-rebuilt that way.
+**Two findings for the founder.**
+
+1. **The server's PDF renderer does not wrap text.** `generate-pdf-report`
+   calls `page.drawText(line)` once per line with no measurement, so an
+   analysis observation of 300 characters is drawn as a single line that runs
+   off the right edge of the page and is clipped. Every recent observation on
+   the QA account is that long. This is pre-existing and server-side, so it
+   was **not** changed in a UI batch — fixing it means editing the Edge
+   Function and redeploying, which is founder-gated. The new preview shows the
+   same *content* the file will carry; it wraps for readability, which the PDF
+   does not.
+2. **No RevenueCat product resolves in any build here**, so `subscription_plans`
+   was device-validated only in its "Premium is not on sale yet" state. The
+   priced state — plan cards, the monthly/yearly toggle, the savings badge, an
+   introductory-offer badge — is covered by unit tests over
+   `PaywallPricing` and by the widget tests, but has never been seen against a
+   live offering. It needs one pass on a build with
+   `REVENUECAT_PUBLIC_SDK_KEY_ANDROID` and a configured offering.
 
 ---
 
@@ -34,7 +45,7 @@ QA programme, and — currently — rebuilding the interface against the
 
 | Area | Status |
 |---|---|
-| Flutter app | builds, **852 tests** green, analyze clean |
+| Flutter app | builds, **968 tests** green, analyze clean |
 | AI service | deployed to Fly; Tier 2 Gemini → Tier 3 Claude |
 | Supabase | 3 migrations + 9 Edge Functions deployed |
 | Play | AAB 1.0.0+5 built and signed; internal testing configured |
@@ -45,7 +56,8 @@ QA programme, and — currently — rebuilding the interface against the
 
 ## 2 · Screens rebuilt against the reference set
 
-**47 of 57 mockups implemented.** (41 before this session, +6.)
+**53 of 58 mockups implemented.** (47 before this session, +6. The file count
+is 58, not the 57 earlier batches quoted.)
 
 | # | Mockup | Status | Commit |
 |---|---|---|---|

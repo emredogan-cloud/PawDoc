@@ -5,6 +5,52 @@ Chronological record of the UI migration (Phase 0 + A–Q). Detail lives in
 `PAWDOC_UI_IMPLEMENTATION_FINAL_REPORT.md`; resume state in
 `memory/UI_PROGRESS.md`.
 
+## 2026-08-08 (later) — vet prep, the health report and the four premium surfaces
+
+Branch `ui-batch-t-prep-report-premium`, cut from `main` after PR #99 merged
+(`b7559b9`). **53 of 58 mockups implemented. 968 tests** (was 852).
+
+| Mockup | Where it lives | Commit |
+|---|---|---|
+| `prepare_for_vet_visit` | `prep/vet_visit_prep_screen.dart` + `prep/vet_visit_prep.dart` (new model) | `f1acc80` |
+| `pdf_health_report_preview` | `health/health_report_preview_screen.dart` + `health/report_preview.dart` (both new) | `f1acc80` |
+| `premium_home` | `monetization/premium_home_screen.dart` (new) | `afc622d` |
+| `subscription_plans` | `monetization/paywall_screen.dart` (rebuilt in place) | `afc622d` |
+| `upgrade_benefits` | `monetization/upgrade_benefits_screen.dart` (new) | `afc622d` |
+| `usage_limits` | `monetization/usage_limits_screen.dart` (new) | `afc622d` |
+
+New shared modules: **`monetization/entitlements.dart`** (the audited
+catalogue every premium surface renders — four screens, one source of truth),
+**`monetization/premium_sections.dart`** (hero, feature strip, feature grid,
+comparison table, usage meter, band, FAQ, honesty note, `PremiumTone`),
+`monetization/usage_state.dart`, `monetization/subscription_state.dart`,
+`prep/vet_visit_prep.dart`, `health/report_preview.dart`.
+Deleted: `monetization/paywall_copy.dart` (orphaned by the rebuild).
+
+**Product-truth removals** — the four monetization plates are the most
+claim-dense in the set, and almost nothing they sell exists: chat with
+verified veterinarians, "premium tools made by vets", a 7-day money-back
+guarantee, "4.9/5 from 10,000+ reviews", three tiers at three invented
+prices, 1 GB of free storage, advanced analytics, priority/dedicated support,
+early access, multi-user access, a 15-pet ceiling. The `pdf_health_report_preview`
+plate adds an owner-contact panel, "all vaccinations are up to date", "Lab
+Results · Normal", "Allergy · Severity: Moderate", named clinics and
+veterinarians, and a "Scan to verify" QR. `prepare_for_vet_visit` adds a
+Severity meter. All gone; see each screen's header table for the reasoning.
+
+**Defects found and fixed:** `Purchases.getOfferings()` hangs on an
+unconfigured SDK (both offering reads now guarded + bounded — the same defect
+class as the Redmi `getCustomerInfo()` hang); analytics was awaited before the
+price read; `HealthNumberedHead` split its free space between a `Spacer` and
+its title's `Flexible`; `usage_limits` checked `isLoading` before `hasError`,
+which Riverpod 3's retry makes unreachable; a RenderFlex overflow in the
+comparison header at the em-square test font.
+
+**Parity tests added:** `entitlements_test` reads `free_tier.mjs`,
+`assistant_chat.mjs` and `quota_gate.mjs`; `pdf_report_preview_test` reads
+`_shared/pdf_report.mjs` and `generate-pdf-report/index.ts`. Both fail if the
+Dart copy drifts from the server that enforces or builds it.
+
 ## 2026-08-08 — community and emergency: six screens
 
 Branch `ui-batch-s-community-emergency`, cut from `main` after PR #98 merged

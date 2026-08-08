@@ -2819,6 +2819,7 @@ class HealthStepRail extends StatelessWidget {
   const HealthStepRail({
     required this.steps,
     required this.current,
+    this.completed,
     this.onSelect,
     super.key,
   });
@@ -2828,11 +2829,22 @@ class HealthStepRail extends StatelessWidget {
   /// Zero-based.
   final int current;
 
+  /// Which stops are done, when "done" is not simply "before the current one".
+  ///
+  /// A wizard is linear, so [current] alone is enough for `add_memory`. The
+  /// visit-prep rail is not: an owner can fill the questions before the
+  /// reasons, and the reference's own "4 / 6 Completed" counts a *set*. When
+  /// this is supplied it decides the tick; [current] still decides the
+  /// highlight.
+  final Set<int>? completed;
+
   /// Tapping a stop jumps to it. The reference draws no back affordance at
   /// all, and a four-step form whose only navigation is forward is a trap —
   /// the *whole column* is the target, not the 26dp dot, because a label with
   /// no hit box is the kind of thing that only fails on a real thumb.
   final ValueChanged<int>? onSelect;
+
+  bool _passed(int i) => completed?.contains(i) ?? i < current;
 
   @override
   Widget build(BuildContext context) {
@@ -2864,13 +2876,21 @@ class HealthStepRail extends StatelessWidget {
                               Expanded(
                                 child: i == 0
                                     ? const SizedBox.shrink()
-                                    : _StepDash(passed: i <= current, tone: t),
+                                    : _StepDash(
+                                        passed: _passed(i) || _passed(i - 1),
+                                        tone: t),
                               ),
-                              _StepDot(index: i, current: current, tone: t),
+                              _StepDot(
+                                  index: i,
+                                  current: current,
+                                  passed: _passed(i),
+                                  tone: t),
                               Expanded(
                                 child: i == steps.length - 1
                                     ? const SizedBox.shrink()
-                                    : _StepDash(passed: i < current, tone: t),
+                                    : _StepDash(
+                                        passed: _passed(i) && _passed(i + 1),
+                                        tone: t),
                               ),
                             ],
                           ),
@@ -2910,17 +2930,18 @@ class _StepDot extends StatelessWidget {
   const _StepDot({
     required this.index,
     required this.current,
+    required this.passed,
     required this.tone,
   });
 
   final int index;
   final int current;
+  final bool passed;
   final PawTone tone;
 
   @override
   Widget build(BuildContext context) {
     final active = index == current;
-    final passed = index < current;
     return Container(
       width: 26,
       height: 26,
@@ -2935,8 +2956,13 @@ class _StepDot extends StatelessWidget {
                     ? tone.accent.withValues(alpha: 0.45)
                     : Colors.white.withValues(alpha: 0.12)),
       ),
+      // The active dot is filled with the accent, so its tick has to be ink —
+      // an accent tick on an accent disc is invisible. Only reachable in the
+      // `completed`-set mode, where the current step can also be done.
       child: passed
-          ? Icon(LucideIcons.check, size: 13, color: tone.accent)
+          ? Icon(LucideIcons.check,
+              size: 13,
+              color: active ? const Color(0xFF06110A) : tone.accent)
           : Text('${index + 1}',
               style: TextStyle(
                   color: active ? const Color(0xFF06110A) : HealthTone.muted,
@@ -3017,30 +3043,52 @@ class HealthNumberedHead extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text('$number.',
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.5,
-                    height: 1.15,
-                    fontWeight: FontWeight.w800)),
-            const SizedBox(width: 7),
-            Flexible(
-              child: Text(title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14.5,
-                      height: 1.15,
-                      fontWeight: FontWeight.w700)),
+            // The number/title/suffix group takes all the free width and the
+            // trailing control sits against the right edge.
+            //
+            // It used to be one flat Row ending in `Spacer()`, and a `Spacer`
+            // is an `Expanded` — so it competed with the title's `Flexible`
+            // and the two split the free space evenly. The title ellipsised
+            // to "What you n…" on the device with 90dp of slack sitting idle
+            // beside it. Same trap as §5.9: never two flexible children in
+            // one Row without weighted shares.
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('$number.',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.5,
+                          height: 1.15,
+                          fontWeight: FontWeight.w800)),
+                  const SizedBox(width: 7),
+                  Flexible(
+                    child: Text(title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.5,
+                            height: 1.15,
+                            fontWeight: FontWeight.w700)),
+                  ),
+                  if (suffix != null) ...[
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(suffix!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: HealthTone.faint,
+                              fontSize: 12,
+                              height: 1.15)),
+                    ),
+                  ],
+                ],
+              ),
             ),
-            if (suffix != null) ...[
-              const SizedBox(width: 5),
-              Text(suffix!,
-                  style: const TextStyle(
-                      color: HealthTone.faint, fontSize: 12, height: 1.15)),
-            ],
-            if (trailing != null) ...[const Spacer(), trailing!],
+            if (trailing != null) ...[const SizedBox(width: 8), trailing!],
           ],
         ),
         if (subtitle != null) ...[

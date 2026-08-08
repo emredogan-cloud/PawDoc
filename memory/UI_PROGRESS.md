@@ -246,4 +246,9 @@ hidden, because that page carries a footnote under its CTA. `OnbSpacing` /
 
 ## Remaining
 
-All phases complete. Remaining work is owner-gated: D-4 asset regeneration (6 gaps), D-5 payment marks, and per-screen mockup parity for the layout-level redesign (see PAWDOC_UI_IMPLEMENTATION_FINAL_REPORT.md §5).
+All phases complete. Screen-by-screen rebuild against `new-interface/` is at
+**53 of 58** — the five left are the settings surfaces (`account_management`,
+`profile`, `privacy_security`, `notifications`, `ai_transparency`), plus the
+two pre-auth screens which exist but were never re-walked (`000`, sign-in).
+Owner-gated: D-4 asset regeneration (6 gaps), D-5 payment marks.
+See `RESUME_GUIDE.md` for the live state.

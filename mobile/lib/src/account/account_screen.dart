@@ -9,7 +9,7 @@ import '../core/consent_prefs.dart';
 
 import '../auth/auth_controller.dart';
 import '../auth/supabase_providers.dart';
-import '../monetization/paywall_screen.dart';
+import '../monetization/premium_home_screen.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_components.dart';
 import '../theme/paw_ui.dart';
@@ -110,19 +110,25 @@ class AccountScreen extends ConsumerWidget {
             ),
           ),
 
-          // Subscription. G8: 'manage' actually manages — a premium user gets
-          // the store's subscription page (RevenueCat managementURL when
-          // available, the platform default otherwise), never the paywall.
+          // Subscription. Decision C-7 / review V-24: Premium is **reached
+          // from here**, not from a navigation slot — Emergency keeps that.
+          // The destination is the Premium hub rather than the paywall
+          // itself, so the row explains before it sells; the hub's own CTA is
+          // what opens the store. G8 is unchanged: an active subscriber still
+          // goes straight to the store's management page.
           profile.maybeWhen(
             data: (p) => _Tile(
               key: const Key('account_subscription_tile'),
               icon: Icons.workspace_premium_outlined,
-              title: p.isPremium ? 'Manage subscription' : 'Upgrade to Premium',
-              subtitle: p.isPremium ? 'Change plan or cancel anytime' : null,
+              title: p.isPremium ? 'Manage subscription' : 'PawDoc Premium',
+              subtitle: p.isPremium
+                  ? 'Change plan or cancel anytime'
+                  : 'Plans, benefits and your usage',
               onTap: () async {
                 if (!p.isPremium) {
                   await Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const PremiumHomeScreen()),
                   );
                   return;
                 }
@@ -130,15 +136,15 @@ class AccountScreen extends ConsumerWidget {
               },
             ),
             // While the profile is still loading (or failed), the row must
-            // still go somewhere — an inert tile is a dead end. The paywall is
-            // the safe destination: a premium user who lands there sees their
+            // still go somewhere — an inert tile is a dead end. The hub is the
+            // safe destination: a premium user who lands there sees their
             // active plan rather than being sold anything.
             orElse: () => _Tile(
               key: const Key('account_subscription_tile'),
               icon: Icons.workspace_premium_outlined,
               title: 'Subscription',
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PaywallScreen()),
+                MaterialPageRoute(builder: (_) => const PremiumHomeScreen()),
               ),
             ),
           ),
