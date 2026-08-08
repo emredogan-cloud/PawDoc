@@ -48,4 +48,73 @@ class PaywallPricing {
     final pct = ((1 - annualPrice / twelveMonths) * 100).round();
     return pct >= 1 ? 'Save $pct%' : null;
   }
+
+  /// What a weekly plan costs over a year, stated so the arithmetic is visible.
+  ///
+  /// A weekly plan is the most expensive way to buy a year of anything, and a
+  /// plan ladder that hides it is a ladder designed to mislead. So the weekly
+  /// card carries its own annualised figure — but the wording is the whole
+  /// point, and it is why this returns a *sentence* rather than a number:
+  ///
+  ///   * it names the multiplier — **"52 weeks at this price is ≈ …"** — so the
+  ///     reader can check it, rather than trusting an unexplained "$207/year";
+  ///   * 52 weeks is exactly 364 days, so the claim is arithmetically true as
+  ///     stated. It is *not* dressed up as "per year", which would be 52.18
+  ///     billing periods and would overstate nothing but understate the cost;
+  ///   * it is a **cost** statement, never a "you save" statement — the saving
+  ///     belongs to the annual card, computed against the monthly plan, which
+  ///     is the comparison a subscriber would actually make.
+  ///
+  /// Returns null when the figure cannot be produced honestly: no price, a
+  /// non-positive price, or no currency to format it in. The card then says
+  /// only "Billed weekly", which is true and complete.
+  static String? weeklyAnnualisedNote({
+    required double? weeklyPrice,
+    required String? currencySymbolSource,
+  }) {
+    if (weeklyPrice == null || weeklyPrice <= 0) return null;
+    final formatted = formatLike(currencySymbolSource, weeklyPrice * 52);
+    return formatted == null
+        ? null
+        : '52 weeks at this price is ≈ $formatted';
+  }
+
+  /// Formats [amount] using the store's own price string as the template.
+  ///
+  /// The store returns e.g. `"₺149,99"`, `"$3.99"` or `"3,99 €"`. Rather than
+  /// guessing a locale, the digits are lifted out of that template and replaced
+  /// — so the currency symbol, its position, and the decimal separator all stay
+  /// exactly as the store wrote them. Returns null when the template carries no
+  /// recognisable number, because a figure printed in the wrong currency is
+  /// worse than no figure.
+  static String? formatLike(String? template, double amount) {
+    if (template == null || template.isEmpty) return null;
+    final match = RegExp(r'\d[\d., \s]*\d|\d').firstMatch(template);
+    if (match == null) return null;
+    final sample = match.group(0)!;
+    // Whichever of . or , appears LAST in the sample is that locale's decimal
+    // separator; the other one groups thousands.
+    final lastDot = sample.lastIndexOf('.');
+    final lastComma = sample.lastIndexOf(',');
+    final decimalSep = lastComma > lastDot ? ',' : '.';
+    final groupSep = decimalSep == ',' ? '.' : ',';
+    final hasDecimals = sample.contains(decimalSep) &&
+        sample.length - sample.lastIndexOf(decimalSep) - 1 == 2;
+
+    final fixed = amount.toStringAsFixed(hasDecimals ? 2 : 0);
+    final parts = fixed.split('.');
+    final grouped = _group(parts.first, groupSep);
+    final rendered =
+        parts.length > 1 ? '$grouped$decimalSep${parts[1]}' : grouped;
+    return template.replaceRange(match.start, match.end, rendered);
+  }
+
+  static String _group(String digits, String separator) {
+    final buffer = StringBuffer();
+    for (var i = 0; i < digits.length; i++) {
+      if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(separator);
+      buffer.write(digits[i]);
+    }
+    return buffer.toString();
+  }
 }

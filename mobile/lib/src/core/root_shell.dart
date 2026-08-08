@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../health/history_timeline_screen.dart';
 import '../home/home_screen.dart';
+import '../monetization/maybe_show_offer.dart';
 import '../onboarding/pending_pet.dart';
 import '../pets/pets_list_screen.dart';
 import '../theme/design_tokens.dart';
@@ -49,6 +50,14 @@ class _RootShellState extends ConsumerState<RootShell> {
     // the one place the draft can be flushed once.
     WidgetsBinding.instance
         .addPostFrameCallback((_) => PendingPet.flush(ref));
+    // The single trigger for the unprompted second-chance / win-back surface.
+    // It is here rather than on a router hook or an app-resume listener for the
+    // reason `maybe_show_offer.dart` documents: this shell is entered once per
+    // session, so "once per session at most" comes free, and the eligibility
+    // gate (phase, real Play offer, cooldown, lifetime cap) does the rest.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) maybeShowOffer(context, ref);
+    });
   }
 
   static const _pages = <Widget>[
