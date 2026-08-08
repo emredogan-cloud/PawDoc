@@ -1,26 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 import '../analytics/analytics.dart';
-import '../core/app_image.dart';
-import '../core/app_motion_asset.dart';
-import '../theme/app_assets.dart';
+import '../core/paw_nav_bar.dart';
+import '../health/health_sections.dart';
+import '../home/home_sections.dart';
 import '../theme/design_tokens.dart';
+import '../theme/paw_components.dart';
 import '../theme/paw_ui.dart';
+import '../theme/ui_assets.dart';
 import '../config/legal_urls.dart';
 import '../account/user_profile.dart';
-import 'paywall_copy.dart';
+import 'entitlements.dart';
 import 'paywall_pricing.dart';
+import 'premium_sections.dart';
 import 'premium_welcome.dart';
 import 'purchase_error_message.dart';
+import 'upgrade_benefits_screen.dart';
 
-/// Annual-first paywall (evolution Phase 6): ONE plan, record-centric value.
-/// Free = safety (unmetered text guidance + the red button); Premium = memory
-/// (unlimited photo logs, full history, the Vet Visit Prep Pack, reminders,
-/// PDF export). The GET_HELP_NOW trust rule (paywall_policy.dart) is
-/// untouched — nothing here can gate the emergency path.
+/// `subscription_plans`, rebuilt against its reference.
+///
+/// **The most claim-dense plate in the set.** It prints three tiers — Basic
+/// $4.99, Premium $8.99, Family $14.99 — at prices nothing configures, sells
+/// *"Unlock premium tools made by vets"*, *"Loved by pet parents worldwide"*,
+/// a *"7-Day Free Trial"*, a *"7-Day Money-Back … full refund, no questions"*,
+/// *"Join thousands of happy PawDoc families"* and *"★★★★★ 4.9/5 from 10,000+
+/// reviews"*, and closes on a row of payment-network logos.
+///
+/// PawDoc has **one plan**, priced by the store, sold pre-launch to nobody.
+/// So the composition survives and every figure on it is read at runtime:
+///
+/// | Reference | Shipped | Why |
+/// |---|---|---|
+/// | Basic / Premium / Family at $4.99 / $8.99 / $14.99 | Free and Premium, priced from the store's own `priceString` | the tiers do not exist and a hardcoded price is one we would not charge |
+/// | "Save 33%" | computed by [PaywallPricing.savingsBadge], hidden unless both plans loaded in one currency and annual is genuinely cheaper | a savings claim is arithmetic, not decoration |
+/// | "7-Day Free Trial · Experience all Premium features risk-free." | shown only when `storeProduct.introductoryPrice != null` | the store decides whether a trial exists; the app may not assert one |
+/// | "7-Day Money-Back · Not happy? Get a full refund, no questions." | *(gone)* | PawDoc operates no refund programme — refunds are Google's, on Google's terms |
+/// | "Unlock premium tools made by vets" | *(gone)* | no veterinarian authored any part of this product |
+/// | "Loved by pet parents worldwide" / "Join thousands of happy families" | *(gone)* | pre-launch: there are none |
+/// | "★ 4.9/5 from 10,000+ reviews" | *(gone)* | fabricated ratings, the same defect as the onboarding "★ 4.8" line |
+/// | "Priority Vet Chat", "Multi-User Access (4)", "Advanced Analytics", "Dedicated Support", "Early Access to New Features" | *(gone)* | none exist in any plan |
+/// | "Your data is encrypted and 100% private" | "No ads. No data sale." | an absolute privacy claim outruns any implementation |
+/// | VISA / Mastercard / AMEX / Apple Pay / G Pay marks | a sentence naming Google Play | payment marks ship from official brand kits only (decision D-5), and none is sourced |
+///
+/// The purchase, restore and error-mapping logic below is **unchanged** — it
+/// is the part that has been through a real store — and so is the trust rule
+/// in `paywall_policy.dart`: nothing here can gate the emergency path.
 class PaywallScreen extends ConsumerStatefulWidget {
   const PaywallScreen({super.key});
 
@@ -28,10 +56,14 @@ class PaywallScreen extends ConsumerStatefulWidget {
   ConsumerState<PaywallScreen> createState() => _PaywallScreenState();
 }
 
+/// Which column of the toggle is selected.
+enum BillingPeriod { annual, monthly }
+
 class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   Offering? _offering;
   bool _loading = true;
   bool _purchasing = false;
+  BillingPeriod _period = BillingPeriod.annual;
 
   @override
   void initState() {
@@ -51,7 +83,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     } catch (_) {
       // Offerings not configured yet (founder sets them in RevenueCat).
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        // Land on whichever period actually resolved, so the toggle never
+        // opens on an empty column.
+        if (_offering?.annual == null && _offering?.monthly != null) {
+          _period = BillingPeriod.monthly;
+        }
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -103,49 +142,40 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     }
   }
 
-  // Annual-first plan cards. ONE plan, everything included — no tiers, no
-  // add-ons.
-  //
-  // A card is built ONLY for a package the store actually returned. There is no
-  // placeholder price: a hardcoded figure next to a real localized one renders
-  // two currencies side by side and quotes a price we would not charge, so a
-  // package that did not resolve is omitted rather than faked.
-  List<Widget> _plans(Package? annual, Package? monthly) {
-    final cards = <Widget>[];
-    if (annual != null) {
-      cards.add(_PlanCard(
-        key: const Key('paywall_annual'),
-        title: 'Annual',
-        price: annual.storeProduct.priceString,
-        subtitle:
-            PaywallPricing.annualSubtitle(annual.storeProduct.pricePerMonthString),
-        featured: true,
-        badge: PaywallPricing.savingsBadge(
-          annualPrice: annual.storeProduct.price,
-          annualCurrency: annual.storeProduct.currencyCode,
-          monthlyPrice: monthly?.storeProduct.price,
-          monthlyCurrency: monthly?.storeProduct.currencyCode,
-        ),
-        busy: _purchasing,
-        onTap: () => _purchase(annual),
-      ));
+  Future<void> _restore() async {
+    // SUB-01: Restore was a silent no-op — Apple requires it to function.
+    // Now it refreshes entitlements and SAYS what happened.
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    try {
+      final info = await Purchases.restorePurchases();
+      final active = info.entitlements.active.isNotEmpty;
+      ref.invalidate(userProfileProvider);
+      if (active) {
+        // Phase 8: restoring is a premium transition too.
+        if (mounted) await showPremiumWelcome(context, restored: true);
+        if (mounted) navigator.pop(true);
+      } else {
+        messenger.showSnackBar(const SnackBar(
+            content:
+                Text('No previous purchase found for this store account.')));
+      }
+    } catch (_) {
+      messenger.showSnackBar(const SnackBar(
+          content: Text('Could not restore right now. Please try again.')));
     }
-    if (monthly != null) {
-      if (cards.isNotEmpty) cards.add(const SizedBox(height: 12));
-      cards.add(_PlanCard(
-        key: const Key('paywall_monthly'),
-        title: 'Monthly',
-        price: monthly.storeProduct.priceString,
-        subtitle: 'Flexible, cancel anytime',
-        // Annual is the featured plan whenever it is offered; when it is the
-        // only plan available, monthly carries the primary CTA.
-        featured: annual == null,
-        busy: _purchasing,
-        onTap: () => _purchase(monthly),
-      ));
-    }
-    return cards;
   }
+
+  // -------------------------------------------------------------------------
+
+  Package? get _selected => _period == BillingPeriod.annual
+      ? _offering?.annual
+      : _offering?.monthly;
+
+  /// True only when the *store* reports an introductory offer on the selected
+  /// product. Nothing else in this file may use the word "trial".
+  bool get _storeOffersTrial =>
+      _selected?.storeProduct.introductoryPrice != null;
 
   @override
   Widget build(BuildContext context) {
@@ -156,106 +186,771 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
     // same user-facing situation as no offering at all, so it gets the same
     // production-safe state instead of a CTA-less void.
     final hasPlans = annual != null || monthly != null;
+    final isPremium = ref.watch(userProfileProvider).maybeWhen(
+        data: (p) => p.isPremium, orElse: () => false);
+    final savings = annual == null
+        ? null
+        : PaywallPricing.savingsBadge(
+            annualPrice: annual.storeProduct.price,
+            annualCurrency: annual.storeProduct.currencyCode,
+            monthlyPrice: monthly?.storeProduct.price,
+            monthlyCurrency: monthly?.storeProduct.currencyCode,
+          );
 
     return PawBackground(
       variant: PawSurface.dark,
-      child: Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text('PawDoc Premium'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpace.s20),
-        children: [
-          Text('The health record your vet actually wants to see',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.ink50, fontWeight: FontWeight.w700)),
-          const SizedBox(height: AppSpace.s8),
-          Text(
-              'Symptom checks stay free for everyone. Premium keeps the full record — every pet, every photo, every visit.',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: AppColors.ink300)),
-          const SizedBox(height: AppSpace.s16),
-          Center(
-            // M1 (A4): sleeper breathes with floating "z"; static PNG (the new
-            // premium night hero) under reduce-motion.
-            child: AppMotionAsset(
-              AppMotionAssets.paywallPeaceLoop,
-              fallbackAsset: AppAssets.premiumSleepingDog,
-              height: 180,
-              fallback: const SizedBox.shrink(), // graceful: hide if no art yet
+      child: HealthRecordScaffold(
+        appBar: PetModuleAppBar(
+          title: 'Subscription Plans',
+          icon: LucideIcons.crown,
+          subtitle: 'One plan, everything included.',
+          actions: [
+            HealthCircleButton(
+              key: const Key('paywall_benefits'),
+              icon: LucideIcons.circleHelp,
+              tooltip: 'What Premium changes',
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => const UpgradeBenefitsScreen())),
             ),
-          ),
-          const SizedBox(height: AppSpace.s16),
-          const _TrustPillars(),
-          const SizedBox(height: AppSpace.s16),
-          const _ValueStack(),
-          // Truthful value/trust card (was Variant C's arm; now always shown —
-          // the copy survived the honesty rebuild and models the approved tone).
-          const SizedBox(height: AppSpace.s16),
-          const _SocialProof(),
-          const SizedBox(height: AppSpace.s24),
-          // Plans render only when RevenueCat offerings are configured. When they
-          // aren't, we show a production-safe "coming soon" state instead of
-          // placeholder-priced CTAs or any internal/dev text.
+          ],
+        ),
+        bottomNav: const PawNavBar(detached: true),
+        children: [
+          gap(4),
+          const _PlanTrustBand(),
+          gap(13),
+          if (hasPlans && annual != null && monthly != null) ...[
+            _PeriodToggle(
+              period: _period,
+              savings: savings,
+              onChanged: (p) => setState(() => _period = p),
+            ),
+            gap(13),
+          ],
           if (_loading)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpace.s24),
-                child: CircularProgressIndicator(),
-              ),
-            )
+            const _PlansLoading()
           else if (!hasPlans)
             const _PremiumComingSoon()
           else
-            ..._plans(annual, monthly),
+            HealthBleed(
+              child: _PlanCarousel(
+                premium: _selected,
+                period: _period,
+                busy: _purchasing,
+                isPremium: isPremium,
+                storeOffersTrial: _storeOffersTrial,
+                onChoose: () => _purchase(_selected),
+              ),
+            ),
+          gap(13),
+          _AssuranceStrip(showTrial: _storeOffersTrial),
+          gap(13),
+          PremiumFaq(
+            title: 'Frequently asked questions',
+            items: [
+              (
+                question: 'Can I cancel anytime?',
+                answer: 'Yes. Subscriptions are managed by Google Play — '
+                    'cancel there and Premium stays active until the end of '
+                    'the period you have already paid for.',
+              ),
+              (
+                question: 'Will I lose my data if I cancel?',
+                answer: 'No. Pets, records, reminders, journal entries and '
+                    'past checks stay exactly where they are. The free '
+                    'allowances come back, so new photo checks, new journal '
+                    'entries and new assistant messages are counted again — '
+                    'nothing already saved is removed.',
+              ),
+              (
+                question: 'Is there a free trial?',
+                answer: _storeOffersTrial
+                    ? 'Google Play is offering an introductory period on this '
+                        'product. The exact terms are shown in the Play '
+                        'purchase sheet before you confirm.'
+                    : 'Not on this product today. If Google Play ever offers '
+                        'an introductory period, it appears here and in the '
+                        'Play purchase sheet — PawDoc does not run trials of '
+                        'its own.',
+              ),
+              (
+                question: 'Does PawDoc offer refunds?',
+                answer: 'Refunds are handled by Google Play under Google’s '
+                    'refund policy. PawDoc does not operate a separate '
+                    'money-back guarantee.',
+              ),
+              (
+                question: 'Do I need Premium in an emergency?',
+                answer: 'No, and you never will. Emergency help, first aid '
+                    'and symptom checks by text are unmetered on every plan, '
+                    'and an emergency result is never paywalled — that is '
+                    'enforced on the server as well as here.',
+              ),
+            ],
+          ),
+          gap(11),
+          const _PaymentNote(),
+          gap(9),
           // Apple 3.1.2 / Google Play: auto-renew disclosure + functional links
           // to Subscription Terms, Terms of Service, and Privacy Policy, shown
           // near the purchase CTAs whenever real plans are offered.
           if (hasPlans) const _SubscriptionLegal(),
-          const SizedBox(height: AppSpace.s16),
-          TextButton(
-            key: const Key('paywall_restore'),
-            onPressed: () async {
-              // SUB-01: Restore was a silent no-op — Apple requires it to
-              // function. Now it refreshes entitlements and SAYS what happened.
-              final messenger = ScaffoldMessenger.of(context);
-              final navigator = Navigator.of(context);
-              try {
-                final info = await Purchases.restorePurchases();
-                final active = info.entitlements.active.isNotEmpty;
-                ref.invalidate(userProfileProvider);
-                if (active) {
-                  // Phase 8: restoring is a premium transition too.
-                  if (context.mounted) {
-                    await showPremiumWelcome(context, restored: true);
-                  }
-                  if (context.mounted) navigator.pop(true);
-                } else {
-                  messenger.showSnackBar(const SnackBar(
-                      content: Text(
-                          'No previous purchase found for this store account.')));
-                }
-              } catch (e) {
-                messenger.showSnackBar(SnackBar(
-                    content:
-                        Text('Could not restore right now. Please try again.')));
-              }
-            },
-            child: const Text('Restore purchases'),
+          gap(6),
+          Row(
+            children: [
+              Expanded(
+                child: TextButton(
+                  key: const Key('paywall_restore'),
+                  onPressed: _restore,
+                  child: const Text('Restore purchases'),
+                ),
+              ),
+              Expanded(
+                child: TextButton(
+                  key: const Key('paywall_not_now'),
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  child: const Text('Not now'),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            key: const Key('paywall_not_now'),
-            onPressed: () => Navigator.of(context).maybePop(),
-            child: const Text('Not now'),
+          gap(14),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The trust band
+// ---------------------------------------------------------------------------
+
+/// The reference's shield-and-duo banner, with its three bullets replaced.
+///
+/// Reference: "Unlock premium tools made by vets" · "Loved by pet parents
+/// worldwide" · "Cancel anytime. 7-day money-back guarantee." Two are false
+/// and the third is half false, so all three are rewritten to statements that
+/// hold: one plan, safety free for everyone, and the actual cancellation path.
+class _PlanTrustBand extends StatelessWidget {
+  const _PlanTrustBand();
+
+  static const _lines = <(IconData, String)>[
+    (LucideIcons.circleCheck, 'One plan. Everything included, no add-ons.'),
+    (LucideIcons.circleAlert, 'Emergency help stays free on every plan.'),
+    (LucideIcons.repeat, 'Cancel anytime in Google Play.'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    return HomeCard(
+      radius: 20,
+      padding: EdgeInsets.zero,
+      accent: t.accent.withValues(alpha: 0.26),
+      glow: 0.08,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -30,
+              top: -6,
+              bottom: -6,
+              width: 168,
+              child: IgnorePointer(
+                child: BlendMask(
+                  blendMode: BlendMode.screen,
+                  child: Image.asset(
+                    UiAssets.onbHeroDogCatHalo,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.centerLeft,
+                    excludeFromSemantics: true,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+              child: FractionallySizedBox(
+                widthFactor: 0.70,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('The record, without limits.',
+                        style: TextStyle(
+                            color: t.accent,
+                            fontSize: 15,
+                            height: 1.2,
+                            fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 9),
+                    for (final (icon, line) in _lines)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 1),
+                              child:
+                                  Icon(icon, size: 13, color: t.accent),
+                            ),
+                            const SizedBox(width: 7),
+                            Expanded(
+                              child: Text(line,
+                                  style: const TextStyle(
+                                      color: HealthTone.dim,
+                                      fontSize: 11,
+                                      height: 1.35)),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The period toggle
+// ---------------------------------------------------------------------------
+
+class _PeriodToggle extends StatelessWidget {
+  const _PeriodToggle({
+    required this.period,
+    required this.onChanged,
+    this.savings,
+  });
+
+  final BillingPeriod period;
+  final ValueChanged<BillingPeriod> onChanged;
+
+  /// "Save 41%", computed from the two store prices. Null hides the badge —
+  /// which is the case whenever the claim cannot be made truthfully.
+  final String? savings;
+
+  @override
+  Widget build(BuildContext context) {
+    return HomeCard(
+      radius: 16,
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: _PeriodCell(
+              fieldKey: const Key('paywall_period_monthly'),
+              title: 'Monthly',
+              subtitle: 'Pay monthly',
+              selected: period == BillingPeriod.monthly,
+              onTap: () => onChanged(BillingPeriod.monthly),
+            ),
+          ),
+          Expanded(
+            child: _PeriodCell(
+              fieldKey: const Key('paywall_period_annual'),
+              title: 'Yearly',
+              subtitle: 'Pay yearly',
+              badge: savings,
+              selected: period == BillingPeriod.annual,
+              onTap: () => onChanged(BillingPeriod.annual),
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PeriodCell extends StatelessWidget {
+  const _PeriodCell({
+    required this.fieldKey,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+    this.badge,
+  });
+
+  final Key fieldKey;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+  final String? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '$title, $subtitle',
+      child: ExcludeSemantics(
+        child: Material(
+          color:
+              selected ? t.accent.withValues(alpha: 0.10) : Colors.transparent,
+          borderRadius: BorderRadius.circular(13),
+          child: InkWell(
+            key: fieldKey,
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(13),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(13),
+                border: Border.all(
+                    color: selected
+                        ? t.accent.withValues(alpha: 0.55)
+                        : Colors.transparent),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                color:
+                                    selected ? Colors.white : HealthTone.muted,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700)),
+                      ),
+                      if (badge != null) ...[
+                        const SizedBox(width: 6),
+                        PremiumChip(label: badge!, filled: selected),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 1),
+                  Text(subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: HealthTone.faint, fontSize: 10.5)),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The plan cards
+// ---------------------------------------------------------------------------
+
+/// The reference's row of plan columns.
+///
+/// It draws three at ~33% width each, which on a 393dp screen gives a
+/// twelve-row feature list 118dp — one or two words a line. There are two real
+/// plans, so two cards scroll horizontally at 78% instead: the composition the
+/// reference is after, at a width the copy survives.
+class _PlanCarousel extends StatelessWidget {
+  const _PlanCarousel({
+    required this.premium,
+    required this.period,
+    required this.busy,
+    required this.isPremium,
+    required this.storeOffersTrial,
+    required this.onChoose,
+  });
+
+  final Package? premium;
+  final BillingPeriod period;
+  final bool busy;
+  final bool isPremium;
+  final bool storeOffersTrial;
+  final VoidCallback onChoose;
+
+  @override
+  Widget build(BuildContext context) {
+    final width =
+        (MediaQuery.sizeOf(context).width * 0.78).clamp(240.0, 320.0);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: kRecordGutter),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: width,
+              child: _PlanCard(
+                key: const Key('paywall_plan_free'),
+                title: 'Free',
+                tagline: 'Everything that keeps a pet safe',
+                price: 'Free',
+                priceNote: 'No card, no expiry',
+                featured: false,
+                current: !isPremium,
+                values: (e) => e.freeValue,
+                cta: null,
+                onCta: null,
+                busy: false,
+              ),
+            ),
+            const SizedBox(width: 11),
+            SizedBox(
+              width: width,
+              child: _PlanCard(
+                key: const Key('paywall_plan_premium'),
+                title: 'Premium',
+                tagline: 'The whole record, uncounted',
+                price: premium?.storeProduct.priceString ?? '—',
+                priceNote: _priceNote(),
+                badge: storeOffersTrial ? 'INTRO OFFER' : null,
+                featured: true,
+                current: isPremium,
+                values: (e) => e.premiumValue,
+                cta: isPremium ? null : 'Choose Premium',
+                onCta: onChoose,
+                busy: busy,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _priceNote() {
+    if (premium == null) return 'Not available in your store yet';
+    if (period == BillingPeriod.monthly) return 'Billed monthly';
+    return PaywallPricing.annualSubtitle(
+        premium!.storeProduct.pricePerMonthString);
+  }
+}
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({
+    required this.title,
+    required this.tagline,
+    required this.price,
+    required this.priceNote,
+    required this.featured,
+    required this.current,
+    required this.values,
+    required this.cta,
+    required this.onCta,
+    required this.busy,
+    this.badge,
+    super.key,
+  });
+
+  final String title;
+  final String tagline;
+  final String price;
+  final String priceNote;
+  final bool featured;
+
+  /// The plan this account is already on.
+  final bool current;
+  final String Function(Entitlement) values;
+  final String? cta;
+  final VoidCallback? onCta;
+  final bool busy;
+  final String? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    return HomeCard(
+      radius: 18,
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 15),
+      accent: featured ? t.accent.withValues(alpha: 0.55) : null,
+      glow: featured ? 0.10 : 0,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              PremiumCrest(
+                  size: 34,
+                  icon: featured ? LucideIcons.crown : LucideIcons.pawPrint),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  height: 1.15,
+                                  fontWeight: FontWeight.w800)),
+                        ),
+                        if (badge != null) ...[
+                          const SizedBox(width: 6),
+                          PremiumChip(label: badge!),
+                        ] else if (current) ...[
+                          const SizedBox(width: 6),
+                          const PremiumChip(
+                              label: 'YOUR PLAN', tint: HealthTone.muted),
+                        ],
+                      ],
+                    ),
+                    Text(tagline,
+                        maxLines: 2,
+                        style: const TextStyle(
+                            color: HealthTone.dim,
+                            fontSize: 10.5,
+                            height: 1.25)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 13),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(price,
+                maxLines: 1,
+                style: TextStyle(
+                    color: featured ? t.accent : Colors.white,
+                    fontSize: 27,
+                    height: 1.1,
+                    fontWeight: FontWeight.w800)),
+          ),
+          const SizedBox(height: 2),
+          Text(priceNote,
+              style: const TextStyle(
+                  color: HealthTone.muted, fontSize: 11, height: 1.3)),
+          const SizedBox(height: 13),
+          if (cta != null)
+            HealthPrimaryCta(
+              key: Key('paywall_choose_${title.toLowerCase()}'),
+              label: busy ? 'Opening the store…' : cta!,
+              icon: null,
+              trailingIcon: busy ? null : LucideIcons.chevronRight,
+              enabled: !busy,
+              onTap: onCta ?? () {},
+            )
+          else
+            Container(
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                border:
+                    Border.all(color: Colors.white.withValues(alpha: 0.10)),
+              ),
+              child: Text(current ? 'This is your plan' : 'Included',
+                  style: const TextStyle(
+                      color: HealthTone.muted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700)),
+            ),
+          const SizedBox(height: 13),
+          for (final e in kEntitlements)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 7),
+              child: _PlanRow(entitlement: e, value: values(e)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanRow extends StatelessWidget {
+  const _PlanRow({required this.entitlement, required this.value});
+
+  final Entitlement entitlement;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    final absent = value == '—';
+    final tint = absent ? PremiumTone.locked : t.accent;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(absent ? LucideIcons.minus : LucideIcons.circleCheck,
+              size: 14, color: tint),
+        ),
+        const SizedBox(width: 8),
+        // 5:4 rather than two bare Flexibles: an even split squeezes the
+        // capability name that had room and truncates it.
+        Flexible(
+          flex: 5,
+          child: Text(entitlement.title,
+              maxLines: 2,
+              style: TextStyle(
+                  color: absent ? HealthTone.faint : Colors.white,
+                  fontSize: 11.5,
+                  height: 1.25)),
+        ),
+        const SizedBox(width: 6),
+        Flexible(
+          flex: 4,
+          child: Text(absent ? 'Not included' : value,
+              maxLines: 2,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                  color: absent ? HealthTone.faint : tint,
+                  fontSize: 11,
+                  height: 1.25,
+                  fontWeight: FontWeight.w700)),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Assurances, payment, legal
+// ---------------------------------------------------------------------------
+
+/// The reference's four-box strip. Its "7-Day Money-Back — Not happy? Get a
+/// full refund, no questions" and "Loved by Pet Parents — Join thousands of
+/// happy PawDoc families" boxes are gone; the trial box appears only when the
+/// store reports an introductory offer.
+class _AssuranceStrip extends StatelessWidget {
+  const _AssuranceStrip({required this.showTrial});
+
+  final bool showTrial;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <({IconData icon, String title, String body})>[
+      if (showTrial)
+        (
+          icon: LucideIcons.gift,
+          title: 'Intro offer',
+          body: 'Google Play is offering an introductory period on this '
+              'product. Terms appear in the purchase sheet.',
+        ),
+      (
+        icon: LucideIcons.repeat,
+        title: 'Cancel anytime',
+        body: 'In Google Play. Premium runs to the end of the period you '
+            'have paid for.',
+      ),
+      (
+        icon: LucideIcons.lockKeyhole,
+        title: 'No ads, no data sale',
+        body: 'PawDoc is paid for by subscriptions. Your record is not the '
+            'product.',
+      ),
+      (
+        icon: LucideIcons.circleAlert,
+        title: 'Emergency is never sold',
+        body: 'The red path is free, offline and unmetered on every plan.',
+      ),
+    ];
+    return HomeCard(
+      key: const Key('paywall_assurances'),
+      radius: 18,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      child: Column(
+        children: [
+          for (var i = 0; i < items.length; i += 2) ...[
+            if (i > 0) const SizedBox(height: 10),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: _Assurance(item: items[i])),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: i + 1 < items.length
+                        ? _Assurance(item: items[i + 1])
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Assurance extends StatelessWidget {
+  const _Assurance({required this.item});
+
+  final ({IconData icon, String title, String body}) item;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(11, 11, 11, 11),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: Colors.white.withValues(alpha: 0.022),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(item.icon, size: 19, color: t.accent),
+          const SizedBox(height: 8),
+          Text(item.title,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  height: 1.2,
+                  fontWeight: FontWeight.w700)),
+          const SizedBox(height: 3),
+          Text(item.body,
+              style: const TextStyle(
+                  color: HealthTone.dim, fontSize: 10.5, height: 1.35)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Replaces the reference's row of payment-network logos.
+///
+/// Owner decision D-5: payment marks ship from official brand kits only, never
+/// AI-generated — and none has been sourced. A sentence naming the processor
+/// carries the same reassurance and is verifiable.
+class _PaymentNote extends StatelessWidget {
+  const _PaymentNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(LucideIcons.lock, size: 13, color: HealthTone.faint),
+        const SizedBox(width: 7),
+        const Expanded(
+          child: Text(
+            'Payment is taken by Google Play using the payment method on your '
+            'Google account. PawDoc never sees your card details.',
+            style: TextStyle(
+                color: HealthTone.faint, fontSize: 10.5, height: 1.4),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -269,94 +964,65 @@ class _SubscriptionLegal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = Theme.of(context)
-        .textTheme
-        .bodySmall
-        ?.copyWith(color: AppColors.ink300, fontSize: 11, height: 1.45);
-    final linkStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-        color: PawPalette.mint, fontSize: 11, fontWeight: FontWeight.w600);
+    final t = PawTone.of(context);
+    const muted = TextStyle(
+        color: HealthTone.faint, fontSize: 10.5, height: 1.45);
+    final linkStyle = TextStyle(
+        color: t.accent, fontSize: 10.5, fontWeight: FontWeight.w600);
 
     Widget link(String label, String url) => GestureDetector(
           onTap: () => LegalUrls.open(url),
           child: Text(label, style: linkStyle),
         );
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpace.s20, AppSpace.s8, AppSpace.s20, 0),
-      child: Column(
-        children: [
-          Text(
-            'Subscriptions auto-renew until cancelled. Manage or cancel anytime '
-            'in the App Store or Google Play; payment is charged to your store '
-            'account at confirmation. Emergency results are never paywalled.',
-            textAlign: TextAlign.center,
-            style: muted,
-          ),
-          const SizedBox(height: AppSpace.s8),
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: AppSpace.s8,
-            children: [
-              link('Subscription Terms', LegalUrls.subscriptions),
-              Text('·', style: muted),
-              link('Terms', LegalUrls.terms),
-              Text('·', style: muted),
-              link('Privacy', LegalUrls.privacy),
-            ],
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        const Text(
+          'Subscriptions auto-renew until cancelled. Manage or cancel anytime '
+          'in the App Store or Google Play; payment is charged to your store '
+          'account at confirmation. Emergency results are never paywalled.',
+          textAlign: TextAlign.center,
+          style: muted,
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          children: [
+            link('Subscription Terms', LegalUrls.subscriptions),
+            const Text('·', style: muted),
+            link('Terms', LegalUrls.terms),
+            const Text('·', style: muted),
+            link('Privacy', LegalUrls.privacy),
+          ],
+        ),
+      ],
     );
   }
 }
 
-/// Variant C card. Honesty-fixed (Phase B): truthful value/trust copy (see
-/// paywall_copy.dart), CMS-swappable; no fabricated testimonial, no medical
-/// guarantee implied.
-class _SocialProof extends StatelessWidget {
-  const _SocialProof();
+class _PlansLoading extends StatelessWidget {
+  const _PlansLoading();
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      key: const Key('paywall_social_proof'),
-      color: scheme.secondaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpace.s16),
+  Widget build(BuildContext context) => HomeCard(
+        radius: 18,
+        padding: const EdgeInsets.symmetric(vertical: 34),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: scheme.primary,
-                  child: Icon(Icons.verified_user_rounded, color: scheme.onPrimary),
-                ),
-                const SizedBox(width: AppSpace.s12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(PaywallSocialProof.trustTitle,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text(PaywallSocialProof.trustSubtitle,
-                          style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
-                ),
-              ],
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                  strokeWidth: 2.2, color: PawTone.of(context).accent),
             ),
-            const SizedBox(height: AppSpace.s12),
-            Text(PaywallSocialProof.valueLine,
-                style: const TextStyle(fontStyle: FontStyle.italic)),
+            const SizedBox(height: 12),
+            const Text('Reading plans from the store…',
+                style: TextStyle(color: HealthTone.dim, fontSize: 12)),
           ],
         ),
-      ),
-    );
-  }
+      );
 }
 
 /// Production-safe state shown when RevenueCat offerings aren't configured —
@@ -366,172 +1032,30 @@ class _PremiumComingSoon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PawCard(
+    return HomeCard(
       key: const Key('paywall_coming_soon'),
-      padding: const EdgeInsets.all(AppSpace.s20),
+      radius: 18,
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
       child: Column(
         children: [
-          AppImage(
-            AppAssets.premiumEnvelopePaw,
-            height: 96,
-            fallback: const Icon(Icons.lock_clock_rounded,
-                size: 40, color: PawPalette.mint),
-          ),
-          const SizedBox(height: AppSpace.s12),
-          Text('Premium is coming soon',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.ink50, fontWeight: FontWeight.w700),
+          const PremiumCrest(size: 46, icon: LucideIcons.lockKeyhole),
+          const SizedBox(height: 12),
+          const Text('Premium is not on sale yet',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800),
               textAlign: TextAlign.center),
-          const SizedBox(height: AppSpace.s8),
-          Text(
-            'Subscriptions aren’t available just yet. Keep using PawDoc — '
-            'we’ll let you know the moment Premium opens.',
+          const SizedBox(height: 7),
+          const Text(
+            'Your store has no PawDoc subscription to offer right now, so '
+            'there is no price to show you. Everything on the free plan keeps '
+            'working exactly as it does today.',
             textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: AppColors.ink300),
+            style:
+                TextStyle(color: HealthTone.dim, fontSize: 12, height: 1.4),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Truthful trust pillars (replaces the deliberately-omitted fabricated social
-/// proof from the 011 mockup). No metrics, ratings, or testimonials — only
-/// defensible statements about how PawDoc is built. CMS-swappable later.
-class _TrustPillars extends StatelessWidget {
-  const _TrustPillars();
-
-  static const _pillars = <(IconData, String)>[
-    (Icons.medical_services_outlined, 'Designed with veterinarians in mind'),
-    (Icons.health_and_safety_outlined, 'Built to err on the safe side'),
-    (Icons.event_repeat_rounded, 'Trusted routines for everyday pet care'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return PawCard(
-      key: const Key('paywall_trust_pillars'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final (icon, text) in _pillars)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
-              child: Row(
-                children: [
-                  Icon(icon, size: 20, color: PawPalette.mint),
-                  const SizedBox(width: AppSpace.s12),
-                  Expanded(
-                    child: Text(text,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: AppColors.ink50)),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// "What you get" — the real Premium features (§3.8 value stack).
-class _ValueStack extends StatelessWidget {
-  const _ValueStack();
-
-  static const _features = [
-    'Unlimited photo logs & progression',
-    'Full health history — every pet, forever',
-    'Vet Visit Prep Pack + PDF export',
-    'Vaccine, medication & re-check reminders',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final f in _features)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpace.s4),
-            child: Row(
-              children: [
-                Icon(Icons.check_circle_rounded, size: 20, color: scheme.primary),
-                const SizedBox(width: AppSpace.s12),
-                Expanded(child: Text(f, style: Theme.of(context).textTheme.bodyLarge)),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _PlanCard extends StatelessWidget {
-  const _PlanCard({
-    super.key,
-    required this.title,
-    required this.price,
-    required this.subtitle,
-    required this.featured,
-    required this.busy,
-    required this.onTap,
-    this.badge,
-  });
-
-  final String title;
-  final String price;
-  final String subtitle;
-  final bool featured;
-  final bool busy;
-  final VoidCallback onTap;
-  final String? badge;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Card(
-      elevation: featured ? 4 : 1,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.brMd,
-        side: featured ? BorderSide(color: scheme.primary, width: 2) : BorderSide.none,
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        title: Row(
-          children: [
-            // Flexible so the title + "Save 52%" badge can't RenderFlex-overflow
-            // at the 1.6× text-scale clamp (RC accessibility fix).
-            Flexible(
-              child: Text(title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis),
-            ),
-            if (badge != null) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: scheme.primaryContainer,
-                  borderRadius: AppRadius.brSm,
-                ),
-                child: Text(badge!, style: TextStyle(fontSize: 11, color: scheme.onPrimaryContainer)),
-              ),
-            ],
-          ],
-        ),
-        subtitle: Text('$price\n$subtitle'),
-        isThreeLine: true,
-        trailing: FilledButton(
-          onPressed: busy ? null : onTap,
-          child: Text(featured ? 'Start' : 'Choose'),
-        ),
       ),
     );
   }

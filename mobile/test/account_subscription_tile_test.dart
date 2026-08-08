@@ -14,7 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pawdoc/src/account/account_screen.dart';
 import 'package:pawdoc/src/account/user_profile.dart';
 import 'package:pawdoc/src/auth/supabase_providers.dart';
-import 'package:pawdoc/src/monetization/paywall_screen.dart';
+import 'package:pawdoc/src/monetization/premium_home_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 SupabaseClient _dummyClient() => SupabaseClient(
@@ -37,7 +37,7 @@ void main() {
     expect(kEntitlementProbeTimeout, lessThanOrEqualTo(const Duration(seconds: 10)));
   });
 
-  testWidgets('a never-resolving profile still leaves a route to the paywall',
+  testWidgets('a never-resolving profile still leaves a route to Premium',
       (tester) async {
     await tester.pumpWidget(_host([
       // Exactly the device case: a future that never completes.
@@ -50,7 +50,10 @@ void main() {
 
     await tester.tap(tile);
     await tester.pumpAndSettle();
-    expect(find.byType(PaywallScreen), findsOneWidget,
+    // The destination moved from the paywall to the Premium hub when the four
+    // monetization mockups landed; the invariant this test exists for — the
+    // row is never inert — is unchanged.
+    expect(find.byType(PremiumHomeScreen), findsOneWidget,
         reason: 'the row goes somewhere instead of doing nothing');
   });
 }

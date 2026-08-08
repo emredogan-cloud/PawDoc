@@ -14,6 +14,7 @@ class UserProfile {
   const UserProfile({
     required this.subscriptionStatus,
     required this.photoLogsUsedThisMonth,
+    this.photoLogsResetAt,
     this.sdkEntitlementActive = false,
   });
   final String subscriptionStatus;
@@ -21,6 +22,12 @@ class UserProfile {
   /// Quota v3: the meter is PHOTO LOGS only (5/month free). Text guidance is
   /// unmetered — safety is never counted.
   final int photoLogsUsedThisMonth;
+
+  /// When the photo-log allowance rolls over — `users.free_analyses_reset_at`,
+  /// the same column `evaluateFreeTier` checks on read. Read so `usage_limits`
+  /// can print a real reset date instead of the reference's invented
+  /// "Reset in 31 days"; null until the server has stamped one.
+  final DateTime? photoLogsResetAt;
 
   /// SUB-02: true when the RevenueCat SDK reports an active entitlement on
   /// this device. Premium recognition no longer depends 100% on the webhook —
@@ -59,7 +66,8 @@ final userProfileProvider = FutureProvider.autoDispose<UserProfile>((ref) async 
   final uid = client.auth.currentUser!.id;
   final row = await client
       .from('users')
-      .select('subscription_status, free_analyses_used_this_month')
+      .select('subscription_status, free_analyses_used_this_month, '
+          'free_analyses_reset_at')
       .eq('id', uid)
       .single()
       .timeout(kDataReadTimeout);
@@ -83,6 +91,8 @@ final userProfileProvider = FutureProvider.autoDispose<UserProfile>((ref) async 
     subscriptionStatus: (row['subscription_status'] as String?) ?? 'free',
     photoLogsUsedThisMonth:
         (row['free_analyses_used_this_month'] as int?) ?? 0,
+    photoLogsResetAt:
+        DateTime.tryParse((row['free_analyses_reset_at'] as String?) ?? ''),
     sdkEntitlementActive: sdkActive,
   );
 });
