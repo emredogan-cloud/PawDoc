@@ -3,7 +3,7 @@
 Resume file for the UI migration. Read this first; the roadmap
 (`UI_IMPLEMENTATION_ROADMAP.md`) carries the per-phase detail.
 
-**Last updated:** 2026-08-04 · onboarding complete + home and the AI Health Check flow rebuilt
+**Last updated:** 2026-08-08 · **all 58 reference screens implemented** (PR #101)
 
 ---
 
@@ -244,11 +244,83 @@ hidden, because that page carries a footnote under its CTA. `OnbSpacing` /
   start a guest session"), so device validation went through an email account.
   Founder-side config, not a code defect.
 
+## The settings five — COMPLETE (PR #101, `80c935f`)
+
+`profile`, `account_management`, `privacy_security`, `notifications` and
+`ai_transparency`, in `mobile/lib/src/account/`. `AccountScreen` is **deleted**
+— `ProfileScreen` is the account home, opened from the Home app bar, and the
+four contract keys moved with it (`account_subscription_tile`,
+`account_sign_out`, `account_delete`, `analytics_consent_toggle`).
+
+### The rule these five are built on
+
+The references draw **eighteen controls over capabilities PawDoc does not
+have**, three of them as switches already flipped **on** (Two-Factor
+Authentication, Biometric Unlock, Login Alerts) plus a fabricated "3 Active"
+device count. A user who reads "Two-Factor Authentication: On" and believes it
+has been told their account is protected by something that is not there.
+
+So a control on these screens is one of exactly three shapes — an
+`AccountToggleRow`/`AccountSettingRow` wired to real state, an
+`AccountFactRow` that states something true and is not tappable, or an
+`AccountUnavailableRow` that says outright the capability is not built.
+**`AccountToggleRow.onChanged` is non-nullable**, which makes a decorative
+switch structurally unrepresentable; `settings_claims_test` pins that and that
+no screen builds a raw `Switch`.
+
+### Facts worth not rediscovering
+
+- **`public.users` is not client-writable.** `20260527030000_referrals.sql`
+  revokes UPDATE from `authenticated` and grants back one dead column. There is
+  no owner profile to edit — no name, phone, location, DOB or timezone.
+  Identity comes from `auth.users`.
+- **There is no push vendor.** Two notifications exist, both scheduled
+  on-device: a reminder you created (09:00 local, `LocalNotifications.reminderHour`)
+  and the daily walk nudge, which shares `walks_screen`'s pref keys.
+- **Supabase exposes no session list to a client.** `signOut(scope: global)` is
+  the real control the "Manage Devices" row was standing in front of.
+- A renewal date may only be printed when `SubscriptionSnapshot.readable`.
+
+### Three defects the device walk found
+
+1. **The text export had been broken since PR #80.** Contract v2 renamed
+   `triage_level` → `action` and `primary_concern` → `observation`;
+   `health_report.dart` was migrated and `health_report_service.dart` — the
+   *query* — was not. `export_test` fed the builder a hand-built map, so it
+   passed whatever the database was actually asked for. It now asserts the two
+   agree key by key.
+2. **`HealthStatTiles` clipped its labels above 1.0× text scale** — a constant
+   25dp label box, latent in every consumer since the health batch.
+3. **A `Wrap` hands each child the full line width as its maximum**, so a chip
+   using `mainAxisSize.min` overflows rather than moving to the next run.
+
+### The trap that bit twice
+
+**A claim scan cannot tell a rejection from an assertion.** Two rendered lines
+and later three *doc comments* tripped the guards by quoting the marketing
+phrase they were refusing. `scripts/verify-no-placeholders.sh` greps raw source
+over `mobile/lib/src` **including comments** and is a CI ship-blocker. Never
+write the banned phrase — paraphrase, even inside the explanation.
+
+Also: re-pumping the same widget type with different Riverpod overrides reuses
+the element, and an autoDispose `FutureProvider` that already resolved keeps its
+value. Split state variations into separate `testWidgets`.
+
 ## Remaining
 
-All phases complete. Screen-by-screen rebuild against `new-interface/` is at
-**53 of 58** — the five left are the settings surfaces (`account_management`,
-`profile`, `privacy_security`, `notifications`, `ai_transparency`), plus the
-two pre-auth screens which exist but were never re-walked (`000`, sign-in).
-Owner-gated: D-4 asset regeneration (6 gaps), D-5 payment marks.
+**All 58 reference screens are implemented.** Screen-by-screen rebuild against
+`new-interface/` is at **58 of 58**.
+
+Known limitations, not gaps in coverage:
+
+- `000` (auth gateway) and the sign-in screen exist and are wired, but have
+  never been re-walked against their own mockups — its hero shield overlaps the
+  dog and the social-proof line ellipsizes.
+- Owner-gated: D-4 asset regeneration (6 gaps), D-5 payment marks.
+- **Surfaced, not applied:** `onboarding_flow.dart` renders "We never sell your
+  data. Ever." Not false, but a forward-looking promise that belongs in the
+  binding privacy policy rather than app copy. It predates PR #101 and was
+  device-walked and approved with the onboarding rebuild, so the new claim scan
+  is scoped to `lib/src/account/` with a note to widen it if that line changes.
+
 See `RESUME_GUIDE.md` for the live state.
