@@ -3,24 +3,48 @@
 **Read this first.** It is written so a fresh agent can continue in minutes
 without asking questions.
 
-**Last updated:** 2026-08-07 · **Branch:** `ui-impl-phase-p-onboarding`
-**Head:** `24205ea` · **Gates:** `flutter analyze` clean · 556 tests green ·
+**Last updated:** 2026-08-07 (evening) · **Branch:** `ui-batch-r-pets-memories`
+**Head:** `82d2cf6` · **Gates:** `flutter analyze` clean · **784 tests** green ·
 `verify-disclaimers` PASS
+
+---
+
+## 0 · State of the branch
+
+PR #97 **merged** (squash, `2a1cc11`). This branch was rebased onto it —
+`git rebase --onto origin/main e6effd6` — and force-pushed. It now sits
+directly on `main` with **thirteen** commits and no stacking. Nothing is
+blocked.
+
+```
+82d2cf6  Breed Encyclopedia and Breed Detail rebuilt against their mockups
+dbbdcd3  Know Your Baseline rebuilt against its mockup — measured, never assumed
+450d356  Smart Walks and the Weather Walk Advisor, rebuilt against their mockups
+149ac4d  Search Memories rebuilt against its mockup — counted, never asserted
+b5b4647  Add Memory rebuilt against its mockup — the sheet becomes a wizard
+6a58f90  docs: the pets and memories batch, and the two open handoffs
+3c3476e  Memory Detail · 0f61b22 Memories Gallery · 1f54f24 Pet Statistics
+22c89f8  Manage Multiple Pets · aac967e Edit Pet · 09f9f65 Pet Profile
+af09a28  Reminder Detail
+```
+
+**Next action: open the PR.** The branch has never been PR'd.
+`gh pr create --base main`. Expect the same seven CI checks. Note that GitHub
+refuses PR-author self-approval, so the merge will again need a human approval
+or `gh pr merge --squash --admin`.
 
 ---
 
 ## 1 · Current phase
 
 Rebuilding the app's screens against the reference mockups in `new-interface/`
-(57 PNGs, untracked, ~93 MB). Onboarding, home, the AI Health Check flow, all
-three result screens, the assistant trio **and the six-screen health module**
-are finished. **27 of 57 mockups implemented.**
+(57 PNGs, untracked, ~93 MB). **41 of 57 mockups implemented.**
 
 Working method, unchanged and expected to continue:
 
 > read the reference → implement at full fidelity → `flutter analyze` →
-> `flutter test` → hot-reload onto the Redmi → screenshot → compare →
-> fix → commit → next screen.
+> `flutter test` → `scripts/verify-disclaimers.sh` → hot-reload onto the
+> Redmi → screenshot → compare → fix → commit → next screen.
 
 One screen at a time, each through the full gate set before the next.
 
@@ -32,126 +56,149 @@ One screen at a time, each through the full gate set before the next.
 |---|---|---|
 | `0001-app-first-screen` | `onboarding/first_run_screen.dart` | `70b8aa1` |
 | `000` auth gateway | `onboarding/auth_gateway_screen.dart` | `70b8aa1` |
-| `002`–`009` onboarding | `onboarding/onboarding_flow.dart` + `onboarding_stages.dart` + `onboarding_ui.dart` | `e26b441` `dc67e5e` `699f503` `e61aab5` `76b9988` `295fff5` |
+| `002`–`009` onboarding | `onboarding/onboarding_flow.dart` + `onboarding_stages.dart` | `e26b441` … `295fff5` |
 | `010-home-page` | `home/home_screen.dart` + `home/home_sections.dart` | `3881f38` |
-| `ai_health_check_start` / `photo_analysis_upload` / `symptom_selection` / `ai_analysis_loading` | `health_check/` | `6eb63e5` `9820028` |
-| `ai_analysis_result_low_risk` + `_monitor` | `analysis/result_screen.dart` + `health_check/result_sections.dart` | `4ff08ef` `0715b3c` |
+| the four AI Health Check screens | `health_check/` | `6eb63e5` `9820028` |
+| `ai_analysis_result_low_risk` + `_monitor` | `analysis/result_screen.dart` | `4ff08ef` `0715b3c` |
 | `ai_analysis_result_emergency` | `analysis/emergency_result_screen.dart` | `102c6f3` |
-| `ai_assistant_home` + `_chat` + `ai_message_actions` | `assistant/assistant_screen.dart` + `assistant_sections.dart` | `aae4ebe` `9f47ee1` |
+| the assistant trio | `assistant/assistant_screen.dart` + `assistant_sections.dart` | `aae4ebe` `9f47ee1` |
 | `conversation_history` | `assistant/conversation_history_screen.dart` | `f6715b6` |
 | `health_timeline` | `health/history_timeline_screen.dart` | `1cba0e6` |
 | `add_health_record` | `health/health_event_form_screen.dart` | `a8c6846` |
-| `weight_tracking` | `health/weight_tracking_screen.dart` | `c488dea` |
-| `medication_tracker` | `health/medication_tracker_screen.dart` | `9af3a54` |
-| `vaccination_manager` | `health/vaccination_manager_screen.dart` | `24205ea` |
+| `weight_tracking` / `medication_tracker` / `vaccination_manager` | `health/` | `c488dea` `9af3a54` `24205ea` |
+| `reminder_detail` | `reminders/reminder_detail_screen.dart` | `af09a28` |
+| `pet_profile` / `edit_pet` / `manage_multiple_pets` / `pet_statistics` | `pets/` | `09f9f65` … `1f54f24` |
+| `memories_gallery` / `memory_detail` | `memories/` | `0f61b22` `3c3476e` |
+| **`add_memory`** | **`memories/add_memory_screen.dart`** (new) | **`b5b4647`** |
+| **`search_memories`** | **`memories/search_memories_screen.dart`** (new) | **`149ac4d`** |
+| **`smart_walks`** | **`walks/walks_screen.dart`** (rebuilt in place) | **`450d356`** |
+| **`weather_walk_advisor`** | **`walks/weather_walk_advisor_screen.dart`** (new) | **`450d356`** |
+| **`know_your_baseline`** | **`health/baseline_screen.dart`** (new) | **`dbbdcd3`** |
+| **`breed_encyclopedia`** | **`encyclopedia/encyclopedia_screen.dart`** (rebuilt) | **`82d2cf6`** |
+| **`breed_detail`** | **`encyclopedia/breed_detail_screen.dart`** (rebuilt) | **`82d2cf6`** |
 
 All device-walked on the Redmi Note 8 (`AYXSUKIVJVPZ7HPZ`, 1080×2340 @440dpi =
 **393×851 logical** — the same size the mockups are drawn at).
 
 ---
 
-## 3 · Remaining work — start here
+## 3 · Remaining work — 16 mockups
 
-**30 mockups remain, none started.**
-
-### 3.1 · The two pre-auth surfaces (recommended next)
+### 3.1 · The two pre-auth surfaces (still the highest-visibility gap)
 
 `000` (the auth gateway) was built but never re-walked against its mockup —
 the shield overlaps the dog and the social-proof line ellipsises. The sign-in
-screen is still on the legacy **light** theme, which is jarring against the
-rest of the app. Both are visible to every new user before anything else, and
-they are the only screens left on the old design.
+screen is still on the legacy **light** theme. Both are the first thing every
+new user sees and the only screens left on the old design.
 
 ### 3.2 · The rest of the set
 
-`pet_profile`, `pet_statistics`, `notifications`, `account_management`,
-`emergency_hub` (rule 4 / D-1 constrains it hard — read §7 first),
-`first_aid_guide`, `prepare_for_vet_visit`, `pdf_health_report_preview`,
-`memories_gallery` + `memory_detail` + `add_memory` + `search_memories`,
-`breed_encyclopedia` + `breed_detail`, `smart_walks` + `weather_walk_advisor`,
-`community_feed` + `community_post_detail` + `create_post` +
-`nearby_pet_owners`, `premium_home` + `subscription_plans` +
-`upgrade_benefits` + `usage_limits`, `ai_transparency`, `privacy_security`,
-`profile`, `edit_pet`, `manage_multiple_pets`, `reminder_detail`,
-`know_your_baseline`.
+`notifications`, `account_management`, `profile`, `emergency_hub` (rule 4 /
+D-1 constrains it hard — read §7 first), `first_aid_guide`,
+`prepare_for_vet_visit`, `pdf_health_report_preview`, `community_feed` +
+`community_post_detail` + `create_post` + `nearby_pet_owners`, `premium_home` +
+`subscription_plans` + `upgrade_benefits` + `usage_limits`, `ai_transparency`,
+`privacy_security`.
 
-Most of these already have shipping screens; the work is a rebuild against the
-reference, not a new feature. Check `lib/src/{memories,encyclopedia,walks,
-community,monetization,account,notifications,prep,emergency}/` first.
+Most already have shipping screens; the work is a rebuild against the
+reference. Check `lib/src/{community,monetization,account,notifications,prep,
+emergency}/` first.
 
 ---
 
 ## 4 · Reusable primitives — extend these, do not duplicate
 
-| Primitive | File | Use |
-|---|---|---|
-| `PetModuleAppBar`, `PetModuleHeaderCard`, `HealthRingPortrait`, `HealthAsidePill`, `HealthCircleButton`, `HealthSectionHead`, `HealthGroupLabel`, `HealthFilterChips`, `HealthStatTiles` (+`HealthStat`, `HealthStatLayout`), `HealthRecordRow`, `HealthGlyphDisc`, `HealthPill`, `HealthMetaBlock`, `HealthStatusBadge`, `HealthAddCard`, `HealthEduCard`, `HealthPrivacyCard`, `HealthDangerCard`, `HealthPrimaryCta`, `HealthSheet`, `HealthDetailRow`, `HealthRecordScaffold` + `HealthBleed`, `HealthTone`, `kRecordGutter` | `health/health_sections.dart` | **the skeleton every record surface is built from** — six screens already, and the obvious base for `pet_profile`, `pet_statistics`, `notifications` and the memories/encyclopedia lists |
-| `showPetSwitcher(context, ref)` | `pets/pet_switcher.dart` | the one switcher behind every header chevron |
-| `PawNavBar(detached:)`, `rootTabProvider`, `openQuickActionSheet` | `core/paw_nav_bar.dart` | the bottom bar, on the shell **and** on pushed screens |
-| `showHealthRecordDetail(...)` | `health/health_record_detail.dart` | what any record row's "View details" opens |
-| `MedicationSchedule`, `Medication`, `DoseSlot`, `DoseLog`, `doseLogProvider`, `Adherence` | `health/medication_plan.dart` | the medication model + the free-text schedule parser |
-| `WeightTarget`, `weightTargetProvider` | `health/weight_target.dart` | the owner's own weight range |
-| `WeightPoint`, `weightPointsProvider` | `health/weight_trend_card.dart` | weight points, oldest→newest |
-| `TimelineItem`, `healthTimelineProvider` | `health/timeline.dart` | analyses + health events, merged, newest first |
-| `HomeCard`, `HomeCardHeader`, `HomeListCard`, `HomeQuickActions`, `HomeStatStrip`, `PetRail`, `PetPortrait`, `HomeBrandBar`, `HomeGreeting`, `PetHeroPanel`, `careScore`, `petAgeLabel` | `home/home_sections.dart` | every dark slab in System B, app-wide |
-| `HealthCheckAppBar`, `HealthCheckSteps`, `HealthCheckDisclaimer`, `HealthCheckScaffold` (all take a `tint`) | `health_check/health_check_chrome.dart` | the check flow |
-| `ResultHero`, `ResultActionCard`, `ResultSummaryCard`, `ResultListCard`, `ResultActionRow`, `ResultActionBar`, `ResultTrendCard`, `ResultAssistantStrip`, `ResultStatusCard`, `ResultGuideStrip`, `ResultReminderRow` | `health_check/result_sections.dart` | all three result screens |
-| `AssistantAppBar`, `AssistantHero`, `AssistantComposer`, `AssistantUserBubble`, `AssistantReplyBubble`, `AssistantActionSheet`, `AssistantTone`, … (19 blocks) | `assistant/assistant_sections.dart` | the assistant trio; the bubbles, composer and action sheet are reusable anywhere a conversation appears |
-| `OnbPage`, `OnbNeonCard`, `OnbCrest`, `OnbPhoneMockup`, … | `onboarding/onboarding_ui.dart` | System A (onboarding) only |
-| `PawCard`, `PawPanel`, `PawPillButton`, `PawPrimaryButton`, `PawBackground`, `PawTone`, `BlendMask` | `theme/paw_components.dart`, `theme/paw_ui.dart` | app-wide |
+`health/health_sections.dart` is the shared skeleton **eighteen** screens are
+built from. It grew again this batch.
 
-**Dependency direction:** `assistant → health → home → theme`. Never the other
-way. `health_sections.dart` deliberately imports neither `assistant_sections`
-nor anything above it, which is why `HealthTone` restates the grey ramp instead
-of importing `AssistantTone`.
+| Primitive | Added | Use |
+|---|---|---|
+| **`HealthStepRail`** | this batch | the numbered wizard rail. 26dp circles on the reference's own centres (23dp inset, four equal columns → 66/153/240/327 on a 393 screen). The whole column is the tap target, not the dot |
+| **`HealthNumberedHead`** | this batch | "**1.** Add Photos" + subtitle + `(Optional)` suffix |
+| **`HealthCountedField`** | this batch | a bordered box with a live `0/60` counter; single-line puts it inline, multiline beneath |
+| **`HealthDashedTile`** + **`HealthDashedPainter`** | this batch | the dashed well. **Collapsed two private painters** that had already been written twice |
+| **`HealthDropPill`** | this batch | the "All Types ⌄" lozenge. Replaced `memories_screen`'s private `_DropButton` |
+| `HealthPrimaryCta` (+ **`icon` honoured**, **`trailingIcon`**, **`enabled`**) | fixed this batch | it accepted an `icon` and drew a hardcoded `plus` — the journal's "See Premium" rendered its crown as a **+** |
+| `HealthSearchField` (+ **`onSubmitted`**) | this batch | so a screen can decide what to *remember* |
+| `HealthActionPill`, `HealthInfoGrid`/`HealthInfoCell`, `HealthSettingRow`, `HealthSparkline`, the six-widget form kit, `HealthStat`, `HealthStatTiles`, `HealthRecordRow`, `HealthGlyphDisc`, `HealthPill`, `HealthMetaBlock`, `HealthStatusBadge`, `HealthAddCard`, `HealthEduCard`, `HealthPrivacyCard`, `HealthDangerCard`, `HealthSheet`, `HealthDetailRow`, `HealthRecordScaffold` + `HealthBleed`, `HealthFilterChips`, `HealthRingPortrait`, `PetModuleAppBar`, `PetModuleHeaderCard`, `HealthTone`, `kRecordGutter` | — | the rest of the skeleton |
+
+New modules this batch:
+
+| File | Holds |
+|---|---|
+| **`pets/pet_pick_rail.dart`** | `PetPickRail` / `PetPickTile` — the *tall* portrait-over-name rail (`add_memory`, `search_memories`). The **other** rail shape (portrait beside the name) stays private in `memories_screen` / `conversation_history` |
+| **`memories/memory_search.dart`** | `searchMemories`, `memoryMatchScore`, `groupMemoriesByRecency`, `QuickSearch` + `kQuickSearches`, `RecentSearches`. All pure except the prefs I/O |
+| **`walks/walk_sections.dart`** | `WalkBand` (+ its ladder guard), `walkBand`, `weatherGlyph`/`weatherWord`, `dailyWalkOutlook`, `walkHints`, `kWalkDurationDisclaimer`, `WalkBandChip`, `WalkScoreDial` |
+| **`health/baseline.dart`** | `BaselineMeasure`, `MeasureBaseline`, `weightBaseline`, `RecordBaseline`, `baselineNotes`, `kBaselineFactors` |
+| **`encyclopedia/breed_sections.dart`** | `kBreedHealthDisclaimer`, `BreedSpecies`, `breedFacts`, `breedBinomial`, `similarBreeds`, `SavedBreeds`, `BreedTraitChip`, `BreedMeterRow`, `BreedFactStrip`, `BreedHealthCard`, `BreedSaveButton`, `BreedPhoto` |
+
+Elsewhere (unchanged): `LocalTickLog`, `careScore`/`careBand`, `healthEventIcon`,
+`clockTime`/`dateAtTime`/`monthAbbrev`/`shortDate`, `showPetSwitcher`,
+`PawNavBar(detached:)`, `PetPortrait`, `HomeCard`, `petAgeLabel`,
+`petMetaLine` (lives in `history_timeline_screen.dart`).
+
+**Pure functions worth reusing** (all unit-tested): `allowedPhotoCount`,
+`searchMemories`/`memoryMatchScore`/`groupMemoriesByRecency`,
+`RecentSearches.mergeRecent`, `dailyWalkOutlook`/`walkBand`/`walkHints`,
+`weightBaseline`/`RecordBaseline.from`/`baselineNotes`, `sortBreeds`/
+`similarBreeds`, `filterPets`/`sortPets`, `PetStats.from`, `sortMemories`.
+
+**Dependency direction:** `encyclopedia → health → home → theme`, and
+`memories → health`, `walks → health`. Never the other way.
 
 ---
 
 ## 5 · Architecture decisions in force
 
 1. **Two visual systems.** System A = onboarding (navy / emerald / cyan).
-   System B = the product (near-black / lime). Declared at the app root;
-   onboarding overrides to A. `system_isolation_test.dart` pins the boundary.
+   System B = the product (near-black / lime). `system_isolation_test.dart`
+   pins the boundary.
 2. **The mockups are AI-rendered pictures, not exported frames.** Their body
-   copy measures ~8-12dp and statistic labels ~7.5dp — unreadable on a handset.
-   Match layout, spacing and composition exactly; set type ~15% above the naive
-   scale. Page gutter is 17–18dp (measured), not 20. A label that no longer
-   fits at readable type gets a fixed two-line slot or `FittedBox`, never an
-   ellipsis mid-word.
-3. **Pinned footers.** Onboarding uses `OnbPage`; the check flow uses
-   `HealthCheckScaffold`; the record screens use `HealthRecordScaffold`. All
-   scroll content under an opaque action plate so the CTA is reachable on the
-   first frame.
-4. **`HealthRecordScaffold` applies the gutter per child**, so a `HealthBleed`
-   child can paint edge to edge. Negative padding is not a thing in Flutter.
-5. **The bottom nav lives in `core/paw_nav_bar.dart`, not in the shell.** Five
-   record mockups draw it on a *pushed* screen. `PawNavBar(detached: true)`
-   selects the tab via `rootTabProvider` and unwinds to the shell. A screen
-   that is *also* a shell tab (only `HealthHistoryScreen`) takes an `embedded`
-   flag so it does not stack a second bar — **including on its no-pet branch**,
-   which is where `root_shell_test` caught it.
-6. **`PendingPet`** holds the onboarding pet until there is a session; flushed
-   in `RootShell.initState`.
-7. **The analysis wait is deliberate** (~33.5s). See §6.
-8. **Bodies are a Column in a scroll view**, not a lazy ListView — laziness
-   hid content from tests and screen readers alike. The *conversation* is the
-   exception: a `reverse: true` `ListView.builder`, because a thread is
-   genuinely long.
-9. **Widget tests must set a handset surface.** The default test window is
-   800×600 — wider and far shorter than any phone — so on a tall scrolling
-   screen everything below the fold is never built and the assertions pass
-   vacuously. Every screen test here sets 393×(1600–2600).
-10. **In `flutter_test` every glyph is a full em square.** A `Row` that fits
-    comfortably on device overflows in a test. That is a feature: it has now
-    found seven real defects before the device did. Make the label `Flexible` +
-    `FittedBox`; do not widen the box to silence it.
-11. **Two `Flexible` children in one `Row` split the free space evenly**, which
-    squeezes a name that had room; a fixed neighbour overflows the row under
-    the test font. Use **weighted shares** (3:2, 5:4). This bit three times in
-    one batch.
-12. **Inside an `IntrinsicHeight`, a `Text` reports its unwrapped single-line
-    height**, so a label wanting two lines is clipped to one and the second is
-    silently lost. Give it an explicit `SizedBox` slot.
+   copy measures ~7–12dp — unreadable on a handset. Match layout, spacing and
+   composition exactly; set type ~15% above the naive scale. Page gutter 17dp
+   (`kRecordGutter`) — the mockups themselves vary from 9 to 17, so the app's
+   single constant wins.
+   *Where readable type genuinely will not fit the reference's composition,
+   restructure and say why in the commit* — five times so far (§5.13).
+3. **Pinned footers** via `HealthRecordScaffold`, which applies the gutter per
+   child so a `HealthBleed` can paint edge to edge.
+4. **The bottom nav lives in `core/paw_nav_bar.dart`.** A screen that is *also*
+   a shell tab takes an `embedded` flag so it does not stack a second bar.
+5. **`PendingPet`** holds the onboarding pet until there is a session.
+6. **Bodies are a Column in a scroll view**, not a lazy ListView.
+7. **Widget tests must set a handset surface** (393×2200–3600). The default
+   800×600 window means everything below the fold is never built and the
+   assertions pass vacuously.
+8. **In `flutter_test` every glyph is a full em square.** A `Row` that fits on
+   device overflows in a test. That is a feature — it has now found **fifteen**
+   real defects before the device did.
+9. **Two `Flexible` children in one `Row` split the free space evenly.** Use
+   weighted shares (3:2, 5:4, 4:2:2). A `Flexible` with a flex share is
+   *capped* at that share, so a chip given `flex: 2` truncates even when its
+   sibling left slack.
+10. **Inside an `IntrinsicHeight`, a `Text` reports its unwrapped single-line
+    height.** A label wanting two lines needs an explicit `SizedBox` slot. The
+    same is true inside a fixed-height horizontal rail — the walk badges and
+    the baseline factor tiles both needed one.
+11. **`CrossAxisAlignment.stretch` in an unbounded Column hands children
+    infinite height** and trips the constraint assertion. Wrap in
+    `IntrinsicHeight`.
+12. **`hintText` stays in the widget tree at zero opacity once a field is
+    filled.** Hints are examples: "e.g. Labrador", never "Golden Retriever".
+13. **Layout departures are allowed, documented, and rare.** Five now:
+    `pet_statistics` stacks its chart pairs; `memories_gallery` uses a
+    three-across month grid; `manage_multiple_pets` moves the F-4 chip to its
+    own line; **`search_memories` sets its four filter pills two-up** (each is
+    a *value* display and "Hearted only" does not fit 50dp); **`add_memory`
+    deals the reference's six cards across the two steps its own rail names**
+    (the plate stacked Media and Details on one canvas — its button reads
+    "Next: Add Tags", which is step 3).
+14. **A horizontal rail is lazy.** Off-screen chips are not in the element
+    tree, so a widget test must drag the rail before tapping the last ones
+    (`encyclopedia_screen_test`'s `_section` helper).
+15. **The repo is hand-formatted at 80 columns and is NOT `dart format`-clean.**
+    Do not run `dart format` on the repo unless the owner decides to format all
+    of it.
 
 ---
 
@@ -159,19 +206,11 @@ of importing `AssistantTone`.
 
 `health_check/health_check_loading_view.dart`
 
-- A `TweenSequence` over `HealthCheckLoadingView.ceremony` (33.5s): fast off
-  the mark, slow through the model stage, short close.
+- A `TweenSequence` over `HealthCheckLoadingView.ceremony` (33.5s).
 - Six stages tick against the **percentage**, not a clock.
-- If the backend runs long the bar parks at 99 (`_hold = 0.985`) and says
-  "Finishing up…"; the answer closes out the last point and hands over.
-- **Never held:** an EMERGENCY (instant cut) and reduce-motion. Errors are not
-  held either.
-- `health_check_ceremony_test.dart` pins all four cases.
-
-**Trap:** `flutter_test_config.dart` sets `disableAnimations` on the *binding*,
-and `AnimationController` scales every duration by **0.05** when that is set —
-independent of any MediaQuery override. A 33.5s run finishes in ~1.7s of test
-time.
+- **Never held:** an EMERGENCY (instant cut) and reduce-motion.
+- **Trap:** `flutter_test_config.dart` sets `disableAnimations` on the
+  *binding*, and `AnimationController` scales every duration by **0.05**.
 
 ---
 
@@ -179,49 +218,83 @@ time.
 
 Read `CLAUDE.md` in full. The ones that bite in UI work:
 
-- **Confidence is never rendered.** Ever. `safety_copy_test.dart` greps for it.
-- **No differential, no percentages, no risk level, no severity grade.**
-- **Never name a condition** and never assert a cause.
+- **Confidence is never rendered.** No differential, no percentages, no risk
+  level, no severity grade. **Never name a condition**, never assert a cause.
 - **No output terminates without an action and a timeframe**; never render
   "normal" or any all-clear.
 - **The emergency surfaces** carry help contacts, first aid, the disclaimer and
-  the acknowledgment gate (rule 4 / D-1) — **plus**, since owner decision
-  **D-7**, the four sections `ai_analysis_result_emergency` adds, rewritten in
-  PawDoc language. D-7's scope is `EmergencyResultScreen` only;
-  `EmergencyHelpScreen` (the offline red button) stays model-free.
-- **`EmergencyResultScreen` renders zero motion widgets, permanently.**
-- **The Health Score is a wellness metric only** (D-2) — it ships as "Care
-  Score", computed from record completeness.
+  the acknowledgment gate (rule 4 / D-1), plus the four sections D-7 authorised
+  on `EmergencyResultScreen` only.
+- **The Health Score is a wellness metric only (D-2)** — it ships as the Care
+  Score, computed from record completeness, banded by `careBand()`. **Every
+  surface computes it the same way**: `careScore(pet, hasCheck:, hasReminder:)`
+  with `hasReminder` read from `remindersForPetProvider`. The baseline screen
+  printed 29 against the timeline's 43 until it did.
 - **The action ladder's four hues are safety-locked** and never repurposed as
-  decoration. The one deliberate exception is a *past AI check* on the health
-  timeline, which is chipped in its own ladder colour because that is the
-  meaning the ladder already owns. Every other tint on the record screens is
-  decorative and clear of all four values, pinned by a test per screen.
-- Disclaimers are **API-injected** — the UI only gates on `disclaimerRequired`.
+  decoration. Six decorative palettes now each carry a guard test:
+  `vaccineTint`, `reminderTint`, `breakdownTints`, `AssistantTone`,
+  `HealthTone`, and **`WalkBand`**.
+  **The one deliberate exception** is a past AI check chipped in its own ladder
+  colour — on the health timeline, and on the pets list (F-4).
+- Disclaimers are **API-injected**; the UI only gates on `disclaimerRequired`.
 - **The assistant never implies a veterinary role** (V-23), its chips never
   presuppose a symptom (V-12), and it is not a second triage entry point.
 
-### What the health module added (2026-08-07)
+### What this batch added to the list
 
-- **Never grade an animal the app has not examined.** No ideal-weight band, no
-  protection status, no "fully protected", no "up to date".
-- **A clinical judgement the app cannot make is the owner's to enter.** The
-  weight target range and the vaccine class are theirs, labelled as theirs, and
-  absent until they set them.
-- **A metric over no data is null, not zero.** Medication adherence with
-  nothing scheduled reads "No doses scheduled", because 0% is a failure that
-  never happened.
-- **No value judgements.** No "Excellent", no "Great job" — not on the animal
-  and not on the owner's week.
-- **No dosing or schedule guidance.** Point at the label and the vet.
-- **A control whose answer is not stored must say where it goes.** Dose ticks
-  and the weight target are device-local and both screens say so.
-- **V-22 provenance** on anything the owner typed: *"Entered by the owner.
-  PawDoc did not review it."*
+- **Never print a textbook reference range under a pet's name.**
+  `know_your_baseline` draws "Resting Heart Rate 60–100 bpm · Your Pet's Normal
+  Range". 60–100 bpm and 38.0–39.2 °C are real published ranges; captioning
+  them as *this animal's* normal is medical content the app has no standing to
+  publish, and a reader who then counts 105 at home draws exactly the
+  conclusion PawDoc exists to route to a vet.
+- **Never grade a risk beside a named condition.** Both breed references print
+  "Hip Dysplasia · Risk: Moderate" with a dot meter. The reader of a breed page
+  is usually the owner of that breed.
+- **Never prescribe exercise.** "Up to 60 minutes a day is ideal for heart
+  health and weight control", "Estimated duration 30–45 min", "Ideal distance
+  3–5 km" — all gone. `kWalkDurationDisclaimer` sits where they were.
+- **Never brand a lookup table as AI.** `scoreWalkHour` is a pure function; the
+  references call its output "AI Walk Suggestion".
+- **Never invent a calorie.** A burned-calorie figure needs weight, gait and
+  metabolism.
+- **Never invent a registry field.** AKC ranking, FCI group, recognition year.
+- **Never imply monitoring.** "Alerts Triggered · 0" says the app is watching.
+  The baseline screen states outright that it is not.
+- **Never hand out an ungated symptom list.** `know_your_baseline`'s "View
+  Warning Signs" became **Start a health check** — the Check flow is where the
+  emergency override, the quota and the ladder apply.
+- **A single reading is not a range.** `MeasureBaseline.hasRange` needs two.
+- **A "best hour" band needs its hour.** The walk outlook scored a 34 °C day
+  "Ideal" from its 06:00 sample — an invitation to walk at noon. The tile
+  prints `90 · 06:00` now.
 
 `test/safety_copy_test.dart` is load-bearing. **Do not weaken it to make a
-screen pass** — scope it precisely instead. Each record screen also carries its
-own `group('safety', …)`; keep that pattern.
+screen pass** — scope it precisely instead. Each rebuilt screen also carries
+its own `group('safety', …)`; keep that pattern.
+
+### The *Soon* convention
+
+A feature the mockup draws and the schema cannot hold keeps its control, in
+its place, disabled and labelled *Soon*, and tapping it says what is missing.
+Never delete the affordance; never fake the value. Currently marked *Soon*:
+recurring reminders, lead-up and missed-reminder nudges, personality traits,
+family sharing, microchip / colour / neutered / blood type, expenses, memory
+tags, albums, video memories, **a memory's time of day, Family/Public memory
+sharing, walk tracking (and everything downstream of it — the log, the weekly
+totals, the milestones), heart rate / respiratory rate / temperature /
+activity baselines, small pets / birds / reptiles in the breed guide, and the
+breed-match quiz**.
+
+### Device-local, and the screen must say so
+
+Six stores now: `pawdoc.dose.*`, `pawdoc.reminder.done.*`,
+`pawdoc.memory.fav.*` (all via `LocalTickLog`), **`pawdoc.memory.searches`**
+(`RecentSearches`), **`pawdoc.breeds.saved`** (`SavedBreeds`) and
+`pawdoc.weight_target.<petId>`. Each exists because the table would be a
+migration plus an RLS review plus a deploy, all founder-gated. **A control
+whose answer is silently forgotten is worse than no control** — so each screen
+states where the answer lives.
 
 ---
 
@@ -238,70 +311,94 @@ flutter run -d AYXSUKIVJVPZ7HPZ --debug --pid-file=/tmp/flutter.pid \
   --dart-define=SUPABASE_URL="$SUPABASE_URL" \
   --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
 kill -SIGUSR1 $(cat /tmp/flutter.pid)   # hot reload
-kill -SIGUSR2 $(cat /tmp/flutter.pid)   # hot restart
+kill -SIGUSR2 $(cat /tmp/flutter.pid)   # hot restart — REQUIRED after adding a
+                                        # field to a const class
 adb exec-out screencap -p > shot.png
 ```
 
-A second Redmi (`jfzxugsgnnvsrsg6`, 1080×2408) is also attached — pin
-`ANDROID_SERIAL` or adb errors with "more than one device".
-
-**adb driving tips learned the hard way.** `input keyevent 111` (ESC) closes
-the IME on a page but *dismisses a bottom sheet*; `keyevent 4` (BACK) closes
-the IME on the first press and **pops the route** on the second, which silently
-threw away two half-filled forms. Screenshot between steps rather than
-chaining taps: the page scroll position shifts as fields fill, and a blind tap
-lands in the wrong field. Wait for the reload to land before screenshotting —
-`until [ "$(grep -c Reloaded run.log)" -gt "$N" ]`, not a fixed sleep.
+**adb driving tips, learned the hard way.**
+- **Launch `flutter run` in one shell invocation**, and do not chain it behind
+  a command that can fail — a `&&` chain that aborted on `cat /tmp/flutter.pid`
+  silently skipped the relaunch this session.
+- **Never `am start` the app while `flutter run` is attached.** It opens a
+  second activity in a new task with no engine and renders blank white.
+- The screen sleeps and the notification shade steals focus. Run
+  `adb shell svc power stayon true` and
+  `adb shell settings put system screen_off_timeout 1800000` first.
+- `input keyevent 111` (ESC) closes the IME on a page but **dismisses a bottom
+  sheet**. Use `keyevent 4` (BACK) — but note BACK also **pops the route** when
+  no IME is up, which threw away a screen mid-walk this session.
+- **Screenshot between steps rather than chaining taps.**
+- Wait for the reload to land: `until [ "$(grep -c Reloaded run.log)" -gt "$N" ]`,
+  not a fixed sleep.
+- `input text "Two%swords"` — `%s` is the space escape.
+- Location for the walk screens:
+  `adb shell settings put secure location_mode 3` +
+  `adb shell pm grant app.pawdoc android.permission.ACCESS_COARSE_LOCATION`
+  (FINE is not declared; granting it throws, harmlessly).
 
 ---
 
 ## 9 · Blockers and environment notes
 
-- **Anonymous sign-in fails** on the dev Supabase project ("Could not start a
-  guest session"). Device validation goes through an email account:
-  `uiqa.aug04@example.com` / `PawDoc!2026qa`.
-- **Three things are device-local, pending founder-gated migrations:** dose
-  ticks (`pawdoc.dose.*`), the weight target (`pawdoc.weight_target.*`) and —
-  the odd one out — record attachments, which use the deployed `memories/` R2
-  scope rather than a `records/` one, because a new scope means editing
-  `supabase/functions/_shared/upload_key.mjs` and redeploying
-  `generate-upload-url`, `sign-media-url` and `delete-media`.
+- **This branch has no PR yet** — see §0.
+- **Anonymous sign-in fails** on the dev Supabase project. Device validation
+  goes through `uiqa.aug04@example.com` / `PawDoc!2026qa`.
+- **Founder-gated migrations** would retire the device-local stores (§7) and
+  add the columns behind every *Soon* field. Walk tracking is the largest
+  single unlock: it fills the walk log, the weekly totals and the milestones.
+- Record attachments still use the deployed `memories/` R2 scope rather than a
+  `records/` one.
 - `flutter run` drops its session after long idles — relaunch, do not assume
   hot reload landed.
-- CI only runs on `pull_request` and pushes to `main`; a branch push alone does
-  not trigger it.
+- CI only runs on `pull_request` and pushes to `main`.
 - `new-interface/` is still untracked — owner's call.
+- **Test data written to the dev account this session:** two memories titled
+  "Two desk shots" (Aug 7 2026, Buddy), from one two-photo batch.
+- **Device preferences written this session:** `pawdoc.memory.searches` holds
+  `snap`; location permission granted; screen timeout raised to 30 min.
 
 ---
 
 ## 10 · Next recommended action
 
-1. **Open a PR for this branch so CI runs.** Six screens and 91 new tests have
-   never been through it. `main` is protected (linear history + review), so it
-   must be squash-merged.
-2. Then the next batch — recommended: the two pre-auth surfaces (§3.1).
+1. **Open the PR** for this branch (§0), and get it merged.
+2. Then the next batch — recommended: the two pre-auth surfaces (§3.1). They
+   are the first thing every new user sees and the only screens left on the old
+   design.
 3. Whatever it is: open the reference and read it in full before writing
-   anything, then survey the target file and the primitives table in §4. Almost
-   everything a record-shaped screen needs already exists in
-   `health/health_sections.dart`.
+   anything, then survey the target file and the primitives table in §4.
+   Almost everything a record-shaped screen needs already exists.
 4. Build → `flutter analyze` → `flutter test` → `scripts/verify-disclaimers.sh`
    → hot-reload onto the Redmi → screenshot → compare → fix → commit → next
    screen. One screen at a time.
 5. Update `RESUME_GUIDE.md`, `PROJECT_PROGRESS_SUMMARY.md` **and**
    `IMPLEMENTATION_CHANGELOG_UI.md` at the end of the session.
 
-### How to reach the health module on device
+### How to reach this batch's screens on device
 
 | Surface | How |
 |---|---|
-| `health_timeline` | the **Health** tab |
-| the module menu | Health tab → the sliders button, top right |
-| `weight_tracking` | that menu → Weight tracking, or any Weight row's "View Trend" |
-| `medication_tracker` | that menu → Medication tracker, or any Medication row |
-| `vaccination_manager` | that menu → Vaccination manager, or any Vaccination row |
-| `add_health_record` | Health tab → **Add Event**, or any module's Add CTA (which preselects the type) |
-| the record-detail sheet | any Vet Visit / Lab Result / Note row, or a row inside a module |
-| `conversation_history` | Home → AI Assistant → the **History** button, top right |
+| `add_memory` | Memories Gallery → the **cloud-upload** button, top right |
+| `search_memories` | Memories Gallery → the **magnifier** button on the toolbar row, beside the view toggle |
+| `smart_walks` | Home → the **Smart walks** card (tap "Show" first if location is off) |
+| `weather_walk_advisor` | Smart Walks → the **calendar** button, top right, or its "Full forecast ›" link |
+| `know_your_baseline` | Health tab → the **sliders** button → *Know your baseline* (the menu scrolls) |
+| `breed_encyclopedia` | Home → the **Breed Encyclopedia** pill |
+| `breed_detail` | any breed card in the guide |
+
+### How to reach the earlier batches
+
+| Surface | How |
+|---|---|
+| `manage_multiple_pets` | the **Pets** tab |
+| `pet_profile` / `edit_pet` / `pet_statistics` | Pets tab → a card → Profile / Edit / Health tab |
+| `memories_gallery` / `memory_detail` | Pet Profile → **Files** tab → Open journal → a tile |
+| `reminder_detail` | Home → Reminders → any row |
+| `health_timeline` and the module menu | the **Health** tab, then the sliders button |
+| `weight_tracking` / `medication_tracker` / `vaccination_manager` | that menu |
+| `add_health_record` | Health tab → **Add Event** |
+| `conversation_history` | Home → AI Assistant → **History** |
 
 ### How to reach each result variant on device
 
@@ -311,7 +408,4 @@ The loading run holds a non-emergency result for ~33.5s, so budget ~40s.
 |---|---|
 | CALL_TODAY / monitor | pick "Skin irritation" + "Itching" on the details step |
 | WATCH_AND_RECHECK | submit with almost no detail |
-| GET_HELP_NOW | a note like "belly hugely swollen and hard, retching with nothing coming up, very weak" — and note the **client** keyword router intercepts the hardcoded list first and lands on `EmergencyHelpScreen`, so use free text the router does not match |
-
-Past results are now reopenable: Health tab → any AI Health Check card →
-**View Result**.
+| GET_HELP_NOW | free text the **client** keyword router does not match, e.g. "belly hugely swollen and hard, retching with nothing coming up, very weak" |

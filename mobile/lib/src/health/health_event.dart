@@ -1,3 +1,8 @@
+library;
+
+import 'package:flutter/widgets.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
 /// A manually-logged pet health event, mirroring the `health_events` table
 /// (Phase 1.1 schema). Ownership is derived from the parent pet via RLS — the
 /// table has no `user_id` column (owner-approved CR #2 design), so inserts carry
@@ -32,6 +37,18 @@ String healthEventLabel(String type) => switch (type) {
       'lab_result' => 'Lab Result',
       'weight' => 'Weight',
       _ => 'Note',
+    };
+
+/// The glyph for an event_type. Beside the label rather than in the form
+/// screen, so a surface that only wants the mark — the profile's Records tab —
+/// does not have to import a 1,500-line form and invert the dependency.
+IconData healthEventIcon(String type) => switch (type) {
+      'vaccination' => LucideIcons.syringe,
+      'vet_visit' => LucideIcons.stethoscope,
+      'medication' => LucideIcons.pill,
+      'lab_result' => LucideIcons.flaskConical,
+      'weight' => LucideIcons.scale,
+      _ => LucideIcons.notebookPen,
     };
 
 class HealthEvent {

@@ -90,20 +90,36 @@ Widget _app(_FakeRepo repo) {
   );
 }
 
-List<ConversationSummary> _sample() {
+/// A moment that is always *earlier today*, whatever the hour the suite runs
+/// at. `now - 2h` is yesterday for anyone running before 02:00 — which is how
+/// this fixture broke in CI, whose runners are UTC.
+DateTime _earlierToday() {
   final now = DateTime.now();
+  final midnight = DateTime(now.year, now.month, now.day);
+  return now.difference(midnight) >= const Duration(hours: 2)
+      ? now.subtract(const Duration(hours: 2))
+      : midnight;
+}
+
+/// Noon, [days] days back. Day arithmetic rather than `subtract(days:)` so a
+/// DST shift cannot slide the row into the neighbouring day.
+DateTime _noonDaysAgo(int days) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day - days, 12);
+}
+
+List<ConversationSummary> _sample() {
   return [
     _row('c1', 'Paw redness that will not settle',
-        at: now.subtract(const Duration(hours: 2)),
+        at: _earlierToday(),
         preview: 'There are several everyday reasons a paw can look red.',
         photos: 1,
         messages: 6),
     _row('c2', 'Is seasonal shedding normal?',
-        at: now.subtract(const Duration(days: 1)), messages: 4),
-    _row('c3', 'Dry food or wet food?',
-        at: now.subtract(const Duration(days: 1)), messages: 3),
+        at: _noonDaysAgo(1), messages: 4),
+    _row('c3', 'Dry food or wet food?', at: _noonDaysAgo(1), messages: 3),
     _row('c4', 'Could this be separation anxiety?',
-        at: now.subtract(const Duration(days: 9)), messages: 5),
+        at: _noonDaysAgo(9), messages: 5),
   ];
 }
 

@@ -9,8 +9,10 @@ import '../theme/app_assets.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_ui.dart';
 import '../notifications/local_notifications.dart';
-import 'reminder_form_screen.dart';
+import 'reminder.dart';
+import 'reminder_detail_screen.dart';
 import 'reminders_repository.dart';
+import 'reminder_form_screen.dart';
 
 /// Manage health reminders for the active pet. Reached from the Health History
 /// screen. Reactive to the active pet (Phase 3.1 switcher).
@@ -143,10 +145,13 @@ class _RemindersBody extends StatelessWidget {
                           .delete(r.id!);
                       ref.invalidate(remindersForPetProvider(petId));
                     },
+                    // J6 opened the edit form directly; the row now opens the
+                    // reminder's own page, which is where `reminder_detail`
+                    // puts Edit, Postpone, the schedule and the history.
                     onEdit: () async {
                       await Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => ReminderFormScreen(
-                            petId: petId, petName: petName, existing: r),
+                        builder: (_) => ReminderDetailScreen(
+                            reminderId: r.id as String, initial: r as Reminder),
                       ));
                       ref.invalidate(remindersForPetProvider(petId));
                     },

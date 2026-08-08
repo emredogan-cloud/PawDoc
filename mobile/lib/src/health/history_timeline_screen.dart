@@ -19,6 +19,7 @@ import '../monetization/paywall_screen.dart';
 import '../pets/active_pet.dart';
 import '../pets/pet.dart';
 import '../pets/pet_form_screen.dart';
+import '../pets/pet_profile_screen.dart';
 import '../pets/pet_switcher.dart';
 import '../prep/vet_visit_prep_screen.dart';
 import '../reminders/reminders_repository.dart';
@@ -26,6 +27,7 @@ import '../reminders/reminders_screen.dart';
 import '../theme/design_tokens.dart';
 import '../theme/paw_components.dart';
 import '../theme/paw_ui.dart';
+import 'baseline_screen.dart';
 import 'health_event_form_screen.dart';
 import 'health_record_detail.dart';
 import 'health_sections.dart';
@@ -178,7 +180,9 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (sheetContext) => HealthSheet(children: [
+      // Scrollable: the menu is seven rows now and overflowed the sheet by
+      // 132px on the device when "Know your baseline" was added.
+      builder: (sheetContext) => HealthSheet(scrollable: true, children: [
         HealthRecordRow(
           key: const Key('open_vet_prep'),
           leading: const HealthGlyphDisc(
@@ -257,6 +261,19 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
           },
         ),
         HealthRecordRow(
+          key: const Key('open_baseline'),
+          leading: const HealthGlyphDisc(
+              icon: LucideIcons.activity, tint: HealthTone.info),
+          title: 'Know your baseline',
+          subtitle: 'What you have measured, and over how long',
+          chevron: false,
+          onTap: () {
+            Navigator.pop(sheetContext);
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => BaselineScreen(pet: pet)));
+          },
+        ),
+        HealthRecordRow(
           key: const Key('open_reminders'),
           leading: const HealthGlyphDisc(
               icon: LucideIcons.bellRing, tint: HealthTone.gold),
@@ -325,7 +342,7 @@ class _HealthHistoryScreenState extends ConsumerState<HealthHistoryScreen> {
             meta: petMetaLine(pet),
             onSwitch: () => showPetSwitcher(context, ref),
             onViewProfile: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => PetFormScreen(pet: pet)),
+              MaterialPageRoute(builder: (_) => PetProfileScreen(pet: pet)),
             ),
             trailing: _CareScoreDial(pet: pet, items: all),
           ),
@@ -970,12 +987,8 @@ class _CareScoreDial extends ConsumerWidget {
   final Pet pet;
   final List<TimelineItem> items;
 
-  static String band(int score) {
-    if (score >= 95) return 'Complete';
-    if (score >= 70) return 'Well kept';
-    if (score >= 45) return 'Filling in';
-    return 'Just started';
-  }
+  /// Delegates to the shared band — `pet_profile` prints the same words.
+  static String band(int score) => careBand(score);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

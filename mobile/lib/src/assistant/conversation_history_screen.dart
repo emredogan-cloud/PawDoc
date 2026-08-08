@@ -470,6 +470,8 @@ Color topicTint(BuildContext context, ConversationTopic topic) =>
 
 // ---------------------------------------------------------------------------
 
+/// The search box moved to `health_sections.dart` as [HealthSearchField];
+/// `manage_multiple_pets` draws the same one.
 class _SearchField extends StatelessWidget {
   const _SearchField({required this.controller, required this.onChanged});
 
@@ -477,36 +479,12 @@ class _SearchField extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: HealthTone.card,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(children: [
-        const Icon(LucideIcons.search, size: 16, color: HealthTone.muted),
-        const SizedBox(width: 9),
-        Expanded(
-          child: TextField(
-            key: const Key('history_search_field'),
-            controller: controller,
-            onChanged: onChanged,
-            autofocus: true,
-            style: const TextStyle(color: Colors.white, fontSize: 13.5),
-            decoration: const InputDecoration(
-              isDense: true,
-              border: InputBorder.none,
-              hintText: 'Search your conversations…',
-              hintStyle: TextStyle(color: HealthTone.faint, fontSize: 13.5),
-            ),
-          ),
-        ),
-      ]),
-    );
-  }
+  Widget build(BuildContext context) => HealthSearchField(
+        fieldKey: const Key('history_search_field'),
+        controller: controller,
+        onChanged: onChanged,
+        hint: 'Search your conversations…',
+      );
 }
 
 /// The statistics strip. Every figure is counted from the rows on screen.

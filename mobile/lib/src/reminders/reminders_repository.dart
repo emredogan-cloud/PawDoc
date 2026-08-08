@@ -30,6 +30,19 @@ class RemindersRepository {
         .toList(growable: false);
   }
 
+  /// One reminder, by id. RLS scopes it — a row belonging to someone else does
+  /// not come back, it simply is not there.
+  Future<Reminder?> byId(String id) async {
+    final row = await _client
+        .from('reminders')
+        .select()
+        .eq('id', id)
+        .maybeSingle()
+        .timeout(kDataReadTimeout);
+    if (row == null) return null;
+    return Reminder.fromJson(row);
+  }
+
   Future<Reminder> create(Reminder reminder, {String? petName}) async {
     final userId = _client.auth.currentUser!.id;
     final row = await _client
@@ -73,6 +86,13 @@ class RemindersRepository {
     await _notifications.cancelReminder(id);
   }
 }
+
+/// One reminder, live. `family` on the id so a detail screen re-reads its own
+/// row rather than filtering a list it did not fetch.
+final reminderByIdProvider =
+    FutureProvider.autoDispose.family<Reminder?, String>((ref, id) {
+  return ref.watch(remindersRepositoryProvider).byId(id);
+});
 
 final remindersRepositoryProvider = Provider<RemindersRepository>((ref) {
   return RemindersRepository(

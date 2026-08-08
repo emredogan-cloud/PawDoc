@@ -439,6 +439,21 @@ int careScore(Pet pet, {required bool hasCheck, required bool hasReminder}) {
   return (filled * 100 / 7).round();
 }
 
+/// How full the record is, in words about the *record*.
+///
+/// **D-2.** The mockups band this number "Excellent" / "Great!", which reads as
+/// a verdict on the animal. These four say what they actually describe, and
+/// none of them is a value judgement on the owner either. Lives beside
+/// [careScore] for the same reason the score does — `health_timeline` and
+/// `pet_profile` both draw it, and two spellings of the same band is how they
+/// end up disagreeing.
+String careBand(int score) {
+  if (score >= 95) return 'Complete';
+  if (score >= 70) return 'Well kept';
+  if (score >= 45) return 'Filling in';
+  return 'Just started';
+}
+
 /// `2y 2m`, the age the rail and the record card print. Null when unknown.
 String? petAgeLabel(DateTime? birth) {
   if (birth == null) return null;

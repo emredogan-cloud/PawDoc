@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/local_tick_log.dart';
 import 'timeline.dart';
 
 /// How often a medicine is taken.
@@ -259,31 +259,19 @@ class DoseLog {
 
   static const prefix = 'pawdoc.dose.';
 
+  /// The shared implementation. `reminder_detail` keeps its own log under its
+  /// own prefix; the storage and the honesty rule are the same.
+  static const log = LocalTickLog(prefix);
+
   static String keyFor(String medId, DateTime at, int index) =>
-      '$prefix$medId.${at.year}-${_two(at.month)}-${_two(at.day)}.$index';
+      '$prefix$medId.${LocalTickLog.dayKey(at)}.$index';
 
-  static String _two(int v) => v.toString().padLeft(2, '0');
+  static Future<Map<String, DateTime>> loadAll() => log.loadAll();
 
-  static Future<Map<String, DateTime>> loadAll() async {
-    final prefs = await SharedPreferences.getInstance();
-    final out = <String, DateTime>{};
-    for (final key in prefs.getKeys()) {
-      if (!key.startsWith(prefix)) continue;
-      final at = DateTime.tryParse(prefs.getString(key) ?? '');
-      if (at != null) out[key] = at;
-    }
-    return out;
-  }
+  static Future<void> set(String key, DateTime at) =>
+      LocalTickLog.set(key, at);
 
-  static Future<void> set(String key, DateTime at) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(key, at.toIso8601String());
-  }
-
-  static Future<void> clear(String key) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(key);
-  }
+  static Future<void> clear(String key) => LocalTickLog.clear(key);
 }
 
 /// The ticked doses, as a live map keyed by [DoseLog.keyFor].

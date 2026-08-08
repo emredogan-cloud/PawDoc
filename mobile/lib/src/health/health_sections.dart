@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../home/home_sections.dart';
@@ -176,8 +177,10 @@ class PetModuleAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.title,
     required this.subtitle,
     this.subtitleLead,
+    this.subtitleTrail,
     this.icon,
     this.actions = const [],
+    this.actionsWidth,
     this.onBack,
     super.key,
   });
@@ -191,9 +194,19 @@ class PetModuleAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// name (or the product's) and greys the rest.
   final String? subtitleLead;
 
+  /// Rendered in the accent *after* [subtitle]. `reminder_detail` and
+  /// `pet_profile` put the lit name at the end of the sentence ("Never miss
+  /// what matters for **Buddy**", "All about **Buddy**") rather than the start.
+  final String? subtitleTrail;
+
   final IconData? icon;
   final List<Widget> actions;
   final VoidCallback? onBack;
+
+  /// How much room to keep clear on the right. Defaults to 48dp per action,
+  /// which is right for circled buttons; a screen whose action is a wider
+  /// lozenge ("Edit") passes its own so a long title can never sit under it.
+  final double? actionsWidth;
 
   @override
   Size get preferredSize => const Size.fromHeight(74);
@@ -228,7 +241,8 @@ class PetModuleAppBar extends StatelessWidget implements PreferredSizeWidget {
                     Padding(
                       padding: EdgeInsets.only(
                         left: 48,
-                        right: actions.isEmpty ? 48 : actions.length * 48.0,
+                        right: actionsWidth ??
+                            (actions.isEmpty ? 48 : actions.length * 48.0),
                       ),
                       child: Center(
                         child: Row(
@@ -273,6 +287,12 @@ class PetModuleAppBar extends StatelessWidget implements PreferredSizeWidget {
                             color: t.accent, fontWeight: FontWeight.w600),
                       ),
                     TextSpan(text: subtitle),
+                    if (subtitleTrail != null)
+                      TextSpan(
+                        text: subtitleTrail,
+                        style: TextStyle(
+                            color: t.accent, fontWeight: FontWeight.w600),
+                      ),
                   ]),
                   maxLines: 1,
                   style: const TextStyle(
@@ -280,6 +300,82 @@ class PetModuleAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A bordered icon+label lozenge — the small secondary button the mockups use
+/// wherever a tap is offered beside a heading or in the app bar: "Edit",
+/// "View Calendar", "View All", "View Clinic".
+///
+/// Extracted from [HealthSectionHead]'s boxed action, which had the glyph
+/// hardcoded; `reminder_detail` draws three of these with three different
+/// glyphs and `pet_profile` puts one in the header.
+class HealthActionPill extends StatelessWidget {
+  const HealthActionPill({
+    required this.label,
+    required this.onTap,
+    this.icon,
+    this.color,
+    this.dense = false,
+    super.key,
+  });
+
+  final String label;
+
+  /// Nullable so a heading can present the pill as a static caption — which is
+  /// what `medication_tracker` does with "Next 12 months".
+  final VoidCallback? onTap;
+  final IconData? icon;
+  final Color? color;
+
+  /// Tighter padding, for the app-bar slot where height is fixed at 48.
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? PawTone.of(context).accent;
+    return Semantics(
+      button: onTap != null,
+      label: label,
+      child: ExcludeSemantics(
+        child: Material(
+          color: c.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                  horizontal: dense ? 11 : 9, vertical: dense ? 7 : 5),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                border: Border.all(color: c.withValues(alpha: 0.35)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 12, color: c),
+                  const SizedBox(width: 5),
+                ],
+                // Flexible, not bare: `mainAxisSize.min` still lets a long
+                // label ("Open the vaccination manager") take its natural
+                // width and blow the row out. The widget test found this at
+                // the em-square font, which is the large-text case a real
+                // handset would have hit.
+                Flexible(
+                  child: Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: c,
+                          fontSize: dense ? 12 : 11.5,
+                          fontWeight: FontWeight.w600)),
+                ),
+              ]),
+            ),
           ),
         ),
       ),
@@ -297,6 +393,7 @@ class HealthSectionHead extends StatelessWidget {
     this.chevron = true,
     this.actionColor,
     this.actionBoxed = false,
+    this.actionIcon,
     super.key,
   });
 
@@ -311,6 +408,10 @@ class HealthSectionHead extends StatelessWidget {
   /// bordered lozenge ("View Treatment Plan", "View Calendar") rather than a
   /// bare link.
   final bool actionBoxed;
+
+  /// The glyph inside that lozenge. Defaults to the list mark the medication
+  /// screens use; `reminder_detail` wants a calendar on its schedule card.
+  final IconData? actionIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -330,33 +431,32 @@ class HealthSectionHead extends StatelessWidget {
                   fontWeight: FontWeight.w700)),
         ),
         if (actionLabel != null)
-          InkWell(
-            onTap: onAction,
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            child: Container(
-              margin: const EdgeInsets.only(left: 6),
-              padding: actionBoxed
-                  ? const EdgeInsets.symmetric(horizontal: 9, vertical: 5)
-                  : const EdgeInsets.symmetric(horizontal: 3, vertical: 7),
-              decoration: actionBoxed
-                  ? BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                      color: c.withValues(alpha: 0.10),
-                      border: Border.all(color: c.withValues(alpha: 0.35)),
-                    )
-                  : null,
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                if (actionBoxed) ...[
-                  Icon(LucideIcons.list, size: 12, color: c),
-                  const SizedBox(width: 5),
-                ],
-                Text(actionLabel!,
-                    style: TextStyle(
-                        color: c, fontSize: 11.5, fontWeight: FontWeight.w600)),
-                if (chevron && !actionBoxed)
-                  Icon(LucideIcons.chevronRight, size: 13, color: c),
-              ]),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(left: 6),
+            child: actionBoxed
+                ? HealthActionPill(
+                    label: actionLabel!,
+                    icon: actionIcon ?? LucideIcons.list,
+                    color: c,
+                    onTap: onAction,
+                  )
+                : InkWell(
+                    onTap: onAction,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 3, vertical: 7),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(actionLabel!,
+                            style: TextStyle(
+                                color: c,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600)),
+                        if (chevron)
+                          Icon(LucideIcons.chevronRight, size: 13, color: c),
+                      ]),
+                    ),
+                  ),
           ),
       ],
     );
@@ -629,6 +729,79 @@ class HealthAsidePill extends StatelessWidget {
 // 3 · the filter rail
 // ---------------------------------------------------------------------------
 
+/// The rounded search box. `conversation_history` and `manage_multiple_pets`
+/// both draw one; the hint differs, the shape does not.
+class HealthSearchField extends StatelessWidget {
+  const HealthSearchField({
+    required this.controller,
+    required this.onChanged,
+    required this.hint,
+    this.autofocus = true,
+    this.fieldKey,
+    this.onSubmitted,
+    super.key,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final String hint;
+  final bool autofocus;
+  final Key? fieldKey;
+
+  /// Fired on the keyboard's search key. `search_memories` uses it to decide
+  /// what to *remember* — storing every keystroke would fill the recent list
+  /// with the prefixes of one word.
+  final ValueChanged<String>? onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: HealthTone.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(children: [
+        const Icon(LucideIcons.search, size: 16, color: HealthTone.muted),
+        const SizedBox(width: 9),
+        Expanded(
+          child: TextField(
+            key: fieldKey,
+            controller: controller,
+            onChanged: onChanged,
+            onSubmitted: onSubmitted,
+            textInputAction:
+                onSubmitted == null ? null : TextInputAction.search,
+            autofocus: autofocus,
+            style: const TextStyle(color: Colors.white, fontSize: 13.5),
+            decoration: InputDecoration(
+              isDense: true,
+              border: InputBorder.none,
+              hintText: hint,
+              hintStyle:
+                  const TextStyle(color: HealthTone.faint, fontSize: 13.5),
+            ),
+          ),
+        ),
+        if (controller.text.isNotEmpty)
+          InkWell(
+            onTap: () {
+              controller.clear();
+              onChanged('');
+            },
+            customBorder: const CircleBorder(),
+            child: const Padding(
+              padding: EdgeInsets.all(4),
+              child: Icon(LucideIcons.x, size: 15, color: HealthTone.muted),
+            ),
+          ),
+      ]),
+    );
+  }
+}
+
 /// One entry in [HealthFilterChips].
 class HealthFilter {
   const HealthFilter(this.id, this.label, this.icon);
@@ -745,6 +918,7 @@ class HealthStat {
     this.caption,
     this.captionColor,
     this.tint,
+    this.onTap,
   });
 
   final IconData icon;
@@ -755,6 +929,10 @@ class HealthStat {
   final String? caption;
   final Color? captionColor;
   final Color? tint;
+
+  /// `manage_multiple_pets` turns its caption into a link ("View all ›"), so a
+  /// tile can be the affordance rather than just a readout.
+  final VoidCallback? onTap;
 }
 
 /// The statistics strip. [grouped] draws the single card with hairline
@@ -835,6 +1013,7 @@ class HealthStatTiles extends StatelessWidget {
               child: HomeCard(
                 radius: 14,
                 padding: const EdgeInsets.fromLTRB(9, 10, 6, 10),
+                onTap: stats[i].onTap,
                 child: _StatCell(
                   stat: stats[i],
                   boxed: true,
@@ -1340,7 +1519,8 @@ class HealthAddCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: CustomPaint(
-          painter: _DashedBorderPainter(t.accent.withValues(alpha: 0.45)),
+          painter: HealthDashedPainter(t.accent.withValues(alpha: 0.45),
+              radius: 14),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(11, 11, 11, 11),
             child: Row(
@@ -1388,36 +1568,6 @@ class HealthAddCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DashedBorderPainter extends CustomPainter {
-  const _DashedBorderPainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final rrect = RRect.fromRectAndRadius(
-        Offset.zero & size, const Radius.circular(14));
-    final path = Path()..addRRect(rrect);
-    const dash = 6.0;
-    const gap = 4.0;
-    for (final metric in path.computeMetrics()) {
-      var d = 0.0;
-      while (d < metric.length) {
-        final end = (d + dash).clamp(0.0, metric.length);
-        canvas.drawPath(metric.extractPath(d, end), paint);
-        d = end + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBorderPainter old) => old.color != color;
 }
 
 /// The educational footer three mockups close with: a glyph, a heading, two
@@ -1636,52 +1786,77 @@ class HealthPrimaryCta extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.icon = LucideIcons.plus,
+    this.trailingIcon,
+    this.enabled = true,
     super.key,
   });
 
   final String label;
   final VoidCallback onTap;
-  final IconData icon;
+
+  /// The ringed glyph before the label. `null` drops the ring entirely, which
+  /// is how `add_memory` draws its wizard button.
+  ///
+  /// **This was accepted and ignored until this batch** — the body drew a
+  /// hardcoded `plus`, so the journal's "See Premium" button rendered a crown
+  /// argument as a **+**. It is honoured now.
+  final IconData? icon;
+
+  /// A bare glyph *after* the label — `add_memory`'s "Next: Add Tags ›".
+  final IconData? trailingIcon;
+
+  /// A disabled CTA still occupies its slot; the wizard greys it rather than
+  /// removing it, so the footer does not jump between steps.
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final t = PawTone.of(context);
+    const ink = Color(0xFF06110A);
+    final fill = enabled ? t.accent : t.accent.withValues(alpha: 0.22);
+    final fg = enabled ? ink : Colors.white.withValues(alpha: 0.45);
     return Semantics(
       button: true,
+      enabled: enabled,
       label: label,
       child: ExcludeSemantics(
         child: Material(
-          color: t.accent,
+          color: fill,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           child: InkWell(
-            onTap: onTap,
+            onTap: enabled ? onTap : null,
             borderRadius: BorderRadius.circular(AppRadius.pill),
             child: SizedBox(
               height: 48,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 22,
-                    height: 22,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: const Color(0xFF06110A).withValues(alpha: 0.55)),
+                  if (icon != null) ...[
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border:
+                            Border.all(color: fg.withValues(alpha: 0.55)),
+                      ),
+                      child: Icon(icon, size: 13, color: fg),
                     ),
-                    child: const Icon(LucideIcons.plus,
-                        size: 13, color: Color(0xFF06110A)),
-                  ),
-                  const SizedBox(width: 9),
+                    const SizedBox(width: 9),
+                  ],
                   Flexible(
                     child: Text(label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            color: Color(0xFF06110A),
+                        style: TextStyle(
+                            color: fg,
                             fontSize: 15,
                             fontWeight: FontWeight.w800)),
                   ),
+                  if (trailingIcon != null) ...[
+                    const SizedBox(width: 8),
+                    Icon(trailingIcon, size: 17, color: fg),
+                  ],
                 ],
               ),
             ),
@@ -1859,6 +2034,390 @@ class HealthSheet extends StatelessWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 8b · sparkline
+// ---------------------------------------------------------------------------
+
+/// A bare trend line, no axes — the mark `pet_statistics` puts under each
+/// overview tile and the result screen puts on its Track Symptoms cell.
+///
+/// **[points] are counts, never grades.** A line that trended better or worse
+/// would be a graded verdict on an animal drawn from nothing; what these plot
+/// is how much was *logged*, which is a fact about the record.
+class HealthSparkline extends StatelessWidget {
+  const HealthSparkline({
+    required this.points,
+    required this.tint,
+    this.height = 42,
+    this.dots = true,
+    this.fill = false,
+    super.key,
+  });
+
+  /// 0..1, oldest first. Fewer than two points draws nothing.
+  final List<double> points;
+  final Color tint;
+  final double height;
+  final bool dots;
+  final bool fill;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: height,
+        child: points.length < 2
+            ? const SizedBox.shrink()
+            : CustomPaint(
+                painter: _SparkPainter(points, tint, dots: dots, fill: fill),
+                size: Size.infinite,
+              ),
+      );
+}
+
+class _SparkPainter extends CustomPainter {
+  const _SparkPainter(this.points, this.tint,
+      {this.dots = true, this.fill = false});
+
+  final List<double> points;
+  final Color tint;
+  final bool dots;
+  final bool fill;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.length < 2) return;
+    final dx = size.width / (points.length - 1);
+    Offset at(int i) =>
+        Offset(dx * i, size.height * (1 - points[i].clamp(0, 1)));
+
+    final path = Path()..moveTo(at(0).dx, at(0).dy);
+    for (var i = 1; i < points.length; i++) {
+      path.lineTo(at(i).dx, at(i).dy);
+    }
+    if (fill) {
+      final area = Path.from(path)
+        ..lineTo(size.width, size.height)
+        ..lineTo(0, size.height)
+        ..close();
+      canvas.drawPath(area, Paint()..color = tint.withValues(alpha: 0.12));
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = tint,
+    );
+    if (dots) {
+      for (var i = 0; i < points.length; i++) {
+        canvas.drawCircle(at(i), 3.2, Paint()..color = tint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparkPainter old) =>
+      old.points != points ||
+      old.tint != tint ||
+      old.dots != dots ||
+      old.fill != fill;
+}
+
+// ---------------------------------------------------------------------------
+// 9 · the two-column fact grid
+// ---------------------------------------------------------------------------
+
+/// One cell of [HealthInfoGrid].
+class HealthInfoCell {
+  const HealthInfoCell({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.caption,
+    this.captionColor,
+    this.tint,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  /// The accent third line — `reminder_detail`'s "In 12 days" under its next
+  /// date.
+  final String? caption;
+  final Color? captionColor;
+  final Color? tint;
+  final VoidCallback? onTap;
+}
+
+/// The paired fact grid `reminder_detail` and `pet_profile` both draw: two
+/// columns of glyph + label + value, hairline-ruled between rows and down the
+/// middle.
+///
+/// Every text is single-line on purpose. Inside an [IntrinsicHeight] a `Text`
+/// reports its *unwrapped* height, so a value that wanted to wrap would be
+/// clipped to one line and the rest silently lost — the same trap the statistic
+/// tiles hit. Values shrink to fit instead.
+class HealthInfoGrid extends StatelessWidget {
+  const HealthInfoGrid({required this.cells, super.key});
+
+  final List<HealthInfoCell> cells;
+
+  @override
+  Widget build(BuildContext context) {
+    final hairline = Colors.white.withValues(alpha: 0.06);
+    final rows = <(HealthInfoCell, HealthInfoCell?)>[
+      for (var i = 0; i < cells.length; i += 2)
+        (cells[i], i + 1 < cells.length ? cells[i + 1] : null),
+    ];
+    return HomeCard(
+      radius: 16,
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          for (var r = 0; r < rows.length; r++) ...[
+            if (r > 0)
+              Divider(
+                  height: 1,
+                  thickness: 1,
+                  indent: 11,
+                  endIndent: 11,
+                  color: hairline),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: _InfoCell(cell: rows[r].$1)),
+                  VerticalDivider(
+                      width: 1,
+                      thickness: 1,
+                      indent: 9,
+                      endIndent: 9,
+                      color: hairline),
+                  Expanded(
+                    child: rows[r].$2 == null
+                        ? const SizedBox.shrink()
+                        : _InfoCell(cell: rows[r].$2!),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoCell extends StatelessWidget {
+  const _InfoCell({required this.cell});
+
+  final HealthInfoCell cell;
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = cell.tint ?? PawTone.of(context).accent;
+    final body = Padding(
+      padding: const EdgeInsets.fromLTRB(11, 11, 9, 11),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(cell.icon, size: 17, color: tint),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(cell.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: HealthTone.muted, fontSize: 10.5, height: 1.2)),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(cell.value,
+                      maxLines: 1,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13.5,
+                          height: 1.2,
+                          fontWeight: FontWeight.w600)),
+                ),
+                if (cell.caption != null) ...[
+                  const SizedBox(height: 1),
+                  Text(cell.caption!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          color: cell.captionColor ?? tint,
+                          fontSize: 10.5,
+                          height: 1.25,
+                          fontWeight: FontWeight.w600)),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (cell.onTap == null) return body;
+    return InkWell(
+        onTap: cell.onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: body);
+  }
+}
+
+/// `glyph  Label ........ value ›` — the settings rows `reminder_detail` lists
+/// under Notification Settings, and the same shape `pet_profile` uses.
+///
+/// [soon] greys the value and drops the chevron: the control is drawn, in
+/// place, but nothing is behind it yet. A row that looks tappable and is not is
+/// worse than one that says so.
+class HealthSettingRow extends StatelessWidget {
+  const HealthSettingRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.onTap,
+    this.valueColor,
+    this.soon = false,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback? onTap;
+  final Color? valueColor;
+  final bool soon;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 11),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: soon ? HealthTone.faint : t.accent),
+            const SizedBox(width: 10),
+            // Weighted shares, never two bare Flexibles: an even split squeezes
+            // a label that had room, and a fixed neighbour overflows the row
+            // under the em-square test font.
+            Flexible(
+              flex: 4,
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: soon ? HealthTone.muted : Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              flex: 6,
+              child: Text(value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: soon
+                          ? HealthTone.faint
+                          : (valueColor ?? t.accent),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500)),
+            ),
+            if (!soon && onTap != null)
+              const Padding(
+                padding: EdgeInsets.only(left: 4),
+                child: Icon(LucideIcons.chevronRight,
+                    size: 15, color: Colors.white54),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The bordered "All Types ⌄" lozenge the journal and the search surface put
+/// their filters in — an optional glyph, a label, and a chevron.
+///
+/// `memories_gallery` had a private one of these; `search_memories` draws four
+/// in a row, and a second implementation is how the two rows end up a point
+/// apart in height.
+class HealthDropPill extends StatelessWidget {
+  const HealthDropPill({
+    required this.fieldKey,
+    required this.label,
+    required this.onTap,
+    this.icon,
+    this.active = false,
+    super.key,
+  });
+
+  final Key fieldKey;
+  final String label;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  /// Lights the border when the filter is doing something — the reference
+  /// draws every pill in its resting state, which never shows what "set"
+  /// looks like.
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    return Material(
+      color: active ? t.accent.withValues(alpha: 0.08) : HealthTone.card,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        key: fieldKey,
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+                color: active
+                    ? t.accent.withValues(alpha: 0.65)
+                    : Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Row(children: [
+            if (icon != null) ...[
+              Icon(icon, size: 15, color: t.accent),
+              const SizedBox(width: 7),
+            ],
+            Expanded(
+              child: Text(label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: active ? t.accent : Colors.white,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(width: 4),
+            const Icon(LucideIcons.chevronDown,
+                size: 15, color: HealthTone.muted),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
 /// A label/value pair, as the detail sheets list a record's contents.
 class HealthDetailRow extends StatelessWidget {
   const HealthDetailRow({
@@ -1896,6 +2455,772 @@ class HealthDetailRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 10 · the form kit
+// ---------------------------------------------------------------------------
+//
+// Lifted out of `health_event_form_screen.dart`, where all six were private.
+// `edit_pet` draws the same bordered rows — a labelled shell with a glyph, a
+// text field, a picker, a fixed-choice sheet, a notes box with a counter and
+// the clear affordance — and a second implementation of a form row is how two
+// screens end up with different focus behaviour and different padding.
+
+/// The bordered field row the Record Details card is made of.
+class HealthFieldShell extends StatelessWidget {
+  const HealthFieldShell({
+    required this.icon,
+    required this.label,
+    required this.child,
+    this.trailing,
+    this.onTap,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final Widget child;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final body = Container(
+      padding: const EdgeInsets.fromLTRB(10, 7, 6, 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withValues(alpha: 0.028),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 9),
+            child: Icon(icon, size: 16, color: HealthTone.muted),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: HealthTone.muted, fontSize: 10.5, height: 1.3)),
+                child,
+              ],
+            ),
+          ),
+          ?trailing,
+        ],
+      ),
+    );
+    if (onTap == null) return body;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: body,
+    );
+  }
+}
+
+/// The clear affordance the mockup puts at the end of every filled field.
+class HealthClearButton extends StatelessWidget {
+  const HealthClearButton({required this.onTap,
+    super.key,
+  });
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+        onPressed: onTap,
+        icon: const Icon(LucideIcons.x, size: 15, color: HealthTone.muted),
+        tooltip: 'Clear',
+        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+      );
+}
+
+class HealthTextField extends StatelessWidget {
+  const HealthTextField({
+    required this.fieldKey,
+    required this.controller,
+    required this.icon,
+    required this.label,
+    this.hint = '',
+    this.keyboardType,
+    super.key,
+  });
+
+  final Key fieldKey;
+  final TextEditingController controller;
+  final IconData icon;
+  final String label;
+
+  /// An example of what belongs here. The mockup draws every field filled, so
+  /// it never had to answer what an empty one says.
+  final String hint;
+  final TextInputType? keyboardType;
+
+  @override
+  Widget build(BuildContext context) {
+    return HealthFieldShell(
+      icon: icon,
+      label: label,
+      trailing:
+          controller.text.isEmpty ? null : HealthClearButton(onTap: controller.clear),
+      child: TextField(
+        key: fieldKey,
+        controller: controller,
+        keyboardType: keyboardType,
+        style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.25),
+        // Every border, not just `border`: the app's InputDecorationTheme
+        // supplies enabled/focused ones, which drew a stray underline through
+        // each row on the device.
+        decoration: InputDecoration(
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
+          filled: false,
+          hintText: hint,
+          hintStyle: const TextStyle(color: HealthTone.faint, fontSize: 14),
+        ),
+      ),
+    );
+  }
+}
+
+class HealthPickerField extends StatelessWidget {
+  const HealthPickerField({
+    required this.fieldKey,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+    this.muted = false,
+    this.onClear,
+    super.key,
+  });
+
+  final Key fieldKey;
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+  final bool muted;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return HealthFieldShell(
+      icon: icon,
+      label: label,
+      onTap: onTap,
+      trailing: onClear == null
+          ? const Padding(
+              padding: EdgeInsets.only(top: 8, right: 6),
+              child: Icon(LucideIcons.chevronDown,
+                  size: 15, color: HealthTone.muted),
+            )
+          : HealthClearButton(onTap: onClear!),
+      child: Text(value,
+          key: fieldKey,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+              color: muted ? HealthTone.faint : Colors.white,
+              fontSize: 14,
+              height: 1.25)),
+    );
+  }
+}
+
+/// A field whose value comes from a short fixed list — vaccine class, medicine
+/// form. Opens the same sheet the rest of the module uses.
+class HealthChoiceField extends StatelessWidget {
+  const HealthChoiceField({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onSelect,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final String? value;
+  final List<String> options;
+  final ValueChanged<String?> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return HealthFieldShell(
+      icon: icon,
+      label: label,
+      onTap: () async {
+        final picked = await showModalBottomSheet<String>(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (sheetContext) => HealthSheet(
+            title: label,
+            children: [
+              for (final option in options)
+                HealthRecordRow(
+                  key: Key('choice_$option'),
+                  leading: HealthGlyphDisc(
+                      icon: icon, tint: PawTone.of(context).accent, size: 34),
+                  title: option,
+                  chevron: false,
+                  onTap: () => Navigator.pop(sheetContext, option),
+                ),
+            ],
+          ),
+        );
+        if (picked != null) onSelect(picked);
+      },
+      trailing: value == null
+          ? const Padding(
+              padding: EdgeInsets.only(top: 8, right: 6),
+              child: Icon(LucideIcons.chevronDown,
+                  size: 15, color: HealthTone.muted),
+            )
+          : HealthClearButton(onTap: () => onSelect(null)),
+      child: Text(value ?? 'Not set',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+              color: value == null ? HealthTone.faint : Colors.white,
+              fontSize: 14,
+              height: 1.25)),
+    );
+  }
+}
+
+/// Notes, with the mockup's `98/500` counter.
+class HealthNotesField extends StatefulWidget {
+  const HealthNotesField({
+    required this.controller,
+    required this.label,
+    this.hint = 'Anything worth remembering about this…',
+    this.maxLength = 500,
+    super.key,
+  });
+
+  final TextEditingController controller;
+  final String label;
+
+  /// What an empty box invites. The record form asks about an event; the pet
+  /// form asks about the animal, and the same sentence does not fit both.
+  final String hint;
+  final int maxLength;
+
+  @override
+  State<HealthNotesField> createState() => _HealthNotesFieldState();
+}
+
+class _HealthNotesFieldState extends State<HealthNotesField> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onChanged);
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return HealthFieldShell(
+      icon: LucideIcons.notebookPen,
+      label: widget.label,
+      trailing: widget.controller.text.isEmpty
+          ? null
+          : HealthClearButton(onTap: widget.controller.clear),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            key: const Key('event_notes_field'),
+            controller: widget.controller,
+            maxLines: 4,
+            minLines: 2,
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(widget.maxLength)
+            ],
+            style:
+                const TextStyle(color: Colors.white, fontSize: 14, height: 1.35),
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
+              filled: false,
+              hintText: widget.hint,
+              hintStyle:
+                  const TextStyle(color: HealthTone.faint, fontSize: 13.5),
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+                '${widget.controller.text.length}/${widget.maxLength}',
+                style:
+                    const TextStyle(color: HealthTone.faint, fontSize: 10.5)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 11 · the step wizard
+// ---------------------------------------------------------------------------
+
+/// The numbered progress rail `add_memory` opens with: circled numerals joined
+/// by dashed rules, the current one lit, each captioned underneath.
+///
+/// The reference draws its circles at ~14dp around a ~7dp numeral, which is a
+/// smudge on a handset. They are 26dp here; the *centres* are the reference's,
+/// which is what the eye reads — four equal columns inside a 23dp side inset
+/// puts them at 66 / 153 / 240 / 327 on a 393-wide screen, matching the plate
+/// to within half a point.
+class HealthStepRail extends StatelessWidget {
+  const HealthStepRail({
+    required this.steps,
+    required this.current,
+    this.onSelect,
+    super.key,
+  });
+
+  final List<String> steps;
+
+  /// Zero-based.
+  final int current;
+
+  /// Tapping a stop jumps to it. The reference draws no back affordance at
+  /// all, and a four-step form whose only navigation is forward is a trap —
+  /// the *whole column* is the target, not the 26dp dot, because a label with
+  /// no hit box is the kind of thing that only fails on a real thumb.
+  final ValueChanged<int>? onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < steps.length; i++)
+            Expanded(
+              child: Semantics(
+                button: onSelect != null,
+                selected: i == current,
+                label: 'Step ${i + 1} of ${steps.length}: ${steps[i]}',
+                child: ExcludeSemantics(
+                  child: InkWell(
+                    onTap: onSelect == null || i == current
+                        ? null
+                        : () => onSelect!(i),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 26,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: i == 0
+                                    ? const SizedBox.shrink()
+                                    : _StepDash(passed: i <= current, tone: t),
+                              ),
+                              _StepDot(index: i, current: current, tone: t),
+                              Expanded(
+                                child: i == steps.length - 1
+                                    ? const SizedBox.shrink()
+                                    : _StepDash(passed: i < current, tone: t),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          steps[i],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: i == current
+                                ? Colors.white
+                                : (i < current
+                                    ? HealthTone.muted
+                                    : HealthTone.faint),
+                            fontSize: 11.5,
+                            height: 1.15,
+                            fontWeight: i == current
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepDot extends StatelessWidget {
+  const _StepDot({
+    required this.index,
+    required this.current,
+    required this.tone,
+  });
+
+  final int index;
+  final int current;
+  final PawTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = index == current;
+    final passed = index < current;
+    return Container(
+      width: 26,
+      height: 26,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: active ? tone.accent : const Color(0xFF151B15),
+        border: active
+            ? null
+            : Border.all(
+                color: passed
+                    ? tone.accent.withValues(alpha: 0.45)
+                    : Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: passed
+          ? Icon(LucideIcons.check, size: 13, color: tone.accent)
+          : Text('${index + 1}',
+              style: TextStyle(
+                  color: active ? const Color(0xFF06110A) : HealthTone.muted,
+                  fontSize: 12.5,
+                  height: 1,
+                  fontWeight: FontWeight.w800)),
+    );
+  }
+}
+
+class _StepDash extends StatelessWidget {
+  const _StepDash({required this.passed, required this.tone});
+
+  final bool passed;
+  final PawTone tone;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+        size: const Size(double.infinity, 26),
+        painter: _StepDashPainter(passed
+            ? tone.accent.withValues(alpha: 0.55)
+            : Colors.white.withValues(alpha: 0.16)),
+      );
+}
+
+class _StepDashPainter extends CustomPainter {
+  const _StepDashPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+    const dash = 5.0;
+    const gap = 4.0;
+    final y = size.height / 2;
+    var x = 0.0;
+    while (x < size.width) {
+      canvas.drawLine(
+          Offset(x, y), Offset((x + dash).clamp(0.0, size.width), y), paint);
+      x += dash + gap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _StepDashPainter old) => old.color != color;
+}
+
+/// "**1.** Add Photos or Video" over "Share a special moment with your pet" —
+/// the head every numbered card on `add_memory` opens with.
+class HealthNumberedHead extends StatelessWidget {
+  const HealthNumberedHead({
+    required this.number,
+    required this.title,
+    this.subtitle,
+    this.suffix,
+    this.trailing,
+    super.key,
+  });
+
+  final int number;
+  final String title;
+  final String? subtitle;
+
+  /// The greyed qualifier the reference sets after a heading — "(Optional)".
+  final String? suffix;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text('$number.',
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.5,
+                    height: 1.15,
+                    fontWeight: FontWeight.w800)),
+            const SizedBox(width: 7),
+            Flexible(
+              child: Text(title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.5,
+                      height: 1.15,
+                      fontWeight: FontWeight.w700)),
+            ),
+            if (suffix != null) ...[
+              const SizedBox(width: 5),
+              Text(suffix!,
+                  style: const TextStyle(
+                      color: HealthTone.faint, fontSize: 12, height: 1.15)),
+            ],
+            if (trailing != null) ...[const Spacer(), trailing!],
+          ],
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 4),
+          Text(subtitle!,
+              style: const TextStyle(
+                  color: HealthTone.dim, fontSize: 11.5, height: 1.3)),
+        ],
+      ],
+    );
+  }
+}
+
+/// A dashed-outline tile — the "Add" well, the "New Pet" slot.
+///
+/// The dashed rectangle was drawn by two private painters (one in
+/// `health_event_form_screen`, one in [HealthAddCard]) before this batch put a
+/// third mockup in front of it.
+class HealthDashedTile extends StatelessWidget {
+  const HealthDashedTile({
+    required this.child,
+    this.onTap,
+    this.radius = 12,
+    this.color,
+    this.fill,
+    super.key,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final double radius;
+  final Color? color;
+  final Color? fill;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = PawTone.of(context);
+    final stroke = color ?? t.accent.withValues(alpha: 0.55);
+    final painted = CustomPaint(
+      painter: HealthDashedPainter(stroke, radius: radius),
+      child: child,
+    );
+    if (onTap == null) {
+      return fill == null
+          ? painted
+          : DecoratedBox(
+              decoration: BoxDecoration(
+                  color: fill, borderRadius: BorderRadius.circular(radius)),
+              child: painted);
+    }
+    return Material(
+      color: fill ?? Colors.transparent,
+      borderRadius: BorderRadius.circular(radius),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(radius),
+        child: painted,
+      ),
+    );
+  }
+}
+
+/// The dashed rounded rectangle [HealthDashedTile] and [HealthAddCard] share.
+class HealthDashedPainter extends CustomPainter {
+  const HealthDashedPainter(this.color, {this.radius = 12});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+          Offset.zero & size, Radius.circular(radius)));
+    const dash = 5.0;
+    const gap = 4.0;
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        final end = (d + dash).clamp(0.0, metric.length);
+        canvas.drawPath(metric.extractPath(d, end), paint);
+        d = end + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant HealthDashedPainter old) =>
+      old.color != color || old.radius != radius;
+}
+
+/// A bordered box with a live `0/60` counter in it — the title and note fields
+/// `add_memory` draws. Unlike [HealthNotesField] it carries no glyph and no
+/// label, because the numbered head above it is the label.
+class HealthCountedField extends StatefulWidget {
+  const HealthCountedField({
+    required this.fieldKey,
+    required this.controller,
+    required this.maxLength,
+    this.hint = '',
+    this.minLines = 1,
+    this.maxLines = 1,
+    this.enabled = true,
+    super.key,
+  });
+
+  final Key fieldKey;
+  final TextEditingController controller;
+  final int maxLength;
+  final String hint;
+  final int minLines;
+  final int maxLines;
+  final bool enabled;
+
+  @override
+  State<HealthCountedField> createState() => _HealthCountedFieldState();
+}
+
+class _HealthCountedFieldState extends State<HealthCountedField> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onChanged);
+  }
+
+  void _onChanged() => setState(() {});
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final multiline = widget.maxLines > 1;
+    final counter = Text(
+        '${widget.controller.text.length}/${widget.maxLength}',
+        style: const TextStyle(color: HealthTone.faint, fontSize: 11));
+    final field = TextField(
+      key: widget.fieldKey,
+      controller: widget.controller,
+      enabled: widget.enabled,
+      minLines: widget.minLines,
+      maxLines: widget.maxLines,
+      textCapitalization: TextCapitalization.sentences,
+      inputFormatters: [LengthLimitingTextInputFormatter(widget.maxLength)],
+      style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.35),
+      decoration: InputDecoration(
+        isDense: true,
+        contentPadding: EdgeInsets.zero,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+        filled: false,
+        hintText: widget.hint,
+        hintStyle: const TextStyle(color: HealthTone.faint, fontSize: 14),
+      ),
+    );
+    return Container(
+      padding: EdgeInsets.fromLTRB(11, multiline ? 10 : 12, 11, 11),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withValues(alpha: 0.022),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
+      ),
+      child: multiline
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                field,
+                const SizedBox(height: 6),
+                Align(alignment: Alignment.centerRight, child: counter),
+              ],
+            )
+          : Row(children: [
+              Expanded(child: field),
+              const SizedBox(width: 8),
+              counter,
+            ]),
     );
   }
 }

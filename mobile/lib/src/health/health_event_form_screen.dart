@@ -14,7 +14,7 @@ import '../memories/memory_media_service.dart';
 import '../memories/memory_photo.dart';
 import '../notifications/local_notifications.dart';
 import '../pets/active_pet.dart';
-import '../pets/pet_form_screen.dart';
+import '../pets/pet_profile_screen.dart';
 import '../pets/pet_switcher.dart';
 import '../reminders/reminder.dart';
 import '../reminders/reminders_repository.dart';
@@ -484,7 +484,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
               meta: petMetaLine(pet),
               onSwitch: () => showPetSwitcher(context, ref),
               onViewProfile: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => PetFormScreen(pet: pet)),
+                MaterialPageRoute(builder: (_) => PetProfileScreen(pet: pet)),
               ),
             ),
           gap(14),
@@ -591,7 +591,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
     final rows = <Widget>[
       Row(children: [
         Expanded(
-          child: _PickerField(
+          child: HealthPickerField(
             fieldKey: const Key('event_date_field'),
             icon: LucideIcons.calendar,
             label: _dateLabel,
@@ -601,7 +601,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _PickerField(
+          child: HealthPickerField(
             fieldKey: const Key('event_time_field'),
             icon: LucideIcons.clock,
             label: 'Time (Optional)',
@@ -618,7 +618,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
       case 'vet_visit':
       case 'lab_result':
         rows.addAll([
-          _TextField(
+          HealthTextField(
             fieldKey: const Key('event_clinic_field'),
             controller: _clinic,
             icon: LucideIcons.building2,
@@ -627,14 +627,14 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
                 : 'Clinic / Hospital Name',
             hint: 'PawCare Veterinary Clinic',
           ),
-          _TextField(
+          HealthTextField(
             fieldKey: const Key('event_vet_field'),
             controller: _vet,
             icon: LucideIcons.userRound,
             label: 'Veterinarian Name (Optional)',
             hint: 'Dr. Ayşe Yılmaz',
           ),
-          _TextField(
+          HealthTextField(
             fieldKey: const Key('event_reason_field'),
             controller: _reason,
             icon: LucideIcons.clipboardList,
@@ -646,21 +646,21 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
         ]);
       case 'vaccination':
         rows.addAll([
-          _TextField(
+          HealthTextField(
             fieldKey: const Key('event_vaccine_name_field'),
             controller: _vaccineName,
             icon: LucideIcons.syringe,
             label: 'Vaccine name',
             hint: 'Rabies, DHPP, Leptospirosis…',
           ),
-          _ChoiceField(
+          HealthChoiceField(
             icon: LucideIcons.shieldCheck,
             label: 'Class (Optional)',
             value: _vaccineClass,
             options: kVaccineClasses,
             onSelect: (v) => setState(() => _vaccineClass = v),
           ),
-          _PickerField(
+          HealthPickerField(
             fieldKey: const Key('event_vaccine_next_due'),
             icon: LucideIcons.calendarClock,
             label: 'Next due (Optional) — sets a reminder',
@@ -676,7 +676,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
                 ? null
                 : () => setState(() => _vaccineNextDue = null),
           ),
-          _TextField(
+          HealthTextField(
             fieldKey: const Key('event_clinic_field'),
             controller: _clinic,
             icon: LucideIcons.building2,
@@ -686,7 +686,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
         ]);
       case 'medication':
         rows.addAll([
-          _TextField(
+          HealthTextField(
             fieldKey: const Key('event_medication_field'),
             controller: _medName,
             icon: LucideIcons.pill,
@@ -695,7 +695,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
           ),
           Row(children: [
             Expanded(
-              child: _TextField(
+              child: HealthTextField(
                 fieldKey: const Key('event_dosage_field'),
                 controller: _dosage,
                 icon: LucideIcons.beaker,
@@ -705,7 +705,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _ChoiceField(
+              child: HealthChoiceField(
                 icon: LucideIcons.tablets,
                 label: 'Form',
                 value: _medForm,
@@ -714,21 +714,21 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
               ),
             ),
           ]),
-          _TextField(
+          HealthTextField(
             fieldKey: const Key('event_schedule_field'),
             controller: _schedule,
             icon: LucideIcons.repeat2,
             label: 'Schedule',
             hint: 'Every 12 hours',
           ),
-          _TextField(
+          HealthTextField(
             fieldKey: const Key('event_reason_field'),
             controller: _reason,
             icon: LucideIcons.target,
             label: 'What it is for (Optional)',
             hint: 'Flea & tick prevention',
           ),
-          _PickerField(
+          HealthPickerField(
             fieldKey: const Key('event_ends_on_field'),
             icon: LucideIcons.calendarX,
             label: 'Course ends (Optional)',
@@ -743,7 +743,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
           ),
         ]);
       case 'weight':
-        rows.add(_TextField(
+        rows.add(HealthTextField(
           fieldKey: const Key('event_weight_field'),
           controller: _weight,
           icon: LucideIcons.scale,
@@ -753,7 +753,7 @@ class _HealthEventFormScreenState extends ConsumerState<HealthEventFormScreen> {
         ));
     }
 
-    rows.add(_NotesField(controller: _notes, label: _notesLabel));
+    rows.add(HealthNotesField(controller: _notes, label: _notesLabel));
     return [
       for (var i = 0; i < rows.length; i++)
         Padding(
@@ -928,320 +928,8 @@ class _TypeTile extends StatelessWidget {
 }
 
 /// The glyph a record type is drawn with, everywhere.
-IconData healthEventIcon(String type) => switch (type) {
-      'vaccination' => LucideIcons.syringe,
-      'vet_visit' => LucideIcons.stethoscope,
-      'medication' => LucideIcons.pill,
-      'lab_result' => LucideIcons.flaskConical,
-      'weight' => LucideIcons.scale,
-      _ => LucideIcons.notebookPen,
-    };
+// `healthEventIcon` moved to `health_event.dart`, beside `healthEventLabel`.
 
-/// The bordered field row the Record Details card is made of.
-class _FieldShell extends StatelessWidget {
-  const _FieldShell({
-    required this.icon,
-    required this.label,
-    required this.child,
-    this.trailing,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Widget child;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final body = Container(
-      padding: const EdgeInsets.fromLTRB(10, 7, 6, 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.white.withValues(alpha: 0.028),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 9),
-            child: Icon(icon, size: 16, color: HealthTone.muted),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        color: HealthTone.muted, fontSize: 10.5, height: 1.3)),
-                child,
-              ],
-            ),
-          ),
-          ?trailing,
-        ],
-      ),
-    );
-    if (onTap == null) return body;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: body,
-    );
-  }
-}
-
-/// The clear affordance the mockup puts at the end of every filled field.
-class _ClearButton extends StatelessWidget {
-  const _ClearButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => IconButton(
-        onPressed: onTap,
-        icon: const Icon(LucideIcons.x, size: 15, color: HealthTone.muted),
-        tooltip: 'Clear',
-        constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
-        padding: EdgeInsets.zero,
-        visualDensity: VisualDensity.compact,
-      );
-}
-
-class _TextField extends StatelessWidget {
-  const _TextField({
-    required this.fieldKey,
-    required this.controller,
-    required this.icon,
-    required this.label,
-    this.hint = '',
-    this.keyboardType,
-  });
-
-  final Key fieldKey;
-  final TextEditingController controller;
-  final IconData icon;
-  final String label;
-
-  /// An example of what belongs here. The mockup draws every field filled, so
-  /// it never had to answer what an empty one says.
-  final String hint;
-  final TextInputType? keyboardType;
-
-  @override
-  Widget build(BuildContext context) {
-    return _FieldShell(
-      icon: icon,
-      label: label,
-      trailing:
-          controller.text.isEmpty ? null : _ClearButton(onTap: controller.clear),
-      child: TextField(
-        key: fieldKey,
-        controller: controller,
-        keyboardType: keyboardType,
-        style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.25),
-        // Every border, not just `border`: the app's InputDecorationTheme
-        // supplies enabled/focused ones, which drew a stray underline through
-        // each row on the device.
-        decoration: InputDecoration(
-          isDense: true,
-          contentPadding: EdgeInsets.zero,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          focusedErrorBorder: InputBorder.none,
-          filled: false,
-          hintText: hint,
-          hintStyle: const TextStyle(color: HealthTone.faint, fontSize: 14),
-        ),
-      ),
-    );
-  }
-}
-
-class _PickerField extends StatelessWidget {
-  const _PickerField({
-    required this.fieldKey,
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onTap,
-    this.muted = false,
-    this.onClear,
-  });
-
-  final Key fieldKey;
-  final IconData icon;
-  final String label;
-  final String value;
-  final VoidCallback onTap;
-  final bool muted;
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    return _FieldShell(
-      icon: icon,
-      label: label,
-      onTap: onTap,
-      trailing: onClear == null
-          ? const Padding(
-              padding: EdgeInsets.only(top: 8, right: 6),
-              child: Icon(LucideIcons.chevronDown,
-                  size: 15, color: HealthTone.muted),
-            )
-          : _ClearButton(onTap: onClear!),
-      child: Text(value,
-          key: fieldKey,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-              color: muted ? HealthTone.faint : Colors.white,
-              fontSize: 14,
-              height: 1.25)),
-    );
-  }
-}
-
-/// A field whose value comes from a short fixed list — vaccine class, medicine
-/// form. Opens the same sheet the rest of the module uses.
-class _ChoiceField extends StatelessWidget {
-  const _ChoiceField({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.options,
-    required this.onSelect,
-  });
-
-  final IconData icon;
-  final String label;
-  final String? value;
-  final List<String> options;
-  final ValueChanged<String?> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return _FieldShell(
-      icon: icon,
-      label: label,
-      onTap: () async {
-        final picked = await showModalBottomSheet<String>(
-          context: context,
-          backgroundColor: Colors.transparent,
-          builder: (sheetContext) => HealthSheet(
-            title: label,
-            children: [
-              for (final option in options)
-                HealthRecordRow(
-                  key: Key('choice_$option'),
-                  leading: HealthGlyphDisc(
-                      icon: icon, tint: PawTone.of(context).accent, size: 34),
-                  title: option,
-                  chevron: false,
-                  onTap: () => Navigator.pop(sheetContext, option),
-                ),
-            ],
-          ),
-        );
-        if (picked != null) onSelect(picked);
-      },
-      trailing: value == null
-          ? const Padding(
-              padding: EdgeInsets.only(top: 8, right: 6),
-              child: Icon(LucideIcons.chevronDown,
-                  size: 15, color: HealthTone.muted),
-            )
-          : _ClearButton(onTap: () => onSelect(null)),
-      child: Text(value ?? 'Not set',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-              color: value == null ? HealthTone.faint : Colors.white,
-              fontSize: 14,
-              height: 1.25)),
-    );
-  }
-}
-
-/// Notes, with the mockup's `98/500` counter.
-class _NotesField extends StatefulWidget {
-  const _NotesField({required this.controller, required this.label});
-
-  final TextEditingController controller;
-  final String label;
-
-  @override
-  State<_NotesField> createState() => _NotesFieldState();
-}
-
-class _NotesFieldState extends State<_NotesField> {
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_onChanged);
-  }
-
-  void _onChanged() => setState(() {});
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_onChanged);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _FieldShell(
-      icon: LucideIcons.notebookPen,
-      label: widget.label,
-      trailing: widget.controller.text.isEmpty
-          ? null
-          : _ClearButton(onTap: widget.controller.clear),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextField(
-            key: const Key('event_notes_field'),
-            controller: widget.controller,
-            maxLines: 4,
-            minLines: 2,
-            inputFormatters: [LengthLimitingTextInputFormatter(500)],
-            style:
-                const TextStyle(color: Colors.white, fontSize: 14, height: 1.35),
-            decoration: const InputDecoration(
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              disabledBorder: InputBorder.none,
-              errorBorder: InputBorder.none,
-              focusedErrorBorder: InputBorder.none,
-              filled: false,
-              hintText: 'Anything worth remembering about this…',
-              hintStyle: TextStyle(color: HealthTone.faint, fontSize: 13.5),
-            ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text('${widget.controller.text.length}/500',
-                style:
-                    const TextStyle(color: HealthTone.faint, fontSize: 10.5)),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 /// The attachment gallery: what is already attached, plus the dashed add tile.
 class _AttachmentsCard extends StatelessWidget {
@@ -1329,8 +1017,9 @@ class _AttachmentsCard extends StatelessWidget {
                     width: 68,
                     height: 68,
                     child: CustomPaint(
-                      painter: _DashedTilePainter(
-                          t.accent.withValues(alpha: 0.55)),
+                      painter: HealthDashedPainter(
+                          t.accent.withValues(alpha: 0.55),
+                          radius: 11),
                       child: uploading
                           ? const Center(
                               child: SizedBox(
@@ -1369,36 +1058,6 @@ class _AttachmentsCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DashedTilePainter extends CustomPainter {
-  const _DashedTilePainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final path = Path()
-      ..addRRect(RRect.fromRectAndRadius(
-          Offset.zero & size, const Radius.circular(11)));
-    const dash = 5.0;
-    const gap = 4.0;
-    for (final metric in path.computeMetrics()) {
-      var d = 0.0;
-      while (d < metric.length) {
-        final end = (d + dash).clamp(0.0, metric.length);
-        canvas.drawPath(metric.extractPath(d, end), paint);
-        d = end + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedTilePainter old) => old.color != color;
 }
 
 /// The reminder switch, and the date it fires on.

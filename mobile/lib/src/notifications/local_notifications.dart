@@ -87,9 +87,14 @@ class LocalNotifications {
   @visibleForTesting
   static int idFor(String reminderId) => reminderId.hashCode & 0x7fffffff;
 
-  /// Schedules a reminder for 09:00 local on its due date (date-granularity by
-  /// design — reminders are day-based). Past-due dates are skipped silently.
-  /// Inexact scheduling: no SCHEDULE_EXACT_ALARM permission needed.
+  /// The local hour a reminder fires. Reminders are day-based by design, so
+  /// there is exactly one time and it is this one — `reminder_detail` states it
+  /// as a fact and reads it from here rather than repeating the literal.
+  static const int reminderHour = 9;
+
+  /// Schedules a reminder for [reminderHour]:00 local on its due date
+  /// (date-granularity by design — reminders are day-based). Past-due dates are
+  /// skipped silently. Inexact scheduling: no SCHEDULE_EXACT_ALARM needed.
   Future<void> scheduleReminder({
     required String reminderId,
     required String title,
@@ -99,7 +104,7 @@ class LocalNotifications {
     try {
       await initialize();
       final when = tz.TZDateTime.local(
-          dueDate.year, dueDate.month, dueDate.day, 9);
+          dueDate.year, dueDate.month, dueDate.day, reminderHour);
       if (!when.isAfter(tz.TZDateTime.now(tz.local))) return;
       await _plugin.zonedSchedule(
         idFor(reminderId),

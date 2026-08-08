@@ -17,7 +17,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('No pets yet'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Add a pet'), findsOneWidget);
+    // The warm empty state survives the `manage_multiple_pets` rebuild; the
+    // affordance is the dashed add card the rest of the app uses rather than a
+    // bare FilledButton, and the header keeps its own Add Pet pill.
+    expect(find.byKey(const Key('pets_empty')), findsOneWidget);
+    expect(find.byKey(const Key('pets_add')), findsOneWidget);
   });
 
   testWidgets('Pets list renders an identity row (name + species·breed)',
