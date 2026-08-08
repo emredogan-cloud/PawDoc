@@ -167,20 +167,34 @@ const List<String> kReportReasons = [
   'other',
 ];
 
+/// Kilometres between two geohash CELL CENTRES, or null if either is missing
+/// or malformed. Pure.
+///
+/// This is a distance between *cells*, not between people. At precision 5 a
+/// cell is roughly 4.9 km across, so the answer is only ever good to a few
+/// kilometres — which is the whole point, and why nothing in the app renders
+/// it as a decimal.
+double? approxDistanceKm(String? mine, String? theirs) {
+  if (mine == null || theirs == null) return null;
+  if (mine == theirs) return 0;
+  try {
+    final (lat1, lon1) = geohashDecodeCenter(mine);
+    final (lat2, lon2) = geohashDecodeCenter(theirs);
+    return haversineMeters(lat1, lon1, lat2, lon2) / 1000;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// Approximate distance between two geohash CELLS ("~2 km" honesty: we never
 /// have real positions, only cell centers). Pure.
 String approxDistanceLabel(String? mine, String? theirs) {
   if (mine == null || theirs == null) return '';
   if (mine == theirs) return 'Very close by';
-  try {
-    final (lat1, lon1) = geohashDecodeCenter(mine);
-    final (lat2, lon2) = geohashDecodeCenter(theirs);
-    final km = haversineMeters(lat1, lon1, lat2, lon2) / 1000;
-    if (km < 1.5) return 'Under ~2 km';
-    return '~${km.round()} km away';
-  } catch (_) {
-    return '';
-  }
+  final km = approxDistanceKm(mine, theirs);
+  if (km == null) return '';
+  if (km < 1.5) return 'Under ~2 km';
+  return '~${km.round()} km away';
 }
 
 /// One row in the merged chat timeline (messages + walk proposals by time).

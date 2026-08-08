@@ -3,42 +3,43 @@
 **Read this first.** It is written so a fresh agent can continue in minutes
 without asking questions.
 
-**Last updated:** 2026-08-07 (evening) · **Branch:** `ui-batch-r-pets-memories`
-**Head:** `82d2cf6` · **Gates:** `flutter analyze` clean · **784 tests** green ·
+**Last updated:** 2026-08-08 · **Branch:** `ui-batch-s-community-emergency`
+**Head:** `8e418e8` · **Gates:** `flutter analyze` clean · **852 tests** green ·
 `verify-disclaimers` PASS
 
 ---
 
 ## 0 · State of the branch
 
-PR #97 **merged** (squash, `2a1cc11`). This branch was rebased onto it —
-`git rebase --onto origin/main e6effd6` — and force-pushed. It now sits
-directly on `main` with **thirteen** commits and no stacking. Nothing is
-blocked.
+PR #98 **merged** (squash, `35a6ff5`). This branch was cut fresh from that
+`main`, so there is no stacking.
 
 ```
-82d2cf6  Breed Encyclopedia and Breed Detail rebuilt against their mockups
-dbbdcd3  Know Your Baseline rebuilt against its mockup — measured, never assumed
-450d356  Smart Walks and the Weather Walk Advisor, rebuilt against their mockups
-149ac4d  Search Memories rebuilt against its mockup — counted, never asserted
-b5b4647  Add Memory rebuilt against its mockup — the sheet becomes a wizard
-6a58f90  docs: the pets and memories batch, and the two open handoffs
-3c3476e  Memory Detail · 0f61b22 Memories Gallery · 1f54f24 Pet Statistics
-22c89f8  Manage Multiple Pets · aac967e Edit Pet · 09f9f65 Pet Profile
-af09a28  Reminder Detail
+8e418e8  Device pass on the Redmi: four defects the widget tests could not see
+197ba70  Community feed, post detail and composer rebuilt
+895c000  Nearby Pet Owners rebuilt against its mockup — cells, never coordinates
+5287501  Emergency Hub rebuilt against its mockup — six blocks did not survive
+5331ad9  First Aid Guide rebuilt against its mockup — offline, and it says so
 ```
 
-**Next action: open the PR.** The branch has never been PR'd.
-`gh pr create --base main`. Expect the same seven CI checks. Note that GitHub
-refuses PR-author self-approval, so the merge will again need a human approval
-or `gh pr merge --squash --admin`.
+GitHub refuses PR-author self-approval, so a merge needs a human approval or
+`gh pr merge --squash --admin`.
+
+**Two CI facts learned the hard way this session.** The workflow pins
+`channel: stable` with no version, so CI resolves a *newer* Flutter than the
+3.41.9 this repo builds against — it broke on an `onReorder` deprecation with
+no code change (silenced with an `ignore`, since the replacement does not
+exist locally). And CI runners are **UTC**: two fixtures that pinned dates or
+used `now - 2h` were green locally and red at 01:28 UTC. Before pushing, run
+`TZ=UTC flutter test` — and if UTC is currently between 00:00 and 02:00, that
+is exactly the window that breaks them.
 
 ---
 
 ## 1 · Current phase
 
 Rebuilding the app's screens against the reference mockups in `new-interface/`
-(57 PNGs, untracked, ~93 MB). **41 of 57 mockups implemented.**
+(57 PNGs, untracked, ~93 MB). **47 of 57 mockups implemented.**
 
 Working method, unchanged and expected to continue:
 
@@ -74,15 +75,21 @@ One screen at a time, each through the full gate set before the next.
 | **`smart_walks`** | **`walks/walks_screen.dart`** (rebuilt in place) | **`450d356`** |
 | **`weather_walk_advisor`** | **`walks/weather_walk_advisor_screen.dart`** (new) | **`450d356`** |
 | **`know_your_baseline`** | **`health/baseline_screen.dart`** (new) | **`dbbdcd3`** |
-| **`breed_encyclopedia`** | **`encyclopedia/encyclopedia_screen.dart`** (rebuilt) | **`82d2cf6`** |
-| **`breed_detail`** | **`encyclopedia/breed_detail_screen.dart`** (rebuilt) | **`82d2cf6`** |
+| `breed_encyclopedia` | `encyclopedia/encyclopedia_screen.dart` (rebuilt) | `82d2cf6` |
+| `breed_detail` | `encyclopedia/breed_detail_screen.dart` (rebuilt) | `82d2cf6` |
+| **`first_aid_guide`** | **`emergency/first_aid_guide_screen.dart`** (new) | **`5331ad9`** |
+| **`emergency_hub`** | **`emergency/emergency_help_screen.dart`** (rebuilt) | **`5287501`** |
+| **`nearby_pet_owners`** | **`community/nearby_screen.dart`** (new) | **`895c000`** |
+| **`community_feed`** | **`community/community_home_screen.dart`** (rebuilt) | **`197ba70`** |
+| **`community_post_detail`** | **`community/community_chat_screen.dart`** (rebuilt) | **`197ba70`** |
+| **`create_post`** | **`community/create_post_screen.dart`** (new) | **`197ba70`** |
 
 All device-walked on the Redmi Note 8 (`AYXSUKIVJVPZ7HPZ`, 1080×2340 @440dpi =
 **393×851 logical** — the same size the mockups are drawn at).
 
 ---
 
-## 3 · Remaining work — 16 mockups
+## 3 · Remaining work — 10 mockups
 
 ### 3.1 · The two pre-auth surfaces (still the highest-visibility gap)
 
@@ -93,16 +100,16 @@ new user sees and the only screens left on the old design.
 
 ### 3.2 · The rest of the set
 
-`notifications`, `account_management`, `profile`, `emergency_hub` (rule 4 /
-D-1 constrains it hard — read §7 first), `first_aid_guide`,
-`prepare_for_vet_visit`, `pdf_health_report_preview`, `community_feed` +
-`community_post_detail` + `create_post` + `nearby_pet_owners`, `premium_home` +
-`subscription_plans` + `upgrade_benefits` + `usage_limits`, `ai_transparency`,
-`privacy_security`.
+`notifications`, `account_management`, `profile`, `prepare_for_vet_visit`,
+`pdf_health_report_preview`, `premium_home` + `subscription_plans` +
+`upgrade_benefits` + `usage_limits`, `ai_transparency`, `privacy_security`.
 
-Most already have shipping screens; the work is a rebuild against the
-reference. Check `lib/src/{community,monetization,account,notifications,prep,
-emergency}/` first.
+All already have shipping screens; the work is a rebuild against the
+reference. Check `lib/src/{monetization,account,notifications,prep}/` first.
+
+**The four monetization mockups carry V-24**: they draw `Premium` in the tab
+bar where `Emergency` belongs. The slot assignment does not change — Premium
+is a row inside Profile, which is where `profile.png` already surfaces it.
 
 ---
 
@@ -113,19 +120,22 @@ built from. It grew again this batch.
 
 | Primitive | Added | Use |
 |---|---|---|
-| **`HealthStepRail`** | this batch | the numbered wizard rail. 26dp circles on the reference's own centres (23dp inset, four equal columns → 66/153/240/327 on a 393 screen). The whole column is the tap target, not the dot |
-| **`HealthNumberedHead`** | this batch | "**1.** Add Photos" + subtitle + `(Optional)` suffix |
-| **`HealthCountedField`** | this batch | a bordered box with a live `0/60` counter; single-line puts it inline, multiline beneath |
-| **`HealthDashedTile`** + **`HealthDashedPainter`** | this batch | the dashed well. **Collapsed two private painters** that had already been written twice |
-| **`HealthDropPill`** | this batch | the "All Types ⌄" lozenge. Replaced `memories_screen`'s private `_DropButton` |
-| `HealthPrimaryCta` (+ **`icon` honoured**, **`trailingIcon`**, **`enabled`**) | fixed this batch | it accepted an `icon` and drew a hardcoded `plus` — the journal's "See Premium" rendered its crown as a **+** |
-| `HealthSearchField` (+ **`onSubmitted`**) | this batch | so a screen can decide what to *remember* |
+| **`HealthStepRail`** | batch R | the numbered wizard rail. 26dp circles on the reference's own centres (23dp inset, four equal columns → 66/153/240/327 on a 393 screen). The whole column is the tap target, not the dot |
+| **`HealthNumberedHead`** | batch R | "**1.** Add Photos" + subtitle + `(Optional)` suffix |
+| **`HealthCountedField`** | batch R | a bordered box with a live `0/60` counter; single-line puts it inline, multiline beneath |
+| **`HealthDashedTile`** + **`HealthDashedPainter`** | batch R | the dashed well. **Collapsed two private painters** that had already been written twice |
+| **`HealthDropPill`** | batch R | the "All Types ⌄" lozenge. Replaced `memories_screen`'s private `_DropButton` |
+| `HealthPrimaryCta` (+ `icon` honoured, `trailingIcon`, `enabled`) | fixed in batch R | it accepted an `icon` and drew a hardcoded `plus` — the journal's "See Premium" rendered its crown as a **+** |
+| `HealthSearchField` (+ `onSubmitted`, + **`focusNode`**) | `focusNode` this batch | so a screen can decide what to *remember*, and so the first-aid guide's hero button can hand focus to the field |
 | `HealthActionPill`, `HealthInfoGrid`/`HealthInfoCell`, `HealthSettingRow`, `HealthSparkline`, the six-widget form kit, `HealthStat`, `HealthStatTiles`, `HealthRecordRow`, `HealthGlyphDisc`, `HealthPill`, `HealthMetaBlock`, `HealthStatusBadge`, `HealthAddCard`, `HealthEduCard`, `HealthPrivacyCard`, `HealthDangerCard`, `HealthSheet`, `HealthDetailRow`, `HealthRecordScaffold` + `HealthBleed`, `HealthFilterChips`, `HealthRingPortrait`, `PetModuleAppBar`, `PetModuleHeaderCard`, `HealthTone`, `kRecordGutter` | — | the rest of the skeleton |
 
 New modules this batch:
 
 | File | Holds |
 |---|---|
+| **`emergency/emergency_sections.dart`** | `kPoisonControlLabel`/`Number`/`Note`, `dialPoisonControl`, `openEmergencyVetMaps`, `kFirstAidOrder`, `orderedFirstAidTopics`, `searchFirstAid`, `firstAidGlyph`/`RailIcon`/`ShortLabel`, `FirstAidGlyph`, `EmergencyCallBand`, `EmergencyHonestyNote`, `FirstAidRow`, `FirstAidCategoryRail`. **Bound by the emergency-path rule** — nothing here may reach a model, a paywall or the network beyond the two OS hand-offs |
+| **`community/community_sections.dart`** | `communityInitials`, `SpeciesFilter`, `PeopleOrder`, `searchProfiles`, `filterPeople`, `speciesTally`, `kCommunityGuidelines`, `kCommunityPrivacyLine`, `CommunityAvatar`, `CommunityActionButton`, `CommunityTallyStrip`, `CommunityGuidelinesCard`, `CommunitySoonChip` |
+| **`test/support/fake_community.dart`** | `FakeCommunityRepo`, `FakeLocation`, `communityApp()`, `communitySurface()` — the harness all four community suites share. `community_screens_test` used to carry its own copy |
 | **`pets/pet_pick_rail.dart`** | `PetPickRail` / `PetPickTile` — the *tall* portrait-over-name rail (`add_memory`, `search_memories`). The **other** rail shape (portrait beside the name) stays private in `memories_screen` / `conversation_history` |
 | **`memories/memory_search.dart`** | `searchMemories`, `memoryMatchScore`, `groupMemoriesByRecency`, `QuickSearch` + `kQuickSearches`, `RecentSearches`. All pure except the prefs I/O |
 | **`walks/walk_sections.dart`** | `WalkBand` (+ its ladder guard), `walkBand`, `weatherGlyph`/`weatherWord`, `dailyWalkOutlook`, `walkHints`, `kWalkDurationDisclaimer`, `WalkBandChip`, `WalkScoreDial` |
@@ -240,7 +250,42 @@ Read `CLAUDE.md` in full. The ones that bite in UI work:
 - **The assistant never implies a veterinary role** (V-23), its chips never
   presuppose a symptom (V-12), and it is not a second triage entry point.
 
-### What this batch added to the list
+### What the community and emergency batch added to the list
+
+- **The red path reads no app state, and a test proves it.**
+  `EmergencyHelpScreen` and `FirstAidGuideScreen` both render with **no
+  `ProviderScope`**; `emergency_hub_test` and `first_aid_guide_test` pump them
+  bare. That is why neither adopts the mockup's bottom navigation —
+  `PawNavBar` is a `ConsumerWidget`, and a tab bar is not worth trading the
+  proof for. If a future change needs a provider on those screens, the tests
+  fail rather than the cold offline start.
+- **Never badge some rows urgent.** The reference marks four of seven
+  first-aid topics "High Priority", which tells the reader the other three are
+  not. Order carries urgency (`kFirstAidOrder`, review item V-27) and the
+  section head says so.
+- **Never print a read time on an emergency surface.** "🕐 6 min" is invented,
+  and to an owner holding a bleeding animal it reads as a cost. Rows print the
+  card's step count.
+- **Never advertise a service PawDoc does not run.** "Call Emergency ·
+  Available 24/7" implies a staffed line; the 24/7 clinic directory with star
+  ratings implies a data source that was deleted in PR #80. What is real: the
+  maps hand-off, and somebody else's poison-control number with its fee stated.
+- **Never verify a person.** The community reference badges a "Vet Dr." with a
+  blue check answering a health question in-feed, and a "Top Contributor". A
+  badge that implies PawDoc vouches for a stranger's advice is the most
+  consequential invention in the whole reference set. `community_trio_test`
+  scans every rendered string on the feed and the detail screen for it.
+- **Never plot a member.** Discovery stores a five-character geohash *cell*
+  (~4.9 km) and no coordinates. The reference's map pins people at 0.2–0.6
+  miles from a "You" marker; a map that resolves to a tenth of a mile is a map
+  to a door. A test asserts no decimal distance can reach the screen.
+- **Never imply presence.** "Active now" is not stored, and would be
+  location-adjacent if it were.
+- **Never let a failed lookup read as an empty world.** `snapshot.data ?? []`
+  turned a network error into *"Nobody discoverable in your area yet — you are
+  early"*. Both community list screens now distinguish the two.
+
+### What the memories, walks, baseline and breeds batch added
 
 - **Never print a textbook reference range under a pet's name.**
   `know_your_baseline` draws "Resting Heart Rate 60–100 bpm · Your Pet's Normal
@@ -341,7 +386,12 @@ adb exec-out screencap -p > shot.png
 
 ## 9 · Blockers and environment notes
 
-- **This branch has no PR yet** — see §0.
+- **This branch has no PR yet at the time of writing** — see §0.
+- **`community_post_detail` was not device-walked with a live second member.**
+  The dev project has no other community profile within reach of the QA
+  account's cell, and creating one is a data action on a shared project rather
+  than a UI change. The screen is covered by ten widget tests, three of which
+  drive send, report and proposal-accept through the repository.
 - **Anonymous sign-in fails** on the dev Supabase project. Device validation
   goes through `uiqa.aug04@example.com` / `PawDoc!2026qa`.
 - **Founder-gated migrations** would retire the device-local stores (§7) and
@@ -353,10 +403,16 @@ adb exec-out screencap -p > shot.png
   hot reload landed.
 - CI only runs on `pull_request` and pushes to `main`.
 - `new-interface/` is still untracked — owner's call.
-- **Test data written to the dev account this session:** two memories titled
-  "Two desk shots" (Aug 7 2026, Buddy), from one two-photo batch.
-- **Device preferences written this session:** `pawdoc.memory.searches` holds
-  `snap`; location permission granted; screen timeout raised to 30 min.
+- **Test data written to the dev account this session (2026-08-08):** a
+  `community_profiles` row for the QA account — display name `QAWalker`, bio
+  `Morning walks`, species `dog`, area code `sy96x`, discoverable, accepting
+  requests. It was created through the consent gate to reach the community
+  screens. **Deleting it is one tap in-app** (Community → ⋮ → Leave the
+  community, which cascades the profile and any graph), but it is the owner's
+  call whether to.
+- **Device preferences written earlier:** `pawdoc.memory.searches` holds
+  `snap`; location permission granted; screen timeout raised to 30 min. The
+  font scale was set to 1.3 for an accessibility pass and **restored to 1.0**.
 
 ---
 
@@ -365,7 +421,9 @@ adb exec-out screencap -p > shot.png
 1. **Open the PR** for this branch (§0), and get it merged.
 2. Then the next batch — recommended: the two pre-auth surfaces (§3.1). They
    are the first thing every new user sees and the only screens left on the old
-   design.
+   design. `CommunityOnboardingScreen` is a third screen still on the legacy
+   design, and it is the community's **consent gate**, so it is worth the same
+   pass — but its content is load-bearing, not decorative.
 3. Whatever it is: open the reference and read it in full before writing
    anything, then survey the target file and the primitives table in §4.
    Almost everything a record-shaped screen needs already exists.
@@ -376,6 +434,18 @@ adb exec-out screencap -p > shot.png
    `IMPLEMENTATION_CHANGELOG_UI.md` at the end of the session.
 
 ### How to reach this batch's screens on device
+
+| Surface | How |
+|---|---|
+| `emergency_hub` | the **Emergency** destination in the bottom nav, or Home's red button |
+| `first_aid_guide` | Emergency Hub → the **Pet First Aid** tile, or the **Search** pill beside "First aid while you get help" |
+| a first-aid card | either screen's topic rows |
+| `community_feed` | Home → the **Paw Community** card (join first if the card reads "Opt-in only") |
+| `nearby_pet_owners` | Community → the **magnifier** in the header, or "Nearby pet people → **See all**" |
+| `create_post` | Community → **Edit profile**, the composer card, the ⋮ menu, or the round FAB |
+| `community_post_detail` | Community → any **accepted connection** card. Needs a second member |
+
+### The earlier batch's screens
 
 | Surface | How |
 |---|---|
