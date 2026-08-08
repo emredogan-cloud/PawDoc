@@ -3,23 +3,22 @@
 **Read this first.** It is written so a fresh agent can continue in minutes
 without asking questions.
 
-**Last updated:** 2026-08-08 · **Branch:** `ui-batch-s-community-emergency`
-**Head:** `8e418e8` · **Gates:** `flutter analyze` clean · **852 tests** green ·
+**Last updated:** 2026-08-08 · **Branch:** `ui-batch-t-prep-report-premium`
+**Head:** `04fa5aa` · **Gates:** `flutter analyze` clean · **968 tests** green ·
 `verify-disclaimers` PASS
 
 ---
 
 ## 0 · State of the branch
 
-PR #98 **merged** (squash, `35a6ff5`). This branch was cut fresh from that
+PR #99 **merged** (squash, `b7559b9`). This branch was cut fresh from that
 `main`, so there is no stacking.
 
 ```
-8e418e8  Device pass on the Redmi: four defects the widget tests could not see
-197ba70  Community feed, post detail and composer rebuilt
-895c000  Nearby Pet Owners rebuilt against its mockup — cells, never coordinates
-5287501  Emergency Hub rebuilt against its mockup — six blocks did not survive
-5331ad9  First Aid Guide rebuilt against its mockup — offline, and it says so
+04fa5aa  Device pass on the Redmi: six labels the widget tests could not measure
+747f7f1  Tests for the six screens — and three defects they found
+f1acc80  Vet-visit prep and the health report preview, rebuilt
+afc622d  The four monetization surfaces rebuilt — one catalogue, no invented claims
 ```
 
 GitHub refuses PR-author self-approval, so a merge needs a human approval or
@@ -39,7 +38,8 @@ is exactly the window that breaks them.
 ## 1 · Current phase
 
 Rebuilding the app's screens against the reference mockups in `new-interface/`
-(57 PNGs, untracked, ~93 MB). **47 of 57 mockups implemented.**
+(**58** PNGs, untracked, ~93 MB — earlier batches said 57 and were one short;
+`ls new-interface/*.png | wc -l` is the answer). **53 of 58 implemented.**
 
 Working method, unchanged and expected to continue:
 
@@ -83,13 +83,19 @@ One screen at a time, each through the full gate set before the next.
 | **`community_feed`** | **`community/community_home_screen.dart`** (rebuilt) | **`197ba70`** |
 | **`community_post_detail`** | **`community/community_chat_screen.dart`** (rebuilt) | **`197ba70`** |
 | **`create_post`** | **`community/create_post_screen.dart`** (new) | **`197ba70`** |
+| **`prepare_for_vet_visit`** | **`prep/vet_visit_prep_screen.dart`** (rebuilt) + `prep/vet_visit_prep.dart` | **`f1acc80`** |
+| **`pdf_health_report_preview`** | **`health/health_report_preview_screen.dart`** (new) + `health/report_preview.dart` | **`f1acc80`** |
+| **`premium_home`** | **`monetization/premium_home_screen.dart`** (new) | **`afc622d`** |
+| **`subscription_plans`** | **`monetization/paywall_screen.dart`** (rebuilt) | **`afc622d`** |
+| **`upgrade_benefits`** | **`monetization/upgrade_benefits_screen.dart`** (new) | **`afc622d`** |
+| **`usage_limits`** | **`monetization/usage_limits_screen.dart`** (new) | **`afc622d`** |
 
 All device-walked on the Redmi Note 8 (`AYXSUKIVJVPZ7HPZ`, 1080×2340 @440dpi =
 **393×851 logical** — the same size the mockups are drawn at).
 
 ---
 
-## 3 · Remaining work — 10 mockups
+## 3 · Remaining work — 5 mockups
 
 ### 3.1 · The two pre-auth surfaces (still the highest-visibility gap)
 
@@ -100,16 +106,15 @@ new user sees and the only screens left on the old design.
 
 ### 3.2 · The rest of the set
 
-`notifications`, `account_management`, `profile`, `prepare_for_vet_visit`,
-`pdf_health_report_preview`, `premium_home` + `subscription_plans` +
-`upgrade_benefits` + `usage_limits`, `ai_transparency`, `privacy_security`.
+`notifications`, `account_management`, `profile`, `ai_transparency`,
+`privacy_security` — five, and they are one coherent batch: the settings
+surfaces. All already have shipping screens; the work is a rebuild against the
+reference. Check `lib/src/{account,notifications,config}/` first.
 
-All already have shipping screens; the work is a rebuild against the
-reference. Check `lib/src/{monetization,account,notifications,prep}/` first.
-
-**The four monetization mockups carry V-24**: they draw `Premium` in the tab
-bar where `Emergency` belongs. The slot assignment does not change — Premium
-is a row inside Profile, which is where `profile.png` already surfaces it.
+`account_management`, `profile` and `privacy_security` all overlap
+`account_screen.dart`, so read all three references before touching it. The
+Premium row inside it now opens `PremiumHomeScreen` (the hub), not the
+paywall — keep that.
 
 ---
 
@@ -133,6 +138,12 @@ New modules this batch:
 
 | File | Holds |
 |---|---|
+| **`monetization/entitlements.dart`** | `kEntitlements` — **the audited catalogue every premium surface renders**, plus `kFreePhotoChecksPerMonth`/`kFreeAssistantMessagesPerDay`/`kFreeJournalEntries`, `EntitlementKind`, `premiumUnlocks`, `includedForEveryone`, `entitlementById`, `UsageMeter`, `buildUsageMeters`. **A screen asks this file what a capability is worth and cannot invent one.** `entitlements_test` reads the enforcing `.mjs` files and fails on drift |
+| **`monetization/premium_sections.dart`** | `PremiumTone` (guarded), `PremiumCrest`, `PremiumChip`, `entitlementChip`, `PremiumHeroCard`, `PremiumFeatureStrip`, `PremiumFeatureCard`/`Grid`, `EntitlementCompareTable`, `UsageMeterRow`, `PremiumBand`, `PremiumFaq`, `PremiumHonestyNote` |
+| **`monetization/usage_state.dart`** | `AccountUsage`, `accountUsageProvider`, `assistantMessagesTodayProvider` (same UTC window `assistant-chat` counts) |
+| **`monetization/subscription_state.dart`** | `SubscriptionSnapshot`, `subscriptionSnapshotProvider`, `planLabelFor`. Guarded on `Env.hasRevenueCat`, bounded by `kEntitlementProbeTimeout` |
+| **`prep/vet_visit_prep.dart`** | `VisitPrepDraft` (device-local, per pet), `kVisitReasons`, `SymptomFrequency`, `SymptomChange`, `kBringItems`, `kQuestionExamples`, `PrepStep`, `completedPrepSteps`, `visitPrepAnswerLines` |
+| **`health/report_preview.dart`** | `ReportPreview`/`ReportSection`, `buildReportPreview`, `paginateReport`, `kPdfReportDisclaimer`, `kPdf*Heading`, `kPdfReportWindow`, `kPdfMaxRows`, `kReportIncludes`/`kReportExcludes`. **A Dart mirror of `_shared/pdf_report.mjs`**, pinned by `pdf_report_preview_test` |
 | **`emergency/emergency_sections.dart`** | `kPoisonControlLabel`/`Number`/`Note`, `dialPoisonControl`, `openEmergencyVetMaps`, `kFirstAidOrder`, `orderedFirstAidTopics`, `searchFirstAid`, `firstAidGlyph`/`RailIcon`/`ShortLabel`, `FirstAidGlyph`, `EmergencyCallBand`, `EmergencyHonestyNote`, `FirstAidRow`, `FirstAidCategoryRail`. **Bound by the emergency-path rule** — nothing here may reach a model, a paywall or the network beyond the two OS hand-offs |
 | **`community/community_sections.dart`** | `communityInitials`, `SpeciesFilter`, `PeopleOrder`, `searchProfiles`, `filterPeople`, `speciesTally`, `kCommunityGuidelines`, `kCommunityPrivacyLine`, `CommunityAvatar`, `CommunityActionButton`, `CommunityTallyStrip`, `CommunityGuidelinesCard`, `CommunitySoonChip` |
 | **`test/support/fake_community.dart`** | `FakeCommunityRepo`, `FakeLocation`, `communityApp()`, `communitySurface()` — the harness all four community suites share. `community_screens_test` used to carry its own copy |
@@ -206,7 +217,24 @@ Elsewhere (unchanged): `LocalTickLog`, `careScore`/`careBand`, `healthEventIcon`
 14. **A horizontal rail is lazy.** Off-screen chips are not in the element
     tree, so a widget test must drag the rail before tapping the last ones
     (`encyclopedia_screen_test`'s `_section` helper).
-15. **The repo is hand-formatted at 80 columns and is NOT `dart format`-clean.**
+15. **`Spacer()` is an `Expanded`.** A Row ending in `Spacer` and containing
+    a `Flexible` splits the free space between them, so the flexible child
+    ellipsises with slack sitting idle beside it. Put the leading group in one
+    `Expanded` and the trailing control after it. (`HealthNumberedHead`, found
+    on device this batch — rule 9 in a second disguise.)
+16. **`hasError` is checked before `isLoading`.** Riverpod 3 retries a failed
+    provider, which flips it straight back to `loading` and makes
+    `when(error:)` unreachable. `home_screen` already did this; `usage_limits`
+    had to learn it. In tests, override with `Future.error(...)` rather than
+    `async { throw }` for the same reason.
+17. **An unconfigured store SDK never answers.** `Purchases.getOfferings()`
+    and `getCustomerInfo()` do not reject when `Purchases.configure` was never
+    called — they hang. Guard on `Env.hasRevenueCat` **and** bound with
+    `kEntitlementProbeTimeout`. Three call sites have now been caught by this.
+18. **A widget test cannot pump past a `CircularProgressIndicator`** — it
+    never settles, so the state it guards is untestable. The project's motion
+    foundation wants a static reduce-motion equivalent anyway.
+19. **The repo is hand-formatted at 80 columns and is NOT `dart format`-clean.**
     Do not run `dart format` on the repo unless the owner decides to format all
     of it.
 
@@ -285,6 +313,42 @@ Read `CLAUDE.md` in full. The ones that bite in UI work:
   turned a network error into *"Nobody discoverable in your area yet — you are
   early"*. Both community list screens now distinguish the two.
 
+### What the vet-prep, report and premium batch added
+
+- **Never sell a veterinarian.** The reference's *"Vet Chat Priority — get
+  faster responses from verified veterinarians"* is the single most
+  consequential invention in the whole set: it sells a licensed opinion, in a
+  health app, to an owner with a sick animal. Nor *"premium tools made by
+  vets"* — nobody clinical authored this product.
+- **Never quote a price the store did not return.** Every figure comes from
+  `storeProduct.priceString`; "Save N%" is `PaywallPricing.savingsBadge` over
+  two live prices in one currency, hidden when it cannot be computed.
+- **Never promise a trial or a refund.** A trial exists only when
+  `storeProduct.introductoryPrice != null`. Refunds are Google's; PawDoc runs
+  no money-back guarantee and says so.
+- **Never invent social proof.** No ratings, review counts, customer counts or
+  "loved by pet parents". Pre-launch, there are none — the same defect as the
+  onboarding "★ 4.8" line.
+- **Never draw a bar without a measurement.** The reference meters storage,
+  vet chat, pets and analytics — four things nothing counts. A meter is either
+  counted or declares it is not. A failed count says *"could not be read"*,
+  never `0`.
+- **Never sell what is already free.** Pets, records, reminders, the text
+  export, community and the vet prep pack are unlimited on both plans, and the
+  comparison table says so on both sides.
+- **Never put a severity meter beside a symptom.** `prepare_for_vet_visit`
+  draws signal bars reading "Moderate". Replaced by a trajectory (better /
+  worse / same / comes and goes), which is the question a vet asks.
+- **Never carry the owner into the export.** The PDF contains the animal, not
+  the person — no name, phone, email or city. The preview *states* the
+  omission rather than being quietly better than the reference.
+- **Never let planning crowd out the red path.** The prep screen carries a
+  calm, permanent Emergency strip that reads nothing back and is identical for
+  everyone, because sitting down to plan is exactly the posture that defers an
+  emergency to Tuesday.
+- **The payment marks stay out** (decision D-5, none sourced); a sentence
+  naming Google Play carries the same reassurance and is verifiable.
+
 ### What the memories, walks, baseline and breeds batch added
 
 - **Never print a textbook reference range under a pet's name.**
@@ -333,7 +397,8 @@ breed-match quiz**.
 
 ### Device-local, and the screen must say so
 
-Six stores now: `pawdoc.dose.*`, `pawdoc.reminder.done.*`,
+Seven stores now: **`pawdoc.visit_prep.<petId>`** (`VisitPrepDraft`),
+`pawdoc.dose.*`, `pawdoc.reminder.done.*`,
 `pawdoc.memory.fav.*` (all via `LocalTickLog`), **`pawdoc.memory.searches`**
 (`RecentSearches`), **`pawdoc.breeds.saved`** (`SavedBreeds`) and
 `pawdoc.weight_target.<petId>`. Each exists because the table would be a
@@ -423,7 +488,8 @@ adb exec-out screencap -p > shot.png
    are the first thing every new user sees and the only screens left on the old
    design. `CommunityOnboardingScreen` is a third screen still on the legacy
    design, and it is the community's **consent gate**, so it is worth the same
-   pass — but its content is load-bearing, not decorative.
+   pass — but its content is load-bearing, not decorative. After that, the
+   five remaining references (§3.2) are one coherent settings batch.
 3. Whatever it is: open the reference and read it in full before writing
    anything, then survey the target file and the primitives table in §4.
    Almost everything a record-shaped screen needs already exists.
@@ -434,6 +500,17 @@ adb exec-out screencap -p > shot.png
    `IMPLEMENTATION_CHANGELOG_UI.md` at the end of the session.
 
 ### How to reach this batch's screens on device
+
+| Surface | How |
+|---|---|
+| `prepare_for_vet_visit` | Home → the **Prepare for a vet visit** pill, or Health → the sliders button → *Vet visit prep* |
+| `pdf_health_report_preview` | Health → the sliders button → **Health report** |
+| `premium_home` | Home → the **person** icon (top right) → **PawDoc Premium** |
+| `subscription_plans` | Premium hub → **See plans** (hero, plan card, or the closing band); also every existing upsell |
+| `upgrade_benefits` | Premium hub → **Compare plans** or the **?** action; Subscription Plans → the **?** action |
+| `usage_limits` | Premium hub → **Your usage**; Upgrade Benefits → **Your usage** |
+
+### The previous batch's screens
 
 | Surface | How |
 |---|---|
