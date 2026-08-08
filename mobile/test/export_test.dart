@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pawdoc/src/export/health_report.dart';
 import 'package:pawdoc/src/health/health_event.dart';
 import 'package:pawdoc/src/pets/pet.dart';
 
 void main() {
+  _queryContract();
+
   final pet = Pet(
     userId: '',
     name: 'Rex',
@@ -53,5 +57,75 @@ void main() {
     expect(report, contains('Not examined by a veterinarian'));
     expect(report, contains('Source: entered by the owner'));
     expect(report, contains('No logged events.'));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// The query that feeds the builder.
+// ---------------------------------------------------------------------------
+//
+// The two tests above hand `buildHealthReport` a map with the right keys, so
+// they pass whatever the database is actually asked for. That gap hid a real
+// bug for three weeks: the contract-v2 migration (20260717130000) renamed
+// `triage_level` -> `action` and `primary_concern` -> `observation`, the
+// builder was updated with it, and `health_report_service.dart` was not. The
+// select 400ed, and "Share the record as text" — a capability
+// `entitlements.dart` lists as included on BOTH plans — threw for every user.
+//
+// Device-found while walking the new Privacy & Security screen. This closes
+// the gap: every key the builder reads out of `latestAnalysis` must be a
+// column the service actually selects.
+void _queryContract() {
+  group('the export query matches what the builder reads', () {
+    final builder =
+        File('lib/src/export/health_report.dart').readAsStringSync();
+    final service =
+        File('lib/src/export/health_report_service.dart').readAsStringSync();
+
+    final selected = RegExp(r"\.select\('([^']+)'\)")
+        .allMatches(service)
+        .expand((m) => m.group(1)!.split(','))
+        .map((c) => c.trim())
+        .toSet();
+
+    final read = RegExp(r"latestAnalysis\['(\w+)'\]")
+        .allMatches(builder)
+        .map((m) => m.group(1)!)
+        .toSet();
+
+    test('the builder reads at least the four documented fields', () {
+      expect(read, containsAll(['action', 'observation', 'created_at']));
+    });
+
+    for (final column in const [
+      'action',
+      'observation',
+      'created_at',
+      'full_response',
+    ]) {
+      test('the service selects `$column`', () {
+        expect(selected, contains(column),
+            reason: 'buildHealthReport reads $column out of the analysis row; '
+                'if the query does not ask for it the export is silently '
+                'wrong, and if the column was renamed the query 400s and the '
+                'export throws');
+      });
+    }
+
+    test('the pre-contract-v2 column names are gone', () {
+      // Comments stripped: the fix's own note names both old columns in order
+      // to explain why they are wrong, exactly as `safety_copy_test` does.
+      final code = service
+          .split('\n')
+          .where((l) => !l.trimLeft().startsWith('//'))
+          .join('\n');
+      expect(code.contains('triage_level'), isFalse);
+      expect(code.contains('primary_concern'), isFalse);
+    });
+
+    test('every key the builder reads is selected', () {
+      expect(read.difference(selected), isEmpty,
+          reason: 'the builder reads a field the query never asked for');
+    });
   });
 }

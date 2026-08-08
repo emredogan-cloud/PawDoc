@@ -11,7 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pawdoc/src/account/account_screen.dart';
+import 'package:pawdoc/src/account/account_identity.dart';
+import 'package:pawdoc/src/account/profile_screen.dart';
 import 'package:pawdoc/src/account/user_profile.dart';
 import 'package:pawdoc/src/auth/supabase_providers.dart';
 import 'package:pawdoc/src/monetization/premium_home_screen.dart';
@@ -24,12 +25,27 @@ SupabaseClient _dummyClient() => SupabaseClient(
       authOptions: const AuthClientOptions(autoRefreshToken: false),
     );
 
+/// A signed-in identity, so the screen renders its account body.
+///
+/// Profile shows a signed-out state when there is no session — correct, and
+/// what the dummy client alone produces. The invariant this file protects is
+/// about the *signed-in* screen, so the identity is supplied and the
+/// subscription providers are left to misbehave exactly as they did on device.
+const _identity = AccountIdentity(
+  userId: 'u1',
+  email: 'tester@example.com',
+  provider: 'email',
+  createdAt: null,
+  isAnonymous: false,
+);
+
 Widget _host(List<Override> overrides) => ProviderScope(
       overrides: [
         supabaseClientProvider.overrideWithValue(_dummyClient()),
+        accountIdentityProvider.overrideWithValue(_identity),
         ...overrides,
       ],
-      child: const MaterialApp(home: AccountScreen()),
+      child: const MaterialApp(home: ProfileScreen()),
     );
 
 void main() {

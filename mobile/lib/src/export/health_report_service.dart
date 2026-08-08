@@ -17,9 +17,17 @@ class HealthReportService {
 
   Future<String> buildForPet(Pet pet) async {
     Map<String, dynamic>? latest;
+    // `action` / `observation`, NOT `triage_level` / `primary_concern`.
+    //
+    // The contract-v2 migration (20260717130000) renamed both columns, and
+    // `health_report.dart` was updated with it — this query was not, so the
+    // select had been 400ing ever since and "Share the record as text" threw
+    // for every user. Found by walking the new Privacy & Security screen on a
+    // Redmi; no test caught it because the report *builder* is unit-tested
+    // against a hand-built map, and the query that feeds it is not.
     final analyses = await _client
         .from('analyses')
-        .select('triage_level, primary_concern, full_response, created_at')
+        .select('action, observation, full_response, created_at')
         .eq('pet_id', pet.id!)
         .order('created_at', ascending: false)
         .limit(1);
