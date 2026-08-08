@@ -159,7 +159,11 @@ class EmergencyHelpScreen extends StatelessWidget {
         gap(18),
         const HealthSectionHead(title: 'Quick actions'),
         gap(9),
-        Row(
+        // IntrinsicHeight, not a fixed tile height: at a 1.3x text scale the
+        // two-line subtitles were clipped against a hard 118dp box. The tiles
+        // now grow together to the tallest of the three.
+        IntrinsicHeight(
+          child: Row(
           children: [
             Expanded(
               child: _QuickTile(
@@ -191,6 +195,7 @@ class EmergencyHelpScreen extends StatelessWidget {
               ),
             ),
           ],
+          ),
         ),
         gap(18),
         HealthSectionHead(
@@ -256,14 +261,14 @@ class _QuickTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          height: 118,
-          padding: const EdgeInsets.fromLTRB(9, 12, 9, 10),
+          padding: const EdgeInsets.fromLTRB(9, 12, 9, 11),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 38,
@@ -292,14 +297,12 @@ class _QuickTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 3),
-              Expanded(
-                child: Text(subtitle,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        color: HealthTone.muted, fontSize: 10.5, height: 1.3)),
-              ),
+              Text(subtitle,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: HealthTone.muted, fontSize: 10.5, height: 1.3)),
             ],
           ),
         ),
@@ -320,7 +323,6 @@ class FirstAidScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const red = AppColors.emergencyDark;
-    final glyph = firstAidGlyph(topic.id);
     return HealthRecordScaffold(
       appBar: PetModuleAppBar(
         title: topic.title,
@@ -339,18 +341,7 @@ class FirstAidScreen extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (glyph != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.asset(glyph,
-                      width: 44, height: 44, fit: BoxFit.cover),
-                )
-              else
-                HealthGlyphDisc(
-                    icon: firstAidRailIcon(topic.id),
-                    tint: red,
-                    size: 44,
-                    square: true),
+              FirstAidGlyph(id: topic.id, size: 44),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

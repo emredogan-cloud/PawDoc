@@ -94,6 +94,61 @@ String? firstAidGlyph(String id) => switch (id) {
       _ => null,
     };
 
+/// A first-aid card's glyph: the shipped sticker asset where one exists, and
+/// the line glyph on a tinted square where it does not.
+///
+/// The stickers are 192px plates drawn with a **white frame and a drop shadow**
+/// around the red square, on transparency. Dropped straight into a near-black
+/// card that frame reads as a rendering fault — a white halo on four corners.
+/// The red plate's bounding box is x∈[25,166], y∈[11,162], so the image is
+/// scaled past the frame and re-centred on the plate, which sits about 10px
+/// above the canvas centre.
+class FirstAidGlyph extends StatelessWidget {
+  const FirstAidGlyph({required this.id, this.size = 46, super.key});
+
+  final String id;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = firstAidGlyph(id);
+    if (asset == null) {
+      return HealthGlyphDisc(
+          icon: firstAidRailIcon(id),
+          tint: AppColors.emergencyDark,
+          size: size,
+          square: true);
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(11),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Transform.scale(
+          scale: 1.34,
+          alignment: const Alignment(0, -0.14),
+          child: Image.asset(asset, fit: BoxFit.cover),
+        ),
+      ),
+    );
+  }
+}
+
+/// One word for the category rail, where a card's full title does not fit.
+///
+/// The reference's rail is single words — Bleeding, Choking, Poisoning,
+/// Heatstroke. "Swollen, hard belly" under a 44dp circle either shrinks to
+/// unreadable or runs into its neighbour, so the rail names the category and
+/// the row keeps the card's real title.
+String firstAidShortLabel(String id) => switch (id) {
+      'bleeding' => 'Bleeding',
+      'choking' => 'Choking',
+      'heatstroke' => 'Heat',
+      'bloat' => 'Belly',
+      'seizure' => 'Seizure',
+      _ => 'Other',
+    };
+
 /// The line glyph the category rail draws, and the fallback for a card with no
 /// shipped square.
 IconData firstAidRailIcon(String id) => switch (id) {
@@ -338,8 +393,6 @@ class FirstAidRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const red = AppColors.emergencyDark;
-    final glyph = firstAidGlyph(topic.id);
     return Column(
       children: [
         InkWell(
@@ -350,18 +403,7 @@ class FirstAidRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Row(
               children: [
-                if (glyph != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.asset(glyph,
-                        width: 46, height: 46, fit: BoxFit.cover),
-                  )
-                else
-                  HealthGlyphDisc(
-                      icon: firstAidRailIcon(topic.id),
-                      tint: red,
-                      size: 46,
-                      square: true),
+                FirstAidGlyph(id: topic.id),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -444,7 +486,7 @@ class FirstAidCategoryRail extends StatelessWidget {
           for (final t in topics)
             _RailTile(
               id: t.id,
-              label: t.title,
+              label: firstAidShortLabel(t.id),
               icon: firstAidRailIcon(t.id),
               selected: selected == t.id,
               onTap: () => onSelect(t.id),

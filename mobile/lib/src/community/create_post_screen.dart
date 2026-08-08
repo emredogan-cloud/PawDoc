@@ -478,21 +478,29 @@ class _SpeciesToggle extends StatelessWidget {
         key: Key('community_species_$species'),
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.pill),
+        // No `alignment:` on the Container. A Container given an alignment
+        // expands to its incoming constraints, and inside a `Wrap` those are
+        // loose to the full row — which made every species chip full width,
+        // one per line. The Row centres the label instead.
         child: Container(
           height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 13),
-          alignment: Alignment.center,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.pill),
             border: Border.all(
                 color:
                     selected ? accent : Colors.white.withValues(alpha: 0.09)),
           ),
-          child: Text(speciesLabel(species),
-              style: TextStyle(
-                  color: selected ? accent : HealthTone.muted,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(speciesLabel(species),
+                  style: TextStyle(
+                      color: selected ? accent : HealthTone.muted,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600)),
+            ],
+          ),
         ),
       ),
     );

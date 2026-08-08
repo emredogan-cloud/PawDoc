@@ -430,6 +430,9 @@ class _CommunityHomeScreenState extends ConsumerState<CommunityHomeScreen> {
           child: FloatingActionButton(
             key: const Key('community_fab'),
             heroTag: 'community_fab',
+            // Material 3 defaults this to a rounded square; the reference
+            // draws the round compose button the rest of the app uses.
+            shape: const CircleBorder(),
             backgroundColor: AppColors.lime500,
             foregroundColor: Colors.black,
             onPressed: () => _openComposer(isMember: me != null),

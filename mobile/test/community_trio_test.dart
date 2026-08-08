@@ -344,6 +344,26 @@ void main() {
       expect(repo.saved!.geohash, isNull);
     });
 
+    testWidgets('the species chips sit side by side, not one per line',
+        (tester) async {
+      communitySurface(tester);
+      final repo = FakeCommunityRepo(profile: _me);
+      await tester.pumpWidget(communityApp(const CreatePostScreen(), repo));
+      await tester.pumpAndSettle();
+
+      // A `Container` given an `alignment` expands to its incoming
+      // constraints, and inside a `Wrap` those are loose to the whole row — so
+      // every chip rendered full width, stacked. Two chips on one line is the
+      // tripwire.
+      final dog = tester.getTopLeft(find.byKey(const Key('community_species_dog')));
+      final cat = tester.getTopLeft(find.byKey(const Key('community_species_cat')));
+      expect(cat.dy, dog.dy, reason: 'the first two chips share a line');
+      expect(cat.dx, greaterThan(dog.dx));
+      expect(tester.getSize(find.byKey(const Key('community_species_dog'))).width,
+          lessThan(200),
+          reason: 'a chip that fills the row is the bug this pins');
+    });
+
     testWidgets('every control the schema cannot hold says Soon',
         (tester) async {
       communitySurface(tester);
